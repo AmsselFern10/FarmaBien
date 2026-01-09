@@ -1,0 +1,449 @@
+/* ============================================
+   ESTILOS PERSONALIZADOS - SISTEMA FARMACIA
+   ============================================ */
+
+/* ===== NAVBAR PERSONALIZADO ===== */
+.main-header.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.08);
+    transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link {
+    transition: all 0.2s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(0,0,0,.05);
+    border-radius: 5px;
+}
+
+/* Breadcrumb Tabs mejorados */
+.breadcrumb-tabs {
+    max-width: 600px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 5px 0;
+}
+
+.breadcrumb-tabs::-webkit-scrollbar {
+    height: 5px;
+}
+
+.breadcrumb-tabs::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+.breadcrumb-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    margin: 0 5px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,.05);
+}
+
+.breadcrumb-tab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,.1);
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+.breadcrumb-tab a {
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    margin: 0 5px;
+}
+
+.btn-close-tab {
+    background: none;
+    border: none;
+    padding: 0 0 0 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-close-tab:hover {
+    transform: scale(1.2);
+}
+
+.btn-close-tab:hover i {
+    color: #dc3545 !important;
+}
+
+/* ===== SIDEBAR PERSONALIZADO ===== */
+.main-sidebar {
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link {
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255,255,255,.1);
+}
+
+.sidebar .nav-link.active {
+    background-color: rgba(255,255,255,.2);
+    font-weight: 600;
+}
+
+.sidebar .nav-treeview .nav-link {
+    padding-left: 2rem;
+}
+
+.sidebar .nav-header {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 11px;
+    margin-top: 15px;
+}
+
+/* User panel en sidebar */
+.user-panel {
+    border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.user-panel .info a {
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.user-panel .info a:hover {
+    color: #fff !important;
+}
+
+/* ===== SMALL BOXES (WIDGETS) ===== */
+.small-box {
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    transition: all 0.3s ease;
+}
+
+.small-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,.15);
+}
+
+.small-box > .inner {
+    padding: 15px;
+}
+
+.small-box h3 {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+}
+
+.small-box p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.small-box .icon {
+    font-size: 70px;
+    top: 15px;
+    right: 15px;
+}
+
+.small-box .small-box-footer {
+    padding: 8px 0;
+    text-align: center;
+    border-radius: 0 0 10px 10px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.small-box .small-box-footer:hover {
+    background-color: rgba(0,0,0,.1);
+}
+
+/* ===== CARDS ===== */
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0;
+    font-weight: 600;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.card-primary .card-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.card-success .card-header {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.card-danger .card-header {
+    background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+}
+
+.card-warning .card-header {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+.card-info .card-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+}
+
+/* ===== TABLAS ===== */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    background-color: #f8f9fa;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,.02);
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0,123,255,.05);
+    transform: scale(1.01);
+}
+
+/* ===== BOTONES ===== */
+.btn {
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+.btn-app {
+    min-width: 100%;
+    height: 100px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-app:hover {
+    transform: translateY(-5px);
+}
+
+.btn-app i {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* ===== BADGES ===== */
+.badge {
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+}
+
+/* ===== DROPDOWNS ===== */
+.dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.15);
+    border: none;
+}
+
+.dropdown-item {
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    margin: 2px 5px;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(0,123,255,.1);
+    transform: translateX(5px);
+}
+
+.dropdown-divider {
+    margin: 8px 0;
+}
+
+/* ===== FORMULARIOS ===== */
+.form-control {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    transform: scale(1.01);
+}
+
+.custom-switch .custom-control-label::before {
+    border-radius: 20px;
+}
+
+.custom-switch .custom-control-label::after {
+    border-radius: 50%;
+}
+
+/* ===== MODO OSCURO ===== */
+.dark-mode {
+    background-color: #1a1a1a;
+    color: #e9ecef;
+}
+
+.dark-mode .main-header {
+    background-color: #2d2d2d;
+    border-bottom: 1px solid #404040;
+}
+
+.dark-mode .breadcrumb-tab {
+    background: linear-gradient(135deg, #2d2d2d 0%, #404040 100%);
+    border-color: #495057;
+}
+
+.dark-mode .breadcrumb-tab a {
+    color: #e9ecef !important;
+}
+
+.dark-mode .card {
+    background-color: #2d2d2d;
+    color: #e9ecef;
+}
+
+.dark-mode .card-header {
+    background: linear-gradient(135deg, #2d2d2d 0%, #404040 100%);
+    border-bottom: 1px solid #404040;
+}
+
+.dark-mode .table {
+    color: #e9ecef;
+}
+
+.dark-mode .table thead th {
+    background-color: #2d2d2d;
+    border-color: #404040;
+}
+
+.dark-mode .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255,255,255,.02);
+}
+
+.dark-mode .table tbody tr:hover {
+    background-color: rgba(255,255,255,.05);
+}
+
+.dark-mode .dropdown-menu {
+    background-color: #2d2d2d;
+    border: 1px solid #404040;
+}
+
+.dark-mode .dropdown-item {
+    color: #e9ecef;
+}
+
+.dark-mode .dropdown-item:hover {
+    background-color: rgba(255,255,255,.1);
+}
+
+.dark-mode .form-control {
+    background-color: #2d2d2d;
+    border-color: #404040;
+    color: #e9ecef;
+}
+
+.dark-mode .form-control:focus {
+    background-color: #2d2d2d;
+    border-color: #80bdff;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes slideInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in-up {
+    animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* ===== UTILIDADES ===== */
+.text-shadow {
+    text-shadow: 2px 2px 4px rgba(0,0,0,.1);
+}
+
+.box-shadow {
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .breadcrumb-tabs {
+        max-width: 300px;
+    }
+    
+    .small-box h3 {
+        font-size: 1.8rem;
+    }
+    
+    .small-box .icon {
+        font-size: 50px;
+    }
+    
+    .btn-app {
+        height: 80px;
+    }
+    
+    .btn-app i {
+        font-size: 24px;
+    }
+}
