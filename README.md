@@ -49,23 +49,25 @@ Sigue estos pasos para poner en marcha el proyecto localmente:
 ```bash
 git clone [https://github.com/AmsselFern10/FarmaBien.git](https://github.com/AmsselFern10/FarmaBien.git)
 cd FarmaBien
+```
 
 ### 2️⃣ Instalar dependencias
 ```bash
 composer install
 npm install
+```
 
 ### 3️⃣ Configurar variables de entorno
 ```bash
 cp .env.example .env
-
+```
 [!IMPORTANT] Configura tus credenciales de base de datos (DB_DATABASE, DB_USERNAME, DB_PASSWORD) en el archivo .env.
 
 ### 4️⃣ Generar la clave y migrar
 ```bash
 php artisan key:generate
 php artisan migrate --seed
-
+```
 
 ### 5️⃣ Iniciar el sistema
 ```bash
