@@ -1,0 +1,33 @@
+{{-- resources/views/categorias/edit.blade.php --}}
+@extends('layouts.app')
+
+@section('title', 'Editar Categoría')
+
+@section('header')
+    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        Editar Categoría: {{ $categoria->nombre }}
+    </h2>
+@endsection
+
+@section('content')
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+        <div class="p-6">
+            <form action="{{ route('categorias.update', $categoria) }}" method="POST">
+                @csrf
+                @method('PUT')
+                @include('categorias.form')
+                
+                <div class="flex items-center justify-end mt-6 space-x-2">
+                    <a href="{{ route('categorias.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Actualizar Categoría
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection

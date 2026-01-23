@@ -74,21 +74,39 @@ class VentaController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreVentaRequest $request)
-    {
-        try {
-            $venta = $this->ventaService->procesarVenta($request->validated());
-            
-            return redirect()
-                ->route('ventas.show', $venta)
-                ->with('success', "Venta #{$venta->id} registrada correctamente. Total: S/ " . number_format($venta->total, 2));
-                
-        } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->with('error', 'Error al procesar la venta: ' . $e->getMessage());
+    // En VentaController@store
+public function store(StoreVentaRequest $request)
+{
+    try {
+        $venta = $this->ventaService->procesarVenta($request->validated());
+        
+        // Si es AJAX (desde create.blade.php)
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Venta #{$venta->id} registrada correctamente",
+                'redirect' => route('ventas.show', $venta)
+            ]);
         }
+        
+        // Si es form normal
+        return redirect()
+            ->route('ventas.show', $venta)
+            ->with('success', "Venta #{$venta->id} registrada correctamente. Total: S/ " . number_format($venta->total, 2));
+            
+    } catch (\Exception $e) {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+        
+        return back()
+            ->withInput()
+            ->with('error', 'Error al procesar la venta: ' . $e->getMessage());
     }
+}
 
     /**
      * Display the specified resource.
@@ -136,25 +154,33 @@ class VentaController extends Controller
     /**
      * Update the specified resource in storage (Modificar).
      */
-    public function update(UpdateVentaRequest $request, Venta $venta)
-    {
-        try {
-            $nuevaVenta = $this->ventaService->modificarVenta(
-                ventaId: $venta->id,
-                data: $request->except('motivo'),
-                motivo: $request->motivo
-            );
-            
-            return redirect()
-                ->route('ventas.show', $nuevaVenta)
-                ->with('success', "Venta modificada correctamente. Venta original: #{$venta->id} → Nueva venta: #{$nuevaVenta->id}");
-                
-        } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->with('error', 'Error al modificar la venta: ' . $e->getMessage());
+  public function update(UpdateVentaRequest $request, Venta $venta)
+{
+    try {
+        // El request ya tiene el motivo validado
+        $data = $request->except('motivo');
+        
+        // Decodificar productos si vienen como JSON string
+        if (is_string($data['productos'])) {
+            $data['productos'] = json_decode($data['productos'], true);
         }
+        
+        $nuevaVenta = $this->ventaService->modificarVenta(
+            ventaId: $venta->id,
+            data: $data,
+            motivo: $request->motivo
+        );
+        
+        return redirect()
+            ->route('ventas.show', $nuevaVenta)
+            ->with('success', "Venta modificada. Venta original: #{$venta->id} → Nueva venta: #{$nuevaVenta->id}");
+            
+    } catch (\Exception $e) {
+        return back()
+            ->withInput()
+            ->with('error', 'Error al modificar la venta: ' . $e->getMessage());
     }
+}
 
     /**
      * Anular una venta.

@@ -2,239 +2,249 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\VentaService;
-use App\Services\CompraService;
-use App\Services\InventarioService;
+use Illuminate\Http\Request;
 use App\Models\Venta;
 use App\Models\Compra;
 use App\Models\Producto;
+use App\Models\User;
 use App\Models\Cliente;
-use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    protected $ventaService;
-    protected $compraService;
-    protected $inventarioService;
-
-    public function __construct(
-        VentaService $ventaService,
-        CompraService $compraService,
-        InventarioService $inventarioService
-    ) {
-        $this->ventaService = $ventaService;
-        $this->compraService = $compraService;
-        $this->inventarioService = $inventarioService;
-
-        $this->middleware('permission:ver dashboard');
-    }
-
     /**
-     * Dashboard principal.
+     * Muestra el dashboard según el rol del usuario
      */
     public function index()
-    {
-        $user = auth()->user();
-
-        // Estadísticas según el rol
-        if ($user->hasRole('Cajero')) {
-            return $this->dashboardCajero();
-        } elseif ($user->hasRole('Inventario')) {
-            return $this->dashboardInventario();
-        } else {
+    { /** @var \App\Models\User $user */
+    $user = auth()->user();
+      
+        
+        if ($user->hasRole('Admin')) {
             return $this->dashboardAdmin();
         }
+        
+        if ($user->hasRole('Cajero')) {
+            return $this->dashboardCajero();
+        }
+        
+        if ($user->hasRole('Inventario')) {
+            return $this->dashboardInventario();
+        }
+        
+        // Dashboard genérico
+        return view('dashboard');
     }
 
     /**
-     * Dashboard para Administrador.
+     * Dashboard para Administradores
      */
-    protected function dashboardAdmin()
+    private function dashboardAdmin()
     {
-        // Ventas del día
-        $ventasHoy = $this->ventaService->totalVentasDelDia();
-        $cantidadVentasHoy = Venta::whereDate('fecha', today())
-            ->completadas()
+        $hoy = Carbon::today();
+        $mesActual = Carbon::now()->startOfMonth();
+        
+        // Ventas
+        $ventasHoy = Venta::whereDate('fecha', $hoy)
+            ->where('estado', 'completada')
+            ->sum('total');
+            
+        $ventasMes = Venta::whereDate('fecha', '>=', $mesActual)
+            ->where('estado', 'completada')
+            ->sum('total');
+            
+        $cantidadVentasHoy = Venta::whereDate('fecha', $hoy)
+            ->where('estado', 'completada')
             ->count();
 
-        // Ventas del mes
-        $ventasMes = Venta::whereMonth('fecha', now()->month)
-            ->whereYear('fecha', now()->year)
-            ->completadas()
+        // Compras
+        $comprasHoy = Compra::whereDate('fecha', $hoy)
+            ->where('estado', 'completada')
+            ->sum('total');
+            
+        $comprasMes = Compra::whereDate('fecha', '>=', $mesActual)
+            ->where('estado', 'completada')
             ->sum('total');
 
-        // Compras del mes
-        $comprasMes = $this->compraService->totalComprasDelMes();
 
-        // Productos con stock bajo
-        $productosStockBajo = $this->inventarioService->productosConStockBajo()->count();
+         $productos = Producto::with('lotes')
+    ->where('activo', true)
+    ->get();
 
-        // Lotes próximos a vencer
-        $lotesProximosVencer = $this->inventarioService->lotesProximosVencer(30)->count();
+$totalProductos = $productos->count();
 
-        // Lotes vencidos
-        $lotesVencidos = $this->inventarioService->lotesVencidos()->count();
+$productosBajoStock = $productos->filter(fn($p) => $p->stock_total <= $p->stock_minimo)->count();
+$productosAgotados = $productos->filter(fn($p) => $p->stock_total === 0)->count();
 
-        // Total productos activos
-        $totalProductos = Producto::activos()->count();
+$productosAlerta = $productos->filter(fn($p) => $p->stock_total <= $p->stock_minimo)
+    ->sortBy('stock_total')
+    ->take(5);
 
-        // Total clientes
-        $totalClientes = Cliente::activos()->count();
-
-        // Ventas recientes
-        $ventasRecientes = Venta::with(['cliente', 'usuario'])
-            ->completadas()
-            ->orderBy('fecha', 'desc')
-            ->limit(10)
-            ->get();
-
-        // Compras recientes
-        $comprasRecientes = $this->compraService->comprasRecientes(10);
+        // Clientes
+        $totalClientes = Cliente::count();
+        $clientesNuevosHoy = Cliente::whereDate('created_at', $hoy)->count();
 
         // Productos más vendidos del mes
-        $productosMasVendidos = DB::table('detalle_venta')
-            ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
-            ->join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
-            ->whereMonth('ventas.fecha', now()->month)
-            ->whereYear('ventas.fecha', now()->year)
-            ->where('ventas.estado', 'completada')
+     $productosMasVendidos = DB::table('detalle_venta')
+    ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
+    ->join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
+    ->whereDate('ventas.fecha', '>=', $mesActual)
+    ->where('ventas.estado', 'completada')
+    ->select(
+        'productos.nombre',
+        DB::raw('SUM(detalle_venta.cantidad) as total_vendido'),
+        DB::raw('SUM(detalle_venta.subtotal) as total_ingresos')
+    )
+    ->groupBy('productos.id', 'productos.nombre')
+    ->orderBy('total_vendido', 'desc')
+    ->limit(5)
+    ->get();
+
+       $productos = Producto::with('lotes')
+    ->where('activo', true)
+    ->get();
+
+// Total productos con alerta de stock
+$productosAlerta = $productos->filter(fn($p) => $p->lotes->sum('stock') <= $p->stock_minimo)
+    ->sortBy('stock_total') // opcional, para mostrar los más bajos primero
+    ->take(5);
+
+        // Ventas por día (últimos 7 días)
+        $ventasPorDia = Venta::whereDate('fecha', '>=', Carbon::now()->subDays(7))
+            ->where('estado', 'completada')
             ->select(
-                'productos.id',
-                'productos.nombre',
-                DB::raw('SUM(detalle_venta.cantidad) as total_vendido'),
-                DB::raw('SUM(detalle_venta.subtotal) as total_ingresos')
+                DB::raw('DATE(fecha) as dia'),
+                DB::raw('COUNT(*) as cantidad'),
+                DB::raw('SUM(total) as total')
             )
-            ->groupBy('productos.id', 'productos.nombre')
-            ->orderBy('total_vendido', 'desc')
-            ->limit(10)
+            ->groupBy('dia')
+            ->orderBy('dia', 'asc')
             ->get();
 
-        // Gráfico de ventas por día (últimos 7 días)
-        $ventasPorDia = Venta::selectRaw('DATE(fecha) as dia, SUM(total) as total')
-            ->completadas()
-            ->whereBetween('fecha', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
-            ->groupBy('dia')
-            ->orderBy('dia')
-            ->get();
+        // Usuarios activos
+        $totalUsuarios = User::count();
 
         return view('dashboard.admin', compact(
             'ventasHoy',
-            'cantidadVentasHoy',
             'ventasMes',
+            'cantidadVentasHoy',
+            'comprasHoy',
             'comprasMes',
-            'productosStockBajo',
-            'lotesProximosVencer',
-            'lotesVencidos',
             'totalProductos',
+            'productosBajoStock',
+            'productosAgotados',
             'totalClientes',
-            'ventasRecientes',
-            'comprasRecientes',
+            'clientesNuevosHoy',
             'productosMasVendidos',
-            'ventasPorDia'
+            'productosAlerta',
+            'ventasPorDia',
+            'totalUsuarios'
         ));
     }
 
     /**
-     * Dashboard para Cajero.
+     * Dashboard para Cajeros
      */
-    protected function dashboardCajero()
+    private function dashboardCajero()
     {
-        $userId = auth()->id();
+        $hoy = Carbon::today();
+        $usuario = auth()->user();
+        
+        // Ventas del día del cajero
+        $misVentasHoy = Venta::whereDate('fecha', $hoy)
+            ->where('usuario_id', $usuario->id)
+            ->where('estado', 'completada')
+            ->get();
+            
+        $totalVentasHoy = $misVentasHoy->sum('total');
+        $cantidadVentasHoy = $misVentasHoy->count();
+        
+        // Última venta
+        $ultimaVenta = Venta::where('usuario_id', $usuario->id)
+            ->latest('created_at')
+            ->first();
 
-        // Ventas del cajero hoy
-        $ventasHoy = Venta::whereDate('fecha', today())
-            ->where('user_id', $userId)
-            ->completadas()
-            ->sum('total');
-
-        $cantidadVentasHoy = Venta::whereDate('fecha', today())
-            ->where('user_id', $userId)
-            ->completadas()
-            ->count();
-
-        // Ventas del mes del cajero
-        $ventasMes = Venta::whereMonth('fecha', now()->month)
-            ->whereYear('fecha', now()->year)
-            ->where('user_id', $userId)
-            ->completadas()
-            ->sum('total');
-
-        // Mis ventas recientes
-        $ventasRecientes = Venta::with(['cliente'])
-            ->where('user_id', $userId)
-            ->completadas()
-            ->orderBy('fecha', 'desc')
-            ->limit(10)
+        // Productos más vendidos por el cajero hoy
+        $productosMasVendidos = DB::table('detalle_ventas')
+            ->join('ventas', 'detalle_ventas.venta_id', '=', 'ventas.id')
+            ->join('productos', 'detalle_ventas.producto_id', '=', 'productos.id')
+            ->whereDate('ventas.fecha', $hoy)
+            ->where('ventas.usuario_id', $usuario->id)
+            ->where('ventas.estado', 'completada')
+            ->select(
+                'productos.nombre',
+                DB::raw('SUM(detalle_ventas.cantidad) as total_vendido')
+            )
+            ->groupBy('productos.id', 'productos.nombre')
+            ->orderBy('total_vendido', 'desc')
+            ->limit(5)
             ->get();
 
-        // Productos próximos a vencer (alerta para no vender)
-        $lotesProximosVencer = $this->inventarioService->lotesProximosVencer(15)->take(10);
-
-        // Productos con stock bajo
-        $productosStockBajo = $this->inventarioService->productosConStockBajo()->take(10);
-
         return view('dashboard.cajero', compact(
-            'ventasHoy',
+            'misVentasHoy',
+            'totalVentasHoy',
             'cantidadVentasHoy',
-            'ventasMes',
-            'ventasRecientes',
-            'lotesProximosVencer',
-            'productosStockBajo'
+            'ultimaVenta',
+            'productosMasVendidos'
         ));
     }
 
     /**
-     * Dashboard para Inventario.
+     * Dashboard para Encargado de Inventario
      */
-    protected function dashboardInventario()
+    private function dashboardInventario()
     {
-        // Compras del mes
-        $comprasMes = $this->compraService->totalComprasDelMes();
-        $cantidadComprasMes = Compra::whereMonth('fecha', now()->month)
-            ->whereYear('fecha', now()->year)
-            ->recibidas()
+        $hoy = Carbon::today();
+        
+        // Productos con stock bajo
+        $productosBajoStock = Producto::whereRaw('stock_total <= stock_minimo')
+            ->where('activo', true)
+            ->orderBy('stock_total', 'asc')
+            ->get();
+
+        // Productos agotados
+        $productosAgotados = Producto::where('stock_total', 0)
+            ->where('activo', true)
+            ->get();
+
+        // Lotes próximos a vencer (30 días)
+        $lotesProximosVencer = DB::table('lotes')
+            ->join('productos', 'lotes.producto_id', '=', 'productos.id')
+            ->where('lotes.estado', 'disponible')
+            ->whereDate('lotes.fecha_vencimiento', '<=', Carbon::now()->addDays(30))
+            ->select('lotes.*', 'productos.nombre as producto_nombre')
+            ->orderBy('lotes.fecha_vencimiento', 'asc')
+            ->get();
+
+        // Movimientos de inventario del día
+        $movimientosHoy = DB::table('movimientos_inventario')
+            ->whereDate('created_at', $hoy)
             ->count();
 
-        // Productos con stock bajo
-        $productosStockBajo = $this->inventarioService->productosConStockBajo();
+        // Compras realizadas hoy
+        $comprasHoy = Compra::whereDate('fecha', $hoy)
+            ->where('estado', 'completada')
+            ->get();
 
-        // Lotes próximos a vencer
-        $lotesProximosVencer = $this->inventarioService->lotesProximosVencer(30);
+        // Valor total del inventario
+        $valorInventario = Producto::where('activo', true)
+            ->get()
+            ->sum(function ($producto) {
+                return $producto->stock_total * $producto->precio_compra;
+            });
 
-        // Lotes vencidos
-        $lotesVencidos = $this->inventarioService->lotesVencidos();
-
-        // Valorización del inventario
-        $valorizacion = $this->inventarioService->valorizacionInventario();
-
-        // Resumen por categoría
-        $resumenCategorias = $this->inventarioService->resumenPorCategoria();
-
-        // Compras recientes
-        $comprasRecientes = $this->compraService->comprasRecientes(10);
-
-        // Movimientos recientes
-        $movimientosRecientes = \App\Models\MovimientoInventario::with([
-            'producto',
-            'lote',
-            'usuario'
-        ])
-        ->orderBy('fecha_movimiento', 'desc')
-        ->limit(15)
-        ->get();
+        // Total de productos
+        $totalProductos = Producto::where('activo', true)->count();
 
         return view('dashboard.inventario', compact(
-            'comprasMes',
-            'cantidadComprasMes',
-            'productosStockBajo',
+            'productosBajoStock',
+            'productosAgotados',
             'lotesProximosVencer',
-            'lotesVencidos',
-            'valorizacion',
-            'resumenCategorias',
-            'comprasRecientes',
-            'movimientosRecientes'
+            'movimientosHoy',
+            'comprasHoy',
+            'valorInventario',
+            'totalProductos'
         ));
     }
 }
-    
