@@ -187,28 +187,39 @@ class InventarioService
      * 
      * @return \Illuminate\Support\Collection
      */
-    public function resumenPorCategoria()
-    {
-        return DB::table('productos')
-            ->join('categorias', 'productos.categoria_id', '=', 'categorias.id')
-            ->select(
-                'categorias.nombre as categoria',
-                DB::raw('COUNT(productos.id) as total_productos'),
-                DB::raw('SUM(COALESCE((
-                    SELECT SUM(l.stock_inicial + COALESCE((
-                        SELECT SUM(m.cantidad)
-                        FROM movimientos_inventario m
-                        WHERE m.lote_id = l.id
-                    ), 0))
-                    FROM lotes l
-                    WHERE l.producto_id = productos.id
-                    AND l.activo = 1
-                ), 0)) as stock_total')
-            )
-            ->where('productos.activo', true)
-            ->groupBy('categorias.id', 'categorias.nombre')
-            ->get();
-    }
+   public function resumenPorCategoria()
+{
+    return DB::table('productos')
+        ->join('categorias', 'productos.categoria_id', '=', 'categorias.id')
+        ->select(
+            'categorias.nombre as categoria_nombre',
+            DB::raw('COUNT(productos.id) as total_productos'),
+            DB::raw('SUM(COALESCE((
+                SELECT SUM(l.stock_inicial + COALESCE((
+                    SELECT SUM(m.cantidad)
+                    FROM movimientos_inventario m
+                    WHERE m.lote_id = l.id
+                ), 0))
+                FROM lotes l
+                WHERE l.producto_id = productos.id
+                AND l.activo = 1
+            ), 0)) as stock_total'),
+            DB::raw('SUM(COALESCE((
+                SELECT SUM((l.stock_inicial + COALESCE((
+                    SELECT SUM(m.cantidad)
+                    FROM movimientos_inventario m
+                    WHERE m.lote_id = l.id
+                ), 0)) * l.precio_compra)
+                FROM lotes l
+                WHERE l.producto_id = productos.id
+                AND l.activo = 1
+            ), 0)) as valor_total') // ✅ agregado
+        )
+        ->where('productos.activo', true)
+        ->groupBy('categorias.id', 'categorias.nombre')
+        ->get();
+}
+
 
     /**
      * Desactivar lotes vencidos automáticamente
@@ -255,39 +266,42 @@ class InventarioService
      * 
      * @return array
      */
-    public function valorizacionInventario(): array
-    {
-        $lotes = Lote::with('producto')
-            ->activos()
-            ->get();
+   public function valorizacionInventario(): array
+{
+    $lotes = Lote::with('producto')->activos()->get();
 
-        $valorTotal = 0;
-        $cantidadTotal = 0;
-        $detalles = [];
+    $valorTotal = 0;
+    $cantidadTotal = 0;
+    $productos = [];
 
-        foreach ($lotes as $lote) {
-            $stockActual = $lote->stock_actual;
-            
-            if ($stockActual > 0) {
-                $valorLote = $stockActual * $lote->precio_compra;
-                $valorTotal += $valorLote;
-                $cantidadTotal += $stockActual;
+    foreach ($lotes as $lote) {
+        $stockActual = $lote->stock_actual;
 
-                $detalles[] = [
-                    'producto' => $lote->producto->nombre,
-                    'lote' => $lote->numero_lote,
-                    'stock' => $stockActual,
-                    'precio_compra' => $lote->precio_compra,
-                    'valor_total' => $valorLote,
-                ];
-            }
+        if ($stockActual > 0) {
+            $valorLote = $stockActual * $lote->precio_compra;
+            $valorTotal += $valorLote;
+            $cantidadTotal += $stockActual;
+
+            $productos[$lote->producto_id] = $lote->producto->nombre;
+
+            $detalles[] = [
+                'producto' => $lote->producto->nombre,
+                'lote' => $lote->numero_lote,
+                'stock' => $stockActual,
+                'precio_compra' => $lote->precio_compra,
+                'valor_total' => $valorLote,
+            ];
         }
-
-        return [
-            'valor_total' => $valorTotal,
-            'cantidad_total_unidades' => $cantidadTotal,
-            'total_lotes_activos' => count($detalles),
-            'detalles' => collect($detalles)->sortByDesc('valor_total')->values()->all(),
-        ];
     }
+
+    return [
+        'valor_total' => $valorTotal,
+        'total_unidades' => $cantidadTotal,
+        'total_lotes_activos' => count($detalles ?? []),
+        'total_productos' => count($productos), // ✅ AQUÍ agregamos total_productos
+        'detalles' => collect($detalles ?? [])->sortByDesc('valor_total')->values()->all(),
+    ];
+}
+
+    
 }

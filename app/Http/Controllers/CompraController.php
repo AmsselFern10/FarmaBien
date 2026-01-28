@@ -10,6 +10,9 @@ use App\Models\Compra;
 use App\Models\Proveedor;
 use App\Models\Producto;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+use Illuminate\Support\Facades\View;
 
 class CompraController extends Controller
 {
@@ -186,4 +189,106 @@ class CompraController extends Controller
 
         return response()->json(['es_unico' => $esUnico]);
     }
+    public function imprimir(Compra $compra)
+{
+    $compra->load([
+        'proveedor',
+        'usuario',
+        'detalles.producto.categoria',
+        'detalles.lote'
+    ]);
+
+    return view('compras.imprimir', compact('compra'));
+}
+
+/**
+ * Generar PDF de la compra
+ */
+public function generarPDF(Compra $compra)
+{
+    $compra->load([
+        'proveedor',
+        'usuario',
+        'detalles.producto.categoria',
+        'detalles.lote'
+    ]);
+
+    // Configuración de empresa (puedes moverlo a config o BD)
+    $empresa = [
+        'nombre' => config('app.name', 'FarmaBien'),
+        'ruc' => '20123456789',
+        'direccion' => 'Av. Principal 123, Lima',
+        'telefono' => '(01) 234-5678',
+        'email' => 'contacto@farmabien.com'
+    ];
+
+    $pdf = PDF::loadView('compras.pdf', compact('compra', 'empresa'));
+    
+    // Configurar orientación y tamaño
+    $pdf->setPaper('A4', 'portrait');
+    
+    $nombreArchivo = sprintf(
+        'Compra_%s_%s.pdf',
+        str_pad($compra->id, 6, '0', STR_PAD_LEFT),
+        $compra->fecha->format('Ymd')
+    );
+
+    return $pdf->download($nombreArchivo);
+}
+
+/**
+ * Generar ticket térmico (58mm o 80mm)
+ */
+public function imprimirTicket(Compra $compra)
+{
+    $compra->load([
+        'proveedor',
+        'usuario',
+        'detalles.producto.categoria',
+        'detalles.lote'
+    ]);
+
+    $empresa = [
+        'nombre' => config('app.name', 'FarmaBien'),
+        'ruc' => '20123456789',
+        'direccion' => 'Av. Principal 123, Lima',
+        'telefono' => '(01) 234-5678'
+    ];
+
+    return view('compras.ticket', compact('compra', 'empresa'));
+}
+
+/**
+ * Buscar compra por ID (para modal de búsqueda rápida)
+ */
+public function buscarPorId($id)
+{
+    try {
+        $compra = Compra::with([
+            'proveedor',
+            'usuario',
+            'detalles.producto'
+        ])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'compra' => [
+                'id' => $compra->id,
+                'fecha' => $compra->fecha->format('d/m/Y'),
+                'proveedor' => $compra->proveedor->nombre,
+                'total' => number_format($compra->total, 2),
+                'estado' => $compra->estado,
+                'productos_count' => $compra->detalles->count(),
+                'url_show' => route('compras.show', $compra),
+                'url_pdf' => route('compras.pdf', $compra),
+                'url_imprimir' => route('compras.imprimir', $compra),
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No se encontró la compra con ID: ' . $id
+        ], 404);
+    }
+}
 }

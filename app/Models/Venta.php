@@ -14,8 +14,8 @@ class Venta extends Model
         'cliente_id',
         'user_id',
         'anulado_por',
-        'reemplazada_por',        // ✅ NUEVO
-        'venta_original_id',      // ✅ NUEVO
+        'reemplazada_por',        
+        'venta_original_id',      
         'total',
         'metodo_pago',
         'estado',

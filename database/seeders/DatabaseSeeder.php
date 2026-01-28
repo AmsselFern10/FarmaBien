@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class, // Primero roles y permisos
             UserSeeder::class,           // Luego usuarios
+            PresentacionesProductoSeeder::class, // Presentaciones de productos
         ]);
     }
 }

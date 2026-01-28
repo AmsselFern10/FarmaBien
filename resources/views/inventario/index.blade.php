@@ -104,6 +104,7 @@
 </div>
 
 <!-- Resumen por Categoría -->
+<!-- Resumen por Categoría -->
 <div class="bg-white overflow-hidden shadow-sm rounded-lg mb-6">
     <div class="p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Inventario por Categoría</h3>
@@ -120,47 +121,68 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
+                    @php
+                        $totalValor = $valorizacion['valor_total'] ?? 0; // Total de todas las categorías
+                    @endphp
+
                     @foreach($resumenCategorias as $categoria)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="h-8 w-8 flex items-center justify-center rounded-full bg-blue-100">
-                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                    </svg>
-                                </div>
-                                <span class="ml-3 text-sm font-medium text-gray-900">{{ $categoria->categoria_nombre }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                            {{ $categoria->total_productos }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                            {{ number_format($categoria->stock_total) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-green-600">
-                            S/ {{ number_format($categoria->valor_total, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <div class="flex items-center justify-center">
-                                <div class="w-full max-w-xs">
-                                    <div class="bg-gray-200 rounded-full h-2">
-                                        <div class="bg-blue-600 h-2 rounded-full" 
-                                             style="width: {{ ($categoria->valor_total / $valorizacion['valor_total']) * 100 }}%"></div>
+                        @php
+                            // Calcular porcentaje seguro
+                            $valorCategoria = $categoria->valor_total ?? 0;
+                            $porcentaje = ($totalValor > 0) ? ($valorCategoria / $totalValor) * 100 : 0;
+                        @endphp
+
+                        <tr class="hover:bg-gray-50">
+                            <!-- Nombre categoría -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-blue-100">
+                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                        </svg>
                                     </div>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">
+                                        {{ $categoria->categoria_nombre ?? 'Sin Nombre' }}
+                                    </span>
                                 </div>
-                                <span class="ml-2 text-xs font-medium text-gray-700">
-                                    {{ number_format(($categoria->valor_total / $valorizacion['valor_total']) * 100, 1) }}%
-                                </span>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+
+                            <!-- Total productos -->
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                                {{ $categoria->total_productos ?? 0 }}
+                            </td>
+
+                            <!-- Stock total -->
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
+                                {{ number_format($categoria->stock_total ?? 0) }}
+                            </td>
+
+                            <!-- Valor total -->
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-green-600">
+                                S/ {{ number_format($valorCategoria, 2) }}
+                            </td>
+
+                            <!-- Barra porcentaje -->
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex items-center justify-center">
+                                    <div class="w-full max-w-xs">
+                                        <div class="bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded" style="width: {{ $porcentaje }}%"></div>
+                                        </div>
+                                    </div>
+                                    <span class="ml-2 text-xs font-medium text-gray-700">
+                                        {{ number_format($porcentaje, 1) }}%
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     

@@ -22,39 +22,38 @@ class ProductoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        $query = Producto::with(['categoria', 'lotes'])
-            ->orderBy('nombre');
+   public function index(Request $request)
+{
+    $query = Producto::with(['categoria', 'lotes'])
+        ->orderBy('nombre');
 
-        // Filtros
-        if ($request->filled('categoria_id')) {
-            $query->where('categoria_id', $request->categoria_id);
-        }
-
-        if ($request->filled('buscar')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('nombre', 'like', "%{$request->buscar}%")
-                  ->orWhere('codigo_barra', 'like', "%{$request->buscar}%");
-            });
-        }
-
-        if ($request->filled('requiere_receta')) {
-            $query->where('requiere_receta', $request->requiere_receta);
-        }
-
-        if ($request->filled('activo')) {
-            $query->where('activo', $request->activo);
-        } else {
-            $query->activos(); // Por defecto solo activos
-        }
-
-        $productos = $query->paginate(20)->appends($request->query());
-        $categorias = Categoria::activos()->orderBy('nombre')->get();
-
-        return view('productos.index', compact('productos', 'categorias'));
+    // Filtros
+    if ($request->filled('categoria_id')) {
+        $query->where('categoria_id', $request->categoria_id);
     }
 
+    if ($request->filled('buscar')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('nombre', 'like', "%{$request->buscar}%")
+              ->orWhere('codigo_barra', 'like', "%{$request->buscar}%");
+        });
+    }
+
+    if ($request->filled('requiere_receta')) {
+        $query->where('requiere_receta', $request->requiere_receta);
+    }
+
+    // ✅ CAMBIO PRINCIPAL: Filtro de activos/inactivos
+    if (!$request->has('mostrar_inactivos')) {
+        $query->where('activo', true);  // Solo activos por defecto
+    }
+    // Si checkbox marcado, muestra TODOS (activos + inactivos)
+
+    $productos = $query->paginate(20)->appends($request->query());
+    $categorias = Categoria::where('activo', true)->orderBy('nombre')->get();
+
+    return view('productos.index', compact('productos', 'categorias'));
+}
     /**
      * Show the form for creating a new resource.
      */

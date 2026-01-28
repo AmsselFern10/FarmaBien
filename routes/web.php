@@ -71,6 +71,23 @@ Route::middleware('auth')->group(function () {
     */
     Route::resource('compras', CompraController::class);
     
+     // Rutas de Impresión
+    Route::get('/compras/{compra}/imprimir', [CompraController::class, 'imprimir'])
+        ->name('compras.imprimir')
+        ->middleware('permission:ver compras');
+    
+    Route::get('/compras/{compra}/pdf', [CompraController::class, 'generarPDF'])
+        ->name('compras.pdf')
+        ->middleware('permission:ver compras');
+    
+    Route::get('/compras/{compra}/ticket', [CompraController::class, 'imprimirTicket'])
+        ->name('compras.ticket')
+        ->middleware('permission:ver compras');
+    
+    // Búsqueda por ID (modal rápido)
+    Route::get('/compras/buscar/{id}', [CompraController::class, 'buscarPorId'])
+        ->name('compras.buscar')
+        ->middleware('permission:ver compras');
     // Rutas adicionales para compras
     Route::post('compras/{compra}/anular', [CompraController::class, 'anular'])
         ->name('compras.anular')
@@ -99,27 +116,35 @@ Route::middleware('auth')->group(function () {
     | INVENTARIO
     |--------------------------------------------------------------------------
     */
-    Route::prefix('inventario')->name('inventario.')->group(function () {
-        Route::get('/', [InventarioController::class, 'index'])
-            ->name('index')
-            ->middleware('permission:ver movimientos inventario');
-        
-        Route::get('/movimientos', [InventarioController::class, 'movimientos'])
-            ->name('movimientos')
-            ->middleware('permission:ver movimientos inventario');
-        
-        Route::get('/lotes', [InventarioController::class, 'lotes'])
-            ->name('lotes')
-            ->middleware('permission:ver movimientos inventario');
-        
-        Route::get('/alertas', [InventarioController::class, 'alertas'])
-            ->name('alertas')
-            ->middleware('permission:ver movimientos inventario');
-        
-        Route::post('/ajuste', [InventarioController::class, 'ajuste'])
-            ->name('ajuste')
-            ->middleware('permission:ajustar inventario');
-    });
+   Route::prefix('inventario')->name('inventario.')->group(function () {
+    Route::get('/', [InventarioController::class, 'index'])
+        ->name('index')
+        ->middleware('permission:ver movimientos inventario');
+
+    Route::get('/movimientos', [InventarioController::class, 'movimientos'])
+        ->name('movimientos')
+        ->middleware('permission:ver movimientos inventario');
+
+    Route::get('/lotes', [InventarioController::class, 'lotes'])
+        ->name('lotes')
+        ->middleware('permission:ver movimientos inventario');
+
+    Route::get('/kardex-producto/{producto}', [InventarioController::class, 'kardexProducto'])
+        ->name('kardex-producto');
+
+    Route::get('/alertas', [InventarioController::class, 'alertas'])
+        ->name('alertas')
+        ->middleware('permission:ver movimientos inventario');
+
+    Route::get('/ajustar', [InventarioController::class, 'ajustar'])
+        ->name('ajustar')
+        ->middleware('permission:ajustar inventario');
+
+    Route::post('/ajustar', [InventarioController::class, 'storeAjuste'])
+        ->name('ajustar.store')
+        ->middleware('permission:ajustar inventario');
+});
+
 
     /*
     |--------------------------------------------------------------------------

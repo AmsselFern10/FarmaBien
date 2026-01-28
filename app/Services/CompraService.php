@@ -6,6 +6,7 @@ use App\Models\Compra;
 use App\Models\DetalleCompra;
 use App\Models\Lote;
 use App\Models\Producto;
+use App\Models\PresentacionProducto;
 use App\Models\MovimientoInventario;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +24,9 @@ class CompraService
     public function registrarCompra(array $data): Compra
     {
         return DB::transaction(function () use ($data) {
+            
+            // 0. Validar datos de presentaciones
+            $this->validarDatosCompra($data);
             
             // 1. Crear la compra
             $compra = Compra::create([
@@ -47,6 +51,7 @@ class CompraService
             return $compra->load([
                 'detalles.producto',
                 'detalles.lote',
+                'detalles.presentacion',
                 'proveedor',
                 'lotes'
             ]);
@@ -54,7 +59,7 @@ class CompraService
     }
 
     /**
-     * Procesar un detalle de compra (crear lote y registrar movimiento)
+     * Procesar un detalle de compra con soporte para presentaciones
      * 
      * @param Compra $compra
      * @param array $item
@@ -65,46 +70,121 @@ class CompraService
     {
         // 1. Validar que el producto exista
         $producto = Producto::findOrFail($item['producto_id']);
-
-        // 2. Crear el lote
+        
+        // 2. Obtener datos de presentación
+        $presentacionId = $item['presentacion_id'] ?? null;
+        $cantidadPresentaciones = $item['cantidad_presentaciones'] ?? $item['cantidad'] ?? 1;
+        $precioUnitario = $item['precio_unitario'] ?? $producto->precio_compra;
+        
+        // 3. Determinar unidades por presentación
+        if ($presentacionId) {
+            $presentacion = PresentacionProducto::findOrFail($presentacionId);
+            $unidadesPorPresentacion = $presentacion->unidades_por_presentacion;
+            $tipoPresentacion = $presentacion->nombre;
+        } else {
+            // Unidad base
+            $unidadesPorPresentacion = 1;
+            $tipoPresentacion = 'Unidad';
+        }
+        
+        // 4. Calcular totales
+        $cantidadUnidadesBase = $cantidadPresentaciones * $unidadesPorPresentacion;
+        $precioPresentacion = round($precioUnitario * $unidadesPorPresentacion, 2);
+        $subtotal = round($precioPresentacion * $cantidadPresentaciones, 2);
+        
+        // 5. Crear el lote (con unidades base)
         $lote = Lote::create([
             'producto_id' => $producto->id,
             'compra_id' => $compra->id,
             'proveedor_id' => $compra->proveedor_id,
             'numero_lote' => $item['numero_lote'],
             'fecha_vencimiento' => $item['fecha_vencimiento'],
-            'stock_inicial' => $item['cantidad'],
-            'precio_compra' => $item['precio_unitario'],
+            'stock_inicial' => $cantidadUnidadesBase, // ← IMPORTANTE: unidades base
+            'precio_compra' => $precioUnitario, // ← Precio unitario base
             'activo' => true,
         ]);
 
-        // 3. Calcular subtotal
-        $subtotal = $item['cantidad'] * $item['precio_unitario'];
-
-        // 4. Crear detalle de compra
-        DetalleCompra::create([
+        // 6. Crear detalle de compra
+        $detalle = DetalleCompra::create([
             'compra_id' => $compra->id,
             'producto_id' => $producto->id,
             'lote_id' => $lote->id,
-            'cantidad' => $item['cantidad'],
-            'precio_unitario' => $item['precio_unitario'],
+            'presentacion_id' => $presentacionId,
+            'tipo_presentacion' => $tipoPresentacion,
+            'unidades_por_presentacion' => $unidadesPorPresentacion,
+            'cantidad_presentaciones' => $cantidadPresentaciones,
+            // cantidad_unidades_base se calcula automáticamente en la BD
+            'cantidad_legacy' => $cantidadUnidadesBase, // Para compatibilidad
+            'precio_unitario' => $precioUnitario,
             'subtotal' => $subtotal,
         ]);
 
-        // 5. Registrar movimiento de inventario (ENTRADA)
+        // 7. Registrar movimiento de inventario (ENTRADA con unidades base)
         MovimientoInventario::create([
             'producto_id' => $producto->id,
             'lote_id' => $lote->id,
             'user_id' => Auth::id(),
             'tipo' => 'entrada',
-            'cantidad' => $item['cantidad'], // Positivo para entrada
+            'cantidad' => $cantidadUnidadesBase, // ← IMPORTANTE: unidades base
             'origen' => 'compra',
             'origen_id' => $compra->id,
-            'motivo' => "Compra #{$compra->id} - Lote {$lote->numero_lote}",
+            'motivo' => $presentacionId 
+                ? "Compra #{$compra->id} - {$cantidadPresentaciones} {$tipoPresentacion}(s) x {$unidadesPorPresentacion} = {$cantidadUnidadesBase} unidades - Lote {$lote->numero_lote}"
+                : "Compra #{$compra->id} - {$cantidadUnidadesBase} unidades - Lote {$lote->numero_lote}",
             'fecha_movimiento' => now(),
         ]);
 
+        // 8. Actualizar precio de compra de referencia en producto
+        $producto->update([
+            'precio_compra' => $precioUnitario // Siempre el precio unitario base
+        ]);
+
         return $subtotal;
+    }
+
+    /**
+     * Validar datos de compra (nuevo método)
+     * 
+     * @param array $data
+     * @throws Exception
+     */
+    protected function validarDatosCompra(array $data): void
+    {
+        if (!isset($data['productos']) || !is_array($data['productos'])) {
+            throw new Exception('Debe proporcionar al menos un producto.');
+        }
+
+        foreach ($data['productos'] as $index => $item) {
+            // Validar que si tiene presentacion_id, exista y esté activa
+            if (isset($item['presentacion_id']) && $item['presentacion_id']) {
+                $presentacion = PresentacionProducto::find($item['presentacion_id']);
+                
+                if (!$presentacion) {
+                    throw new Exception("La presentación seleccionada en el producto #{$index} no existe.");
+                }
+                
+                if (!$presentacion->activo) {
+                    throw new Exception("La presentación '{$presentacion->nombre}' en el producto #{$index} no está activa.");
+                }
+                
+                // Validar que la presentación pertenece al producto
+                if ($presentacion->producto_id != $item['producto_id']) {
+                    throw new Exception("La presentación seleccionada no corresponde al producto en el ítem #{$index}.");
+                }
+            }
+            
+            // Validar cantidad de presentaciones
+            $cantidad = $item['cantidad_presentaciones'] ?? $item['cantidad'] ?? 0;
+            if ($cantidad < 1) {
+                throw new Exception("La cantidad en el producto #{$index} debe ser mayor a 0.");
+            }
+
+            // Validar precio unitario
+            $precioUnitario = $item['precio_unitario'] ?? 0;
+            if ($precioUnitario < 0) {
+                throw new Exception("El precio unitario en el producto #{$index} no puede ser negativo.");
+            }
+        }
     }
 
     /**
@@ -119,36 +199,30 @@ class CompraService
     {
         return DB::transaction(function () use ($compraId, $motivo) {
             
-            // 1. Obtener la compra
             $compra = Compra::with(['detalles', 'lotes'])->findOrFail($compraId);
 
-            // 2. Validar que pueda anularse
             if (!$compra->puedeAnularse()) {
                 throw new Exception("La compra #{$compraId} ya está anulada.");
             }
 
-            // 3. Verificar que los lotes no hayan sido vendidos
             foreach ($compra->lotes as $lote) {
                 if ($lote->stock_actual < $lote->stock_inicial) {
                     throw new Exception(
                         "No se puede anular la compra porque el lote {$lote->numero_lote} " .
-                        "ya tiene productos vendidos. Stock inicial: {$lote->stock_inicial}, " .
-                        "Stock actual: {$lote->stock_actual}"
+                        "ya tiene productos vendidos."
                     );
                 }
             }
 
-            // 4. Desactivar lotes asociados
             foreach ($compra->lotes as $lote) {
                 $lote->update(['activo' => false]);
 
-                // Registrar movimiento de anulación
                 MovimientoInventario::create([
                     'producto_id' => $lote->producto_id,
                     'lote_id' => $lote->id,
                     'user_id' => Auth::id(),
                     'tipo' => 'salida',
-                    'cantidad' => -$lote->stock_inicial, // Negativo para revertir entrada
+                    'cantidad' => -$lote->stock_inicial,
                     'origen' => 'anulacion_compra',
                     'origen_id' => $compra->id,
                     'motivo' => "Anulación de compra #{$compra->id}: {$motivo}",
@@ -156,7 +230,24 @@ class CompraService
                 ]);
             }
 
-            // 5. Actualizar estado de la compra
+            // Recalcular precio_compra de los productos afectados
+            foreach ($compra->detalles as $detalle) {
+                $producto = $detalle->producto;
+                
+                // Buscar el último precio válido
+                $ultimoPrecio = DetalleCompra::where('producto_id', $producto->id)
+                    ->whereHas('compra', function($q) {
+                        $q->where('estado', 'recibida')
+                          ->whereNull('reemplazada_por');
+                    })
+                    ->orderBy('id', 'desc')
+                    ->first();
+                
+                $producto->update([
+                    'precio_compra' => $ultimoPrecio?->precio_unitario
+                ]);
+            }
+
             $compra->update([
                 'estado' => 'anulada',
                 'anulado_por' => Auth::id(),
@@ -166,48 +257,6 @@ class CompraService
 
             return $compra->fresh(['detalles', 'lotes', 'anuladoPor']);
         });
-    }
-
-    /**
-     * Obtener compras recientes
-     * 
-     * @param int $limite
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function comprasRecientes(int $limite = 10)
-    {
-        return Compra::with(['proveedor', 'usuario', 'detalles.producto'])
-            ->recibidas()
-            ->orderBy('fecha', 'desc')
-            ->limit($limite)
-            ->get();
-    }
-
-    /**
-     * Obtener total de compras del mes
-     * 
-     * @return float
-     */
-    public function totalComprasDelMes(): float
-    {
-        return Compra::whereMonth('fecha', now()->month)
-            ->whereYear('fecha', now()->year)
-            ->recibidas()
-            ->sum('total');
-    }
-
-    /**
-     * Validar número de lote único para un producto
-     * 
-     * @param int $productoId
-     * @param string $numeroLote
-     * @return bool
-     */
-    public function esNumeroLoteUnico(int $productoId, string $numeroLote): bool
-    {
-        return !Lote::where('producto_id', $productoId)
-            ->where('numero_lote', $numeroLote)
-            ->exists();
     }
 
     /**
@@ -227,6 +276,9 @@ class CompraService
     public function modificarCompra(int $compraId, array $data, string $motivo): Compra
     {
         return DB::transaction(function () use ($compraId, $data, $motivo) {
+            
+            // 0. Validar datos de presentaciones
+            $this->validarDatosCompra($data);
             
             // 1. Obtener la compra original
             $compraOriginal = Compra::with(['detalles', 'lotes'])->findOrFail($compraId);
@@ -291,11 +343,54 @@ class CompraService
             return $nuevaCompra->load([
                 'detalles.producto',
                 'detalles.lote',
+                'detalles.presentacion',
                 'proveedor',
                 'lotes',
                 'compraOriginal'
             ]);
         });
+    }
+
+    /**
+     * Obtener compras recientes
+     * 
+     * @param int $limite
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function comprasRecientes(int $limite = 10)
+    {
+        return Compra::with(['proveedor', 'usuario', 'detalles.producto'])
+            ->recibidas()
+            ->orderBy('fecha', 'desc')
+            ->limit($limite)
+            ->get();
+    }
+
+    /**
+     * Obtener total de compras del mes
+     * 
+     * @return float
+     */
+    public function totalComprasDelMes(): float
+    {
+        return Compra::whereMonth('fecha', now()->month)
+            ->whereYear('fecha', now()->year)
+            ->recibidas()
+            ->sum('total');
+    }
+
+    /**
+     * Validar número de lote único para un producto
+     * 
+     * @param int $productoId
+     * @param string $numeroLote
+     * @return bool
+     */
+    public function esNumeroLoteUnico(int $productoId, string $numeroLote): bool
+    {
+        return !Lote::where('producto_id', $productoId)
+            ->where('numero_lote', $numeroLote)
+            ->exists();
     }
 
     /**

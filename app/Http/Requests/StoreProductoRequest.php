@@ -20,7 +20,9 @@ class StoreProductoRequest extends FormRequest
             'imagen' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'categoria_id' => 'required|exists:categorias,id',
             'precio_venta' => 'required|numeric|min:0',
+            'precio_compra' => 'nullable|numeric|min:0',  // ✅ nuevo campo
             'stock_minimo' => 'required|integer|min:0',
+            'ubicacion' => 'nullable|string|max:100',    // ✅ nuevo campo
             'requiere_receta' => 'boolean',
             'activo' => 'boolean',
         ];
@@ -29,6 +31,7 @@ class StoreProductoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'codigo_barra.unique' => 'El código de barras ya está registrado.',
             'codigo_barra.unique' => 'El código de barras ya está registrado.',
             'nombre.required' => 'El nombre del producto es obligatorio.',
             'nombre.max' => 'El nombre no puede exceder 150 caracteres.',
@@ -39,8 +42,10 @@ class StoreProductoRequest extends FormRequest
             'categoria_id.exists' => 'La categoría seleccionada no existe.',
             'precio_venta.required' => 'El precio de venta es obligatorio.',
             'precio_venta.min' => 'El precio debe ser mayor o igual a 0.',
+            'precio_compra.min' => 'El precio de compra debe ser mayor o igual a 0.', 
             'stock_minimo.required' => 'El stock mínimo es obligatorio.',
             'stock_minimo.min' => 'El stock mínimo debe ser mayor o igual a 0.',
+            'ubicacion.max' => 'La ubicación no puede exceder 100 caracteres.', 
         ];
     }
 }
