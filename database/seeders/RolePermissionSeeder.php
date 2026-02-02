@@ -144,6 +144,7 @@ class RolePermissionSeeder extends Seeder
             'registrar recetas',
             'ver ventas recetas',
             
+            
             // Alertas
             'ver alertas vencimientos', // Para no vender productos vencidos
         ]);

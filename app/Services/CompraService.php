@@ -134,10 +134,7 @@ class CompraService
             'fecha_movimiento' => now(),
         ]);
 
-        // 8. Actualizar precio de compra de referencia en producto
-        $producto->update([
-            'precio_compra' => $precioUnitario // Siempre el precio unitario base
-        ]);
+    
 
         return $subtotal;
     }

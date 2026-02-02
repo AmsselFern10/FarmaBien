@@ -10,6 +10,9 @@ use App\Models\User;
 use App\Models\Cliente;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
+
+
 
 class DashboardController extends Controller
 {
@@ -147,48 +150,69 @@ $productosAlerta = $productos->filter(fn($p) => $p->lotes->sum('stock') <= $p->s
      * Dashboard para Cajeros
      */
     private function dashboardCajero()
-    {
-        $hoy = Carbon::today();
-        $usuario = auth()->user();
-        
-        // Ventas del día del cajero
-        $misVentasHoy = Venta::whereDate('fecha', $hoy)
-            ->where('usuario_id', $usuario->id)
-            ->where('estado', 'completada')
-            ->get();
-            
-        $totalVentasHoy = $misVentasHoy->sum('total');
-        $cantidadVentasHoy = $misVentasHoy->count();
-        
-        // Última venta
-        $ultimaVenta = Venta::where('usuario_id', $usuario->id)
-            ->latest('created_at')
-            ->first();
+{
+    $lotesProximosVencer = collect();
+    $productosStockBajo = collect();
+    $usuario = auth()->user();
+    $hoy = now()->toDateString();
 
-        // Productos más vendidos por el cajero hoy
-        $productosMasVendidos = DB::table('detalle_ventas')
-            ->join('ventas', 'detalle_ventas.venta_id', '=', 'ventas.id')
-            ->join('productos', 'detalle_ventas.producto_id', '=', 'productos.id')
-            ->whereDate('ventas.fecha', $hoy)
-            ->where('ventas.usuario_id', $usuario->id)
-            ->where('ventas.estado', 'completada')
-            ->select(
-                'productos.nombre',
-                DB::raw('SUM(detalle_ventas.cantidad) as total_vendido')
-            )
-            ->groupBy('productos.id', 'productos.nombre')
-            ->orderBy('total_vendido', 'desc')
-            ->limit(5)
-            ->get();
+    // Ventas del día
+    $ventasHoyQuery = Venta::whereDate('fecha', $hoy)
+        ->where('user_id', $usuario->id)
+        ->where('estado', 'completada');
 
-        return view('dashboard.cajero', compact(
-            'misVentasHoy',
-            'totalVentasHoy',
-            'cantidadVentasHoy',
-            'ultimaVenta',
-            'productosMasVendidos'
-        ));
-    }
+    $totalVentasHoy = $ventasHoyQuery->sum('total');
+    $cantidadVentasHoy = $ventasHoyQuery->count();
+
+   
+    $ventasMes = Venta::whereMonth('fecha', now()->month)
+        ->whereYear('fecha', now()->year)
+        ->where('user_id', $usuario->id)
+        ->where('estado', 'completada')
+        ->sum('total');
+
+    
+    $ultimaVenta = Venta::where('user_id', $usuario->id)
+        ->where('estado', 'completada')
+        ->latest('created_at')
+        ->first();
+
+
+    $ventasRecientes= Venta::where('user_id', $usuario->id)
+        ->where('estado', 'completada')
+        ->latest('created_at')
+        ->take(5)
+        ->get();
+
+    // Productos más vendidos hoy
+    $productosMasVendidos = DB::table('detalle_venta')
+        ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
+        ->join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
+        ->whereDate('ventas.fecha', $hoy)
+        ->where('ventas.user_id', $usuario->id)
+        ->where('ventas.estado', 'completada')
+        ->select(
+            'productos.nombre',
+            DB::raw('SUM(detalle_venta.cantidad) as total_vendido')
+        )
+        ->groupBy('productos.id', 'productos.nombre')
+        ->orderByDesc('total_vendido')
+        ->limit(15)
+        ->get();
+
+   return view('dashboard.cajero', compact(
+    'totalVentasHoy',
+    'cantidadVentasHoy',
+    'ventasMes',
+    'ultimaVenta',
+    'productosMasVendidos',
+    'lotesProximosVencer',
+    'productosStockBajo',
+    'ventasRecientes'
+));
+
+}
+
 
     /**
      * Dashboard para Encargado de Inventario

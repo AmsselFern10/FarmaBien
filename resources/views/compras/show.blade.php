@@ -178,7 +178,22 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Detalle de Productos</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ $compra->detalles->count() }} producto(s)</p>
+                        @php
+                            $totalUnidades = $compra->detalles->sum(function ($d) {
+                                $cantPres = $d->cantidad_presentaciones ?? null;
+                                $unidPres = $d->unidades_por_presentacion ?? null;
+                                if ($cantPres !== null && $unidPres !== null) {
+                                    return (int)$cantPres * (int)$unidPres;
+                                }
+                                return (int)($d->cantidad ?? 0);
+                            });
+                        @endphp
+                        <p class="text-sm text-slate-500 dark:text-slate-400">
+                            {{ $compra->detalles->count() }} producto(s)
+                            <span class="mx-2">•</span>
+                            <span class="font-medium text-slate-700 dark:text-slate-300">{{ $totalUnidades }}</span>
+                            <span>unidad(es) base</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -200,26 +215,82 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
                             <td class="px-4 py-3">
                                 <div class="flex items-center">
-                                    <div class="h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="text-white font-bold text-sm">{{ substr($detalle->producto->nombre, 0, 2) }}</span>
+                                    @php
+                                        $img = $detalle->producto->imagen ?? null;
+                                        $imgUrl = null;
+                                        if (!empty($img)) {
+                                            $imgUrl = \Illuminate\Support\Str::startsWith($img, ['http://', 'https://'])
+                                                ? $img
+                                                : asset('storage/' . ltrim($img, '/'));
+                                        }
+                                    @endphp
+                                    <div class="h-10 w-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 bg-slate-100 dark:bg-gray-700">
+                                        @if($imgUrl)
+                                            <img src="{{ $imgUrl }}" alt="{{ $detalle->producto->nombre }}" class="h-full w-full object-cover">
+                                        @else
+                                            <div class="h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                                <span class="text-white font-bold text-sm">{{ substr($detalle->producto->nombre, 0, 2) }}</span>
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="ml-3">
                                         <div class="text-sm font-semibold text-slate-900 dark:text-white">{{ $detalle->producto->nombre }}</div>
                                         <div class="text-xs text-slate-500 dark:text-slate-400">{{ $detalle->producto->categoria->nombre }}</div>
+                                        @php
+                                            $presNombre = null;
+                                            if (!empty($detalle->presentacion_id) && isset($detalle->presentacion)) {
+                                                $presNombre = $detalle->presentacion->nombre ?? null;
+                                            }
+                                            if (empty($presNombre) && !empty($detalle->tipo_presentacion)) {
+                                                $presNombre = $detalle->tipo_presentacion;
+                                            }
+                                            $unidPres = $detalle->unidades_por_presentacion ?? 1;
+                                            $cantPres = $detalle->cantidad_presentaciones ?? null;
+                                        @endphp
+                                        <div class="text-xs mt-0.5 text-slate-600 dark:text-slate-300">
+                                            <span class="font-medium">Presentación:</span>
+                                            <span>{{ $presNombre ?? 'Unidad base' }}</span>
+                                            <span class="text-slate-400 dark:text-slate-500">•</span>
+                                            <span>x{{ (int)$unidPres }}</span>
+                                            <span class="text-slate-400 dark:text-slate-500">unid.</span>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-sm font-mono font-semibold text-slate-900 dark:text-white">{{ $detalle->lote->numero_lote }}</span>
+                                <span class="text-sm font-mono font-semibold text-slate-900 dark:text-white">{{ optional($detalle->lote)->numero_lote ?? ($detalle->numero_lote ?? '-') }}</span>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-sm text-slate-900 dark:text-white">{{ $detalle->lote->fecha_vencimiento->format('d/m/Y') }}</span>
+                                <span class="text-sm text-slate-900 dark:text-white">{{ optional(optional($detalle->lote)->fecha_vencimiento)->format('d/m/Y') ?? (optional($detalle->fecha_vencimiento)->format('d/m/Y') ?? '-') }}</span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ $detalle->cantidad }}</span>
+                                @php
+                                    $unidPres = (int)($detalle->unidades_por_presentacion ?? 1);
+                                    $cantPres = $detalle->cantidad_presentaciones ?? null;
+                                    $totalUnid = (int)($detalle->cantidad ?? 0);
+                                    if ($cantPres !== null) {
+                                        $totalUnid = (int)$cantPres * $unidPres;
+                                    }
+                                @endphp
+                                <div class="text-sm font-bold text-slate-900 dark:text-white">{{ $totalUnid }}</div>
+                                @if($cantPres !== null)
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                        {{ (int)$cantPres }} × {{ $unidPres }} (presentación)
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <span class="text-sm text-slate-900 dark:text-white">S/ {{ number_format($detalle->precio_unitario, 2) }}</span>
+                                @php
+                                    $unidPres = (int)($detalle->unidades_por_presentacion ?? 1);
+                                    $precioUnit = (float)($detalle->precio_unitario ?? 0);
+                                    $precioPres = $precioUnit * $unidPres;
+                                @endphp
+                                <div class="text-sm text-slate-900 dark:text-white">S/ {{ number_format($precioUnit, 2) }}</div>
+                                @if($unidPres > 1)
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                        S/ {{ number_format($precioPres, 2) }} / pres.
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <span class="inline-flex items-center px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold text-sm">
