@@ -262,10 +262,40 @@
                     <td colspan="4" class="item-name">{{ $detalle->producto->nombre }}</td>
                 </tr>
                 <tr>
-                    <td class="item-lote">Lote: {{ $detalle->lote->numero_lote }}</td>
-                    <td class="center">{{ $detalle->cantidad }}</td>
-                    <td class="right">{{ number_format($detalle->precio_unitario, 2) }}</td>
-                    <td class="right">{{ number_format($detalle->subtotal, 2) }}</td>
+                    <td colspan="4" class="item-lote">
+                        @if($detalle->usaPresentacion())
+                            Pres: {{ $detalle->nombre_presentacion }} @if($detalle->unidades_por_presentacion > 1)(x{{ (int) $detalle->unidades_por_presentacion }})@endif
+                            | Cant: {{ (int) $detalle->cantidad_presentaciones }}
+                            @if($detalle->unidades_por_presentacion > 1)
+                                → {{ (int) ($detalle->cantidad_unidades_base ?? $detalle->cantidad) }} unid
+                            @endif
+                        @else
+                            Unidad base | Cant: {{ (int) ($detalle->cantidad_unidades_base ?? $detalle->cantidad) }}
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                  <tr>
+    <td class="item-lote">
+        {{-- Lote: {{ $detalle->lote->numero_lote ?? '-' }}
+        @if($detalle->lote?->fecha_vencimiento)
+            | Venc: {{ $detalle->lote->fecha_vencimiento->format('d/m/Y') }}
+        @endif --}}
+    </td>
+
+    <td class="right">
+        {{ (int) ($detalle->cantidad_unidades_base ?? $detalle->cantidad) }}
+    </td>
+
+    <td class="right">
+        {{ number_format((float) $detalle->precio_unitario, 2) }}
+    </td>
+
+    <td class="right">
+        {{ number_format((float) $detalle->subtotal, 2) }}
+    </td>
+</tr>
+
                 </tr>
                 @endforeach
             </tbody>

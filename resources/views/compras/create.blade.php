@@ -27,7 +27,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-1 lg:px-3 py-0 pb-2">
 
     {{-- Errores --}}
     @if ($errors->any())
@@ -85,12 +85,11 @@
                            class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <div class="md:text-right">
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Total</label>
-                    <div class="inline-flex items-center justify-end w-full md:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold">
-                        S/ <span id="totalDisplay" class="ml-2">0.00</span>
-                    </div>
-                    <input type="hidden" name="total" id="total" value="0">
+                <div class="md:col-span-3">
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                    <textarea name="observaciones" rows="3"
+                              placeholder="Opcional: notas de la compra (proveedor, factura, condiciones, etc.)"
+                              class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('observaciones') }}</textarea>
                 </div>
             </div>
             </div>
@@ -198,19 +197,19 @@
             {{-- Vista Tabla --}}
             <div id="vistaTabla" class="vista-contenido">
                 <div class="overflow-x-auto overflow-y-visible rounded-xl border border-gray-200 dark:border-gray-700">
-                    <table id="tablaProductos" class="min-w-[1100px] w-full text-sm table-fixed">
+                    <table id="tablaProductos" class="min-w-[1600px] w-full text-sm table-fixed">
                         <thead class="bg-gray-50 dark:bg-gray-900/40">
                         <tr id="theadRowProductos" class="text-left text-slate-700 dark:text-slate-300">
                             <th class="px-2 py-3 w-10 text-center"></th>
-                            <th data-col="1" class="px-3 py-3 relative select-none th-resizable">Producto<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="2" class="px-3 py-3 relative select-none th-resizable">Presentación<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="3" class="px-3 py-3 text-center w-28 relative select-none th-resizable">Unid/Pres<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="4" class="px-3 py-3 w-28 text-right relative select-none th-resizable">Cantidad<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="5" class="px-3 py-3 text-center w-28 relative select-none th-resizable">Total unid<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="6" class="px-3 py-3 w-36 relative select-none th-resizable">Lote<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="7" class="px-3 py-3 w-36 relative select-none th-resizable">Venc.<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="8" class="px-3 py-3 w-40 text-right relative select-none th-resizable">Precio unit<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
-                            <th data-col="9" class="px-3 py-3 w-40 text-right relative select-none th-resizable">Subtotal<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="1" class="px-3 py-3 relative select-none th-resizable min-w-[80px] w-[90px]">Producto<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="2" class="px-3 py-3 relative select-none th-resizable min-w-[100px] w-[140px]">Presentación<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="3" class="px-3 py-3 text-center relative select-none th-resizable min-w-[20px] w-[80px]">Unid/Pres<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="4" class="px-3 py-3 text-center relative select-none th-resizable min-w-[20px] w-[100px]">Cantidad<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="5" class="px-3 py-3 text-center relative select-none th-resizable min-w-[20px] w-[80px]">Total unid<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="6" class="px-3 py-3 relative select-none th-resizable min-w-[50px] w-[80px]">Lote<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="7" class="px-3 py-3 relative select-none th-resizable min-w-[110px] w-[120px]">Venc.<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="8" class="px-3 py-3 text-right relative select-none th-resizable min-w-[110px] w-[120px]">Precio unit<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="9" class="px-3 py-3 text-right relative select-none th-resizable min-w-[90px] w-[100px]">Subtotal<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
                             <th class="px-3 py-3 w-16 text-center"></th>
                         </tr>
                         </thead>
@@ -221,6 +220,9 @@
                 <div id="avisoSinProductos" class="mt-4 text-sm text-slate-600 dark:text-slate-400">
                     Aún no has agregado productos.
                 </div>
+
+                  
+              
             </div>
 
             {{-- Vista Cards --}}
@@ -230,6 +232,52 @@
                     Aún no has agregado productos.
                 </div>
             </div>
+
+            {{-- Resumen Total --}}
+<div class="mt-6 flex justify-end">
+    <div class="w-full md:w-96 bg-white dark:bg-gray-800
+                border border-gray-200 dark:border-gray-700
+                rounded-xl shadow-sm p-4 space-y-3">
+
+        <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Subtotal</span>
+            <span class="text-sm font-bold text-slate-900 dark:text-white">
+                S/ <span id="subtotalDisplay">0.00</span>
+            </span>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+            <label for="descuento" class="text-sm font-semibold text-slate-600 dark:text-slate-400">Descuento (%)</label>
+            <div class="flex items-center gap-2">
+                <input type="number" step="0.01" min="0" max="100" name="descuento" id="descuento"
+                       value="{{ old('descuento', 0) }}"
+                       class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">%</span>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 -mt-1">
+            <span class="text-xs text-slate-500 dark:text-slate-400">Monto descuento</span>
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                S/ <span id="descuentoMontoDisplay">0.00</span>
+            </span>
+        </div>
+
+        <p id="descuentoHint" class="text-xs text-slate-500 dark:text-slate-400 hidden">
+            El descuento fue ajustado para estar entre 0% y 100%.
+        </p>
+
+        <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Total de la compra</span>
+            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                S/ <span id="totalDisplay">{{ number_format(old('total', $compra->total ?? 0), 2) }}</span>
+            </span>
+        </div>
+
+        <input type="hidden" name="total" id="total" value="{{ old('total', $compra->total ?? 0) }}">
+    </div>
+</div>
+
             </div>
         </div>
 
@@ -481,6 +529,18 @@
 th.th-resizable{overflow:visible;}
 /* Allow rows to grow naturally */
 #vistaTabla td{vertical-align:top;}
+
+/* ===== MIN WIDTHS + NO VERTICAL EXPAND (Producto) ===== */
+#tablaProductos th[data-col="1"], #tablaProductos td[data-col="1"]{min-width:240px;}
+#tablaProductos th[data-col="2"], #tablaProductos td[data-col="2"]{min-width:260px;}
+#tablaProductos th[data-col="3"], #tablaProductos td[data-col="3"]{min-width:80px;}
+#tablaProductos th[data-col="4"], #tablaProductos td[data-col="4"]{min-width:120px;}
+#tablaProductos th[data-col="5"], #tablaProductos td[data-col="5"]{min-width:80px;}
+#tablaProductos th[data-col="6"], #tablaProductos td[data-col="6"]{min-width:140px;}
+#tablaProductos th[data-col="7"], #tablaProductos td[data-col="7"]{min-width:140px;}
+#tablaProductos th[data-col="8"], #tablaProductos td[data-col="8"]{min-width:150px;}
+#tablaProductos th[data-col="9"], #tablaProductos td[data-col="9"]{min-width:150px;}
+#tablaProductos td[data-col="1"]{white-space:normal;word-break:break-word;}
 </style>
 <script>
 // ================================
@@ -506,8 +566,16 @@ function capturarIndicesDesdeDOM() {
 const estadoDetalles = {}; // { index: { producto_id, presentacion_id, unidades, cantidad, lote, vence, precio, tipo_presentacion, nombre_producto } }
 
 // Lee valores desde DOM (tabla o card) para un index
+// IMPORTANTE: se “scopéa” al contenedor #producto_{index} para evitar tomar inputs de la vista oculta
+// cuando existen dos vistas en el DOM (tabla + cards) durante el cambio.
 function capturarEstadoIndex(index) {
-    const get = (sel) => document.querySelector(sel);
+    const row = document.getElementById(`producto_${index}`);
+    if (!row) return;
+
+    // Primero sincroniza hidden desde visibles
+    sincronizarHiddenDesdeVisibles(index);
+
+    const get = (sel) => row.querySelector(sel);
 
     const productoIdEl = get(`input[name="productos[${index}][producto_id]"]`);
     const productoSelectEl = get(`select[name="productos[${index}][producto_id]"]`);
@@ -524,7 +592,7 @@ function capturarEstadoIndex(index) {
         producto_id: (productoIdEl ? productoIdEl.value : (productoSelectEl ? productoSelectEl.value : '')),
         presentacion_id: presentacionIdEl ? presentacionIdEl.value : '',
         tipo_presentacion: tipoPresEl ? tipoPresEl.value : '',
-        unidades: unidadesHiddenEl ? unidadesHiddenEl.value : (document.querySelector(`.input-unidades-${index}`)?.value || '1'),
+        unidades: unidadesHiddenEl ? unidadesHiddenEl.value : (get(`.input-unidades-${index}`)?.value || '1'),
         cantidad: cantidadEl ? cantidadEl.value : '1',
         lote: loteEl ? loteEl.value : '',
         vence: venceEl ? venceEl.value : '',
@@ -535,6 +603,97 @@ function capturarEstadoIndex(index) {
 function capturarEstadoActual() {
     indicesActivos.forEach(i => capturarEstadoIndex(i));
 }
+
+
+
+// Copia inputs visibles -> hidden inputs (para submit y para re-render consistente)
+function sincronizarHiddenDesdeVisibles(index) {
+    const row = document.getElementById(`producto_${index}`);
+    if (!row) return;
+
+    const cantidad = row.querySelector(`.input-cantidad-${index}`);
+    const lote = row.querySelector(`.input-lote-${index}`);
+    const vence = row.querySelector(`.input-vence-${index}`);
+    const precio = row.querySelector(`.input-precio-${index}`);
+    const unidadesInput = row.querySelector(`.input-unidades-${index}`);
+    const selectPres = row.querySelector(`.select-presentacion-${index}`);
+
+    const setHidden = (name, val) => {
+        const el = row.querySelector(`input[name="productos[${index}][${name}]"]`);
+        if (el) el.value = (val ?? '');
+    };
+
+    // Unidades / Presentación
+    const unidades = unidadesInput ? (unidadesInput.value || '1') : '1';
+    setHidden('unidades_por_presentacion', unidades);
+    const hiddenUn = row.querySelector(`.hidden-unidades-${index}`);
+    if (hiddenUn) hiddenUn.value = unidades;
+
+    // Presentación
+    if (selectPres) {
+        setHidden('presentacion_id', selectPres.value || '');
+    }
+
+    // Cantidad
+    if (cantidad) setHidden('cantidad_presentaciones', cantidad.value || '1');
+
+    // Lote y vencimiento
+    if (lote) setHidden('numero_lote', lote.value || '');
+    if (vence) setHidden('fecha_vencimiento', vence.value || '');
+
+    // Precio unitario
+    if (precio) setHidden('precio_unitario', precio.value || '0');
+}
+
+// ================================
+//  Normaliza data-col (anti-bug al mover/resize columnas)
+//  Asegura que cada celda editable tenga data-col, para no perder inputs.
+// ================================
+function normalizarDataColsFila(tr) {
+    if (!tr) return;
+    // Producto
+    const tdProducto = tr.querySelector('td[data-col="1"]') || (tr.querySelector('input[name*="[producto_id]"], select[name*="[producto_id]"]')?.closest('td'));
+    if (tdProducto) tdProducto.dataset.col = '1';
+
+    // Presentación (select)
+    const tdPres = tr.querySelector('td[data-col="2"]') || (tr.querySelector('.select-presentacion')?.closest('td'));
+    if (tdPres) tdPres.dataset.col = '2';
+
+    // Unid/Pres
+    const tdUnid = tr.querySelector('td[data-col="3"]') || (tr.querySelector('input[name*="[unidades_por_presentacion]"]')?.closest('td'));
+    if (tdUnid) tdUnid.dataset.col = '3';
+
+    // Cantidad
+    const tdCant = tr.querySelector('td[data-col="4"]') || (tr.querySelector('input[name*="[cantidad_presentaciones]"]')?.closest('td'));
+    if (tdCant) tdCant.dataset.col = '4';
+
+    // Total unid (span o input readonly)
+    const tdTotalU = tr.querySelector('td[data-col="5"]') || (tr.querySelector('[data-total-unid], .total-unid, .totalUnidDisplay')?.closest('td'));
+    if (tdTotalU) tdTotalU.dataset.col = '5';
+
+    // Lote
+    const tdLote = tr.querySelector('td[data-col="6"]') || (tr.querySelector('textarea[name*="[numero_lote]"], input[name*="[numero_lote]"]')?.closest('td'));
+    if (tdLote) tdLote.dataset.col = '6';
+
+    // Vencimiento
+    const tdVenc = tr.querySelector('td[data-col="7"]') || (tr.querySelector('input[name*="[fecha_vencimiento]"]')?.closest('td'));
+    if (tdVenc) tdVenc.dataset.col = '7';
+
+    // Precio unit
+    const tdPrecio = tr.querySelector('td[data-col="8"]') || (tr.querySelector('input[name*="[precio_unitario]"]')?.closest('td'));
+    if (tdPrecio) tdPrecio.dataset.col = '8';
+
+    // Subtotal
+    const tdSub = tr.querySelector('td[data-col="9"]') || (tr.querySelector('[data-subtotal], .subtotalDisplay')?.closest('td'));
+    if (tdSub) tdSub.dataset.col = '9';
+}
+
+function normalizarDataColsTabla() {
+    const table = document.getElementById('tablaProductos');
+    if (!table) return;
+    table.querySelectorAll('tbody tr').forEach(tr => normalizarDataColsFila(tr));
+}
+
 
 // Re-renderiza la vista objetivo usando estadoDetalles (evita “se pierden”)
 function renderVista(vista) {
@@ -557,6 +716,9 @@ function renderVista(vista) {
         });
         iniciarSortableCards();
     }
+
+    indicesActivos.forEach(i => sincronizarHiddenDesdeVisibles(i));
+    calcularTotalGeneral();
 
     // avisos vacíos
     const hay = indicesActivos.length > 0;
@@ -597,6 +759,7 @@ function initResizableColumns() {
             const newW = Math.max(80, startW + dx);
             th.style.width = newW + 'px';
             // aplicar al resto de celdas de esa columna
+            normalizarDataColsTabla();
             const col = th.dataset.col;
             if (col) {
                 table.querySelectorAll(`tbody td[data-col="${col}"]`).forEach(td => td.style.width = newW + 'px');
@@ -868,6 +1031,9 @@ function agregarProducto(productoPreseleccionado = null, usarSelect = true) {
         agregarProductoCard(index, productoPreseleccionado, usarSelect);
     }
     actualizarAvisosVacio();
+
+    // Actualiza resumen (subtotal/total) desde el estado actual
+    calcularTotalGeneral();
 }
 
 function agregarProductoTabla(index, productoPreseleccionado, usarSelect, st = null) {
@@ -898,6 +1064,7 @@ function agregarProductoTabla(index, productoPreseleccionado, usarSelect, st = n
                         onchange="alSeleccionarPresentacion(${index})">
                     <option value="">Cargando...</option>
                 </select>
+                <div class="presentation-label-${index} text-xs text-slate-600 dark:text-slate-300 whitespace-normal break-words"></div>
                 <a href="javascript:void(0)" onclick="abrirModalNuevaPresentacion(${index})"
                    class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
                     + Crear presentación
@@ -912,8 +1079,7 @@ function agregarProductoTabla(index, productoPreseleccionado, usarSelect, st = n
 
         <td data-col="4" class="px-3 py-3 align-top">
             <input type="number"
-                   value="${st && st.cantidad ? st.cantidad : 1}"
-                               class="input-cantidad-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                   class="input-cantidad-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                    min="1" value="${st && st.cantidad ? st.cantidad : 1}" placeholder="Ej: 5"
                    title="Cantidad de presentaciones (Ej: 5 cajas)."
                    oninput="calcularTotales(${index})" required>
@@ -966,30 +1132,57 @@ function agregarProductoTabla(index, productoPreseleccionado, usarSelect, st = n
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
             </button>
-        </td>
 
-        <input type="hidden" name="productos[${index}][presentacion_id]" value="">
-        <input type="hidden" name="productos[${index}][tipo_presentacion]" value="">
-        <input type="hidden" name="productos[${index}][unidades_por_presentacion]" value="1" class="hidden-unidades-${index}">
-        <input type="hidden" name="productos[${index}][cantidad_presentaciones]" value="1">
-        <input type="hidden" name="productos[${index}][numero_lote]" value="">
-        <input type="hidden" name="productos[${index}][fecha_vencimiento]" value="">
-        <input type="hidden" name="productos[${index}][precio_unitario]" value="0">
+            <!-- Hidden inputs deben permanecer dentro de una celda para que al mover columnas NO se pierdan -->
+            <div class="hidden">
+                <input type="hidden" name="productos[${index}][presentacion_id]" value="">
+                <input type="hidden" name="productos[${index}][tipo_presentacion]" value="">
+                <input type="hidden" name="productos[${index}][unidades_por_presentacion]" value="1" class="hidden-unidades-${index}">
+                <input type="hidden" name="productos[${index}][cantidad_presentaciones]" value="1">
+                <input type="hidden" name="productos[${index}][numero_lote]" value="">
+                <input type="hidden" name="productos[${index}][fecha_vencimiento]" value="">
+                <input type="hidden" name="productos[${index}][precio_unitario]" value="0">
+            </div>
+        </td>
     `;
 
     tbody.appendChild(row);
+    normalizarDataColsFila(row);
 
     const pid = productoPreseleccionado && !usarSelect ? productoPreseleccionado.id : (st && st.producto_id ? st.producto_id : null);
     if (pid && !usarSelect) {
-        cargarPresentaciones(pid, index).then(() => {
+        cargarPresentaciones(pid, index).then(async () => {
             if (st && st.presentacion_id) {
                 const sel = document.querySelector(`${(vistaActual === 'tabla') ? '#vistaTabla' : '#vistaFormulario'} #producto_${index} .select-presentacion-${index}`);
-                if (sel) sel.value = st.presentacion_id;
+                if (sel) {
+                    sel.value = st.presentacion_id;
+                    await alSeleccionarPresentacion(index, true);
+                }
+            }
+
+            // Restaurar campos visibles (por si alSeleccionarPresentacion ajustó algo)
+            const row2 = document.getElementById(`producto_${index}`);
+            if (row2 && st) {
+                const cant = row2.querySelector(`.input-cantidad-${index}`);
+                if (cant && st.cantidad) cant.value = st.cantidad;
+
+                const lote = row2.querySelector(`.input-lote-${index}`);
+                if (lote && st.lote !== undefined) lote.value = st.lote;
+
+                const vence = row2.querySelector(`.input-vence-${index}`);
+                if (vence && st.vence !== undefined) vence.value = st.vence;
+
+                const precio = row2.querySelector(`.input-precio-${index}`);
+                if (precio && st.precio !== undefined) precio.value = st.precio;
+
+                sincronizarHiddenDesdeVisibles(index);
+                calcularTotales(index);
             }
         });
     }
 
     asociarEventos(index);
+    sincronizarHiddenDesdeVisibles(index);
     calcularTotales(index);
 }
 
@@ -1034,6 +1227,7 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect, st = nu
                             onchange="alSeleccionarPresentacion(${index})">
                         <option value="">Cargando...</option>
                     </select>
+                    <div class="presentation-label-${index} text-xs text-slate-600 dark:text-slate-300 whitespace-normal break-words"></div>
                     <a href="javascript:void(0)" onclick="abrirModalNuevaPresentacion(${index})"
                        class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
                         + Crear presentación
@@ -1050,7 +1244,7 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect, st = nu
 
                 <div>
                     <div class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase mb-1">Cantidad</div>
-                    <input type="number" min="1" value="1"
+                    <input type="number" min="1" value="${st && st.cantidad ? st.cantidad : 1}"
                            class="input-cantidad-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                            placeholder="Ej: 5"
                            title="Cantidad de presentaciones (Ej: 5 cajas)."
@@ -1068,12 +1262,13 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect, st = nu
                     <div class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase mb-1">Lote</div>
                     <input type="text"
                            class="input-lote-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono text-slate-900 dark:text-white"
-                           placeholder="LOT-2025-001" required>
+                           placeholder="LOT-2025-001" value="${st && st.lote ? st.lote : '' }" required>
                 </div>
                 <div>
                     <div class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase mb-1">Venc.</div>
                     <input type="date"
                            class="input-vence-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white"
+                           value="${st && st.vence ? st.vence : '' }"
                            min="${new Date().toISOString().split('T')[0]}" required>
                 </div>
             </div>
@@ -1114,16 +1309,38 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect, st = nu
 
     const pid = productoPreseleccionado && !usarSelect ? productoPreseleccionado.id : (st && st.producto_id ? st.producto_id : null);
     if (pid && !usarSelect) {
-        cargarPresentaciones(pid, index).then(() => {
+        cargarPresentaciones(pid, index).then(async () => {
             // restaurar selección si existe
             if (st && st.presentacion_id) {
                 const sel = document.querySelector(`${(vistaActual === 'tabla') ? '#vistaTabla' : '#vistaFormulario'} #producto_${index} .select-presentacion-${index}`);
-                if (sel) sel.value = st.presentacion_id;
+                if (sel) {
+                    sel.value = st.presentacion_id;
+                    await alSeleccionarPresentacion(index, true);
+                }
+            }
+
+            const row2 = document.getElementById(`producto_${index}`);
+            if (row2 && st) {
+                const cant = row2.querySelector(`.input-cantidad-${index}`);
+                if (cant && st.cantidad) cant.value = st.cantidad;
+
+                const lote = row2.querySelector(`.input-lote-${index}`);
+                if (lote && st.lote !== undefined) lote.value = st.lote;
+
+                const vence = row2.querySelector(`.input-vence-${index}`);
+                if (vence && st.vence !== undefined) vence.value = st.vence;
+
+                const precio = row2.querySelector(`.input-precio-${index}`);
+                if (precio && st.precio !== undefined) precio.value = st.precio;
+
+                sincronizarHiddenDesdeVisibles(index);
+                calcularTotales(index);
             }
         });
     }
 
     asociarEventos(index);
+    sincronizarHiddenDesdeVisibles(index);
     calcularTotales(index);
 }
 
@@ -1440,6 +1657,11 @@ async function alSeleccionarPresentacion(index, silent = false) {
     const select = row.querySelector(`.select-presentacion-${index}`);
     const opt = select?.selectedOptions?.[0];
 
+    // Mostrar nombre de presentación en 2 líneas (wrap)
+    const lbl = row.querySelector(`.presentation-label-${index}`);
+    if (lbl) lbl.textContent = opt ? opt.textContent : '';
+
+
     const unidades = parseInt(opt?.dataset?.unidades || '1', 10) || 1;
     const presId = select?.value || '';
 
@@ -1503,19 +1725,55 @@ function calcularTotales(index) {
 }
 
 function calcularTotalGeneral() {
-    const subtotales = document.querySelectorAll(`[id^="producto_"] .span-subtotal-0, [id^="producto_"] [class*="span-subtotal-"]`);
-    // La línea de arriba es un fallback; calculamos directamente iterando rows:
-    let total = 0;
-    document.querySelectorAll('#detallesTabla tr, #detallesFormulario > div').forEach(el => {
+    let subtotal = 0;
+
+    // Suma subtotales tanto en tabla como en cards (resistente a cambios de vista y reordenamientos)
+    document.querySelectorAll('[data-producto-index]').forEach(el => {
         const idx = el.dataset.productoIndex;
-        if (idx === undefined) return;
+        if (idx === undefined || idx === null) return;
+
         const span = el.querySelector(`.span-subtotal-${idx}`);
         const val = parseFloat(span?.textContent || '0') || 0;
-        total += val;
+        subtotal += val;
     });
 
-    document.getElementById('totalDisplay').textContent = total.toFixed(2);
-    document.getElementById('total').value = total.toFixed(2);
+    const subtotalDisplay = document.getElementById('subtotalDisplay');
+    if (subtotalDisplay) subtotalDisplay.textContent = subtotal.toFixed(2);
+
+    const descuentoInput = document.getElementById('descuento');
+    const descuentoHint = document.getElementById('descuentoHint');
+
+    let descuentoPct = 0;
+    let descuentoAjustado = false;
+
+    if (descuentoInput) {
+        descuentoPct = parseFloat(descuentoInput.value || '0') || 0;
+
+        if (descuentoPct < 0) { descuentoPct = 0; descuentoAjustado = true; }
+        if (descuentoPct > 100) { descuentoPct = 100; descuentoAjustado = true; }
+
+        if (descuentoAjustado) {
+            descuentoInput.value = descuentoPct.toFixed(2);
+            if (descuentoHint) descuentoHint.classList.remove('hidden');
+        } else {
+            if (descuentoHint) descuentoHint.classList.add('hidden');
+        }
+    }
+
+    const descuentoMonto = subtotal * (descuentoPct / 100);
+
+    const descuentoMontoDisplay = document.getElementById('descuentoMontoDisplay');
+    if (descuentoMontoDisplay) {
+        descuentoMontoDisplay.textContent = descuentoMonto.toFixed(2);
+    }
+
+    const totalNeto = Math.max(0, subtotal - descuentoMonto);
+
+    const totalDisplay = document.getElementById('totalDisplay');
+    if (totalDisplay) totalDisplay.textContent = totalNeto.toFixed(2);
+
+    const totalInput = document.getElementById('total');
+    if (totalInput) totalInput.value = totalNeto.toFixed(2);
 }
 
 function eliminarProducto(index) {
@@ -1640,6 +1898,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     actualizarAvisosVacio();
 
+    // Descuento (monto) aplicado al total: recalcula subtotal/total neto
+    const descuentoInput = document.getElementById('descuento');
+    if (descuentoInput) {
+        descuentoInput.addEventListener('input', () => calcularTotalGeneral());
+        descuentoInput.addEventListener('blur', () => {
+            let v = parseFloat(descuentoInput.value || '0') || 0;
+            if (v < 0) v = 0;
+            if (v > 100) v = 100;
+            descuentoInput.value = v.toFixed(2);
+            calcularTotalGeneral();
+        });
+    }
+
+    // Inicializar resumen al cargar
+    calcularTotalGeneral();
+
     // Sortable (reordenar filas/cards) - compatible mouse/táctil
     if (window.Sortable) {
         const tbody = document.getElementById('detallesTabla');
@@ -1702,4 +1976,3 @@ if (btnBarcode) {
 });
 </script>
 @endpush
-  

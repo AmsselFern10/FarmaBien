@@ -21,6 +21,10 @@ class StoreCompraRequest extends FormRequest
             'proveedor_id' => 'required|exists:proveedores,id',
             'fecha' => 'nullable|date|before_or_equal:today',
 
+            // NUEVOS CAMPOS
+            'descuento' => 'nullable|numeric|min:0',
+            'observaciones' => 'nullable|string|max:2000',
+
             // Detalle
             'productos' => 'required|array|min:1',
 
@@ -53,6 +57,12 @@ class StoreCompraRequest extends FormRequest
             'fecha.date' => 'La fecha debe ser válida.',
             'fecha.before_or_equal' => 'La fecha de compra no puede ser futura.',
 
+            // NUEVOS CAMPOS
+            'descuento.numeric' => 'El descuento debe ser un número válido.',
+            'descuento.min' => 'El descuento no puede ser negativo.',
+            'observaciones.string' => 'Las observaciones deben ser texto.',
+            'observaciones.max' => 'Las observaciones no pueden exceder 2000 caracteres.',
+
             'productos.required' => 'Debe agregar al menos un producto.',
             'productos.array' => 'El detalle de productos no es válido.',
             'productos.min' => 'Debe agregar al menos un producto.',
@@ -84,6 +94,11 @@ class StoreCompraRequest extends FormRequest
         return [
             'proveedor_id' => 'proveedor',
             'fecha' => 'fecha de compra',
+
+            // NUEVOS CAMPOS
+            'descuento' => 'descuento',
+            'observaciones' => 'observaciones',
+
             'productos' => 'productos',
             'productos.*.producto_id' => 'producto',
             'productos.*.presentacion_id' => 'presentación',

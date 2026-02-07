@@ -13,17 +13,20 @@ class Compra extends Model
         'proveedor_id',
         'user_id',
         'anulado_por',
-        'reemplazada_por',        // ✅ NUEVO
-        'compra_original_id',     // ✅ NUEVO
+        'reemplazada_por',        
         'total',
+        'observaciones',
+        'descuento',
         'estado',
         'fecha',
         'fecha_anulacion',
         'motivo_anulacion',
+       
     ];
 
     protected $casts = [
         'total' => 'decimal:2',
+        'descuento' => 'decimal:2',
         'fecha' => 'datetime',
         'fecha_anulacion' => 'datetime',
     ];

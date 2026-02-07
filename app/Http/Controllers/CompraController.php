@@ -117,24 +117,46 @@ class CompraController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Compra $compra)
-    {
-        // Verificar que puede modificarse
-        if (!$compra->puedeModificarse()) {
-            return redirect()
-                ->route('compras.show', $compra)
-                ->with('error', 'Esta compra no puede modificarse.');
-        }
-
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
-        $productos = Producto::activos()->orderBy('nombre')->get();
-        $compra->load('detalles.producto', 'detalles.lote');
-
-        return view('compras.edit', compact('compra', 'proveedores', 'productos'));
+/**
+ * Show the form for editing the specified resource.
+ */
+public function edit(Compra $compra)
+{
+    // Verificar que puede modificarse
+    if (!$compra->puedeModificarse()) {
+        return redirect()
+            ->route('compras.show', $compra)
+            ->with('error', 'Esta compra no puede modificarse.');
     }
 
+   
+    $compra->loadMissing([
+        'proveedor:id,nombre',
+        'usuario:id,name',
+        'detalles' => function ($q) {
+            $q->orderBy('id', 'asc');
+        },
+        'detalles.producto:id,nombre,descripcion,codigo_barra,imagen,precio_compra,activo',
+        'detalles.presentacion:id,producto_id,nombre,descripcion,unidades_por_presentacion,precio_sugerido,activo,orden',
+        'detalles.lote:id,producto_id,numero_lote,fecha_vencimiento',
+    ]);
+
+    // Proveedores para select
+    $proveedores = Proveedor::activos()
+        ->select('id', 'nombre')
+        ->orderBy('nombre')
+        ->get();
+
+    // Productos para modal/grid + barcode (asegura campos usados por JS y UI)
+    $productos = Producto::activos()
+        ->select('id', 'nombre', 'descripcion', 'codigo_barra', 'imagen', 'precio_compra')
+        ->orderBy('nombre')
+        ->get();
+
+    return view('compras.edit', compact('compra', 'proveedores', 'productos'));
+}
     /**
-     * Update the specified resource in storage (Modificar).
+
      */
     public function update(UpdateCompraRequest $request, Compra $compra)
     {

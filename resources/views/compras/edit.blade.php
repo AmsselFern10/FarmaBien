@@ -27,7 +27,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-1 lg:px-3 py-0 pb-2">
 
     {{-- Errores --}}
     @if ($errors->any())
@@ -44,8 +44,93 @@
     <form id="formCompra" method="POST" action="{{ route('compras.update', $compra) }}" class="space-y-6 -mt-2">
         @csrf
         @method('PUT')
+        @php
+            $detallesIniciales = $compra->detalles->map(function($d) {
+                $p = $d->producto;
+                $codigo = $p->codigo_barras ?? ($p->codigo_barra ?? '');
+                $img = ($p && $p->imagen) ? asset('storage/' . $p->imagen) : null;
 
+                $loteNumero = $d->lote?->numero_lote ?? ($d->lote?->numero ?? ($d->lote?->lote ?? null));
+                $loteVence = $d->lote?->fecha_vencimiento ?? ($d->lote?->vencimiento ?? null);
+
+                return [
+                    'producto_id' => $d->producto_id,
+                    'codigo_barras' => $codigo,
+                    'imagen_url' => $img,
+                    'presentacion_id' => $d->presentacion_id,
+                    'tipo_presentacion' => $d->tipo_presentacion,
+                    'unidades_por_presentacion' => (int)($d->unidades_por_presentacion ?? 1),
+                    'cantidad_presentaciones' => (int)($d->cantidad_presentaciones ?? 1),
+                    'lote' => $loteNumero ?? '',
+                    'fecha_vencimiento' => $loteVence ? \Illuminate\Support\Carbon::parse($loteVence)->toDateString() : '',
+                    'precio_unitario' => (float)($d->precio_unitario ?? 0),
+                    'subtotal' => (float)($d->subtotal ?? 0),
+                ];
+            })->values();
+        @endphp
+
+
+
+
+{{-- Datos generales --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos de la Compra</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Información general del registro</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Proveedor</label>
+                    <select name="proveedor_id" required
+                            class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        <option value="">Seleccionar proveedor...</option>
+                        @foreach($proveedores as $p)
+                            <option value="{{ $p->id }}" @selected(old('proveedor_id', $compra->proveedor_id) == $p->id)>{{ $p->nombre }}</option>
+                        @endforeach
+                    </select>
+                    <button type="button" id="btnCrearProveedor" class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
+                        + Crear proveedor
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                    <input type="date" name="fecha" value="{{ old('fecha', optional($compra->fecha)->toDateString() ?? now()->toDateString()) }}"
+                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                </div>
+
+
+                <div class="md:col-span-3">
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                    <textarea name="observaciones" rows="3"
+                              placeholder="Opcional: notas de la compra (factura, condiciones, aclaraciones, etc.)"
+                              class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('observaciones', $compra->observaciones ?? '') }}</textarea>
+                    @error('observaciones')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+               
+            </div>
+            </div>
+        </div>
+
+        
+
+<!-- Escaneo por código de barras -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-50 to-white dark:from-gray-800 dark:to-gray-800/50">
         <div class="flex items-center space-x-3">
             <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
@@ -104,56 +189,7 @@
     </div>
 </div>
 
-        
-
-        {{-- Datos generales --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-                <div class="flex items-center space-x-3">
-                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos de la Compra</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Información general del registro</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="p-6">
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Proveedor</label>
-                    <select name="proveedor_id" required
-                            class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="">Seleccionar proveedor...</option>
-                        @foreach($proveedores as $p)
-                            <option value="{{ $p->id }}" @selected(old('proveedor_id', $compra->proveedor_id) == $p->id)>{{ $p->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
-                    <input type="date" name="fecha" value="{{ old('fecha', optional($compra->fecha)->format('Y-m-d') ?? $compra->fecha ?? now()->toDateString()) }}"
-                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div class="md:text-right">
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Total</label>
-                    <div class="inline-flex items-center justify-end w-full md:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold">
-                        S/ <span id="totalDisplay" class="ml-2">0.00</span>
-                    </div>
-                    <input type="hidden" name="total" id="total" value="0">
-                </div>
-            </div>
-            </div>
-        </div>
-
-        {{-- Detalle --}}
+{{-- Detalle --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-white dark:from-gray-800 dark:to-gray-800/50">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -193,19 +229,19 @@
             {{-- Vista Tabla --}}
             <div id="vistaTabla" class="vista-contenido">
                 <div class="overflow-x-auto overflow-y-visible rounded-xl border border-gray-200 dark:border-gray-700">
-                    <table class="min-w-[1100px] w-full text-sm">
+                    <table id="tablaProductos" class="min-w-[1600px] w-full text-sm table-fixed">
                         <thead class="bg-gray-50 dark:bg-gray-900/40">
-                        <tr class="text-left text-slate-700 dark:text-slate-300">
+                        <tr id="theadRowProductos" class="text-left text-slate-700 dark:text-slate-300">
                             <th class="px-2 py-3 w-10 text-center"></th>
-                            <th class="px-3 py-3">Producto</th>
-                            <th class="px-3 py-3">Presentación</th>
-                            <th class="px-3 py-3 text-center w-28">Unid/Pres</th>
-                            <th class="px-3 py-3 w-28 text-right">Cantidad</th>
-                            <th class="px-3 py-3 text-center w-28">Total unid</th>
-                            <th class="px-3 py-3 w-36">Lote</th>
-                            <th class="px-3 py-3 w-36">Venc.</th>
-                            <th class="px-3 py-3 w-40 text-right">Precio unit</th>
-                            <th class="px-3 py-3 w-40 text-right">Subtotal</th>
+                            <th data-col="1" class="px-3 py-3 relative select-none th-resizable">Producto<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="2" class="px-3 py-3 relative select-none th-resizable">Presentación<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="3" class="px-3 py-3 text-center w-28 relative select-none th-resizable">Unid/Pres<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="4" class="px-3 py-3 w-28 text-right relative select-none th-resizable">Cantidad<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="5" class="px-3 py-3 text-center w-28 relative select-none th-resizable">Total unid<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="6" class="px-3 py-3 w-36 relative select-none th-resizable">Lote<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="7" class="px-3 py-3 w-36 relative select-none th-resizable">Venc.<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="8" class="px-3 py-3 w-40 text-right relative select-none th-resizable">Precio unit<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
+                            <th data-col="9" class="px-3 py-3 w-40 text-right relative select-none th-resizable">Subtotal<div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div></th>
                             <th class="px-3 py-3 w-16 text-center"></th>
                         </tr>
                         </thead>
@@ -225,11 +261,60 @@
                     Aún no has agregado productos.
                 </div>
             </div>
+
+            {{-- Resumen Total --}}
+<div class="mt-6 flex justify-end">
+    <div class="w-full md:w-[28rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 space-y-3">
+
+        <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Subtotal</span>
+            <span class="text-sm font-bold text-slate-900 dark:text-white">
+                S/ <span id="subtotalDisplay">0.00</span>
+            </span>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+            <label for="descuento" class="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                Descuento (%)
+            </label>
+
+            <div class="w-40">
+                <input type="number" step="0.01" min="0" max="100"
+                       name="descuento" id="descuento"
+                       value="{{ old('descuento', $compra->descuento ?? 0) }}"
+                       class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                       placeholder="0.00">
             </div>
         </div>
 
+        <div id="descuentoAviso" class="hidden text-xs text-amber-600 dark:text-amber-400">
+            El descuento debe estar entre 0% y 100%. Se ajustó automáticamente.
+        </div>
 
-        {{-- Motivo de modificación --}}
+        <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Monto descuento</span>
+            <span class="text-sm font-bold text-slate-900 dark:text-white">
+                S/ <span id="descuentoMontoDisplay">0.00</span>
+            </span>
+        </div>
+
+        <div class="pt-2 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Total de la compra</span>
+            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                S/ <span id="totalDisplay">{{ number_format(old('total', $compra->total ?? 0), 2) }}</span>
+            </span>
+        </div>
+
+        <input type="hidden" name="total" id="total" value="{{ old('total', $compra->total ?? 0) }}">
+
+        @error('descuento')
+            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+        @enderror
+    </div>
+</div>
+
+{{-- Botones --}}
+                {{-- Motivo de modificación --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-50 to-white dark:from-gray-800 dark:to-gray-800/50">
                 <div class="flex items-center gap-3">
@@ -244,8 +329,9 @@
                         <p class="text-sm text-slate-500 dark:text-slate-400">Obligatorio para registrar la modificación.</p>
                     </div>
                 </div>
+                  <div class="p-6">
             </div>
-            <div class="p-6">
+          
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo</label>
                 <textarea name="motivo" required rows="3"
                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -257,8 +343,8 @@
             </div>
         </div>
 
-        {{-- Botones --}}
-        <div class="flex items-center justify-between sticky bottom-0 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+        
+<div class="flex items-center justify-between sticky bottom-0 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
             <a href="{{ route('compras.index') }}"
                class="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                 Cancelar
@@ -275,6 +361,45 @@
 </div>
 
 {{-- MODAL PRODUCTOS --}}
+
+<!-- Modal: Crear Proveedor (iframe) -->
+<div id="modalProveedor" class="fixed inset-0 z-[80] hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="cerrarModalProveedor()"></div>
+    <div class="relative mx-auto my-6 w-[95%] max-w-5xl">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Crear proveedor</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Registra un proveedor sin salir de compras</p>
+                    </div>
+                </div>
+                <button type="button" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" onclick="cerrarModalProveedor()">
+                    <svg class="w-6 h-6 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="h-[75vh] bg-white dark:bg-gray-800">
+                <iframe id="iframeProveedor" src="{{ route('proveedores.create') }}" class="w-full h-full" frameborder="0"></iframe>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 bg-white dark:bg-gray-800">
+                <button type="button" onclick="cerrarModalProveedor(true)"
+                        class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm">
+                    Ya lo creé, actualizar lista
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="modalProductos" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-6xl w-full overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -453,43 +578,462 @@
             'nombre' => $p->nombre,
             'precio_compra' => (float)($p->precio_compra ?? 0),
             'descripcion' => $p->descripcion ?? null,
-            'codigo_barras' => $p->codigo_barras ?? null,
+            'codigo_barras' => $p->codigo_barras ?? ($p->codigo_barra ?? null),
+            'codigo_barra'  => $p->codigo_barra  ?? ($p->codigo_barras ?? null),
             'imagen_url' => $imgUrl,
-        ];
-    })->values();
-
-
-    $detallesData = $compra->detalles->map(function($d){
-        return [
-            'producto_id' => $d->producto_id,
-            'presentacion_id' => $d->presentacion_id,
-            'tipo_presentacion' => $d->tipo_presentacion,
-            'unidades_por_presentacion' => (int)($d->unidades_por_presentacion ?? 1),
-            'cantidad_presentaciones' => (int)($d->cantidad_presentaciones ?? 1),
-            'numero_lote' => optional($d->lote)->numero_lote,
-            'fecha_vencimiento' => optional(optional($d->lote)->fecha_vencimiento)->format('Y-m-d') ?? optional($d->lote)->fecha_vencimiento ?? null,
-            'precio_unitario' => (float)($d->precio_unitario ?? 0),
         ];
     })->values();
 @endphp
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+/* Column resize UX (mouse + touch) */
+.col-resize-handle{touch-action:none;}
+th.th-resizable{overflow:visible;}
+/* Allow rows to grow naturally */
+#vistaTabla td{vertical-align:top;}
+
+/* ===== MIN WIDTHS + NO VERTICAL EXPAND (Producto) ===== */
+#tablaProductos th[data-col="1"], #tablaProductos td[data-col="1"]{min-width:240px;}
+#tablaProductos th[data-col="2"], #tablaProductos td[data-col="2"]{min-width:260px;}
+#tablaProductos th[data-col="3"], #tablaProductos td[data-col="3"]{min-width:130px;}
+#tablaProductos th[data-col="4"], #tablaProductos td[data-col="4"]{min-width:120px;}
+#tablaProductos th[data-col="5"], #tablaProductos td[data-col="5"]{min-width:120px;}
+#tablaProductos th[data-col="6"], #tablaProductos td[data-col="6"]{min-width:140px;}
+#tablaProductos th[data-col="7"], #tablaProductos td[data-col="7"]{min-width:140px;}
+#tablaProductos th[data-col="8"], #tablaProductos td[data-col="8"]{min-width:150px;}
+#tablaProductos th[data-col="9"], #tablaProductos td[data-col="9"]{min-width:150px;}
+#tablaProductos td[data-col="1"]{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+</style>
 <script>
+// ================================
+//  Estado (para no perder productos al cambiar de vista)
+// ================================
+let vistaActual = 'tabla';
+let contadorProductos = 0;
+// indices activos en el orden actual
+let indicesActivos = [];
+
+// Recalcula indices activos desde el estado (útil cuando renderizamos sin depender de un contenedor)
+function actualizarIndicesActivos() {
+    indicesActivos = Object.keys(estadoDetalles)
+        .map(k => parseInt(k, 10))
+        .filter(n => !isNaN(n))
+        .sort((a, b) => a - b);
+
+    // Mantén el contador por encima del último índice
+    const last = indicesActivos.length ? indicesActivos[indicesActivos.length - 1] : -1;
+    contadorProductos = Math.max(contadorProductos, last + 1);
+}
+
+// Sincroniza los inputs hidden (name="productos[..]") desde los visibles para un index.
+// Esto evita que al cambiar de vista se “pierda” el valor real que se enviará al backend.
+function sincronizarHiddenDesdeVisibles(index) {
+    const row = document.getElementById(`producto_${index}`);
+    if (!row) return;
+
+    const cantidad = row.querySelector(`.input-cantidad-${index}`)?.value ?? '1';
+    const lote = row.querySelector(`.input-lote-${index}`)?.value ?? '';
+    const vence = row.querySelector(`.input-vence-${index}`)?.value ?? '';
+    const precio = row.querySelector(`.input-precio-${index}`)?.value ?? '0';
+    const unidades = row.querySelector(`.input-unidades-${index}`)?.value ?? (row.querySelector(`.hidden-unidades-${index}`)?.value ?? '1');
+    const presSel = row.querySelector(`.select-presentacion-${index}`)?.value ?? (row.querySelector(`input[name="productos[${index}][presentacion_id]"]`)?.value ?? '');
+
+    const setHidden = (name, val) => {
+        const el = row.querySelector(`input[name="productos[${index}][${name}]"], textarea[name="productos[${index}][${name}]"]`);
+        if (el) el.value = val;
+    };
+
+    setHidden('cantidad_presentaciones', String(cantidad || '1'));
+    setHidden('numero_lote', String(lote || ''));
+    setHidden('fecha_vencimiento', String(vence || ''));
+    setHidden('precio_unitario', String(precio || '0'));
+    setHidden('unidades_por_presentacion', String(unidades || '1'));
+    setHidden('presentacion_id', String(presSel || ''));
+}
+
+function capturarIndicesDesdeDOM() {
+    const cont = (vistaActual === 'tabla') ? document.getElementById('detallesTabla') : document.getElementById('detallesFormulario');
+    if (!cont) return;
+    const ids = Array.from(cont.querySelectorAll('[id^="producto_"]')).map(el => {
+        const m = el.id.match(/producto_(\d+)/);
+        return m ? parseInt(m[1], 10) : null;
+    }).filter(v => v !== null);
+    indicesActivos = ids;
+}
+
+
+// Guarda valores actuales (de la vista visible) para re-renderizar en la otra vista
+const estadoDetalles = {}; // { index: { producto_id, presentacion_id, unidades, cantidad, lote, vence, precio, tipo_presentacion, nombre_producto } }
+
+// Lee valores desde DOM (tabla o card) para un index
+function capturarEstadoIndex(index) {
+    // IMPORTANTE: Siempre capturar desde el DOM DEL ÍTEM (tabla o card) visible.
+    // Evita que document.querySelector tome inputs de la vista oculta y "reseteé" valores.
+    const row = document.getElementById(`producto_${index}`);
+    if (!row) return;
+
+    const q = (sel) => row.querySelector(sel);
+
+    // Producto (en edit normalmente es hidden + texto, pero dejamos fallback por si hay select)
+    const productoIdEl = q(`input[name="productos[${index}][producto_id]"]`);
+    const productoSelectEl = q(`select[name="productos[${index}][producto_id]"]`);
+
+    // Presentación + metadata
+    const presentacionIdEl = q(`input[name="productos[${index}][presentacion_id]"]`);
+    const tipoPresEl = q(`input[name="productos[${index}][tipo_presentacion]"]`);
+    const unidadesHiddenEl = q(`input[name="productos[${index}][unidades_por_presentacion]"]`);
+
+    // Campos visibles (pueden estar en tabla o cards)
+    const cantidadEl = q(`.input-cantidad-${index}`);
+    const loteEl = q(`.input-lote-${index}`);
+    const venceEl = q(`.input-vence-${index}`);
+    const precioEl = q(`.input-precio-${index}`);
+
+    // Fallbacks (si algún input visible no existe por render)
+    const cantidadHidden = q(`input[name="productos[${index}][cantidad_presentaciones]"]`);
+    const loteHidden = q(`input[name="productos[${index}][numero_lote]"]`) || q(`textarea[name="productos[${index}][numero_lote]"]`);
+    const venceHidden = q(`input[name="productos[${index}][fecha_vencimiento]"]`);
+    const precioHidden = q(`input[name="productos[${index}][precio_unitario]"]`);
+
+    estadoDetalles[index] = {
+        producto_id: (productoIdEl ? productoIdEl.value : (productoSelectEl ? productoSelectEl.value : '')),
+        presentacion_id: presentacionIdEl ? presentacionIdEl.value : '',
+        tipo_presentacion: tipoPresEl ? tipoPresEl.value : '',
+        unidades: unidadesHiddenEl ? unidadesHiddenEl.value : (q(`.input-unidades-${index}`)?.value || (q(`.hidden-unidades-${index}`)?.value || '1')),
+        cantidad: (cantidadEl ? cantidadEl.value : (cantidadHidden ? cantidadHidden.value : '1')),
+        lote: (loteEl ? loteEl.value : (loteHidden ? loteHidden.value : '')),
+        vence: (venceEl ? venceEl.value : (venceHidden ? venceHidden.value : '')),
+        precio: (precioEl ? precioEl.value : (precioHidden ? precioHidden.value : '0'))
+    };
+}
+
+function capturarEstadoActual() {
+    indicesActivos.forEach(i => {
+        // asegurar que lo que se envía al backend quede sincronizado
+        sincronizarHiddenDesdeVisibles(i);
+        capturarEstadoIndex(i);
+    });
+}
+
+
+// Prefetch de presentaciones para mejorar rendimiento en edición
+async function prefetchPresentaciones(productoIds) {
+    const unique = Array.from(new Set(productoIds.map(String)));
+    await Promise.all(unique.map(async (pid) => {
+        if (presentacionesCache[pid]) return;
+        try {
+            const r = await fetch(`/api/productos/${pid}/presentaciones`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await r.json();
+            presentacionesCache[pid] = data;
+        } catch (e) {
+            // ignore
+        }
+    }));
+}
+
+// Precarga para edición: inserta filas con la data existente sin perder la lógica de presentaciones
+async function precargarDetallesEdicion(detalles) {
+    // Prefetch presentaciones (rendimiento)
+    await prefetchPresentaciones(detalles.map(d => d.producto_id));
+
+    // Forzamos iniciar en vista tabla para construir DOM base
+    vistaActual = 'tabla';
+    document.getElementById('vistaTabla')?.classList.remove('hidden');
+    document.getElementById('vistaFormulario')?.classList.add('hidden');
+
+    for (const d of detalles) {
+        const producto = productosData.find(p => String(p.id) === String(d.producto_id));
+        if (!producto) continue;
+
+        const index = contadorProductos++;
+
+        // st en el formato interno que usa estadoDetalles / cargarPresentaciones
+        const st = {
+            producto_id: d.producto_id,
+            presentacion_id: d.presentacion_id || '',
+            tipo_presentacion: d.tipo_presentacion || '',
+            unidades: String(d.unidades_por_presentacion ?? 1),
+            cantidad: String(d.cantidad_presentaciones ?? 1),
+            lote: d.lote || '',
+            vence: d.fecha_vencimiento || '',
+            precio: String(d.precio_unitario ?? 0)
+        };
+
+        estadoDetalles[index] = { ...st };
+
+        // Agregar fila en tabla (con select, preseleccionado)
+        agregarProductoTabla(index, producto, false, st);
+
+        // Selecciona producto y carga presentaciones
+        const row = document.getElementById(`producto_${index}`);
+        const sel = row?.querySelector(`select[name="productos[${index}][producto_id]"]`);
+        if (sel) sel.value = String(d.producto_id);
+
+        // Dispara carga de presentaciones (usa estadoDetalles[index].presentacion_id)
+        alSeleccionarProducto(index);
+
+        // Espera a que se carguen presentaciones y se aplique selección
+        await new Promise(r => setTimeout(r, 0));
+        // Nota: cargarPresentaciones es async; la llamamos explícitamente para poder await
+        await cargarPresentaciones(String(d.producto_id), index);
+
+        // Restituir valores guardados (precio/lote/vence) por si la selección de presentación los alteró
+        const precioInput = row?.querySelector(`.input-precio-${index}`);
+        if (precioInput) precioInput.value = st.precio;
+
+        const loteInput = row?.querySelector(`.input-lote-${index}`);
+        if (loteInput) loteInput.value = st.lote;
+
+        const venceInput = row?.querySelector(`.input-vence-${index}`);
+        if (venceInput) venceInput.value = st.vence;
+
+        // Recalcular subtotales
+        calcularTotales(index);
+    }
+
+    actualizarIndicesActivos();
+    calcularTotalGeneral();
+    actualizarAvisosVacio();
+
+// Descuento (%): recalcular total neto en vivo
+const descuentoInput = document.getElementById('descuento');
+if (descuentoInput) {
+    descuentoInput.addEventListener('input', () => calcularTotalGeneral());
+    descuentoInput.addEventListener('blur', () => {
+        const v = parseFloat(descuentoInput.value || '0');
+        descuentoInput.value = (Number.isNaN(v) ? 0 : v).toFixed(2);
+        calcularTotalGeneral();
+    });
+}
+
+    detallesPrecargados = true;
+}
+
+
+// ================================
+//  Normaliza data-col (anti-bug al mover/resize columnas)
+//  Asegura que cada celda editable tenga data-col, para no perder inputs.
+// ================================
+function normalizarDataColsFila(tr) {
+    if (!tr) return;
+    // Producto
+    const tdProducto = tr.querySelector('td[data-col="1"]') || (tr.querySelector('input[name*="[producto_id]"], select[name*="[producto_id]"]')?.closest('td'));
+    if (tdProducto) tdProducto.dataset.col = '1';
+
+    // Presentación (select)
+    const tdPres = tr.querySelector('td[data-col="2"]') || (tr.querySelector('.select-presentacion')?.closest('td'));
+    if (tdPres) tdPres.dataset.col = '2';
+
+    // Unid/Pres
+    const tdUnid = tr.querySelector('td[data-col="3"]') || (tr.querySelector('input[name*="[unidades_por_presentacion]"]')?.closest('td'));
+    if (tdUnid) tdUnid.dataset.col = '3';
+
+    // Cantidad
+    const tdCant = tr.querySelector('td[data-col="4"]') || (tr.querySelector('input[name*="[cantidad_presentaciones]"]')?.closest('td'));
+    if (tdCant) tdCant.dataset.col = '4';
+
+    // Total unid (span o input readonly)
+    const tdTotalU = tr.querySelector('td[data-col="5"]') || (tr.querySelector('[data-total-unid], .total-unid, .totalUnidDisplay')?.closest('td'));
+    if (tdTotalU) tdTotalU.dataset.col = '5';
+
+    // Lote
+    const tdLote = tr.querySelector('td[data-col="6"]') || (tr.querySelector('textarea[name*="[numero_lote]"], input[name*="[numero_lote]"]')?.closest('td'));
+    if (tdLote) tdLote.dataset.col = '6';
+
+    // Vencimiento
+    const tdVenc = tr.querySelector('td[data-col="7"]') || (tr.querySelector('input[name*="[fecha_vencimiento]"]')?.closest('td'));
+    if (tdVenc) tdVenc.dataset.col = '7';
+
+    // Precio unit
+    const tdPrecio = tr.querySelector('td[data-col="8"]') || (tr.querySelector('input[name*="[precio_unitario]"]')?.closest('td'));
+    if (tdPrecio) tdPrecio.dataset.col = '8';
+
+    // Subtotal
+    const tdSub = tr.querySelector('td[data-col="9"]') || (tr.querySelector('[data-subtotal], .subtotalDisplay')?.closest('td'));
+    if (tdSub) tdSub.dataset.col = '9';
+}
+
+function normalizarDataColsTabla() {
+    const table = document.getElementById('tablaProductos');
+    if (!table) return;
+    table.querySelectorAll('tbody tr').forEach(tr => normalizarDataColsFila(tr));
+}
+
+
+// Re-renderiza la vista objetivo usando estadoDetalles (evita “se pierden”)
+function renderVista(vista) {
+    if (vista === 'tabla') {
+        const tbody = document.getElementById('detallesTabla');
+        tbody.innerHTML = '';
+        indicesActivos.forEach(index => {
+            const st = estadoDetalles[index] || {};
+            const p = st.producto_id ? productosData.find(x => String(x.id) === String(st.producto_id)) : null;
+            agregarProductoTabla(index, p, false, st);
+        });
+        iniciarSortableTabla();
+    } else {
+        const cont = document.getElementById('detallesFormulario');
+        cont.innerHTML = '';
+        indicesActivos.forEach(index => {
+            const st = estadoDetalles[index] || {};
+            const p = st.producto_id ? productosData.find(x => String(x.id) === String(st.producto_id)) : null;
+            agregarProductoCard(index, p, false, st);
+        });
+        iniciarSortableCards();
+    }
+
+    // avisos vacíos
+    const hay = indicesActivos.length > 0;
+    document.getElementById('avisoSinProductos').classList.toggle('hidden', hay);
+    document.getElementById('avisoSinProductosCards').classList.toggle('hidden', hay);
+}
+
+// ================================
+//  Column resizing (Excel-like)
+// ================================
+function initResizableColumns() {
+    const table = document.getElementById('tablaProductos');
+    if (!table) return;
+    const ths = table.querySelectorAll('th.th-resizable');
+    ths.forEach(th => {
+        const handle = th.querySelector('.col-resize-handle');
+        if (!handle) return;
+
+        let startX = 0;
+        let startW = 0;
+
+        const onDown = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startX = (e.touches ? e.touches[0].clientX : e.clientX);
+            startW = th.getBoundingClientRect().width;
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onUp);
+        };
+
+        const onMove = (e) => {
+            e.preventDefault();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX);
+            const dx = x - startX;
+            const newW = Math.max(80, startW + dx);
+            th.style.width = newW + 'px';
+            // aplicar al resto de celdas de esa columna
+            normalizarDataColsTabla();
+            const col = th.dataset.col;
+            if (col) {
+                table.querySelectorAll(`tbody td[data-col="${col}"]`).forEach(td => td.style.width = newW + 'px');
+            }
+        };
+
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+        };
+
+        handle.addEventListener('mousedown', onDown);
+        handle.addEventListener('touchstart', onDown, { passive: false });
+    });
+}
+
+
+
+// ================================
+//  Column reordering (Excel-like)
+// ================================
+function initReorderableColumns() {
+    const table = document.getElementById('tablaProductos');
+    const headerRow = document.getElementById('theadRowProductos');
+    if (!table || !headerRow) return;
+
+    const ensureSortable = () => {
+        if (typeof Sortable === 'undefined') return false;
+        // Evita duplicar instancias
+        if (headerRow.__sortableCols) return true;
+
+        headerRow.__sortableCols = new Sortable(headerRow, {
+            animation: 150,
+            draggable: 'th[data-col]',
+            filter: '.col-resize-handle',
+            preventOnFilter: false,
+            onEnd: () => {
+                const order = Array.from(headerRow.querySelectorAll('th[data-col]')).map(th => th.dataset.col);
+
+                table.querySelectorAll('tbody tr').forEach(tr => {
+                    const fixed = Array.from(tr.children).filter(td => !td.dataset.col); // ej: [drag, acciones]
+                    const byCol = {};
+                    tr.querySelectorAll('td[data-col]').forEach(td => { byCol[td.dataset.col] = td; });
+
+                    tr.innerHTML = '';
+                    if (fixed[0]) tr.appendChild(fixed[0]);
+                    order.forEach(col => { if (byCol[col]) tr.appendChild(byCol[col]); });
+                    if (fixed.length > 1) tr.appendChild(fixed[fixed.length - 1]);
+                });
+            }
+        });
+
+        return true;
+    };
+
+    // Si CDN falló, intenta fallback a unpkg y reintenta
+    if (!ensureSortable()) {
+        if (!document.getElementById('sortableFallback')) {
+            const sc = document.createElement('script');
+            sc.id = 'sortableFallback';
+            sc.src = 'https://unpkg.com/sortablejs@1.15.2/Sortable.min.js';
+            sc.onload = () => ensureSortable();
+            document.head.appendChild(sc);
+        }
+    }
+}
+
+// Modal proveedor
+function abrirModalProveedor() {
+    const modal = document.getElementById('modalProveedor');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+}
+function cerrarModalProveedor(recargar = false) {
+    const modal = document.getElementById('modalProveedor');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    if (recargar) window.location.reload();
+}
+
 /** ================================
  *  DATA
  *  ================================= */
 const productosData = @json($productosData);
-const detallesData = @json($detallesData);
-
-
-let contadorProductos = 0;
-let vistaActual = 'tabla';
+const detallesIniciales = @json($detallesIniciales);
+let detallesPrecargados = false;
+// Cache de presentaciones por producto (para tabla y cards)
+const presentacionesCache = {};
 
 function cambiarVista(vista) {
+    // Captura indices y valores desde la vista actual antes de cambiar
+    capturarIndicesDesdeDOM();
+    capturarEstadoActual();
+
     vistaActual = vista;
 
+    // alterna contenedores
     document.getElementById('vistaTabla').classList.toggle('hidden', vista !== 'tabla');
     document.getElementById('vistaFormulario').classList.toggle('hidden', vista !== 'formulario');
 
+    // IMPORTANTE: limpiar la vista oculta para evitar IDs duplicados (tabla vs cards)
+    if (vista === 'tabla') {
+        const contCards = document.getElementById('detallesFormulario');
+        if (contCards) contCards.innerHTML = '';
+    } else {
+        const contTabla = document.getElementById('detallesTabla');
+        if (contTabla) contTabla.innerHTML = '';
+    }
+
+    // estilos botones
     document.getElementById('btnVistaTabla').classList.toggle('bg-blue-600', vista === 'tabla');
     document.getElementById('btnVistaTabla').classList.toggle('text-white', vista === 'tabla');
     document.getElementById('btnVistaTabla').classList.toggle('bg-white', vista !== 'tabla');
@@ -497,7 +1041,15 @@ function cambiarVista(vista) {
     document.getElementById('btnVistaFormulario').classList.toggle('bg-blue-600', vista === 'formulario');
     document.getElementById('btnVistaFormulario').classList.toggle('text-white', vista === 'formulario');
     document.getElementById('btnVistaFormulario').classList.toggle('bg-white', vista !== 'formulario');
+
+    // Renderiza la vista destino desde el estado (para que no "se pierdan")
+    renderVista(vista);
+
+    if (vista === 'tabla') initResizableColumns();
+    initReorderableColumns();
 }
+
+
 
 /** ================================
  *  MODAL CATÁLOGO PRODUCTOS (GRID + BÚSQUEDA + MULTI)
@@ -516,7 +1068,12 @@ function abrirModalProductos() {
     catalogoFiltro = '';
     // no limpiamos selección automáticamente para permitir elegir varios sin perder por error
     renderCatalogoProductos();
-    precargarDetallesEdicion();
+
+    // Precargar detalles en edición (solo una vez)
+    if (!detallesPrecargados && Array.isArray(detallesIniciales) && detallesIniciales.length) {
+        precargarDetallesEdicion(detallesIniciales);
+    }
+
     actualizarEstadoCatalogo();
 }
 
@@ -527,13 +1084,11 @@ function cerrarModalProductos() {
 function filtrarCatalogoProductos(valor) {
     catalogoFiltro = (valor || '').toLowerCase().trim();
     renderCatalogoProductos();
-    precargarDetallesEdicion();
 }
 
 function limpiarSeleccionCatalogo() {
     catalogoSeleccionados = new Set();
     renderCatalogoProductos();
-    precargarDetallesEdicion();
     actualizarEstadoCatalogo();
 }
 
@@ -556,7 +1111,7 @@ function productoCoincideFiltro(p, filtro) {
     if (!filtro) return true;
     const nombre = (p.nombre || '').toLowerCase();
     const desc = (p.descripcion || '').toLowerCase();
-    const cb = (p.codigo_barras || '').toLowerCase();
+    const cb = ((p.codigo_barras || p.codigo_barra) || '').toLowerCase();
     return nombre.includes(filtro) || desc.includes(filtro) || cb.includes(filtro);
 }
 
@@ -608,7 +1163,7 @@ function renderCatalogoProductos() {
                     <div class="mt-2 flex items-center justify-between gap-2">
                         <div class="text-xs text-slate-500 dark:text-slate-400">
                             <span class="font-semibold text-slate-700 dark:text-slate-200">CB:</span>
-                            <span class="font-mono">${(p.codigo_barras || '—')}</span>
+                            <span class="font-mono">${((p.codigo_barras || p.codigo_barra) || '—')}</span>
                         </div>
                         <span class="text-xs ${checked ? 'text-green-700 dark:text-green-300' : 'text-slate-500 dark:text-slate-400'} font-semibold">
                             ${checked ? 'Seleccionado' : 'Seleccionar'}
@@ -650,71 +1205,7 @@ function agregarProducto(productoPreseleccionado = null, usarSelect = true) {
     actualizarAvisosVacio();
 }
 
-
-let precargaDetallesEjecutada = false;
-
-async function precargarDetallesEdicion() {
-    if (precargaDetallesEjecutada) return;
-    if (!Array.isArray(detallesData) || detallesData.length === 0) return;
-
-    precargaDetallesEjecutada = true;
-
-    // Forzamos vista tabla por defecto al entrar (puedes cambiarlo si quieres)
-    vistaActual = 'tabla';
-    cambiarVista('tabla');
-
-    for (const det of detallesData) {
-        const producto = productosData.find(p => String(p.id) === String(det.producto_id));
-        if (!producto) continue;
-
-        const index = contadorProductos;
-        agregarProducto(producto, false);
-
-        const row = document.getElementById(`producto_${index}`);
-        if (!row) continue;
-
-        // Inputs visibles
-        const qty = row.querySelector(`.input-cantidad-${index}`);
-        if (qty) qty.value = det.cantidad_presentaciones ?? 1;
-
-        const lote = row.querySelector(`.input-lote-${index}`);
-        if (lote) lote.value = det.numero_lote ?? '';
-
-        const vence = row.querySelector(`.input-vence-${index}`);
-        if (vence && det.fecha_vencimiento) vence.value = det.fecha_vencimiento;
-
-        const precio = row.querySelector(`.input-precio-${index}`);
-        if (precio) precio.value = det.precio_unitario ?? 0;
-
-        // Hidden inputs (por si no se disparan eventos)
-        const hidQty = row.querySelector(`input[name="productos[${index}][cantidad_presentaciones]"]`);
-        if (hidQty) hidQty.value = det.cantidad_presentaciones ?? 1;
-
-        const hidLote = row.querySelector(`input[name="productos[${index}][numero_lote]"]`);
-        if (hidLote) hidLote.value = det.numero_lote ?? '';
-
-        const hidVence = row.querySelector(`input[name="productos[${index}][fecha_vencimiento]"]`);
-        if (hidVence) hidVence.value = det.fecha_vencimiento ?? '';
-
-        const hidPrecio = row.querySelector(`input[name="productos[${index}][precio_unitario]"]`);
-        if (hidPrecio) hidPrecio.value = det.precio_unitario ?? 0;
-
-        // Presentaciones
-        await cargarPresentaciones(det.producto_id, index);
-
-        const selPres = row.querySelector(`.select-presentacion-${index}`);
-        if (selPres) {
-            selPres.value = det.presentacion_id ? String(det.presentacion_id) : '';
-            await alSeleccionarPresentacion(index, true);
-        }
-
-        calcularTotales(index);
-    }
-
-    actualizarAvisosVacio();
-}
-
-function agregarProductoTabla(index, productoPreseleccionado, usarSelect) {
+function agregarProductoTabla(index, productoPreseleccionado, usarSelect, st = null) {
     const tbody = document.getElementById('detallesTabla');
     const row = document.createElement('tr');
     row.id = `producto_${index}`;
@@ -734,14 +1225,15 @@ function agregarProductoTabla(index, productoPreseleccionado, usarSelect) {
             </span>
         </td>
 
-        <td class="px-3 py-3 align-top">${selectProducto}</td>
+        <td data-col="1" class="px-3 py-3 align-top whitespace-normal break-words">${selectProducto}</td>
 
-        <td class="px-3 py-3 align-top">
+        <td data-col="2" class="px-3 py-3 align-top">
             <div class="space-y-2">
                 <select class="select-presentacion-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                         onchange="alSeleccionarPresentacion(${index})">
                     <option value="">Cargando...</option>
                 </select>
+                <div class="presentation-label-${index} text-xs text-slate-600 dark:text-slate-300 whitespace-normal break-words"></div>
                 <a href="javascript:void(0)" onclick="abrirModalNuevaPresentacion(${index})"
                    class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
                     + Crear presentación
@@ -749,43 +1241,46 @@ function agregarProductoTabla(index, productoPreseleccionado, usarSelect) {
             </div>
         </td>
 
-        <td class="px-3 py-3 text-center align-top">
+        <td data-col="3" class="px-3 py-3 text-center align-top">
             <span class="span-unidades-${index} inline-flex items-center justify-center px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm font-bold text-slate-900 dark:text-white">1</span>
             <input type="hidden" class="input-unidades-${index}" value="1">
         </td>
 
-        <td class="px-3 py-3 align-top">
+        <td data-col="4" class="px-3 py-3 align-top">
             <input type="number"
-                   class="input-cantidad-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                   min="1" value="1" placeholder="Ej: 5"
+                   value="${st && st.cantidad ? st.cantidad : 1}"
+                               class="input-cantidad-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                   min="1" value="${st && st.cantidad ? st.cantidad : 1}" placeholder="Ej: 5"
                    title="Cantidad de presentaciones (Ej: 5 cajas)."
                    oninput="calcularTotales(${index})" required>
         </td>
 
-        <td class="px-3 py-3 text-center align-top">
+        <td data-col="5" class="px-3 py-3 text-center align-top">
             <span class="span-total-${index} inline-flex items-center px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-200 font-bold">1</span>
         </td>
 
-        <td class="px-3 py-3 align-top">
-            <input type="text"
-                   class="input-lote-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500"
-                   placeholder="LOT-2025-001" required>
+        <td data-col="6" class="px-3 py-3 align-top">
+            <textarea rows="1"
+                   class="input-lote-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden whitespace-pre-wrap break-words"
+                   placeholder="LOT-2025-001">${st && st.lote ? st.lote : ''}</textarea>
         </td>
 
-        <td class="px-3 py-3 align-top">
+        <td data-col="7" class="px-3 py-3 align-top">
             <input type="date"
-                   class="input-vence-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    required>
+                   value="${st && st.vence ? st.vence : '' }"
+                   value="${st && st.vence ? st.vence : '' }"
+                               class="input-vence-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                   min="${new Date().toISOString().split('T')[0]}" required>
         </td>
 
-        <td class="px-3 py-3 align-top">
+        <td data-col="8" class="px-3 py-3 align-top">
             <div class="space-y-1">
                 <div class="relative">
                     <span class="absolute inset-y-0 left-3 flex items-center text-slate-500 dark:text-slate-400 text-sm font-semibold">S/</span>
                     <input type="number"
                            class="input-precio-${index} w-full pl-8 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                            step="0.01" min="0"
-                           value="${productoPreseleccionado ? (productoPreseleccionado.precio_compra || 0) : 0}"
+                           value="${st && st.precio !== undefined ? st.precio : (productoPreseleccionado ? (productoPreseleccionado.precio_compra || 0) : 0)}"
                            oninput="calcularTotales(${index})" required>
                 </div>
                 <div class="text-xs text-slate-500 dark:text-slate-400 text-right">
@@ -794,7 +1289,7 @@ function agregarProductoTabla(index, productoPreseleccionado, usarSelect) {
             </div>
         </td>
 
-        <td class="px-3 py-3 text-right align-top">
+        <td data-col="9" class="px-3 py-3 text-right align-top">
             <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 font-bold text-sm">
                 S/ <span class="span-subtotal-${index} ml-1">0.00</span>
             </span>
@@ -807,28 +1302,42 @@ function agregarProductoTabla(index, productoPreseleccionado, usarSelect) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
             </button>
-        </td>
 
-        <input type="hidden" name="productos[${index}][presentacion_id]" value="">
-        <input type="hidden" name="productos[${index}][tipo_presentacion]" value="">
-        <input type="hidden" name="productos[${index}][unidades_por_presentacion]" value="1" class="hidden-unidades-${index}">
-        <input type="hidden" name="productos[${index}][cantidad_presentaciones]" value="1">
-        <input type="hidden" name="productos[${index}][numero_lote]" value="">
-        <input type="hidden" name="productos[${index}][fecha_vencimiento]" value="">
-        <input type="hidden" name="productos[${index}][precio_unitario]" value="0">
+            <!-- Hidden inputs deben permanecer dentro de una celda para que al mover columnas NO se pierdan -->
+            <div class="hidden">
+                <input type="hidden" name="productos[${index}][presentacion_id]" value="${st && st.presentacion_id ? st.presentacion_id : ''}">
+        <input type="hidden" name="productos[${index}][tipo_presentacion]" value="${st && st.tipo_presentacion ? st.tipo_presentacion : ''}">
+        <input type="hidden" name="productos[${index}][unidades_por_presentacion]" value="${st && st.unidades ? st.unidades : '1'}" class="hidden-unidades-${index}">
+        <input type="hidden" name="productos[${index}][cantidad_presentaciones]" value="${st && st.cantidad ? st.cantidad : '1'}">
+        <input type="hidden" name="productos[${index}][numero_lote]" value="${st && st.lote ? st.lote : ''}">
+        <input type="hidden" name="productos[${index}][fecha_vencimiento]" value="${st && st.vence ? st.vence : ''}">
+        <input type="hidden" name="productos[${index}][precio_unitario]" value="${st && st.precio !== undefined ? st.precio : '0'}">
+            </div>
+        </td>
     `;
 
     tbody.appendChild(row);
+    normalizarDataColsFila(row);
 
-    if (productoPreseleccionado && !usarSelect) {
-        cargarPresentaciones(productoPreseleccionado.id, index);
+    const pid = productoPreseleccionado && !usarSelect ? productoPreseleccionado.id : (st && st.producto_id ? st.producto_id : null);
+    if (pid && !usarSelect) {
+        cargarPresentaciones(pid, index).then(() => {
+            if (st && st.presentacion_id) {
+                const sel = document.querySelector(`${(vistaActual === 'tabla') ? '#vistaTabla' : '#vistaFormulario'} #producto_${index} .select-presentacion-${index}`);
+                if (sel) sel.value = st.presentacion_id;
+            }
+        });
     }
 
     asociarEventos(index);
     calcularTotales(index);
+    // asegurar hidden coherentes al crear
+    if (st) {
+        sincronizarHiddenDesdeVisibles(index);
+    }
 }
 
-function agregarProductoCard(index, productoPreseleccionado, usarSelect) {
+function agregarProductoCard(index, productoPreseleccionado, usarSelect, st = null) {
     const container = document.getElementById('detallesFormulario');
     const card = document.createElement('div');
     card.id = `producto_${index}`;
@@ -869,6 +1378,7 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect) {
                             onchange="alSeleccionarPresentacion(${index})">
                         <option value="">Cargando...</option>
                     </select>
+                    <div class="presentation-label-${index} text-xs text-slate-600 dark:text-slate-300 whitespace-normal break-words"></div>
                     <a href="javascript:void(0)" onclick="abrirModalNuevaPresentacion(${index})"
                        class="text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
                         + Crear presentación
@@ -885,7 +1395,7 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect) {
 
                 <div>
                     <div class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase mb-1">Cantidad</div>
-                    <input type="number" min="1" value="1"
+                    <input type="number" min="1" value="${st && st.cantidad ? st.cantidad : 1}"
                            class="input-cantidad-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                            placeholder="Ej: 5"
                            title="Cantidad de presentaciones (Ej: 5 cajas)."
@@ -903,13 +1413,15 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect) {
                     <div class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase mb-1">Lote</div>
                     <input type="text"
                            class="input-lote-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono text-slate-900 dark:text-white"
+                           value="${st && st.lote ? st.lote : ''}"
                            placeholder="LOT-2025-001" required>
                 </div>
                 <div>
                     <div class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase mb-1">Venc.</div>
                     <input type="date"
                            class="input-vence-${index} w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white"
-                            required>
+                           value="${st && st.vence ? st.vence : ''}"
+                           min="${new Date().toISOString().split('T')[0]}" required>
                 </div>
             </div>
 
@@ -920,7 +1432,7 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect) {
                         <span class="absolute inset-y-0 left-3 flex items-center text-slate-500 dark:text-slate-400 text-sm font-semibold">S/</span>
                         <input type="number" step="0.01" min="0"
                                class="input-precio-${index} w-full pl-8 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-right text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                               value="${productoPreseleccionado ? (productoPreseleccionado.precio_compra || 0) : 0}"
+                               value="${st && st.precio !== undefined ? st.precio : (productoPreseleccionado ? (productoPreseleccionado.precio_compra || 0) : 0)}"
                                oninput="calcularTotales(${index})" required>
                     </div>
                     <div class="text-xs text-slate-500 dark:text-slate-400 text-right mt-1">
@@ -947,12 +1459,22 @@ function agregarProductoCard(index, productoPreseleccionado, usarSelect) {
 
     container.appendChild(card);
 
-    if (productoPreseleccionado && !usarSelect) {
-        cargarPresentaciones(productoPreseleccionado.id, index);
+    const pid = productoPreseleccionado && !usarSelect ? productoPreseleccionado.id : (st && st.producto_id ? st.producto_id : null);
+    if (pid && !usarSelect) {
+        cargarPresentaciones(pid, index).then(() => {
+            // restaurar selección si existe
+            if (st && st.presentacion_id) {
+                const sel = document.querySelector(`${(vistaActual === 'tabla') ? '#vistaTabla' : '#vistaFormulario'} #producto_${index} .select-presentacion-${index}`);
+                if (sel) sel.value = st.presentacion_id;
+            }
+        });
     }
 
     asociarEventos(index);
     calcularTotales(index);
+    if (st) {
+        sincronizarHiddenDesdeVisibles(index);
+    }
 }
 
 function generarSelectProductos(index, preseleccionado) {
@@ -1013,10 +1535,20 @@ function asociarEventos(index) {
     const unidadesInput = row.querySelector(`.input-unidades-${index}`);
     const cantidad = row.querySelector(`.input-cantidad-${index}`);
 
-    if (lote) lote.addEventListener('input', () => {
-        const hidden = row.querySelector(`input[name="productos[${index}][numero_lote]"]`);
-        if (hidden) hidden.value = lote.value;
-    });
+    if (lote) {
+        const autoGrow = () => {
+            if (lote.tagName === 'TEXTAREA') {
+                lote.style.height = 'auto';
+                lote.style.height = (lote.scrollHeight) + 'px';
+            }
+        };
+        autoGrow();
+        lote.addEventListener('input', () => {
+            autoGrow();
+            const hidden = row.querySelector(`input[name="productos[${index}][numero_lote]"]`);
+            if (hidden) hidden.value = lote.value;
+        });
+    }
 
     if (vence) vence.addEventListener('input', () => {
         const hidden = row.querySelector(`input[name="productos[${index}][fecha_vencimiento]"]`);
@@ -1135,7 +1667,8 @@ async function guardarNuevaPresentacion() {
         }
 
         // Insertar en combobox y seleccionar
-        const selectElement = document.querySelector(`#producto_${index} .select-presentacion-${index}`);
+        const scope = (vistaActual === 'tabla') ? '#vistaTabla' : '#vistaFormulario';
+    const selectElement = document.querySelector(`${scope} #producto_${index} .select-presentacion-${index}`);
         if (selectElement) {
             const pres = data.presentacion;
             const option = document.createElement('option');
@@ -1150,6 +1683,18 @@ async function guardarNuevaPresentacion() {
         cerrarModalNuevaPresentacion();
         await alSeleccionarPresentacion(index, true);
 
+// Restaurar precio unitario desde estado (evita que se pierda al cambiar entre tabla/cards)
+const stAfter = estadoDetalles[index] || {};
+const containerAfter = document.getElementById(`producto_${index}`);
+const precioAfter = containerAfter?.querySelector(`.input-precio-${index}`);
+if (precioAfter && stAfter.precio !== undefined && stAfter.precio !== null && String(stAfter.precio) !== '') {
+    precioAfter.value = String(stAfter.precio);
+}
+// Mantener hidden inputs sincronizados con lo visible
+sincronizarHiddenDesdeVisibles(index);
+// Recalcular totales con el precio restaurado
+calcularTotales(index);
+
     } catch (e) {
         return showError('Error de red al guardar la presentación.');
     }
@@ -1159,14 +1704,18 @@ async function guardarNuevaPresentacion() {
  *  PRESENTACIONES
  *  ================================= */
 async function cargarPresentaciones(productoId, index) {
-    const selectElement = document.querySelector(`#producto_${index} .select-presentacion-${index}`);
+    const selectElement = document.querySelector(`${(vistaActual === 'tabla') ? '#vistaTabla' : '#vistaFormulario'} #producto_${index} .select-presentacion-${index}`);
     if (!selectElement) return;
 
     try {
-        const response = await fetch(`/api/productos/${productoId}/presentaciones`, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await response.json();
+        let data = presentacionesCache[String(productoId)];
+        if (!data) {
+            const response = await fetch(`/api/productos/${productoId}/presentaciones`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            data = await response.json();
+            presentacionesCache[String(productoId)] = data;
+        }
 
         selectElement.innerHTML = '';
 
@@ -1192,10 +1741,27 @@ async function cargarPresentaciones(productoId, index) {
             });
         }
 
-        // aplicar unidad base por defecto
-        selectElement.value = '';
+        // aplicar selección guardada si existe; si no, unidad base
+        const st = estadoDetalles[index] || {};
+        if (st.presentacion_id) {
+            selectElement.value = String(st.presentacion_id);
+        } else {
+            selectElement.value = '';
+        }
 
         await alSeleccionarPresentacion(index, true);
+
+// Restaurar precio unitario desde estado (evita que se pierda al cambiar entre tabla/cards)
+const stAfter = estadoDetalles[index] || {};
+const containerAfter = document.getElementById(`producto_${index}`);
+const precioAfter = containerAfter?.querySelector(`.input-precio-${index}`);
+if (precioAfter && stAfter.precio !== undefined && stAfter.precio !== null && String(stAfter.precio) !== '') {
+    precioAfter.value = String(stAfter.precio);
+}
+// Mantener hidden inputs sincronizados con lo visible
+sincronizarHiddenDesdeVisibles(index);
+// Recalcular totales con el precio restaurado
+calcularTotales(index);
 
     } catch (error) {
         console.error('Error al cargar presentaciones:', error);
@@ -1251,6 +1817,11 @@ async function alSeleccionarPresentacion(index, silent = false) {
 
     const select = row.querySelector(`.select-presentacion-${index}`);
     const opt = select?.selectedOptions?.[0];
+
+    // Mostrar nombre de presentación en 2 líneas (wrap)
+    const lbl = row.querySelector(`.presentation-label-${index}`);
+    if (lbl) lbl.textContent = opt ? opt.textContent : '';
+
 
     const unidades = parseInt(opt?.dataset?.unidades || '1', 10) || 1;
     const presId = select?.value || '';
@@ -1315,19 +1886,46 @@ function calcularTotales(index) {
 }
 
 function calcularTotalGeneral() {
-    const subtotales = document.querySelectorAll(`[id^="producto_"] .span-subtotal-0, [id^="producto_"] [class*="span-subtotal-"]`);
-    // La línea de arriba es un fallback; calculamos directamente iterando rows:
-    let total = 0;
-    document.querySelectorAll('#detallesTabla tr, #detallesFormulario > div').forEach(el => {
+    let subtotal = 0;
+
+    // Suma subtotales tanto en tabla como en cards (resistente a cambios de vista y reordenamientos)
+    document.querySelectorAll('[data-producto-index]').forEach(el => {
         const idx = el.dataset.productoIndex;
-        if (idx === undefined) return;
+        if (idx === undefined || idx === null) return;
+
         const span = el.querySelector(`.span-subtotal-${idx}`);
         const val = parseFloat(span?.textContent || '0') || 0;
-        total += val;
+        subtotal += val;
     });
 
-    document.getElementById('totalDisplay').textContent = total.toFixed(2);
-    document.getElementById('total').value = total.toFixed(2);
+    // Descuento (%)
+    const descuentoInput = document.getElementById('descuento');
+    let descuentoPct = parseFloat(descuentoInput?.value || '0');
+    if (Number.isNaN(descuentoPct)) descuentoPct = 0;
+
+    let ajustado = false;
+    if (descuentoPct < 0) { descuentoPct = 0; ajustado = true; }
+    if (descuentoPct > 100) { descuentoPct = 100; ajustado = true; }
+
+    if (descuentoInput && ajustado) descuentoInput.value = descuentoPct.toFixed(2);
+
+    const aviso = document.getElementById('descuentoAviso');
+    if (aviso) aviso.classList.toggle('hidden', !ajustado);
+
+    const descuentoMonto = subtotal * (descuentoPct / 100);
+    const total = subtotal - descuentoMonto;
+
+    const subtotalDisplay = document.getElementById('subtotalDisplay');
+    if (subtotalDisplay) subtotalDisplay.textContent = subtotal.toFixed(2);
+
+    const descuentoMontoDisplay = document.getElementById('descuentoMontoDisplay');
+    if (descuentoMontoDisplay) descuentoMontoDisplay.textContent = descuentoMonto.toFixed(2);
+
+    const totalDisplay = document.getElementById('totalDisplay');
+    if (totalDisplay) totalDisplay.textContent = total.toFixed(2);
+
+    const totalInput = document.getElementById('total');
+    if (totalInput) totalInput.value = total.toFixed(2);
 }
 
 function eliminarProducto(index) {
@@ -1345,21 +1943,20 @@ function actualizarAvisosVacio() {
     document.getElementById('avisoSinProductosCards').classList.toggle('hidden', hayCards);
 }
 
-
-// =======================
-// Escaneo por código de barras (pistola)
-// =======================
+/** ================================
+ *  ESCANEO (PISTOLA) - CÓDIGO DE BARRAS
+ *  ================================= */
 let productoBarcodeActual = null;
 
 function normalizarBarcode(v) {
-    return (v || '').toString().trim();
+    return String(v ?? '').trim();
 }
 
 function buscarProductoPorBarcode(code) {
     const c = normalizarBarcode(code);
     if (!c) return null;
     // búsqueda exacta por código de barras (producto base)
-    return productosData.find(p => normalizarBarcode(p.codigo_barras) === c) || null;
+    return productosData.find(p => normalizarBarcode((p.codigo_barras || p.codigo_barra)) === c) || null;
 }
 
 function mostrarPreviewBarcode(producto, code) {
@@ -1416,7 +2013,7 @@ function mostrarPreviewBarcode(producto, code) {
 
     if (nombre) nombre.textContent = producto.nombre || 'Producto';
     const desc = producto.descripcion ? `• ${producto.descripcion}` : '';
-    const cb = producto.codigo_barras ? `CB: ${producto.codigo_barras}` : `CB: ${code}`;
+    const cb = (producto.codigo_barras || producto.codigo_barra) ? `CB: ${(producto.codigo_barras || producto.codigo_barra)}` : `CB: ${code}`;
     if (extra) extra.textContent = `${cb} ${desc}`.trim();
 
     if (badge) {
@@ -1442,8 +2039,20 @@ function agregarProductoDesdeBarcode() {
     mostrarPreviewBarcode(null, '');
 }
 
+document.addEventListener('DOMContentLoaded', async () => {
+    initResizableColumns();
+    initReorderableColumns();
+    // Inicializa contador en base a filas existentes (por seguridad)
+    const existentes = document.querySelectorAll('[id^="producto_"]').length;
+    contadorProductos = existentes;
 
-document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnCrearProveedor')?.addEventListener('click', abrirModalProveedor);
+
+    // Precarga automática de los detalles (edición) para que al entrar se vean los productos
+    if (!detallesPrecargados && Array.isArray(detallesIniciales) && detallesIniciales.length) {
+        await precargarDetallesEdicion(detallesIniciales);
+    }
+
     actualizarAvisosVacio();
 
     // Sortable (reordenar filas/cards) - compatible mouse/táctil
@@ -1471,9 +2080,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+// Escaneo por código de barras (pistola)
+const barcodeInput = document.getElementById('barcodeInput');
+const btnBarcode = document.getElementById('btnAgregarBarcode');
+if (btnBarcode) btnBarcode.disabled = true;
+
+if (barcodeInput) {
+    // al escribir/escaneo
+    barcodeInput.addEventListener('input', (e) => {
+        const code = normalizarBarcode(e.target.value);
+        const prod = buscarProductoPorBarcode(code);
+        mostrarPreviewBarcode(prod, code);
+    });
+
+    // ENTER suele venir desde la pistola
+    barcodeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (productoBarcodeActual) agregarProductoDesdeBarcode();
+        }
+    });
+
+    // estado inicial
+    mostrarPreviewBarcode(null, '');
+}
+
+if (btnBarcode) {
+    btnBarcode.addEventListener('click', () => {
+        agregarProductoDesdeBarcode();
+    });
+}
+
     // Pre-render del catálogo
     renderCatalogoProductos();
-    precargarDetallesEdicion();
     actualizarEstadoCatalogo();
 });
 </script>

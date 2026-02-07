@@ -81,7 +81,7 @@
         
         .info-box {
             display: inline-block;
-            width: 48%;
+            width: 45%;
             border: 1px solid #e5e7eb;
             border-radius: 5px;
             padding: 10px;
@@ -109,6 +109,8 @@
         
         /* Table */
         table {
+            table-layout: fixed;
+
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 15px;
@@ -120,6 +122,9 @@
         }
         
         th {
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+
             padding: 8px 6px;
             text-align: left;
             font-size: 10px;
@@ -144,6 +149,9 @@
         }
         
         td {
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+
             padding: 7px 6px;
             font-size: 10px;
         }
@@ -323,30 +331,60 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 5%" class="center">#</th>
-                    <th style="width: 35%">Producto</th>
-                    <th style="width: 13%">Lote</th>
-                    <th style="width: 11%" class="center">Vencimiento</th>
-                    <th style="width: 10%" class="right">Cant.</th>
-                    <th style="width: 13%" class="right">P. Unit.</th>
-                    <th style="width: 13%" class="right">Subtotal</th>
+                    <th style="width: 4%" class="center">#</th>
+                    <th style="width: 26%">Producto</th>
+                    <th style="width: 14%">Presentación</th>
+                    <th style="width: 6%" class="center">Unid/Pres</th>
+                    <th style="width: 6%" class="right">Cant. Pres</th>
+                    <th style="width: 6%" class="right">Total Unid</th>
+                    <th style="width: 12%">Lote</th>
+                    <th style="width: 8%" class="center">Venc.</th>
+                    <th style="width: 9%" class="right">P. Unit</th>
+                    <th style="width: 9%" class="right">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($compra->detalles as $index => $detalle)
+                @php
+                    $unidPres = (int)($detalle->unidades_por_presentacion ?? 1);
+                    $cantPres = (float)($detalle->cantidad_presentaciones ?? ($detalle->cantidad ?? 0));
+                    if ($cantPres <= 0 && isset($detalle->cantidad_legacy)) {
+                        $cantPres = $unidPres > 0 ? ((float)$detalle->cantidad_legacy / $unidPres) : (float)$detalle->cantidad_legacy;
+                    }
+                    $totalUnid = (int)($detalle->cantidad_unidades_base ?? ($detalle->cantidad_legacy ?? round($cantPres * $unidPres)));
+                    $tipoPres = $detalle->tipo_presentacion ?? ($detalle->presentacion->nombre ?? 'Unidad');
+                    $precioUnit = (float)($detalle->precio_unitario ?? 0);
+                    $precioPres = round($precioUnit * max($unidPres,1), 2);
+                @endphp
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
                     <td>
                         <div class="product-name">{{ $detalle->producto->nombre }}</div>
-                        <div class="product-category">{{ $detalle->producto->categoria->nombre }}</div>
+                        @if(!empty($detalle->producto->descripcion))
+                            <div class="product-details">{{ $detalle->producto->descripcion }}</div>
+                        @endif
+                        @if(!empty($detalle->producto->codigo_barra))
+                            <div class="product-details">CB: {{ $detalle->producto->codigo_barra }}</div>
+                        @endif
                     </td>
                     <td>
-                        <span class="lote-info">{{ $detalle->lote->numero_lote }}</span>
+                        <div class="product-name">{{ $tipoPres }}</div>
+                        @if(!empty($detalle->presentacion?->descripcion))
+                            <div class="product-details">{{ $detalle->presentacion->descripcion }}</div>
+                        @endif
                     </td>
-                    <td class="center">{{ $detalle->lote->fecha_vencimiento->format('d/m/Y') }}</td>
-                    <td class="right">{{ $detalle->cantidad }}</td>
-                    <td class="right">S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
-                    <td class="right"><strong>S/ {{ number_format($detalle->subtotal, 2) }}</strong></td>
+                    <td class="center">{{ $unidPres }}</td>
+                    <td class="right">{{ rtrim(rtrim(number_format($cantPres, 2, '.', ''), '0'), '.') }}</td>
+                    <td class="right">{{ number_format($totalUnid, 0) }}</td>
+                    <td>
+                        <div class="product-name">{{ $detalle->lote->numero_lote ?? '-' }}</div>
+                    </td>
+                    <td class="center">{{ $detalle->lote->fecha_vencimiento ? \Carbon\Carbon::parse($detalle->lote->fecha_vencimiento)->format('d/m/Y') : '-' }}</td>
+                    <td class="right">
+                        S/ {{ number_format($precioUnit, 2) }}
+                        <div class="product-details">Pres: S/ {{ number_format($precioPres, 2) }}</div>
+                    </td>
+                    <td class="right">S/ {{ number_format($detalle->subtotal, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>

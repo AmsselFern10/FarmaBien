@@ -345,13 +345,16 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 5%">#</th>
-                    <th style="width: 35%">Producto</th>
-                    <th style="width: 15%">Lote</th>
-                    <th style="width: 12%">Vencimiento</th>
-                    <th class="right" style="width: 10%">Cantidad</th>
-                    <th class="right" style="width: 11%">P. Unit.</th>
-                    <th class="right" style="width: 12%">Subtotal</th>
+                    <th style="width: 4%" class="center">#</th>
+                    <th style="width: 26%">Producto</th>
+                    <th style="width: 16%">Presentación</th>
+                    <th style="width: 9%" class="center">Unid/Pres</th>
+                    <th style="width: 9%" class="right">Cant. Pres</th>
+                    <th style="width: 10%" class="right">Total Unid</th>
+                    <th style="width: 10%">Lote</th>
+                    <th style="width: 9%" class="center">Venc.</th>
+                    <th style="width: 8%" class="right">P. Unit</th>
+                    <th style="width: 9%" class="right">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
@@ -360,15 +363,37 @@
                     <td class="center">{{ $index + 1 }}</td>
                     <td>
                         <div class="product-name">{{ $detalle->producto->nombre }}</div>
-                        <div class="product-category">{{ $detalle->producto->categoria->nombre }}</div>
+                        @if(optional($detalle->producto->categoria)->nombre)
+                            <div class="product-category">{{ $detalle->producto->categoria->nombre }}</div>
+                        @endif
+                        @if(!empty($detalle->producto->codigo_barra))
+                            <div class="product-category">CB: {{ $detalle->producto->codigo_barra }}</div>
+                        @endif
                     </td>
                     <td>
-                        <span class="lote-info">{{ $detalle->lote->numero_lote }}</span>
+                        <div class="product-name">{{ $detalle->nombre_presentacion }}</div>
+                        @if($detalle->usaPresentacion() && $detalle->unidades_por_presentacion > 1)
+                            <div class="product-category">{{ $detalle->descripcion_presentacion }}</div>
+                        @else
+                            <div class="product-category">Unidad base</div>
+                        @endif
                     </td>
-                    <td class="center">{{ $detalle->lote->fecha_vencimiento->format('d/m/Y') }}</td>
-                    <td class="right">{{ $detalle->cantidad }}</td>
-                    <td class="right">S/ {{ number_format($detalle->precio_unitario, 2) }}</td>
-                    <td class="right"><strong>S/ {{ number_format($detalle->subtotal, 2) }}</strong></td>
+                    <td class="center">{{ (int) $detalle->unidades_por_presentacion }}</td>
+                    <td class="right">{{ (int) $detalle->cantidad_presentaciones }}</td>
+                    <td class="right">{{ (int) ($detalle->cantidad_unidades_base ?? $detalle->cantidad) }}</td>
+                    <td>
+                        <span class="lote-info">{{ $detalle->lote->numero_lote ?? '-' }}</span>
+                    </td>
+                    <td class="center">
+                        {{ optional($detalle->lote?->fecha_vencimiento)->format('d/m/Y') ?? '-' }}
+                    </td>
+                    <td class="right">
+                        {{ number_format((float) $detalle->precio_unitario, 2) }}
+                        @if($detalle->usaPresentacion() && $detalle->unidades_por_presentacion > 1)
+                            <div class="product-category">Por pres: S/ {{ number_format((float) $detalle->precio_presentacion, 2) }}</div>
+                        @endif
+                    </td>
+                    <td class="right bold">{{ number_format((float) $detalle->subtotal, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>

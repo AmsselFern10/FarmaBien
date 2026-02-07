@@ -163,6 +163,13 @@
                         <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Fecha de Registro</p>
                         <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $compra->created_at->format('d/m/Y H:i') }}</p>
                     </div>
+
+                    <div class="md:col-span-2 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Observaciones</p>
+                        <p class="text-sm text-slate-900 dark:text-white whitespace-pre-line">
+                            {{ $compra->observaciones ?: '—' }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -421,8 +428,30 @@
                     </svg>
                 </div>
                 
-                <div class="space-y-4">
+                @php
+                    $subtotalCompra = round((float)$compra->detalles->sum('subtotal'), 2);
+                    $descuentoPct = (float)($compra->descuento ?? 0);
+                    $descuentoPct = max(0, min(100, $descuentoPct));
+                    $montoDescuento = round($subtotalCompra * ($descuentoPct / 100), 2);
+                @endphp
+
+                <div class="space-y-3">
                     <div class="flex justify-between items-center text-white">
+                        <span class="text-sm font-medium text-blue-100">Subtotal:</span>
+                        <span class="text-lg font-bold">S/ {{ number_format($subtotalCompra, 2) }}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center text-white">
+                        <span class="text-sm font-medium text-blue-100">Descuento:</span>
+                        <span class="text-sm font-semibold">{{ number_format($descuentoPct, 2) }}%</span>
+                    </div>
+
+                    <div class="flex justify-between items-center text-white">
+                        <span class="text-sm font-medium text-blue-100">Monto descuento:</span>
+                        <span class="text-sm font-semibold">- S/ {{ number_format($montoDescuento, 2) }}</span>
+                    </div>
+
+                    <div class="border-t border-blue-200/30 pt-3 flex justify-between items-center text-white">
                         <span class="text-sm font-medium text-blue-100">Total:</span>
                         <span class="text-3xl font-bold">S/ {{ number_format($compra->total, 2) }}</span>
                     </div>
