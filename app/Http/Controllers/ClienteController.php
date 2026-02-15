@@ -49,12 +49,30 @@ class ClienteController extends Controller
     {
         try {
             $cliente = Cliente::create($request->validated());
-            
+
+            // ✅ Soporte AJAX (modal POS): devolver JSON cuando el request lo pide
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'id' => $cliente->id,
+                    'nombre' => $cliente->nombre,
+                    'documento' => $cliente->documento,
+                    'cliente' => $cliente,
+                    'message' => "Cliente '{$cliente->nombre}' creado correctamente.",
+                ], 201);
+            }
+
             return redirect()
                 ->route('clientes.index')
                 ->with('success', "Cliente '{$cliente->nombre}' creado correctamente.");
-                
+
         } catch (\Exception $e) {
+
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'message' => 'Error al crear el cliente: ' . $e->getMessage(),
+                ], 422);
+            }
+
             return back()
                 ->withInput()
                 ->with('error', 'Error al crear el cliente: ' . $e->getMessage());
@@ -79,12 +97,27 @@ class ClienteController extends Controller
     {
         try {
             $cliente->update($request->validated());
-            
+
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'id' => $cliente->id,
+                    'cliente' => $cliente,
+                    'message' => "Cliente '{$cliente->nombre}' actualizado correctamente.",
+                ], 200);
+            }
+
             return redirect()
                 ->route('clientes.show', $cliente)
                 ->with('success', "Cliente '{$cliente->nombre}' actualizado correctamente.");
-                
+
         } catch (\Exception $e) {
+
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'message' => 'Error al actualizar el cliente: ' . $e->getMessage(),
+                ], 422);
+            }
+
             return back()
                 ->withInput()
                 ->with('error', 'Error al actualizar el cliente: ' . $e->getMessage());
@@ -95,11 +128,11 @@ class ClienteController extends Controller
     {
         try {
             $cliente->update(['activo' => false]);
-            
+
             return redirect()
                 ->route('clientes.index')
                 ->with('success', "Cliente '{$cliente->nombre}' desactivado correctamente.");
-                
+
         } catch (\Exception $e) {
             return back()
                 ->with('error', 'Error al desactivar el cliente: ' . $e->getMessage());

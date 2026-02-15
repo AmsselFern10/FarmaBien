@@ -19,13 +19,13 @@ class UpdateCompraRequest extends FormRequest
     {
         return [
             // motivo para modificar (tu controller lo separa con except('motivo'))
-            'motivo' => 'required|string|min:10|max:200',
+            'motivo_anulacion' => 'required|string|min:10|max:200',
 
             'proveedor_id' => 'required|exists:proveedores,id',
             'fecha' => 'nullable|date|before_or_equal:today',
 
             // NUEVOS CAMPOS
-            'descuento' => 'nullable|numeric|min:0',
+            'descuento' => 'nullable|numeric|min:0|max:100',
             'observaciones' => 'nullable|string|max:2000',
 
             'productos' => 'required|array|min:1',
@@ -38,6 +38,8 @@ class UpdateCompraRequest extends FormRequest
             'productos.*.unidades_por_presentacion' => 'required|integer|min:1',
             'productos.*.precio_unitario' => 'required|numeric|min:0',
 
+            'productos.*.descuento' => 'nullable|numeric|min:0|max:100',
+
             'productos.*.numero_lote' => 'required|string|max:50',
             'productos.*.fecha_vencimiento' => 'required|date|after:today',
         ];
@@ -46,9 +48,9 @@ class UpdateCompraRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'motivo.required' => 'Debe indicar el motivo de la modificación.',
-            'motivo.min' => 'El motivo debe tener al menos 10 caracteres.',
-            'motivo.max' => 'El motivo no puede exceder 200 caracteres.',
+            'motivo_anulacion.required' => 'Debe indicar el motivo de la anulación.',
+            'motivo_anulacion.min' => 'El motivo debe tener al menos 10 caracteres.',
+            'motivo_anulacion.max' => 'El motivo no puede exceder 200 caracteres.',
 
             'proveedor_id.required' => 'Debe seleccionar un proveedor.',
             'proveedor_id.exists' => 'El proveedor seleccionado no existe.',
@@ -68,7 +70,7 @@ class UpdateCompraRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'motivo' => 'motivo',
+            'motivo_anulacion' => 'motivo de anulación',
             'proveedor_id' => 'proveedor',
             'fecha' => 'fecha de compra',
 
@@ -136,6 +138,7 @@ class UpdateCompraRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        // Soporta cuando productos llega como JSON (por ejemplo, desde JS)
         if ($this->has('productos') && is_string($this->input('productos'))) {
             $this->merge([
                 'productos' => json_decode($this->input('productos'), true) ?: [],
@@ -145,16 +148,23 @@ class UpdateCompraRequest extends FormRequest
         $productos = $this->input('productos', []);
 
         foreach ($productos as $index => $item) {
+            // Compatibilidad: si el front envía "cantidad", lo mapeamos a "cantidad_presentaciones"
             if (!isset($item['cantidad_presentaciones']) && isset($item['cantidad'])) {
                 $productos[$index]['cantidad_presentaciones'] = $item['cantidad'];
             }
 
+            // Si no hay presentación seleccionada, tratamos como unidad base
             if (empty($item['presentacion_id'])) {
                 $productos[$index]['presentacion_id'] = null;
 
                 if (!isset($item['unidades_por_presentacion'])) {
                     $productos[$index]['unidades_por_presentacion'] = 1;
                 }
+            }
+
+            // Si no viene descuento por producto, default 0
+            if (!isset($item['descuento'])) {
+                $productos[$index]['descuento'] = 0;
             }
         }
 

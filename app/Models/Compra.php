@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 
 class Compra extends Model
 {
@@ -13,25 +13,47 @@ class Compra extends Model
         'proveedor_id',
         'user_id',
         'anulado_por',
-        'reemplazada_por',        
+        'reemplazada_por',
+        'compra_original_id',
+
+        // Totales (nuevo esquema)
+        'subtotal_bruto',
+        'descuento_porcentaje',
+        'descuento_monto_total',
         'total',
+
         'observaciones',
-        'descuento',
+
         'estado',
         'fecha',
         'fecha_anulacion',
         'motivo_anulacion',
-       
     ];
 
     protected $casts = [
+        'subtotal_bruto' => 'decimal:2',
+        'descuento_porcentaje' => 'decimal:2',
+        'descuento_monto_total' => 'decimal:2',
         'total' => 'decimal:2',
-        'descuento' => 'decimal:2',
+
         'fecha' => 'datetime',
         'fecha_anulacion' => 'datetime',
     ];
 
-    // Relaciones existentes
+    /**
+     * Alias de compatibilidad:
+     * En formularios el campo suele llamarse "descuento" (porcentaje global).
+     */
+    public function setDescuentoAttribute($value): void
+    {
+        $this->attributes['descuento_porcentaje'] = $value;
+    }
+
+    public function getDescuentoAttribute()
+    {
+        return $this->descuento_porcentaje;
+    }
+
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class);
@@ -57,8 +79,6 @@ class Compra extends Model
         return $this->hasMany(Lote::class);
     }
 
-    // ✅ NUEVAS RELACIONES
-    
     public function compraOriginal(): BelongsTo
     {
         return $this->belongsTo(Compra::class, 'compra_original_id');
@@ -69,50 +89,14 @@ class Compra extends Model
         return $this->belongsTo(Compra::class, 'reemplazada_por');
     }
 
-    public function historialModificaciones(): HasMany
-    {
-        return $this->hasMany(Compra::class, 'compra_original_id');
-    }
-
-    // Scopes
-    public function scopeRecibidas($query)
-    {
-        return $query->where('estado', 'recibida');
-    }
-
-    public function scopeAnuladas($query)
-    {
-        return $query->where('estado', 'anulada');
-    }
-
-    public function scopeOriginales($query)
-    {
-        return $query->whereNull('compra_original_id');
-    }
-
-    public function scopeModificaciones($query)
-    {
-        return $query->whereNotNull('compra_original_id');
-    }
-
-    public function scopeActivas($query)
-    {
-        return $query->where('estado', 'recibida')
-            ->whereNull('reemplazada_por');
-    }
-
-    // ✅ NUEVOS MÉTODOS
-    
     public function puedeAnularse(): bool
     {
-        return $this->estado === 'recibida' 
-            && is_null($this->reemplazada_por);
+        return $this->estado === 'recibida' && is_null($this->reemplazada_por);
     }
 
     public function puedeModificarse(): bool
     {
-        return $this->estado === 'recibida' 
-            && is_null($this->reemplazada_por);
+        return $this->estado === 'recibida' && is_null($this->reemplazada_por);
     }
 
     public function esModificacion(): bool
@@ -124,34 +108,35 @@ class Compra extends Model
     {
         return !is_null($this->reemplazada_por);
     }
+    public function cadenaModificaciones(): Collection
+{
+    // 1) Subir hasta la compra raíz (la original)
+    $root = $this;
 
-    public function compraActiva()
-    {
-        $compra = $this;
-        
-        while ($compra->reemplazada_por) {
-            $compra = $compra->reemplazadaPor;
+    while (!is_null($root->compra_original_id)) {
+        $root->loadMissing('compraOriginal');
+        $root = $root->compraOriginal;
+
+        // Seguridad por si hay datos dañados
+        if (!$root) {
+            return collect([$this]);
         }
-        
-        return $compra;
     }
 
-    public function cadenaModificaciones()
-    {
-        $cadena = collect([$this]);
-        $compra = $this;
-        
-        while ($compra->compraOriginal) {
-            $compra = $compra->compraOriginal;
-            $cadena->prepend($compra);
-        }
-        
-        $compra = $this;
-        while ($compra->reemplazadaPor) {
-            $compra = $compra->reemplazadaPor;
-            $cadena->push($compra);
-        }
-        
-        return $cadena->unique('id')->values();
+    // 2) Bajar por la cadena usando reemplazada_por (versiones sucesivas)
+    $cadena = collect([$root]);
+    $actual = $root;
+
+    while (!is_null($actual->reemplazada_por)) {
+        $actual->loadMissing('reemplazadaPor');
+        $siguiente = $actual->reemplazadaPor;
+
+        if (!$siguiente) break;
+
+        $cadena->push($siguiente);
+        $actual = $siguiente;
     }
+
+    return $cadena->unique('id')->values();
+}
 }

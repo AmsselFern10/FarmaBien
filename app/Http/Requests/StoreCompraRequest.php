@@ -22,7 +22,7 @@ class StoreCompraRequest extends FormRequest
             'fecha' => 'nullable|date|before_or_equal:today',
 
             // NUEVOS CAMPOS
-            'descuento' => 'nullable|numeric|min:0',
+            'descuento' => 'nullable|numeric|min:0|max:100',
             'observaciones' => 'nullable|string|max:2000',
 
             // Detalle
@@ -42,6 +42,8 @@ class StoreCompraRequest extends FormRequest
 
             // Precio unitario por unidad base
             'productos.*.precio_unitario' => 'required|numeric|min:0',
+
+            'productos.*.descuento' => 'nullable|numeric|min:0|max:100',
 
             // Lote / vencimiento
             'productos.*.numero_lote' => 'required|string|max:50',
@@ -185,6 +187,10 @@ class StoreCompraRequest extends FormRequest
                 // Si no viene unidades_por_presentacion, default 1
                 if (!isset($item['unidades_por_presentacion'])) {
                     $productos[$index]['unidades_por_presentacion'] = 1;
+            // Si no viene descuento por producto, default 0
+            if (!isset($item['descuento'])) {
+                $productos[$index]['descuento'] = 0;
+            }
                 }
             }
         }

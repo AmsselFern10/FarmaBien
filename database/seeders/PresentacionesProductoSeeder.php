@@ -25,10 +25,10 @@ class PresentacionesProductoSeeder extends Seeder
         $idProductoMolde = DB::table('productos')->insertGetId([
             'nombre' => 'PRODUCTO PLANTILLA',
             'categoria_id' => DB::table('categorias')->first()->id,
-            'precio_compra' => 0,
-            'precio_venta' => 0,
-            'stock_minimo' => 0,
-            'activo' => 0, // Desactivado para que no se venda
+            'precio_compra' => 10,
+            'precio_venta' => 15,
+            'stock_minimo' => 20,
+            'activo' => 1, // Desactivado para que no se venda
             'created_at' => now(),
         ]);
 

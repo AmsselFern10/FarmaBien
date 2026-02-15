@@ -85,7 +85,16 @@ Route::middleware('auth')->group(function () {
     Route::get('ventas/{venta}/ticket', [VentaController::class, 'ticket'])
         ->name('ventas.ticket')
         ->middleware('permission:ver ventas');
+    Route::get('ventas/{venta}/imprimir-a4', [VentaController::class, 'imprimirA4'])
+    ->name('ventas.imprimir')
+    ->middleware('permission:ver ventas');
 
+    Route::get('ventas/{venta}/pdf', [VentaController::class, 'generarPDF'])
+    ->name('ventas.pdf')
+    ->middleware('permission:ver ventas');
+    Route::get('ventas/buscar/{id}', [VentaController::class, 'buscarPorId'])
+    ->name('ventas.buscar')
+    ->middleware('permission:ver ventas');
     /*
     |--------------------------------------------------------------------------
     | COMPRAS - CRUD COMPLETO

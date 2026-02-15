@@ -15,31 +15,43 @@
             Gestión de ventas y facturación
         </p>
     </div>
-    <div class="flex gap-3">
-        @can('realizar ventas')
-        <a href="{{ route('ventas.create') }}" 
-           class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105">
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" onclick="abrirModalBuscar()"
+                class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
-            Nueva Venta
-        </a>
+            Buscar venta
+        </button>
+
+        @can('realizar ventas')
+            <a href="{{ route('ventas.create') }}"
+               class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Nueva venta
+            </a>
         @endcan
     </div>
 @endsection
 
 @section('content')
 <div class="space-y-6">
-    
-    <!-- Botón Flotante de Búsqueda Rápida -->
-    <button onclick="abrirModalBuscar()" 
-            class="fixed bottom-6 right-6 z-40 inline-flex items-center px-5 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
-            title="Búsqueda Rápida">
-        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-        Buscar Venta
-    </button>
+
+    @php
+        // Stats vienen del controller (recomendado). Por defecto: semana actual (Lunes → Domingo).
+        $statsTotal       = $stats['total'] ?? ($ventas->total() ?? 0);
+        $statsCompletadas = $stats['completadas'] ?? 0;
+        $statsAnuladas    = $stats['anuladas'] ?? 0;
+        $statsIngresos    = $stats['ingresos'] ?? 0;
+
+        $rango = $stats['rango'] ?? null;
+        $labelRango = null;
+        if (is_array($rango) && isset($rango['inicio'], $rango['fin']) && ($rango['es_semana'] ?? false)) {
+            $labelRango = 'Semana actual (Lun-Dom): ' . $rango['inicio']->format('d/m') . ' - ' . $rango['fin']->format('d/m');
+        }
+    @endphp
     
     <!-- Estadísticas -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -48,10 +60,13 @@
             <div class="p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Total Ventas</p>
+                        <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Total ventas</p>
                         <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-                            {{ \App\Models\Venta::count() }}
+                            {{ $statsTotal }}
                         </p>
+                        @if($labelRango)
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $labelRango }}</p>
+                        @endif
                     </div>
                     <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                         <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +84,7 @@
                     <div>
                         <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Completadas</p>
                         <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-                            {{ \App\Models\Venta::where('estado', 'completada')->count() }}
+                            {{ $statsCompletadas }}
                         </p>
                     </div>
                     <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -88,7 +103,7 @@
                     <div>
                         <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Anuladas</p>
                         <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">
-                            {{ \App\Models\Venta::where('estado', 'anulada')->count() }}
+                            {{ $statsAnuladas }}
                         </p>
                     </div>
                     <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
@@ -107,7 +122,7 @@
                     <div>
                         <p class="text-sm font-medium text-purple-100">Total Ingresos</p>
                         <p class="text-3xl font-bold text-white mt-2">
-                            S/ {{ number_format(\App\Models\Venta::where('estado', 'completada')->sum('total'), 2) }}
+                            S/ {{ number_format($statsIngresos, 2) }}
                         </p>
                     </div>
                     <div class="p-3 bg-purple-400/30 rounded-lg">
@@ -121,14 +136,14 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div id="filtrosVenta" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
             <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Filtros de Búsqueda</h3>
         </div>
         
-        <form method="GET" action="{{ route('ventas.index') }}" class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                
+        <form id="formFiltrosVentas" method="GET" action="{{ route('ventas.index') }}" class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+
                 <!-- Estado -->
                 <div>
                     <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
@@ -148,7 +163,7 @@
                     </label>
                     <select name="cliente_id" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Todos los clientes</option>
-                        @foreach(\App\Models\Cliente::orderBy('nombre')->get() as $cliente)
+                        @foreach(($clientes ?? []) as $cliente)
                             <option value="{{ $cliente->id }}" {{ request('cliente_id') == $cliente->id ? 'selected' : '' }}>
                                 {{ $cliente->nombre }}
                             </option>
@@ -177,11 +192,36 @@
                            value="{{ request('fecha_fin') }}"
                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
+<div>
+            <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                Cajero
+            </label>
+            <select name="user_id" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Todos los cajeros</option>
+                @foreach(($usuarios ?? []) as $usuario)
+                    <option value="{{ $usuario->id }}" {{ request('user_id') == $usuario->id ? 'selected' : '' }}>
+                        {{ $usuario->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+                <!-- Orden -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                        Orden
+                    </label>
+                    <select name="orden" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="fecha_desc" {{ request('orden', 'fecha_desc') == 'fecha_desc' ? 'selected' : '' }}>Fecha (recientes)</option>
+                        <option value="id_desc" {{ request('orden') == 'id_desc' ? 'selected' : '' }}>Número (últimas primero)</option>
+                        <option value="fecha_asc" {{ request('orden') == 'fecha_asc' ? 'selected' : '' }}>Fecha (antiguas)</option>
+                        <option value="id_asc" {{ request('orden') == 'id_asc' ? 'selected' : '' }}>Número (primeras primero)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Botones -->
             <div class="mt-4 flex justify-end gap-3">
-                @if(request()->hasAny(['estado', 'cliente_id', 'fecha_inicio', 'fecha_fin']))
+                @if(request()->hasAny(['estado', 'cliente_id', 'fecha_inicio', 'fecha_fin', 'orden']))
                 <a href="{{ route('ventas.index') }}" 
                    class="px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
                     Limpiar Filtros
@@ -356,7 +396,7 @@
         <!-- Paginación -->
         @if($ventas->hasPages())
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-            {{ $ventas->links() }}
+            {{ $ventas->withQueryString()->links() }}
         </div>
         @endif
     </div>
@@ -430,6 +470,32 @@
 
 @push('scripts')
 <script>
+
+// Wrapper defensivo: si el partial no define abrir/cerrar, lo hacemos aquí.
+window.abrirModalBuscar = window.abrirModalBuscar || function () {
+    const modal = document.getElementById('modalBuscarVenta')
+        || document.getElementById('modalBuscar')
+        || document.getElementById('modalBuscarRapida');
+
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    setTimeout(() => {
+        const input = modal.querySelector('input[type="text"], input[type="number"], input[type="search"]');
+        if (input) {
+            input.focus();
+            input.select?.();
+        }
+    }, 100);
+};
+
+window.cerrarModalBuscar = window.cerrarModalBuscar || function () {
+    const modal = document.getElementById('modalBuscarVenta')
+        || document.getElementById('modalBuscar')
+        || document.getElementById('modalBuscarRapida');
+    if (!modal) return;
+    modal.classList.add('hidden');
+};
 function modalAnular(ventaId) {
     const modal = document.getElementById('modalAnular');
     const form = document.getElementById('formAnular');

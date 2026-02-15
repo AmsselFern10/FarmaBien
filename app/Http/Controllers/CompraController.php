@@ -31,34 +31,56 @@ class CompraController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        $query = Compra::with(['proveedor', 'usuario', 'detalles.producto'])
-            ->orderBy('fecha', 'desc');
+   public function index(Request $request)
+{
+    $query = Compra::with(['proveedor', 'usuario', 'detalles.producto']);
 
-        // Filtros
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
-        }
-
-        if ($request->filled('fecha_inicio')) {
-            $query->whereDate('fecha', '>=', $request->fecha_inicio);
-        }
-
-        if ($request->filled('fecha_fin')) {
-            $query->whereDate('fecha', '<=', $request->fecha_fin);
-        }
-
-        if ($request->filled('proveedor_id')) {
-            $query->where('proveedor_id', $request->proveedor_id);
-        }
-
-        $compras = $query->paginate(15);
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
-
-        return view('compras.index', compact('compras', 'proveedores'));
+    // Filtros
+    if ($request->filled('estado')) {
+        $query->where('estado', $request->estado);
+    }
+    if ($request->filled('fecha_inicio')) {
+        $query->whereDate('fecha', '>=', $request->fecha_inicio);
+    }
+    if ($request->filled('fecha_fin')) {
+        $query->whereDate('fecha', '<=', $request->fecha_fin);
+    }
+    if ($request->filled('proveedor_id')) {
+        $query->where('proveedor_id', $request->proveedor_id);
     }
 
+    // ✅ Stats correctos (no solo la página actual)
+    $statsQuery = clone $query;
+    $stats = [
+        'total' => (clone $statsQuery)->count(),
+        'recibidas' => (clone $statsQuery)->where('estado', 'recibida')->count(),
+        'anuladas' => (clone $statsQuery)->where('estado', 'anulada')->count(),
+        'monto_recibidas' => (clone $statsQuery)->where('estado', 'recibida')->sum('total'),
+    ];
+
+
+    $orden = $request->input('orden', 'id_asc');
+    switch ($orden) {
+        case 'id_desc':
+            $query->orderBy('id', 'desc');
+            break;
+        case 'fecha_asc':
+            $query->orderBy('fecha', 'asc')->orderBy('id', 'asc');
+            break;
+        case 'fecha_desc':
+            $query->orderBy('fecha', 'desc')->orderBy('id', 'desc');
+            break;
+        case 'id_asc':
+        default:
+            $query->orderBy('id', 'asc');
+            break;
+    }
+$compras = $query->paginate(15);
+$compras->withQueryString();
+    $proveedores = Proveedor::activos()->orderBy('nombre')->get();
+
+    return view('compras.index', compact('compras', 'proveedores', 'stats'));
+}
     /**
      * Show the form for creating a new resource.
      */
@@ -161,16 +183,25 @@ public function edit(Compra $compra)
     public function update(UpdateCompraRequest $request, Compra $compra)
     {
         try {
+            // Tomamos solo datos validados (evita _token/_method y campos extra)
+            $data = $request->validated();
+
+            // Motivo viene del campo correcto del formulario
+            $motivo = trim((string) ($data['motivo_anulacion'] ?? ''));
+
+            // El service no espera el motivo dentro del array $data
+            unset($data['motivo_anulacion']);
+
             $nuevaCompra = $this->compraService->modificarCompra(
                 compraId: $compra->id,
-                data: $request->except('motivo'),
-                motivo: $request->motivo
+                data: $data,
+                motivo: $motivo
             );
-            
+
             return redirect()
                 ->route('compras.show', $nuevaCompra)
                 ->with('success', "Compra modificada correctamente. Compra original: #{$compra->id} → Nueva compra: #{$nuevaCompra->id}");
-                
+
         } catch (\Exception $e) {
             return back()
                 ->withInput()

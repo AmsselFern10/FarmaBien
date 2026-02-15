@@ -294,23 +294,27 @@
         🖨️ Imprimir
     </button>
     
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="company-info">
-                <div class="company-name">{{ config('app.name', 'FarmaBien') }}</div>
-                <div class="company-details">
-                    <strong>RUC:</strong> 20123456789<br>
-                    <strong>Dirección:</strong> Av. Principal 123, Lima<br>
-                    <strong>Teléfono:</strong> (01) 234-5678<br>
-                    <strong>Email:</strong> contacto@farmabien.com
-                </div>
-            </div>
-            <div class="document-type">
-                <h2>{{ strtoupper($compra->tipo_comprobante ?? 'COMPRA') }}</h2>
-                <div class="document-number">#{{ str_pad($compra->id, 6, '0', STR_PAD_LEFT) }}</div>
+        <div class="container">
+    <div class="header">
+        <div class="company-info">
+            {{-- Nombre de la empresa desde el ENV --}}
+            <div class="company-name">{{ env('EMPRESA_NOMBRE', 'FarmaBien') }}</div>
+            
+            <div class="company-details">
+                {{-- Datos detallados desde el ENV --}}
+                <strong>RUC:</strong> {{ env('EMPRESA_RUC', '00000000000') }}<br>
+                <strong>Dirección:</strong> {{ env('EMPRESA_DIRECCION', 'N/A') }}<br>
+                <strong>Teléfono:</strong> {{ env('EMPRESA_TELEFONO', 'N/A') }}<br>
+                <strong>Email:</strong> {{ env('EMPRESA_EMAIL', 'N/A') }}
             </div>
         </div>
+        
+        <div class="document-type">
+            <h2>{{ strtoupper($compra->tipo_comprobante ?? 'COMPRA') }}</h2>
+            <div class="document-number">#{{ str_pad($compra->id, 6, '0', STR_PAD_LEFT) }}</div>
+        </div>
+    </div>
+</div>
         
         <!-- Info Section -->
         <div class="info-section">

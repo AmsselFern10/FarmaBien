@@ -9,9 +9,40 @@ class DetalleCompra extends Model
 {
     protected $table = 'detalle_compra';
 
-  
+    protected $fillable = [
+        'compra_id',
+        'producto_id',
+        'lote_id',
 
-    // Relaciones
+        // Presentación (snapshot)
+        'presentacion_id',
+        'tipo_presentacion',
+        'unidades_por_presentacion',
+        'cantidad_presentaciones',
+
+        // Cantidad real en unidades base (inventario)
+        'cantidad_unidades_base',
+
+        // Precios y descuentos
+        'precio_unitario',        // BRUTO por unidad base
+        'subtotal_bruto',
+        'descuento_porcentaje',   // % por producto
+        'descuento_monto',
+        'subtotal',               // NETO
+    ];
+
+    protected $casts = [
+        'unidades_por_presentacion' => 'integer',
+        'cantidad_presentaciones' => 'integer',
+        'cantidad_unidades_base' => 'integer',
+
+        'precio_unitario' => 'decimal:2',
+        'subtotal_bruto' => 'decimal:2',
+        'descuento_porcentaje' => 'decimal:2',
+        'descuento_monto' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+    ];
+
     public function compra(): BelongsTo
     {
         return $this->belongsTo(Compra::class);
@@ -27,149 +58,61 @@ class DetalleCompra extends Model
         return $this->belongsTo(Lote::class);
     }
 
-    // Agregar al $fillable:
-protected $fillable = [
-    'compra_id',
-    'producto_id',
-    'lote_id',
-    'presentacion_id',           // NUEVO
-    'tipo_presentacion',          // NUEVO
-    'unidades_por_presentacion',  // NUEVO
-    'cantidad_presentaciones',    // NUEVO
-    // 'cantidad_unidades_base' es calculado automáticamente
-    'cantidad_legacy',            // RENOMBRADO (antes 'cantidad')
-    'precio_unitario',
-    'subtotal',
-];
-
-// Agregar al $casts:
-protected $casts = [
-    'unidades_por_presentacion' => 'integer',
-    'cantidad_presentaciones' => 'integer',
-    'cantidad_unidades_base' => 'integer',
-    'cantidad_legacy' => 'integer',
-    'precio_unitario' => 'decimal:2',
-    'subtotal' => 'decimal:2',
-];
-
-// AGREGAR ESTAS RELACIONES Y MÉTODOS:
-
-/**
- * Presentación utilizada en esta compra
- */
-public function presentacion(): BelongsTo
-{
-    return $this->belongsTo(PresentacionProducto::class, 'presentacion_id');
-}
-
-/**
- * Obtener la cantidad efectiva (compatibilidad con código anterior)
- * 
- * @return int
- */
-public function getCantidadAttribute(): int
-{
-    // Si es compra nueva (con presentaciones)
-    if ($this->cantidad_unidades_base) {
-        return $this->cantidad_unidades_base;
-    }
-    
-    // Si es compra antigua (sin presentaciones)
-    return $this->cantidad_legacy ?? 0;
-}
-
-/**
- * Obtener descripción de la presentación
- * 
- * @return string
- */
-public function getDescripcionPresentacionAttribute(): string
-{
-    if (!$this->presentacion_id && !$this->tipo_presentacion) {
-        return 'Unidad base';
+    public function presentacion(): BelongsTo
+    {
+        return $this->belongsTo(PresentacionProducto::class, 'presentacion_id');
     }
 
-    $nombre = $this->tipo_presentacion ?? $this->presentacion?->nombre ?? 'Desconocida';
-    
-    return "{$this->cantidad_presentaciones} {$nombre}(s) x {$this->unidades_por_presentacion} unidades";
-}
-
-/**
- * Obtener texto resumido para mostrar
- * 
- * @return string
- */
-public function getResumenCantidadAttribute(): string
-{
-    if ($this->unidades_por_presentacion === 1) {
-        return "{$this->cantidad_unidades_base} unidades";
+    /**
+     * Compatibilidad: vistas antiguas que usan $detalle->cantidad.
+     * Ahora la cantidad real es cantidad_unidades_base.
+     */
+    public function getCantidadAttribute(): int
+    {
+        return (int)($this->cantidad_unidades_base ?? 0);
     }
 
-    return "{$this->cantidad_presentaciones} × {$this->unidades_por_presentacion} = {$this->cantidad_unidades_base} unidades";
-}
-
-/**
- * Calcular precio total de la presentación
- * 
- * @return float
- */
-public function getPrecioPresentacionAttribute(): float
-{
-    return round($this->precio_unitario * $this->unidades_por_presentacion, 2);
-}
-
-/**
- * Calcular subtotal basado en presentaciones
- * 
- * @return float
- */
-public function calcularSubtotal(): float
-{
-    return round($this->precio_presentacion * $this->cantidad_presentaciones, 2);
-}
-
-/**
- * Verificar si usa presentación
- * 
- * @return bool
- */
-public function usaPresentacion(): bool
-{
-    return $this->presentacion_id !== null || $this->tipo_presentacion !== null;
-}
-
-/**
- * Obtener nombre de la presentación
- * 
- * @return string
- */
-public function getNombrePresentacionAttribute(): string
-{
-    if ($this->presentacion) {
-        return $this->presentacion->nombre;
+    public function usaPresentacion(): bool
+    {
+        return !empty($this->presentacion_id) || !empty($this->tipo_presentacion);
     }
-    
-    return $this->tipo_presentacion ?? 'Unidad';
-}
 
-/**
- * Boot method
- */
-protected static function boot()
-{
-    parent::boot();
+    public function getNombrePresentacionAttribute(): string
+    {
+        return $this->tipo_presentacion
+            ?? $this->presentacion?->nombre
+            ?? 'Unidad';
+    }
 
-    // Al guardar, calcular el subtotal
-    static::saving(function ($detalle) {
-        $detalle->subtotal = $detalle->calcularSubtotal();
-    });
-}
+    public function getDescripcionPresentacionAttribute(): string
+    {
+        if (!$this->usaPresentacion()) {
+            return 'Unidad';
+        }
 
-/**
- * Accessor para mantener compatibilidad con código que usa 'cantidad'
- */
-public function getCantidadTotalAttribute(): int
-{
-    return $this->cantidad;
-}
+        $nombre = $this->getNombrePresentacionAttribute();
+        $unidades = (int)($this->unidades_por_presentacion ?? 1);
+        $cantPres = (int)($this->cantidad_presentaciones ?? 0);
+
+        return "{$cantPres} {$nombre}(s) x {$unidades}";
+    }
+
+    public function getResumenCantidadAttribute(): string
+    {
+        $base = (int)($this->cantidad_unidades_base ?? 0);
+        $unidades = (int)($this->unidades_por_presentacion ?? 1);
+        $cantPres = (int)($this->cantidad_presentaciones ?? 0);
+
+        if ($this->usaPresentacion() && $unidades > 1) {
+            return "{$cantPres} × {$unidades} = {$base} unidades";
+        }
+
+        return "{$base} unidades";
+    }
+
+    public function getPrecioPresentacionAttribute(): float
+    {
+        $unidades = (int)($this->unidades_por_presentacion ?? 1);
+        return round(((float)$this->precio_unitario) * $unidades, 2);
+    }
 }

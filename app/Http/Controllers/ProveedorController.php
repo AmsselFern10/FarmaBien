@@ -47,12 +47,24 @@ class ProveedorController extends Controller
     {
         try {
             $proveedor = Proveedor::create($request->validated());
+
+            // ✅ Soporte AJAX (modal en Compras): devolver JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'proveedor' => $proveedor,
+                ], 201);
+            }
             
             return redirect()
                 ->route('proveedores.index')
                 ->with('success', "Proveedor '{$proveedor->nombre}' creado correctamente.");
                 
         } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Error al crear el proveedor.',
+                ], 500);
+            }
             return back()
                 ->withInput()
                 ->with('error', 'Error al crear el proveedor: ' . $e->getMessage());
