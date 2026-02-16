@@ -32,11 +32,11 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
     
     <!-- Compras del Mes -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
         <div class="p-6">
             <div class="flex items-center">
-                <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                    <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                     </svg>
                 </div>
@@ -65,11 +65,11 @@
     </div>
 
     <!-- Valorización Total -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
         <div class="p-6">
             <div class="flex items-center">
-                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
@@ -98,11 +98,11 @@
     </div>
 
     <!-- Stock Bajo -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
         <div class="p-6">
             <div class="flex items-center">
-                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                    <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>
                 </div>
@@ -131,11 +131,11 @@
     </div>
 
     <!-- Lotes Activos -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
         <div class="p-6">
             <div class="flex items-center">
-                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
                 </div>
@@ -166,7 +166,7 @@
 
 <!-- Alertas Críticas -->
 @if($lotesVencidos->isNotEmpty() || $lotesProximosVencer->isNotEmpty() || $productosStockBajo->isNotEmpty())
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+<div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700 mb-6">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-red-50 to-white dark:from-gray-800 dark:to-gray-800/50">
         <div class="flex items-center space-x-3">
             <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
@@ -270,7 +270,7 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     
     <!-- Inventario por Categoría -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800/50">
             <div class="flex items-center space-x-3">
                 <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
@@ -315,7 +315,7 @@
     </div>
 
     <!-- Compras Recientes -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-white dark:from-gray-800 dark:to-gray-800/50">
             <div class="flex items-center space-x-3">
                 <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -364,7 +364,7 @@
 </div>
 
 <!-- Movimientos Recientes -->
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+<div class="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/50 overflow-hidden shadow-card hover:shadow-card-hover rounded-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-white dark:from-gray-800 dark:to-gray-800/50">
         <div class="flex items-center space-x-3">
             <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">

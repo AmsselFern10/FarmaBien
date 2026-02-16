@@ -224,17 +224,17 @@ class VentaService
         ]);
 
         MovimientoInventario::create([
-            'producto_id' => $lote->producto_id,
             'lote_id' => $lote->id,
             'user_id' => Auth::id(),
             'tipo' => 'salida',
-            'cantidad' => -$cantidadBase, // IMPORTANTE: unidades base (negativo)
+            // Cantidad en UNIDADES BASE (positiva). El modelo normaliza a negativa para salidas.
+            'cantidad' => $cantidadBase,
             'origen' => 'venta',
             'origen_id' => $venta->id,
             'motivo' => $presentacion
                 ? "Venta #{$venta->id} - {$cantidadPresentaciones} {$tipoPresentacion}(s) x {$unidadesPorPresentacion} = {$cantidadBase} unidades - Lote {$lote->numero_lote}"
                 : "Venta #{$venta->id} - {$cantidadBase} unidades - Lote {$lote->numero_lote}",
-            'fecha_movimiento' => now(),
+            'fecha_movimiento' => $venta->fecha ?? now(),
         ]);
 
         return [
@@ -381,7 +381,53 @@ class VentaService
         }
     }
 
+    
     /* =====================================================
+     * REVERSAS DE MOVIMIENTOS (VENTAS)
+     * ===================================================== */
+
+    /**
+     * Revierte (compensa) los movimientos de salida de una venta creando movimientos de entrada.
+     *
+     * - No se editan ni eliminan movimientos (append-only).
+     * - Si existe el movimiento original (origen=venta), se referencia con reversa_de_id para trazabilidad.
+     *
+     * @throws Exception
+     */
+    protected function reversarMovimientosVenta(Venta $venta, string $origenReversa, string $motivo): void
+    {
+        // Movimientos originales de salida de la venta (1 por ítem, según procesarDetalleVenta)
+        $movimientosSalida = MovimientoInventario::query()
+            ->where('origen', 'venta')
+            ->where('origen_id', $venta->id)
+            ->where('tipo', 'salida')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('lote_id');
+
+        foreach ($venta->detalles as $detalle) {
+            $cantidadBase = (int) $detalle->cantidad_unidades_base;
+
+            $movOriginal = null;
+            if (isset($movimientosSalida[$detalle->lote_id]) && $movimientosSalida[$detalle->lote_id]->isNotEmpty()) {
+                $movOriginal = $movimientosSalida[$detalle->lote_id]->shift();
+            }
+
+            MovimientoInventario::create([
+                'lote_id' => $detalle->lote_id,
+                'user_id' => Auth::id(),
+                'tipo' => 'entrada',
+                'cantidad' => $cantidadBase, // El modelo normaliza (+) para entrada.
+                'reversa_de_id' => $movOriginal?->id,
+                'origen' => $origenReversa,
+                'origen_id' => $venta->id,
+                'motivo' => $motivo,
+                'fecha_movimiento' => now(),
+            ]);
+        }
+    }
+
+/* =====================================================
      * ANULAR VENTA
      * ===================================================== */
 
@@ -395,21 +441,7 @@ class VentaService
                 throw new Exception("La venta #{$ventaId} no puede ser anulada porque ya está anulada o fue reemplazada.");
             }
 
-            foreach ($venta->detalles as $detalle) {
-                $cantidadBase = (int) $detalle->cantidad_unidades_base;
-
-                MovimientoInventario::create([
-                    'producto_id' => $detalle->producto_id,
-                    'lote_id' => $detalle->lote_id,
-                    'user_id' => Auth::id(),
-                    'tipo' => 'entrada',
-                    'cantidad' => $cantidadBase, // Revertir salida
-                    'origen' => 'anulacion_venta',
-                    'origen_id' => $venta->id,
-                    'motivo' => "Anulación de venta #{$venta->id}: {$motivo}",
-                    'fecha_movimiento' => now(),
-                ]);
-            }
+            $this->reversarMovimientosVenta($venta, 'anulacion_venta', "Anulación de venta #{$venta->id}: {$motivo}");
 
             $venta->update([
                 'estado' => 'anulada',
@@ -461,7 +493,12 @@ class VentaService
     public function buscarProductosParaVenta(string $termino)
     {
         return Producto::with(['categoria', 'presentacionesActivas', 'lotes' => function ($query) {
-                $query->disponibles()
+                $query->select(['id','producto_id','numero_lote','fecha_vencimiento','stock_actual','precio_compra','activo','estado','bloqueado_at'])
+                    ->where('activo', true)
+                    ->whereNull('bloqueado_at')
+                    ->where('estado', '!=', 'bloqueado')
+                    ->whereDate('fecha_vencimiento', '>=', today())
+                    ->where('stock_actual', '>', 0)
                     ->orderBy('fecha_vencimiento', 'asc'); // FEFO
             }])
             ->activos()
@@ -493,22 +530,8 @@ class VentaService
                 );
             }
 
-            // Revertir inventario de la venta original
-            foreach ($ventaOriginal->detalles as $detalle) {
-                $cantidadBase = (int) $detalle->cantidad_unidades_base;
-
-                MovimientoInventario::create([
-                    'producto_id' => $detalle->producto_id,
-                    'lote_id' => $detalle->lote_id,
-                    'user_id' => Auth::id(),
-                    'tipo' => 'entrada',
-                    'cantidad' => $cantidadBase,
-                    'origen' => 'modificacion_venta',
-                    'origen_id' => $ventaOriginal->id,
-                    'motivo' => "Modificación de venta #{$ventaOriginal->id}: {$motivo}",
-                    'fecha_movimiento' => now(),
-                ]);
-            }
+            // Revertir inventario de la venta original (reversa de movimientos)
+            $this->reversarMovimientosVenta($ventaOriginal, 'modificacion_venta', "Modificación de venta #{$ventaOriginal->id}: {$motivo}");
 
             // Crear la nueva venta con los datos corregidos
             $nuevaVenta = $this->procesarVenta($data);

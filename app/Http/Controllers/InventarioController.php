@@ -6,7 +6,6 @@ use App\Http\Requests\AjusteInventarioRequest;
 use App\Services\InventarioService;
 use App\Models\Producto;
 use App\Models\Lote;
-use App\Models\Categoria;
 use Illuminate\Http\Request;
 
 class InventarioController extends Controller
@@ -16,7 +15,7 @@ class InventarioController extends Controller
     public function __construct(InventarioService $inventarioService)
     {
         $this->inventarioService = $inventarioService;
-        
+
         $this->middleware('permission:ver movimientos inventario')->only([
             'index', 'kardexProducto', 'kardexLote'
         ]);
@@ -30,19 +29,10 @@ class InventarioController extends Controller
      */
     public function index(Request $request)
     {
-        // Resumen por categoría
         $resumenCategorias = $this->inventarioService->resumenPorCategoria();
-
-        // Productos con stock bajo
         $productosStockBajo = $this->inventarioService->productosConStockBajo();
-
-        // Lotes próximos a vencer (30 días)
         $lotesProximosVencer = $this->inventarioService->lotesProximosVencer(30);
-
-        // Lotes vencidos
         $lotesVencidos = $this->inventarioService->lotesVencidos();
-
-        // Valorización del inventario
         $valorizacion = $this->inventarioService->valorizacionInventario();
 
         return view('inventario.index', compact(
@@ -62,9 +52,9 @@ class InventarioController extends Controller
         $productos = Producto::with(['lotes' => function ($query) {
             $query->activos()->orderBy('fecha_vencimiento', 'asc');
         }])
-        ->activos()
-        ->orderBy('nombre')
-        ->get();
+            ->activos()
+            ->orderBy('nombre')
+            ->get();
 
         return view('inventario.ajustar', compact('productos'));
     }
@@ -76,19 +66,21 @@ class InventarioController extends Controller
     {
         try {
             $movimiento = $this->inventarioService->ajustarInventario($request->validated());
-            
+
             $lote = $movimiento->lote;
-            $stockAnterior = $lote->stock_actual - $movimiento->cantidad;
-            
+
+            $stockAnterior = $movimiento->saldo_anterior;
+            $stockNuevo = $movimiento->saldo_nuevo;
+
             return redirect()
                 ->route('inventario.index')
-                ->with('success', 
+                ->with('success',
                     "Ajuste realizado correctamente. " .
                     "Lote: {$lote->numero_lote}, " .
                     "Stock anterior: {$stockAnterior}, " .
-                    "Stock nuevo: {$lote->stock_actual}"
+                    "Stock nuevo: {$stockNuevo}"
                 );
-                
+
         } catch (\Exception $e) {
             return back()
                 ->withInput()
@@ -129,16 +121,10 @@ class InventarioController extends Controller
      */
     public function alertas(Request $request)
     {
-        // Filtro de días para vencimiento
         $diasVencimiento = $request->input('dias_vencimiento', 30);
 
-        // Productos con stock bajo
         $productosStockBajo = $this->inventarioService->productosConStockBajo();
-
-        // Lotes próximos a vencer
         $lotesProximosVencer = $this->inventarioService->lotesProximosVencer($diasVencimiento);
-
-        // Lotes vencidos
         $lotesVencidos = $this->inventarioService->lotesVencidos();
 
         return view('inventario.alertas', compact(
@@ -156,11 +142,11 @@ class InventarioController extends Controller
     {
         try {
             $cantidad = $this->inventarioService->desactivarLotesVencidos();
-            
+
             return redirect()
                 ->route('inventario.alertas')
                 ->with('success', "{$cantidad} lote(s) vencido(s) desactivado(s) correctamente.");
-                
+
         } catch (\Exception $e) {
             return back()
                 ->with('error', 'Error al desactivar lotes vencidos: ' . $e->getMessage());
@@ -182,9 +168,11 @@ class InventarioController extends Controller
      */
     public function obtenerStockLote(Lote $lote)
     {
+        $lote->loadMissing('producto');
+
         return response()->json([
-            'stock_actual' => $lote->stock_actual,
-            'stock_inicial' => $lote->stock_inicial,
+            'stock_actual' => (int) $lote->stock_actual,
+            'stock_inicial' => (int) $lote->stock_inicial,
             'numero_lote' => $lote->numero_lote,
             'producto' => $lote->producto->nombre,
         ]);
@@ -198,7 +186,6 @@ class InventarioController extends Controller
         $query = Lote::with(['producto', 'proveedor', 'compra'])
             ->orderBy('fecha_vencimiento', 'asc');
 
-        // Filtros
         if ($request->filled('producto_id')) {
             $query->where('producto_id', $request->producto_id);
         }
@@ -209,7 +196,8 @@ class InventarioController extends Controller
             } elseif ($request->estado === 'vencido') {
                 $query->vencidos();
             } elseif ($request->estado === 'proximo_vencer') {
-                $query->proximosVencer(30);
+                $dias = max(1, (int)$request->input('dias_vencimiento', 30));
+                $query->proximosVencer($dias);
             }
         }
 
@@ -237,10 +225,9 @@ class InventarioController extends Controller
             'movimientos.usuario'
         ]);
 
-        // Calcular movimientos totales
-        $totalEntradas = $lote->movimientos()->entradas()->sum('cantidad');
-        $totalSalidas = abs($lote->movimientos()->salidas()->sum('cantidad'));
-        $totalAjustes = $lote->movimientos()->ajustes()->sum('cantidad');
+        $totalEntradas = $lote->movimientos()->entradas()->sum('cantidad'); // positivo
+        $totalSalidas = abs($lote->movimientos()->salidas()->sum('cantidad')); // negativo -> abs
+        $totalAjustes = $lote->movimientos()->ajustes()->sum('cantidad'); // puede ser +/- (neto)
 
         return view('inventario.show-lote', compact(
             'lote',

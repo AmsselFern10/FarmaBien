@@ -133,9 +133,13 @@ class VentaController extends Controller
             ->with([
                 'presentacionesActivas:id,producto_id,nombre,descripcion,unidades_por_presentacion,precio_sugerido,activo,orden',
                 'lotes' => function ($q) use ($loteIdsVenta) {
-                    $q->select(['id', 'producto_id', 'numero_lote', 'fecha_vencimiento', 'stock_inicial', 'activo'])
+                    $q->select(['id','producto_id','numero_lote','fecha_vencimiento','stock_actual','precio_compra','activo','estado','bloqueado_at'])
                         ->where(function ($qq) use ($loteIdsVenta) {
-                            $qq->disponibles();
+                            $qq->where('activo', true)
+                                ->whereNull('bloqueado_at')
+                                ->where('estado', '!=', 'bloqueado')
+                                ->whereDate('fecha_vencimiento', '>=', today())
+                                ->where('stock_actual', '>', 0);
 
                             // incluir lotes ya usados en esta venta (aunque tengan stock 0 o estén inactivos)
                             if ($loteIdsVenta->isNotEmpty()) {
@@ -318,10 +322,14 @@ public function store(StoreVentaRequest $request)
             ->with([
                 'presentacionesActivas:id,producto_id,nombre,descripcion,unidades_por_presentacion,precio_sugerido,activo,orden',
                 'lotes' => function ($q) use ($loteIdsVenta) {
-                    $q->select(['id', 'producto_id', 'numero_lote', 'fecha_vencimiento', 'stock_inicial', 'activo'])
+                    $q->select(['id','producto_id','numero_lote','fecha_vencimiento','stock_actual','precio_compra','activo','estado','bloqueado_at'])
                         ->where(function ($qq) use ($loteIdsVenta) {
                             $qq->where(function ($q2) {
-                                $q2->disponibles();
+                                $q2->where('activo', true)
+                                   ->whereNull('bloqueado_at')
+                                   ->where('estado', '!=', 'bloqueado')
+                                   ->whereDate('fecha_vencimiento', '>=', today())
+                                   ->where('stock_actual', '>', 0);
                             });
                             if ($loteIdsVenta->isNotEmpty()) {
                                 $qq->orWhereIn('id', $loteIdsVenta);
@@ -445,7 +453,11 @@ public function store(StoreVentaRequest $request)
     public function obtenerLotesProducto(Request $request, Producto $producto)
     {
         $lotes = $producto->lotes()
-            ->disponibles()
+            ->where('activo', true)
+            ->whereNull('bloqueado_at')
+            ->where('estado', '!=', 'bloqueado')
+            ->whereDate('fecha_vencimiento', '>=', today())
+            ->where('stock_actual', '>', 0)
             ->orderBy('fecha_vencimiento', 'asc')
             ->get()
             ->map(function ($lote) {

@@ -3,348 +3,319 @@
 @section('title', 'Detalle del Lote')
 
 @section('header')
-    <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Lote: {{ $lote->numero_lote }}
+    Inventario
+@endsection
+
+@section('page-actions')
+    <div>
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+            Lote <span class="font-mono">{{ $lote->numero_lote }}</span>
         </h2>
-        <div class="flex space-x-2">
-            <a href="{{ route('inventario.kardex-lote', $lote) }}" 
-               class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Ver Kardex
-            </a>
-            <a href="{{ route('inventario.lotes') }}" 
-               class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Volver
-            </a>
-        </div>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            {{ $lote->producto?->nombre }} — {{ $lote->producto?->categoria?->nombre }}
+        </p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+        <a href="{{ route('inventario.kardex-lote', $lote) }}"
+           class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Ver kardex
+        </a>
+
+        <a href="{{ route('inventario.lotes') }}"
+           class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 shadow-sm">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Volver
+        </a>
     </div>
 @endsection
 
 @section('content')
+<div class="space-y-6">
 
-<!-- Estado del Lote -->
-@if($lote->estado == 'vencido')
-<div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-    <div class="flex">
-        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-        </svg>
-        <div class="ml-3">
-            <p class="text-sm text-red-700">
-                <strong>Lote Vencido:</strong> Este lote venció el {{ $lote->fecha_vencimiento->format('d/m/Y') }} 
-                ({{ $lote->fecha_vencimiento->diffForHumans() }})
-            </p>
-        </div>
-    </div>
-</div>
-@elseif($lote->proximoVencer(30))
-<div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-6">
-    <div class="flex">
-        <svg class="h-5 w-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-        </svg>
-        <div class="ml-3">
-            <p class="text-sm text-orange-700">
-                <strong>Próximo a Vencer:</strong> Este lote vence {{ $lote->fecha_vencimiento->diffForHumans() }} 
-                ({{ $lote->fecha_vencimiento->format('d/m/Y') }})
-            </p>
-        </div>
-    </div>
-</div>
-@endif
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
-    <!-- Información Principal -->
-    <div class="lg:col-span-2 space-y-6">
-        
-        <!-- Datos del Lote -->
-        <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Información del Lote</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-sm text-gray-600">Número de Lote</p>
-                        <p class="text-xl font-bold text-gray-900 font-mono">{{ $lote->numero_lote }}</p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-600">Estado</p>
-                        <p>
-                            @if($lote->estado == 'disponible')
-                                <span class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800 font-semibold">Disponible</span>
-                            @elseif($lote->estado == 'agotado')
-                                <span class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-800 font-semibold">Agotado</span>
-                            @elseif($lote->estado == 'vencido')
-                                <span class="px-3 py-1 text-sm rounded-full bg-red-100 text-red-800 font-semibold">Vencido</span>
-                            @endif
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-600">Producto</p>
-                        <p class="font-semibold text-gray-900">{{ $lote->producto->nombre }}</p>
-                        <p class="text-xs text-gray-500">{{ $lote->producto->categoria->nombre }}</p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-600">Proveedor</p>
-                        <p class="font-semibold text-gray-900">{{ $lote->proveedor->nombre }}</p>
-                        <p class="text-xs text-gray-500">RUC: {{ $lote->proveedor->ruc }}</p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-600">Fecha de Vencimiento</p>
-                        <p class="font-semibold {{ $lote->estaVencido() ? 'text-red-600' : 'text-gray-900' }}">
-                            {{ $lote->fecha_vencimiento->format('d/m/Y') }}
-                        </p>
-                        <p class="text-xs {{ $lote->estaVencido() ? 'text-red-500' : 'text-gray-500' }}">
-                            {{ $lote->fecha_vencimiento->diffForHumans() }}
-                        </p>
-                    </div>
-
-                    @if($lote->compra)
-                    <div>
-                        <p class="text-sm text-gray-600">Compra de Origen</p>
-                        <a href="{{ route('compras.show', $lote->compra) }}" 
-                           class="font-semibold text-blue-600 hover:text-blue-800">
-                            Compra #{{ $lote->compra_id }}
-                        </a>
-                        <p class="text-xs text-gray-500">
-                            {{ $lote->compra->fecha->format('d/m/Y') }}
-                            por {{ $lote->compra->usuario->name }}
-                        </p>
-                    </div>
+    {{-- Estados --}}
+    @if($lote->estaBloqueado())
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl p-4">
+            <div class="flex gap-3">
+                <div class="mt-0.5">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="text-sm text-red-800 dark:text-red-200">
+                    <span class="font-semibold">Lote bloqueado:</span>
+                    {{ $lote->motivo_bloqueo ?: 'Sin motivo registrado.' }}
+                    @if($lote->bloqueado_at)
+                        <span class="text-red-700 dark:text-red-300"> ({{ $lote->bloqueado_at->format('d/m/Y H:i') }})</span>
                     @endif
                 </div>
             </div>
         </div>
+    @endif
 
-        <!-- Stock del Lote -->
-        <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Información de Stock</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                        <p class="text-xs text-blue-600 mb-1">Stock Inicial</p>
-                        <p class="text-3xl font-bold text-blue-700">{{ $lote->cantidad_inicial }}</p>
-                    </div>
-
-                    <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <p class="text-xs text-green-600 mb-1">Stock Actual</p>
-                        <p class="text-3xl font-bold text-green-700">{{ $lote->cantidad_actual }}</p>
-                    </div>
-
-                    <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                        <p class="text-xs text-purple-600 mb-1">Stock Utilizado</p>
-                        <p class="text-3xl font-bold text-purple-700">{{ $lote->cantidad_inicial - $lote->cantidad_actual }}</p>
-                    </div>
+    @if($lote->estaVencido())
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl p-4">
+            <div class="flex gap-3">
+                <div class="mt-0.5">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clip-rule="evenodd"/>
+                    </svg>
                 </div>
-
-                <!-- Barra de Progreso -->
-                <div class="mt-4">
-                    <div class="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>Utilización del Lote</span>
-                        <span>{{ number_format((($lote->cantidad_inicial - $lote->cantidad_actual) / $lote->cantidad_inicial) * 100, 1) }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div class="bg-blue-600 h-3 rounded-full transition-all" 
-                             style="width: {{ (($lote->cantidad_inicial - $lote->cantidad_actual) / $lote->cantidad_inicial) * 100 }}%"></div>
-                    </div>
+                <div class="text-sm text-red-800 dark:text-red-200">
+                    <span class="font-semibold">Lote vencido:</span>
+                    Venció el {{ optional($lote->fecha_vencimiento)->format('d/m/Y') }} ({{ optional($lote->fecha_vencimiento)->diffForHumans() }})
                 </div>
             </div>
         </div>
-
-        <!-- Resumen de Movimientos -->
-        <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Resumen de Movimientos</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="border-l-4 border-green-400 pl-4">
-                        <p class="text-sm text-gray-600">Total Entradas</p>
-                        <p class="text-2xl font-bold text-green-600">{{ $totalEntradas }}</p>
-                    </div>
-
-                    <div class="border-l-4 border-red-400 pl-4">
-                        <p class="text-sm text-gray-600">Total Salidas</p>
-                        <p class="text-2xl font-bold text-red-600">{{ $totalSalidas }}</p>
-                    </div>
-
-                    <div class="border-l-4 border-yellow-400 pl-4">
-                        <p class="text-sm text-gray-600">Total Ajustes</p>
-                        <p class="text-2xl font-bold text-yellow-600">{{ $totalAjustes }}</p>
-                    </div>
+    @elseif($lote->proximoAVencer(30))
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-xl p-4">
+            <div class="flex gap-3">
+                <div class="mt-0.5">
+                    <svg class="w-5 h-5 text-orange-600 dark:text-orange-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="text-sm text-orange-800 dark:text-orange-200">
+                    <span class="font-semibold">Próximo a vencer:</span>
+                    Vence el {{ optional($lote->fecha_vencimiento)->format('d/m/Y') }} ({{ optional($lote->fecha_vencimiento)->diffForHumans() }})
                 </div>
             </div>
         </div>
+    @endif
 
-        <!-- Últimos Movimientos -->
-        <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Últimos Movimientos (5)</h3>
-                    <a href="{{ route('inventario.kardex-lote', $lote) }}" 
-                       class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                        Ver todos →
-                    </a>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-6">
+
+            <!-- Información del lote -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Información del lote</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Datos básicos y control sanitario.</p>
                 </div>
-                
-                @if($lote->movimientos && $lote->movimientos->count() > 0)
-                <div class="space-y-3">
-                    @foreach($lote->movimientos->take(5) as $movimiento)
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">
-                                @if($movimiento->tipo_movimiento == 'entrada')
-                                    <span class="text-green-600">Entrada</span>
-                                @elseif($movimiento->tipo_movimiento == 'salida')
-                                    <span class="text-blue-600">Salida</span>
-                                @else
-                                    <span class="text-purple-600">Ajuste</span>
-                                @endif
-                                de {{ abs($movimiento->cantidad) }} unidades
-                            </p>
-                            <p class="text-xs text-gray-500">
-                                {{ $movimiento->created_at->format('d/m/Y H:i') }} - {{ $movimiento->usuario->name }}
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Número de lote</p>
+                            <p class="mt-1 font-semibold text-slate-900 dark:text-white font-mono">{{ $lote->numero_lote }}</p>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Proveedor</p>
+                            <p class="mt-1 font-semibold text-slate-900 dark:text-white">{{ $lote->proveedor?->nombre ?? '—' }}</p>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Fecha ingreso</p>
+                            <p class="mt-1 font-semibold text-slate-900 dark:text-white">
+                                {{ $lote->fecha_ingreso ? $lote->fecha_ingreso->format('d/m/Y H:i') : ($lote->created_at?->format('d/m/Y H:i') ?? '—') }}
                             </p>
                         </div>
-                        <div class="text-right">
-                            @if($movimiento->venta_id)
-                                <a href="{{ route('ventas.show', $movimiento->venta_id) }}" 
-                                   class="text-xs text-blue-600 hover:text-blue-800">
-                                    Venta #{{ $movimiento->venta_id }}
-                                </a>
-                            @elseif($movimiento->compra_id)
-                                <a href="{{ route('compras.show', $movimiento->compra_id) }}" 
-                                   class="text-xs text-blue-600 hover:text-blue-800">
-                                    Compra #{{ $movimiento->compra_id }}
+
+                        <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Fecha vencimiento</p>
+                            <p class="mt-1 font-semibold {{ $lote->estaVencido() ? 'text-red-700 dark:text-red-300' : 'text-slate-900 dark:text-white' }}">
+                                {{ optional($lote->fecha_vencimiento)->format('d/m/Y') ?? '—' }}
+                            </p>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Estado</p>
+                            @php
+                                $estado = $lote->estado ?: ($lote->estaVencido() ? 'vencido' : ($lote->estaBloqueado() ? 'bloqueado' : 'disponible'));
+                                $badge = match($estado) {
+                                    'vencido' => 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
+                                    'bloqueado' => 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
+                                    'agotado' => 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
+                                    default => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300',
+                                };
+                            @endphp
+                            <span class="mt-1 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ $badge }}">
+                                {{ ucfirst($estado) }}
+                            </span>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Compra (origen)</p>
+                            @if($lote->compra)
+                                <a class="mt-1 inline-flex items-center text-sm font-semibold text-blue-700 dark:text-blue-300 hover:underline"
+                                   href="{{ route('compras.show', $lote->compra) }}">
+                                    Compra #{{ $lote->compra->id }}
                                 </a>
                             @else
-                                <span class="text-xs text-gray-500">Ajuste manual</span>
+                                <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-white">—</p>
                             @endif
                         </div>
                     </div>
-                    @endforeach
                 </div>
-                @else
-                <p class="text-gray-500 text-center py-4">No hay movimientos registrados</p>
-                @endif
             </div>
-        </div>
 
-    </div>
-
-    <!-- Barra Lateral -->
-    <div class="lg:col-span-1 space-y-6">
-        
-        <!-- Estadísticas Rápidas -->
-        <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Estadísticas</h3>
-                
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Días desde creación</span>
-                        <span class="font-semibold text-gray-900">{{ $lote->created_at->diffInDays() }}</span>
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Días hasta vencer</span>
-                        <span class="font-semibold {{ $lote->estaVencido() ? 'text-red-600' : 'text-gray-900' }}">
-                            {{ $lote->estaVencido() ? 'Vencido' : $lote->fecha_vencimiento->diffInDays() }}
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">% Utilizado</span>
-                        <span class="font-semibold text-gray-900">
-                            {{ number_format((($lote->cantidad_inicial - $lote->cantidad_actual) / $lote->cantidad_inicial) * 100, 1) }}%
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Total Movimientos</span>
-                        <span class="font-semibold text-gray-900">{{ $lote->movimientos->count() }}</span>
+            <!-- Resumen movimientos -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Resumen de movimientos</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Totales históricos del lote (según kardex).</p>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="border-l-4 border-emerald-400 pl-4">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">Entradas</p>
+                            <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ number_format((int)$totalEntradas) }}</p>
+                        </div>
+                        <div class="border-l-4 border-red-400 pl-4">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">Salidas</p>
+                            <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ number_format((int)$totalSalidas) }}</p>
+                        </div>
+                        <div class="border-l-4 border-amber-400 pl-4">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">Ajustes (neto)</p>
+                            <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ number_format((int)$totalAjustes) }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Acciones Rápidas -->
-        <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Acciones</h3>
-                
-                <div class="space-y-2">
-                    <a href="{{ route('inventario.kardex-lote', $lote) }}" 
-                       class="w-full bg-purple-100 hover:bg-purple-200 text-purple-800 font-semibold py-2 px-4 rounded inline-flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Ver Kardex Completo
-                    </a>
+            <!-- Últimos movimientos -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Últimos movimientos</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Vista rápida (5 últimos).</p>
+                        </div>
+                        <a href="{{ route('inventario.kardex-lote', $lote) }}"
+                           class="text-sm font-semibold text-blue-700 dark:text-blue-300 hover:underline">
+                            Ver todos →
+                        </a>
+                    </div>
+                </div>
 
-                    <a href="{{ route('productos.show', $lote->producto) }}" 
-                       class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-2 px-4 rounded inline-flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                        Ver Producto
-                    </a>
+                <div class="p-6">
+                    @php
+                        $ultimos = $lote->movimientos?->sortByDesc('fecha_movimiento')->take(5) ?? collect();
+                    @endphp
 
-                    @if($lote->compra)
-                    <a href="{{ route('compras.show', $lote->compra) }}" 
-                       class="w-full bg-green-100 hover:bg-green-200 text-green-800 font-semibold py-2 px-4 rounded inline-flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Ver Compra Origen
-                    </a>
+                    @if($ultimos->count() === 0)
+                        <p class="text-slate-500 dark:text-slate-400 text-center py-6">No hay movimientos registrados.</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fecha</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Tipo</th>
+                                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Cantidad</th>
+                                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Saldo</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Origen</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @foreach($ultimos as $mov)
+                                        @php
+                                            $tipoLabel = match($mov->tipo) {
+                                                'entrada' => ['Entrada', 'text-emerald-700 dark:text-emerald-300'],
+                                                'salida' => ['Salida', 'text-red-700 dark:text-red-300'],
+                                                default => ['Ajuste', 'text-amber-700 dark:text-amber-300'],
+                                            };
+
+                                            $origen = $mov->origen ?? '';
+                                            $origenId = $mov->origen_id;
+
+                                            $origenTexto = $origen ? str_replace('_', ' ', $origen) : 'manual';
+                                        @endphp
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                            <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
+                                                {{ $mov->fecha_movimiento?->format('d/m/Y H:i') ?? $mov->created_at?->format('d/m/Y H:i') }}
+                                            </td>
+                                            <td class="px-4 py-3 text-sm font-semibold {{ $tipoLabel[1] }}">{{ $tipoLabel[0] }}</td>
+                                            <td class="px-4 py-3 text-sm text-right font-semibold text-slate-900 dark:text-white">
+                                                {{ $mov->cantidad > 0 ? '+' : '' }}{{ (int)$mov->cantidad }}
+                                            </td>
+                                            <td class="px-4 py-3 text-sm text-right text-slate-900 dark:text-white font-semibold">
+                                                {{ number_format((int)$mov->saldo_nuevo) }}
+                                            </td>
+                                            <td class="px-4 py-3 text-sm">
+                                                @if($origenId && str_contains($origen, 'venta'))
+                                                    <a href="{{ route('ventas.show', $origenId) }}" class="text-blue-700 dark:text-blue-300 hover:underline">
+                                                        {{ ucfirst($origenTexto) }} #{{ $origenId }}
+                                                    </a>
+                                                @elseif($origenId && str_contains($origen, 'compra'))
+                                                    <a href="{{ route('compras.show', $origenId) }}" class="text-blue-700 dark:text-blue-300 hover:underline">
+                                                        {{ ucfirst($origenTexto) }} #{{ $origenId }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-slate-600 dark:text-slate-400">{{ ucfirst($origenTexto) }}</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @endif
-
-                    <button onclick="window.print()" 
-                            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded inline-flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                        </svg>
-                        Imprimir
-                    </button>
                 </div>
             </div>
+
         </div>
 
-        <!-- Información del Sistema -->
-        <div class="bg-white overflow-hidden shadow-sm rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Sistema</h3>
-                
-                <div class="space-y-2 text-sm text-gray-600">
-                    <div>
-                        <span class="font-medium">Creado:</span><br>
-                        {{ $lote->created_at->format('d/m/Y H:i') }}
+        <!-- Sidebar -->
+        <div class="xl:col-span-1 space-y-6">
+
+            <!-- Stock -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Stock</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Stock actual</p>
+                        <p class="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{{ number_format((int)$lote->stock_actual) }}</p>
                     </div>
-                    <div>
-                        <span class="font-medium">Actualizado:</span><br>
-                        {{ $lote->updated_at->format('d/m/Y H:i') }}
+
+                    <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Stock inicial (entradas acumuladas)</p>
+                        <p class="mt-1 text-xl font-bold text-slate-900 dark:text-white">{{ number_format((int)$lote->stock_inicial) }}</p>
+                        @php
+                            $utilizado = ((int)$lote->stock_inicial) > 0 ? ((int)$lote->stock_inicial - (int)$lote->stock_actual) : 0;
+                            $porc = ((int)$lote->stock_inicial) > 0 ? round(($utilizado / (int)$lote->stock_inicial) * 100, 1) : 0;
+                        @endphp
+                        <div class="mt-3">
+                            <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                                <span>Usado</span>
+                                <span>{{ $porc }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div class="h-2 bg-blue-600 dark:bg-blue-400" style="width: {{ min(100, max(0, $porc)) }}%"></div>
+                            </div>
+                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Unidades usadas: {{ number_format($utilizado) }}</p>
+                        </div>
                     </div>
-                    <div>
-                        <span class="font-medium">ID del Lote:</span><br>
-                        {{ $lote->id }}
+
+                    <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl p-4">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Precio compra (lote)</p>
+                        <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ number_format((float)$lote->precio_compra, 2) }}</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Referencia para valoración del inventario.</p>
                     </div>
+
+                    <a href="{{ route('productos.show', $lote->producto) }}"
+                       class="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 font-semibold rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/40 transition-colors">
+                        Ver producto
+                    </a>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
-</div>
 
+</div>
 @endsection

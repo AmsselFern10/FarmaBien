@@ -67,7 +67,22 @@ class DetalleCompra extends Model
      * Compatibilidad: vistas antiguas que usan $detalle->cantidad.
      * Ahora la cantidad real es cantidad_unidades_base.
      */
-    public function getCantidadAttribute(): int
+    
+    /**
+     * Compatibilidad: vistas antiguas que usan $detalle->descuento.
+     * En BD se guarda como descuento_porcentaje.
+     */
+    public function getDescuentoAttribute(): float
+    {
+        return (float)($this->descuento_porcentaje ?? 0);
+    }
+
+    public function setDescuentoAttribute($value): void
+    {
+        $this->attributes['descuento_porcentaje'] = $value;
+    }
+
+public function getCantidadAttribute(): int
     {
         return (int)($this->cantidad_unidades_base ?? 0);
     }

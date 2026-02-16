@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Venta;
 use App\Models\Compra;
 use App\Models\Producto;
+use App\Models\Lote;
+use App\Models\MovimientoInventario;
 use App\Models\User;
 use App\Models\Cliente;
 use Carbon\Carbon;
@@ -47,71 +49,60 @@ class DashboardController extends Controller
     {
         $hoy = Carbon::today();
         $mesActual = Carbon::now()->startOfMonth();
-        
+
         // Ventas
         $ventasHoy = Venta::whereDate('fecha', $hoy)
             ->where('estado', 'completada')
             ->sum('total');
-            
+
         $ventasMes = Venta::whereDate('fecha', '>=', $mesActual)
             ->where('estado', 'completada')
             ->sum('total');
-            
+
         $cantidadVentasHoy = Venta::whereDate('fecha', $hoy)
             ->where('estado', 'completada')
             ->count();
 
-        // Compras
+        // Compras (solo recibidas)
         $comprasHoy = Compra::whereDate('fecha', $hoy)
-            ->where('estado', 'completada')
+            ->where('estado', 'recibida')
             ->sum('total');
-            
+
         $comprasMes = Compra::whereDate('fecha', '>=', $mesActual)
-            ->where('estado', 'completada')
+            ->where('estado', 'recibida')
             ->sum('total');
 
+        // Productos (stock_total es accessor basado en lotes.stock_actual)
+        $productos = Producto::with('lotes')->where('activo', true)->get();
 
-         $productos = Producto::with('lotes')
-    ->where('activo', true)
-    ->get();
+        $totalProductos = $productos->count();
+        $productosBajoStock = $productos->filter(fn ($p) => $p->stock_total > 0 && $p->stock_total <= $p->stock_minimo)->count();
+        $productosAgotados = $productos->filter(fn ($p) => $p->stock_total === 0)->count();
 
-$totalProductos = $productos->count();
-
-$productosBajoStock = $productos->filter(fn($p) => $p->stock_total <= $p->stock_minimo)->count();
-$productosAgotados = $productos->filter(fn($p) => $p->stock_total === 0)->count();
-
-$productosAlerta = $productos->filter(fn($p) => $p->stock_total <= $p->stock_minimo)
-    ->sortBy('stock_total')
-    ->take(5);
+        $productosAlerta = $productos
+            ->filter(fn ($p) => $p->stock_total <= $p->stock_minimo)
+            ->sortBy('stock_total')
+            ->take(5);
 
         // Clientes
         $totalClientes = Cliente::count();
         $clientesNuevosHoy = Cliente::whereDate('created_at', $hoy)->count();
 
-        // Productos más vendidos del mes
-     $productosMasVendidos = DB::table('detalle_venta')
-    ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
-    ->join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
-    ->whereDate('ventas.fecha', '>=', $mesActual)
-    ->where('ventas.estado', 'completada')
-    ->select(
-        'productos.nombre',
-        DB::raw('SUM(detalle_venta.cantidad) as total_vendido'),
-        DB::raw('SUM(detalle_venta.subtotal) as total_ingresos')
-    )
-    ->groupBy('productos.id', 'productos.nombre')
-    ->orderBy('total_vendido', 'desc')
-    ->limit(5)
-    ->get();
-
-       $productos = Producto::with('lotes')
-    ->where('activo', true)
-    ->get();
-
-// Total productos con alerta de stock
-$productosAlerta = $productos->filter(fn($p) => $p->lotes->sum('stock') <= $p->stock_minimo)
-    ->sortBy('stock_total') // opcional, para mostrar los más bajos primero
-    ->take(5);
+        // Productos más vendidos del mes (en UNIDADES BASE)
+        $productosMasVendidos = DB::table('detalle_venta')
+            ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
+            ->join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
+            ->whereDate('ventas.fecha', '>=', $mesActual)
+            ->where('ventas.estado', 'completada')
+            ->select(
+                'productos.nombre',
+                DB::raw('SUM(detalle_venta.cantidad_unidades_base) as total_vendido'),
+                DB::raw('SUM(detalle_venta.subtotal) as total_ingresos')
+            )
+            ->groupBy('productos.id', 'productos.nombre')
+            ->orderByDesc('total_vendido')
+            ->limit(5)
+            ->get();
 
         // Ventas por día (últimos 7 días)
         $ventasPorDia = Venta::whereDate('fecha', '>=', Carbon::now()->subDays(7))
@@ -125,7 +116,6 @@ $productosAlerta = $productos->filter(fn($p) => $p->lotes->sum('stock') <= $p->s
             ->orderBy('dia', 'asc')
             ->get();
 
-        // Usuarios activos
         $totalUsuarios = User::count();
 
         return view('dashboard.admin', compact(
@@ -151,13 +141,39 @@ $productosAlerta = $productos->filter(fn($p) => $p->lotes->sum('stock') <= $p->s
      */
     private function dashboardCajero()
 {
-    $lotesProximosVencer = collect();
-    $productosStockBajo = collect();
+    $hoy = Carbon::today();
+    $lotesProximosVencer = Lote::query()
+        ->with('producto:id,nombre')
+        ->where('activo', true)
+        ->where('stock_actual', '>', 0)
+        ->whereDate('fecha_vencimiento', '>=', $hoy)
+        ->whereDate('fecha_vencimiento', '<=', Carbon::now()->addDays(30))
+        ->orderBy('fecha_vencimiento', 'asc')
+        ->limit(50)
+        ->get();
+$productosStockBajo = Producto::query()
+    ->leftJoin('lotes', function ($join) {
+        $join->on('lotes.producto_id', '=', 'productos.id')
+            ->where('lotes.activo', '=', 1);
+    })
+    ->where('productos.activo', true)
+    ->whereNull('productos.deleted_at') // Es buena práctica añadirlo si usas SoftDeletes
+    ->select(
+        'productos.id', 
+        'productos.nombre', 
+        'productos.stock_minimo', 
+        DB::raw('COALESCE(SUM(lotes.stock_actual), 0) as stock_total')
+    )
+    ->groupBy('productos.id', 'productos.nombre', 'productos.stock_minimo') // <--- Columnas agregadas aquí
+    ->havingRaw('COALESCE(SUM(lotes.stock_actual), 0) <= productos.stock_minimo')
+    ->orderBy('stock_total', 'asc')
+    ->limit(50)
+    ->get();
     $usuario = auth()->user();
-    $hoy = now()->toDateString();
+    $hoyStr = now()->toDateString();
 
     // Ventas del día
-    $ventasHoyQuery = Venta::whereDate('fecha', $hoy)
+    $ventasHoyQuery = Venta::whereDate('fecha', $hoyStr)
         ->where('user_id', $usuario->id)
         ->where('estado', 'completada');
 
@@ -188,12 +204,12 @@ $productosAlerta = $productos->filter(fn($p) => $p->lotes->sum('stock') <= $p->s
     $productosMasVendidos = DB::table('detalle_venta')
         ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
         ->join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
-        ->whereDate('ventas.fecha', $hoy)
+        ->whereDate('ventas.fecha', $hoyStr)
         ->where('ventas.user_id', $usuario->id)
         ->where('ventas.estado', 'completada')
         ->select(
             'productos.nombre',
-            DB::raw('SUM(detalle_venta.cantidad) as total_vendido')
+            DB::raw('SUM(detalle_venta.cantidad_unidades_base) as total_vendido')
         )
         ->groupBy('productos.id', 'productos.nombre')
         ->orderByDesc('total_vendido')
@@ -220,55 +236,112 @@ $productosAlerta = $productos->filter(fn($p) => $p->lotes->sum('stock') <= $p->s
     private function dashboardInventario()
     {
         $hoy = Carbon::today();
-        
-        // Productos con stock bajo
-        $productosBajoStock = Producto::whereRaw('stock_total <= stock_minimo')
+        $mesActual = Carbon::now()->startOfMonth();
+
+        // Compras del mes (solo recibidas)
+        $comprasMesQuery = Compra::where('estado', 'recibida')
+            ->whereDate('fecha', '>=', $mesActual);
+
+        $comprasMes = $comprasMesQuery->sum('total');
+        $cantidadComprasMes = $comprasMesQuery->count();
+
+        $comprasRecientes = Compra::with('proveedor:id,nombre')
+            ->where('estado', 'recibida')
+            ->latest('fecha')
+            ->take(5)
+            ->get();
+
+      $productosStockBajo = Producto::query()
+    ->leftJoin('lotes', function ($join) {
+        $join->on('lotes.producto_id', '=', 'productos.id')
+            ->where('lotes.activo', '=', 1);
+    })
+    ->where('productos.activo', true)
+    // Agregamos nombre y stock_minimo al agrupamiento
+    ->groupBy('productos.id', 'productos.nombre', 'productos.stock_minimo')
+    ->select(
+        'productos.id',
+        'productos.nombre',
+        'productos.stock_minimo',
+        DB::raw('COALESCE(SUM(lotes.stock_actual), 0) as stock_total')
+    )
+    ->havingRaw('COALESCE(SUM(lotes.stock_actual), 0) <= productos.stock_minimo')
+    ->orderBy('stock_total', 'asc')
+    ->get();
+
+        // Lotes vencidos / próximos a vencer (con stock)
+        $lotesVencidos = Lote::with('producto:id,nombre')
             ->where('activo', true)
-            ->orderBy('stock_total', 'asc')
+            ->where('stock_actual', '>', 0)
+            ->whereDate('fecha_vencimiento', '<', $hoy)
+            ->orderBy('fecha_vencimiento', 'asc')
             ->get();
 
-        // Productos agotados
-        $productosAgotados = Producto::where('stock_total', 0)
+        $lotesProximosVencer = Lote::with('producto:id,nombre')
             ->where('activo', true)
+            ->where('stock_actual', '>', 0)
+            ->whereDate('fecha_vencimiento', '>=', $hoy)
+            ->whereDate('fecha_vencimiento', '<=', Carbon::now()->addDays(30))
+            ->orderBy('fecha_vencimiento', 'asc')
             ->get();
 
-        // Lotes próximos a vencer (30 días)
-        $lotesProximosVencer = DB::table('lotes')
-            ->join('productos', 'lotes.producto_id', '=', 'productos.id')
-            ->where('lotes.estado', 'disponible')
-            ->whereDate('lotes.fecha_vencimiento', '<=', Carbon::now()->addDays(30))
-            ->select('lotes.*', 'productos.nombre as producto_nombre')
-            ->orderBy('lotes.fecha_vencimiento', 'asc')
+        // Movimientos recientes (kardex)
+        $movimientosRecientes = MovimientoInventario::with([
+                'producto:id,nombre',
+                'lote:id,numero_lote',
+                'usuario:id,name',
+            ])
+            ->latest('fecha_movimiento')
+            ->take(10)
             ->get();
 
-        // Movimientos de inventario del día
-        $movimientosHoy = DB::table('movimientos_inventario')
-            ->whereDate('created_at', $hoy)
+        // Valorización (basada en lotes)
+        $cantidadTotalUnidades = (int) Lote::where('activo', true)->sum('stock_actual');
+
+        $valorTotal = (float) Lote::where('activo', true)
+            ->select(DB::raw('COALESCE(SUM(stock_actual * precio_compra),0) as v'))
+            ->value('v');
+
+        $totalLotesActivos = (int) Lote::where('activo', true)
+            ->where('stock_actual', '>', 0)
+            ->whereNull('bloqueado_at')
+            ->whereDate('fecha_vencimiento', '>=', $hoy)
             ->count();
 
-        // Compras realizadas hoy
-        $comprasHoy = Compra::whereDate('fecha', $hoy)
-            ->where('estado', 'completada')
+        $valorizacion = [
+            'valor_total' => $valorTotal,
+            'cantidad_total_unidades' => $cantidadTotalUnidades,
+            'total_lotes_activos' => $totalLotesActivos,
+        ];
+
+        // Resumen por categoría (stock_total y cantidad de productos)
+        $resumenCategorias = DB::table('categorias')
+            ->join('productos', 'productos.categoria_id', '=', 'categorias.id')
+            ->leftJoin('lotes', function ($join) {
+                $join->on('lotes.producto_id', '=', 'productos.id')
+                    ->where('lotes.activo', '=', 1);
+            })
+            ->whereNull('productos.deleted_at')
+            ->where('productos.activo', true)
+            ->groupBy('categorias.id', 'categorias.nombre')
+            ->select(
+                DB::raw('categorias.nombre as categoria'),
+                DB::raw('COUNT(DISTINCT productos.id) as total_productos'),
+                DB::raw('COALESCE(SUM(lotes.stock_actual),0) as stock_total')
+            )
+            ->orderByDesc('stock_total')
             ->get();
 
-        // Valor total del inventario
-        $valorInventario = Producto::where('activo', true)
-            ->get()
-            ->sum(function ($producto) {
-                return $producto->stock_total * $producto->precio_compra;
-            });
-
-        // Total de productos
-        $totalProductos = Producto::where('activo', true)->count();
-
         return view('dashboard.inventario', compact(
-            'productosBajoStock',
-            'productosAgotados',
+            'comprasMes',
+            'cantidadComprasMes',
+            'comprasRecientes',
+            'productosStockBajo',
+            'lotesVencidos',
             'lotesProximosVencer',
-            'movimientosHoy',
-            'comprasHoy',
-            'valorInventario',
-            'totalProductos'
+            'movimientosRecientes',
+            'valorizacion',
+            'resumenCategorias'
         ));
     }
 }

@@ -149,6 +149,17 @@ Route::resource('compras', CompraController::class);
             ->name('movimientos')
             ->middleware('permission:ver movimientos inventario');
 
+    Route::get('/kardex-lote/{lote}', [InventarioController::class, 'kardexLote'])
+        ->name('kardex-lote');
+
+  
+    Route::get('/lote/{lote}', [InventarioController::class, 'showLote'])
+        ->name('show-lote');
+
+    Route::get('/valorizacion', [InventarioController::class, 'valorizacion'])
+        ->name('valorizacion');
+        
+
         Route::get('/lotes', [InventarioController::class, 'lotes'])
             ->name('lotes')
             ->middleware('permission:ver movimientos inventario');
@@ -164,9 +175,10 @@ Route::resource('compras', CompraController::class);
             ->name('ajustar')
             ->middleware('permission:ajustar inventario');
 
-        Route::post('/ajustar', [InventarioController::class, 'storeAjuste'])
-            ->name('ajustar.store')
-            ->middleware('permission:ajustar inventario');
+
+    Route::post('/ajustar', [InventarioController::class, 'storeAjuste'])
+        ->name('store-ajuste') // <-- Antes decía 'ajustar.store'
+        ->middleware('permission:ajustar inventario');
     });
 
     /*

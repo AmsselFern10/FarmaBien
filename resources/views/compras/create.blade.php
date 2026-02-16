@@ -910,9 +910,14 @@ function sincronizarHiddenDesdeVisibles(index) {
     if (lote) setHidden('numero_lote', lote.value || '');
     if (vence) setHidden('fecha_vencimiento', vence.value || '');
 
-    // Precio pres.ario
-    if (precio) setHidden('precio_unitario', precio.value || '0');
 
+// Guardamos precio_unitario REAL (por unidad base) = precioPres / unidades
+if (precio) {
+    const precioPres = parseFloat(precio.value || '0') || 0;
+    const un = parseInt(unidades || '1', 10) || 1;
+    const precioUnit = (un > 0) ? (precioPres / un) : 0;
+    setHidden('precio_unitario', precioUnit.toFixed(2));
+}
     // Descuento por producto (%)
     if (descuento) setHidden('descuento', descuento.value || '0');
 }
@@ -1907,19 +1912,25 @@ function asociarEventos(index) {
     });
 
     if (precio) precio.addEventListener('input', () => {
-        const hidden = row.querySelector(`input[name="productos[${index}][precio_unitario]"]`);
-        if (hidden) hidden.value = precio.value;
+        calcularTotales(index);
     });
 
-    if (unidadesInput) unidadesInput.addEventListener('input', () => {
-        const hidden = row.querySelector(`input[name="productos[${index}][unidades_por_presentacion]"]`);
-        if (hidden) hidden.value = unidadesInput.value;
-    });
+  if (unidadesInput) unidadesInput.addEventListener('input', () => {
+    const hidden = row.querySelector(`input[name="productos[${index}][unidades_por_presentacion]"]`);
+    if (hidden) hidden.value = unidadesInput.value;
 
-    if (cantidad) cantidad.addEventListener('input', () => {
-        const hidden = row.querySelector(`input[name="productos[${index}][cantidad_presentaciones]"]`);
-        if (hidden) hidden.value = cantidad.value;
-    });
+    const hiddenUn = row.querySelector(`.hidden-unidades-${index}`);
+    if (hiddenUn) hiddenUn.value = unidadesInput.value;
+
+    calcularTotales(index);
+});
+
+if (cantidad) cantidad.addEventListener('input', () => {
+    const hidden = row.querySelector(`input[name="productos[${index}][cantidad_presentaciones]"]`);
+    if (hidden) hidden.value = cantidad.value;
+
+    calcularTotales(index);
+});
 }
 
 /** ================================

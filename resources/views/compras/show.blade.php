@@ -356,48 +356,17 @@
                     </tbody>
                 </table>
             </div>
-            {{-- Pie de Tabla: Solo Totales de Unidades y Descuento --}}
-<div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        
-        {{-- Total Unidades --}}
-        <div class="flex items-center space-x-2 text-slate-600 dark:text-slate-300">
-            <span class="font-semibold text-sm">Total unidades:</span>
-            <span class="text-base font-bold text-slate-900 dark:text-white">
-                {{ $totalUnidades }}
-            </span>
         </div>
-
-        {{-- Descuento Total Calculado de la Tabla --}}
-        <div class="flex items-center space-x-2 text-slate-600 dark:text-slate-300">
-            <span class="font-semibold text-sm">Descuento total (Items):</span>
-            <span class="text-base font-bold text-red-600 dark:text-red-400">
-                @php
-                    $descuentoAcumulado = $compra->detalles->sum(function($d) {
-                        $precioUnit = (float)($d->precio_unitario ?? 0);
-                        $unidPres = (int)($d->unidades_por_presentacion ?? 1);
-                        $cantPres = $d->cantidad_presentaciones ?? null;
-                        $totalUnid = (int)($d->cantidad ?? 0);
-                        
-                        $bruto = ($cantPres !== null) 
-                            ? ($precioUnit * $unidPres) * (int)$cantPres 
-                            : $precioUnit * $totalUnid;
-                            
-                        $porcentaje = max(0, min(100, (float)($d->descuento ?? 0)));
-                        return round($bruto * ($porcentaje / 100), 2);
-                    });
-                @endphp
-                - S/ {{ number_format($descuentoAcumulado, 2) }}
-            </span>
-        </div>
-
-    </div>
-</div>
-        </div>
-        
 
         <!-- Lotes Generados -->
-        @if($compra->lotes->count() > 0)
+        @php
+    $lotesMostrados = $compra->relationLoaded('lotes') ? $compra->lotes : $compra->lotes()->get();
+    if ($lotesMostrados->isEmpty()) {
+        $lotesMostrados = $compra->detalles->loadMissing('lote.producto')->pluck('lote')->filter()->unique('id')->values();
+    }
+@endphp
+
+        @if($lotesMostrados->count() > 0)
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-white dark:from-gray-800 dark:to-gray-800/50">
                 <div class="flex items-center space-x-3">
@@ -408,13 +377,13 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Lotes Generados</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ $compra->lotes->count() }} lote(s)</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ $lotesMostrados->count() }} lote(s)</p>
                     </div>
                 </div>
             </div>
             
             <div class="p-6 space-y-3">
-                @foreach($compra->lotes as $lote)
+                @foreach($lotesMostrados as $lote)
                 <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 {{ !$lote->activo ? 'opacity-60' : '' }}">
                     <div class="flex justify-between items-start">
                         <div class="flex items-start space-x-3">
@@ -450,174 +419,108 @@
         </div>
         @endif
 
-        {{-- Historial de modificaciones (Corregido) --}}
-@if(!empty($historial) && count($historial) > 0)
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Historial de modificaciones</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400">Cadena completa de versiones</p>
+        <!-- Historial de Modificaciones -->
+        @if($historial && count($historial) > 0)
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Historial de Modificaciones</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ count($historial) }} versión(es)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                @foreach($historial as $index => $registro)
+                <div class="border-l-4 {{ $registro['id'] == $compra->id ? 'border-indigo-400 dark:border-indigo-600' : 'border-gray-300 dark:border-gray-700' }} pl-4 py-2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-slate-900 dark:text-white">
+                                Compra #{{ $registro['id'] }}
+                                @if($registro['id'] == $compra->id)
+                                    <span class="ml-2 px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full font-semibold">Actual</span>
+                                @endif
+                            </p>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">{{ \Carbon\Carbon::parse($registro['fecha'])->format('d/m/Y') }}</p>
+                            @if($registro['motivo_anulacion'])
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ $registro['motivo_anulacion'] }}</p>
+                            @endif
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-900 dark:text-white">S/ {{ number_format($registro['total'], 2) }}</p>
+                            @if($registro['es_activa'])
+                                <span class="mt-1 inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Vigente</span>
+                            @elseif($registro['estado'] == 'anulada')
+                                <span class="mt-1 inline-block px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">Anulada</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
         </div>
+        @endif
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700/50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Versión</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Compra</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fecha</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Usuario</th>
-                        <th class="px-6 py-3 text-right text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Estado</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {{-- Usamos una cuenta regresiva manual para las versiones --}}
-                    @php $totalVersiones = count($historial); @endphp
-                    
-                    @foreach($historial as $index => $h)
-                        @php 
-                            // Convertimos a array si es un objeto para evitar errores de stdClass
-                            $h = (array) $h; 
-                            $versionNumero = $totalVersiones - $index;
-                        @endphp
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                            <td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
-                                V{{ $versionNumero }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <a class="text-purple-700 dark:text-purple-300 font-semibold hover:underline" href="{{ route('compras.show', $h['id']) }}">
-                                    #{{ $h['id'] }}
-                                </a>
-                                @if($h['id'] == $compra->id)
-                                    <span class="ml-2 px-2 py-1 text-[11px] font-bold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">ACTUAL</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-200">
-                                {{ \Carbon\Carbon::parse($h['fecha'])->format('d/m/Y H:i') }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-200">
-                                {{ $h['usuario'] ?? 'N/A' }}
-                            </td>
-                            <td class="px-6 py-4 text-right text-sm font-bold text-slate-900 dark:text-white">
-                                S/ {{ number_format((float)($h['total'] ?? 0), 2) }}
-                            </td>
-                            <td class="px-6 py-4">
-                                @if(($h['estado'] ?? '') === 'completada' || ($h['es_activa'] ?? false))
-                                    <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                        Completada
-                                    </span>
-                                @else
-                                    <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-                                        Anulada
-                                    </span>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
     </div>
-@endif
- </div>
 
     <!-- Columna Lateral -->
     <div class="lg:col-span-1 space-y-6">
         
-  <div class="lg:col-span-1 space-y-6">
-    
-    <div class="relative bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="p-6">
-            {{-- Encabezado --}}
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-white uppercase tracking-wider text-blue-100">Total de Compra</h3>
-                <div class="p-2 bg-white/10 rounded-lg">
-                    <svg class="w-6 h-6 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Resumen Financiero -->
+        <div class="relative bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white">Total de Compra</h3>
+                    <svg class="w-8 h-8 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
-            </div>
-
-            @php
-                // 1. Subtotal Bruto (Suma de lo que costarían los productos sin ningún descuento)
-                $sumaBrutaItems = $compra->detalles->sum(function($d) {
-                    $precioUnit = (float)($d->precio_unitario ?? 0);
-                    $unidPres = (int)($d->unidades_por_presentacion ?? 1);
-                    $cantPres = $d->cantidad_presentaciones ?? null;
-                    $totalUnid = (int)($d->cantidad ?? 0);
-                    return ($cantPres !== null) ? ($precioUnit * $unidPres) * (int)$cantPres : $precioUnit * $totalUnid;
-                });
-
-                // 2. Descuento acumulado solo de los items (línea por línea)
-                $descPorItems = $compra->detalles->sum(function($d) {
-                    $precioUnit = (float)($d->precio_unitario ?? 0);
-                    $unidPres = (int)($d->unidades_por_presentacion ?? 1);
-                    $cantPres = $d->cantidad_presentaciones ?? null;
-                    $totalUnid = (int)($d->cantidad ?? 0);
-                    $brutoRow = ($cantPres !== null) ? ($precioUnit * $unidPres) * (int)$cantPres : $precioUnit * $totalUnid;
-                    return round($brutoRow * ((float)($d->descuento ?? 0) / 100), 2);
-                });
-
-                // 3. Subtotal Neto de Items (Bruto - Descuento Items)
-                $subtotalNetoItems = $sumaBrutaItems - $descPorItems;
-
-                // 4. Descuento Global (aplicado sobre el subtotal neto de items)
-                $descuentoGlobalPct = (float)($compra->descuento ?? 0);
-                $montoDescGlobal = round($subtotalNetoItems * ($descuentoGlobalPct / 100), 2);
                 
-                // 5. Totales Finales
-                $ahorroTotal = $descPorItems + $montoDescGlobal;
-                $totalFinal = round($subtotalNetoItems - $montoDescGlobal, 2);
-                $totalGuardado = round((float)$compra->total, 2);
-            @endphp
+                @php
+                    $subtotalCompra = round((float)$compra->detalles->sum('subtotal'), 2);
+                    $descuentoPct = (float)($compra->descuento ?? 0);
+                    $descuentoPct = max(0, min(100, $descuentoPct));
+                    $montoDescuento = round($subtotalCompra * ($descuentoPct / 100), 2);
+                    $totalCalculado = round($subtotalCompra - $montoDescuento, 2);
+                    $totalGuardado = round((float)$compra->total, 2);
+                @endphp
 
-            <div class="space-y-4">
-                {{-- Subtotal Bruto Inicial --}}
-                <div class="flex justify-between items-center text-white/90">
-                    <span class="text-sm font-medium text-blue-100">Subtotal Base:</span>
-                    <span class="text-lg font-bold">S/ {{ number_format($sumaBrutaItems, 2) }}</span>
-                </div>
-
-                {{-- Bloque de Descuentos --}}
-                <div class="space-y-2 py-3 border-y border-white/10">
-                    {{-- Descuento por cada producto --}}
-                    <div class="flex justify-between items-center text-blue-100">
-                        <span class="text-xs">Desc. por Items :</span>
-                        <span class="text-sm font-semibold">- S/ {{ number_format($descPorItems, 2) }}</span>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-white">
+                        <span class="text-sm font-medium text-blue-100">Subtotal:</span>
+                        <span class="text-lg font-bold">S/ {{ number_format($subtotalCompra, 2) }}</span>
                     </div>
-                    
-                    {{-- Descuento Global de la Compra --}}
-                    @if($descuentoGlobalPct > 0)
-                        <div class="flex justify-between items-center text-blue-500">
-                            <span class="text-xs font-bold text-blue-200">Descuento Global ({{ number_format($descuentoGlobalPct, 1) }}%):</span>
-                            <span class="text-sm font-bold text-white">- S/ {{ number_format($montoDescGlobal, 2) }}</span>
+
+                    <div class="flex justify-between items-center text-white">
+                        <span class="text-sm font-medium text-blue-100">Descuento:</span>
+                        <span class="text-sm font-semibold">{{ number_format($descuentoPct, 2) }}%</span>
+                    </div>
+
+                    <div class="flex justify-between items-center text-white">
+                        <span class="text-sm font-medium text-blue-100">Monto descuento:</span>
+                        <span class="text-sm font-semibold">- S/ {{ number_format($montoDescuento, 2) }}</span>
+                    </div>
+
+                    <div class="border-t border-blue-200/30 pt-3 flex justify-between items-center text-white">
+                        <span class="text-sm font-medium text-blue-100">Total:</span>
+                        <span class="text-3xl font-bold">S/ {{ number_format($totalCalculado, 2) }}</span>
+                    </div>
+
+                    @if(abs($totalGuardado - $totalCalculado) > 0.01)
+                        <div class="mt-2 text-xs text-blue-100/90">
+                            Total guardado: <span class="font-semibold">S/ {{ number_format($totalGuardado, 2) }}</span>
                         </div>
                     @endif
                 </div>
-
-                {{-- Ahorro Acumulado --}}
-                <div class="flex justify-between items-center">
-                    <span class="text-sm font-bold text-orange-200 uppercase tracking-tighter">Ahorro Total:</span>
-                    <span class="text-base font-black text-orange-300">
-                        - S/ {{ number_format($ahorroTotal, 2) }}
-                    </span>
-                </div>
-
-                {{-- TOTAL A PAGAR --}}
-                <div class="pt-2 flex justify-between items-end text-white">
-                    <span class="text-base font-bold uppercase tracking-tight">Total Neto:</span>
-                    <div class="text-right">
-                        <span class="block text-4xl font-black leading-none ">S/ {{ number_format($totalFinal, 2) }}</span>
-                    </div>
-                </div>
-
-             
             </div>
+            <div class="absolute bottom-0 right-0 -mr-8 -mb-8 w-32 h-32 bg-blue-400/20 rounded-full"></div>
         </div>
-
-        <div class="absolute bottom-0 right-0 -mr-8 -mb-8 w-32 h-32 bg-white/10 rounded-full"></div>
-    </div>
-</div>
 
         <!-- Estadísticas -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">

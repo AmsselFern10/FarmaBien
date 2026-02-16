@@ -12,7 +12,6 @@ use App\Models\Producto;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-use Illuminate\Support\Facades\View;
 
 class CompraController extends Controller
 {
@@ -142,6 +141,7 @@ $compras->withQueryString();
 /**
  * Show the form for editing the specified resource.
  */
+
 public function edit(Compra $compra)
 {
     // Verificar que puede modificarse
@@ -151,7 +151,6 @@ public function edit(Compra $compra)
             ->with('error', 'Esta compra no puede modificarse.');
     }
 
-   
     $compra->loadMissing([
         'proveedor:id,nombre',
         'usuario:id,name',
@@ -161,13 +160,22 @@ public function edit(Compra $compra)
         'detalles.producto:id,nombre,descripcion,codigo_barra,imagen,precio_compra,activo',
         'detalles.presentacion:id,producto_id,nombre,descripcion,unidades_por_presentacion,precio_sugerido,activo,orden',
         'detalles.lote:id,producto_id,numero_lote,fecha_vencimiento',
+        'lotes:id,compra_id,producto_id,numero_lote,fecha_vencimiento,stock_inicial,stock_actual,activo',
     ]);
 
-    // Proveedores para select
+    // Proveedores para select (incluye el actual aunque esté inactivo)
     $proveedores = Proveedor::activos()
         ->select('id', 'nombre')
         ->orderBy('nombre')
         ->get();
+
+    if ($compra->proveedor_id && !$proveedores->contains('id', $compra->proveedor_id)) {
+        $provActual = Proveedor::select('id', 'nombre')->find($compra->proveedor_id);
+        if ($provActual) {
+            $proveedores->push($provActual);
+            $proveedores = $proveedores->sortBy('nombre')->values();
+        }
+    }
 
     // Productos para modal/grid + barcode (asegura campos usados por JS y UI)
     $productos = Producto::activos()
@@ -177,37 +185,59 @@ public function edit(Compra $compra)
 
     return view('compras.edit', compact('compra', 'proveedores', 'productos'));
 }
-    /**
 
-     */
-    public function update(UpdateCompraRequest $request, Compra $compra)
-    {
-        try {
-            // Tomamos solo datos validados (evita _token/_method y campos extra)
-            $data = $request->validated();
+public function update(UpdateCompraRequest $request, Compra $compra)
+{
+    try {
+        $data = $request->validated();
+        $motivo = trim((string) ($data['motivo_cambios'] ?? $data['motivo_anulacion'] ?? ''));
 
-            // Motivo viene del campo correcto del formulario
-            $motivo = trim((string) ($data['motivo_anulacion'] ?? ''));
+        $compra->loadMissing([
+            'detalles.lote:id,producto_id,numero_lote,fecha_vencimiento',
+            'detalles.presentacion:id,unidades_por_presentacion',
+            'lotes:id,stock_actual',
+        ]);
 
-            // El service no espera el motivo dentro del array $data
-            unset($data['motivo_anulacion']);
+        $productosRequest = $data['productos'] ?? [];
+        $productosCambiaron = $this->productosCambiaron($compra, $productosRequest);
 
+        // ✅ Regla de negocio:
+        // - Si cambian productos/lotes/cantidades/precios => requiere revertir inventario (puede fallar si ya hubo ventas).
+        // - Si NO cambian => versiona solo cabecera (sin tocar inventario) y siempre guarda trazabilidad.
+        if ($productosCambiaron) {
             $nuevaCompra = $this->compraService->modificarCompra(
-                compraId: $compra->id,
-                data: $data,
-                motivo: $motivo
+                $compra->id,
+                $data,
+                $motivo ?: 'Modificación de compra'
             );
+        } else {
+            $nuevaCompra = $this->compraService->versionarCompraSoloDatos(
+                $compra->id,
+                $data,
+                $motivo ?: 'Actualización de datos'
+            );
+        }
 
-            return redirect()
-                ->route('compras.show', $nuevaCompra)
-                ->with('success', "Compra modificada correctamente. Compra original: #{$compra->id} → Nueva compra: #{$nuevaCompra->id}");
+        return redirect()
+            ->route('compras.show', $nuevaCompra)
+            ->with('success', 'Compra actualizada correctamente. Se guardó una versión anterior para trazabilidad.');
 
-        } catch (\Exception $e) {
+    } catch (\Exception $e) {
+        $msg = (string) $e->getMessage();
+
+        // Mensaje más claro cuando no se puede revertir inventario porque ya hubo salidas desde el/los lote(s).
+        if (str_contains($msg, 'no tiene stock suficiente') || str_contains($msg, 'Stock actual')) {
             return back()
                 ->withInput()
-                ->with('error', 'Error al modificar la compra: ' . $e->getMessage());
+                ->with('error', 'No se puede modificar el detalle de esta compra porque ya hubo salidas (ventas/ajustes) desde uno o más lotes. Puedes editar únicamente datos de cabecera (proveedor/fecha/observaciones/descuento) sin cambiar productos, lotes, cantidades ni precios.');
         }
+
+        return back()
+            ->withInput()
+            ->with('error', 'Error al modificar la compra: ' . $msg);
     }
+}
+
 
     /**
      * Anular una compra.
@@ -275,7 +305,7 @@ public function generarPDF(Compra $compra)
         'email' => 'contacto@farmabien.com'
     ];
 
-    $pdf = PDF::loadView('compras.pdf', compact('compra', 'empresa'));
+    $pdf = Pdf::loadView('compras.pdf', compact('compra', 'empresa'));
     
     // Configurar orientación y tamaño
     $pdf->setPaper('A4', 'portrait');
@@ -344,4 +374,84 @@ public function buscarPorId($id)
         ], 404);
     }
 }
+
+
+// ============================================================
+// Helpers: detectar si cambiaron productos/lotes/cantidades/precios
+// ============================================================
+private function normalizarNumeroLote(?string $numero): string
+{
+    $numero = trim((string) $numero);
+    $numero = preg_replace('/\s+/', ' ', $numero);
+    return mb_strtoupper($numero);
+}
+
+private function fingerprintProductosCompra(Compra $compra): array
+{
+    $items = [];
+
+    foreach ($compra->detalles as $d) {
+        $vence = optional(optional($d->lote)->fecha_vencimiento);
+        $items[] = [
+            'producto_id' => (int) $d->producto_id,
+            'presentacion_id' => (int) ($d->presentacion_id ?? 0),
+            'unidades' => (int) ($d->unidades_por_presentacion ?? 1),
+            'cantidad' => (int) ($d->cantidad_presentaciones ?? 1),
+            'numero_lote' => $this->normalizarNumeroLote(optional($d->lote)->numero_lote),
+            'vence' => $vence ? $vence->toDateString() : '',
+            'precio_unitario' => round((float) ($d->precio_unitario ?? 0), 6),
+            'descuento' => round((float) ($d->descuento_porcentaje ?? 0), 6),
+        ];
+    }
+
+    usort($items, function ($a, $b) {
+        return strcmp(
+            implode('|', [$a['producto_id'], $a['numero_lote'], $a['presentacion_id']]),
+            implode('|', [$b['producto_id'], $b['numero_lote'], $b['presentacion_id']])
+        );
+    });
+
+    return $items;
+}
+
+private function fingerprintProductosRequest(array $productos): array
+{
+    $items = [];
+
+    foreach ($productos as $p) {
+        if (!is_array($p)) {
+            continue;
+        }
+
+        $items[] = [
+            'producto_id' => (int) ($p['producto_id'] ?? 0),
+            'presentacion_id' => (int) ($p['presentacion_id'] ?? 0),
+            'unidades' => (int) ($p['unidades_por_presentacion'] ?? 1),
+            'cantidad' => (int) ($p['cantidad_presentaciones'] ?? 1),
+            'numero_lote' => $this->normalizarNumeroLote($p['numero_lote'] ?? ''),
+            'vence' => (string) ($p['fecha_vencimiento'] ?? ''),
+            'precio_unitario' => round((float) ($p['precio_unitario'] ?? 0), 6),
+            'descuento' => round((float) ($p['descuento'] ?? 0), 6),
+        ];
+    }
+
+    usort($items, function ($a, $b) {
+        return strcmp(
+            implode('|', [$a['producto_id'], $a['numero_lote'], $a['presentacion_id']]),
+            implode('|', [$b['producto_id'], $b['numero_lote'], $b['presentacion_id']])
+        );
+    });
+
+    return $items;
+}
+
+private function productosCambiaron(Compra $compra, array $productosRequest): bool
+{
+    $a = $this->fingerprintProductosCompra($compra);
+    $b = $this->fingerprintProductosRequest($productosRequest);
+
+    return json_encode($a) !== json_encode($b);
+}
+
+
 }
