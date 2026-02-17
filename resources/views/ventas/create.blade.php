@@ -746,6 +746,40 @@
                 </select>
             </div>
 
+
+{{-- Receta médica (si aplica) --}}
+<div x-show="requiereReceta" x-transition class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
+    <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+            <p class="font-bold text-amber-800 dark:text-amber-200">Productos que requieren receta</p>
+            <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                <span x-text="productosQueRequierenReceta.join(', ')"></span>
+            </p>
+
+            <div class="mt-2 flex flex-wrap gap-2" x-show="recetasSeleccionadas.length">
+                <template x-for="r in recetasSeleccionadas" :key="r.id">
+                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/70 dark:bg-gray-800/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
+                        <span x-text="(r.numero_receta ? ('#' + r.numero_receta) : ('Receta ' + r.id)) + (r.cliente_nombre ? (' · ' + r.cliente_nombre) : '')"></span>
+                        <button type="button" class="text-amber-700 dark:text-amber-200 hover:text-rose-600 dark:hover:text-rose-400"
+                                @click="removeReceta(r.id)" title="Quitar">
+                            ✕
+                        </button>
+                    </span>
+                </template>
+            </div>
+
+            <p x-show="!recetasOk" class="mt-2 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                Debes seleccionar o crear una receta para continuar.
+            </p>
+        </div>
+
+        <button type="button" @click="openRecetas()"
+                class="shrink-0 inline-flex items-center px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-sm">
+            Gestionar
+        </button>
+    </div>
+</div>
+
  {{-- Sección de Efectivo --}}
 <div x-show="metodo_pago === 'efectivo'" x-transition class="space-y-3 relative"> {{-- Añadido 'relative' aquí --}}
     <div class="flex items-stretch gap-3">
@@ -1060,6 +1094,160 @@
         </div>
     </div>
 
+
+
+{{-- MODAL RECETA (seleccionar / crear) --}}
+<div x-show="recetasOpen" x-transition x-cloak class="fixed inset-0 bg-black/50 z-[80] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white">Receta médica</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Selecciona una receta existente o crea una nueva y la vinculamos a la venta.
+                </p>
+            </div>
+            <button type="button" @click="closeRecetas()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div x-show="recetaError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" x-text="recetaError"></div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div class="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-sm">
+                    <button type="button" @click="recetasTab='seleccionar'"
+                            :class="recetasTab==='seleccionar' ? 'px-4 py-2 bg-amber-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
+                        Seleccionar
+                    </button>
+                    <button type="button" @click="recetasTab='crear'"
+                            :class="recetasTab==='crear' ? 'px-4 py-2 bg-amber-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
+                        Crear nueva
+                    </button>
+                </div>
+
+                <div class="flex-1" x-show="recetasTab==='seleccionar'">
+                    <label class="sr-only">Buscar receta</label>
+                    <input x-ref="recetaBuscar" type="text" x-model="recetaBuscar"
+                           @input.debounce.250ms="loadRecetas()"
+                           placeholder="Buscar por número (ej: 1234)…"
+                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                </div>
+            </div>
+
+            {{-- Seleccionar --}}
+            <div x-show="recetasTab==='seleccionar'" class="space-y-2">
+                <div class="text-sm text-slate-600 dark:text-slate-400" x-show="recetaLoading">Cargando recetas…</div>
+
+                <div class="max-h-[45vh] overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 dark:bg-gray-900/30">
+                            <tr class="text-left">
+                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">N°</th>
+                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">Cliente</th>
+                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">Fecha</th>
+                                <th class="px-4 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="r in recetasListado" :key="r.id">
+                                <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/30">
+                                    <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white" x-text="r.numero_receta || ('#' + r.id)"></td>
+                                    <td class="px-4 py-3 text-slate-700 dark:text-slate-200" x-text="r.cliente_nombre || '—'"></td>
+                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="r.fecha_fmt || r.fecha || '—'"></td>
+                                    <td class="px-4 py-3 text-right">
+                                        <button type="button" @click="addRecetaSeleccionada(r)"
+                                                class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
+                                            Seleccionar
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <tr x-show="!recetaLoading && recetasListado.length === 0">
+                                <td colspan="4" class="px-4 py-6 text-center text-slate-600 dark:text-slate-400">
+                                    No hay recetas para mostrar.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3" x-show="recetasSeleccionadas.length">
+                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Seleccionadas</div>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="r in recetasSeleccionadas" :key="'sel-'+r.id">
+                            <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
+                                <span x-text="(r.numero_receta ? ('#' + r.numero_receta) : ('Receta ' + r.id)) + (r.cliente_nombre ? (' · ' + r.cliente_nombre) : '')"></span>
+                                <button type="button" class="hover:text-rose-600 dark:hover:text-rose-400" @click="removeReceta(r.id)">✕</button>
+                            </span>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Crear --}}
+            <div x-show="recetasTab==='crear'" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Cliente</label>
+                        <select x-model="nuevaReceta.cliente_id"
+                                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                            <option value="">Seleccionar…</option>
+                            <template x-for="c in clientes" :key="c.id">
+                                <option :value="String(c.id)" x-text="c.nombre"></option>
+                            </template>
+                        </select>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tip: si ya seleccionaste cliente en la venta, se preselecciona aquí.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Número de receta</label>
+                        <input type="text" x-model="nuevaReceta.numero_receta"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                        <input type="date" x-model="nuevaReceta.fecha"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Médico (opcional)</label>
+                        <input type="text" x-model="nuevaReceta.medico"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones (opcional)</label>
+                    <textarea rows="3" x-model="nuevaReceta.observaciones"
+                              class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" @click="recetasTab='seleccionar'"
+                            class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
+                        Cancelar
+                    </button>
+                    <button type="button" @click="crearReceta()"
+                            class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold">
+                        Crear receta
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-2">
+            <button type="button" @click="closeRecetas()"
+                    class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+
 </div>
 @endsection
 
@@ -1218,6 +1406,17 @@ function ventaPOS() {
         nuevoCliente: { nombre: '', tipo_documento: 'Cedula', documento: '', telefono: '', direccion: '' },
         clienteError: '',
 
+        // Recetas (para productos que requieren receta)
+        recetasOpen: false,
+        recetasTab: 'seleccionar', // seleccionar | crear
+        recetasSeleccionadas: [],
+        recetasListado: [],
+        recetaBuscar: '',
+        recetaLoading: false,
+        recetaError: '',
+        nuevaReceta: { cliente_id: '', numero_receta: '', fecha: '', medico: '', observaciones: '' },
+
+
         /* ======= Computados ======= */
         get subtotal_bruto() {
             return this.items.reduce((a, it) => a + Number(it.subtotal_bruto || 0), 0);
@@ -1239,6 +1438,26 @@ function ventaPOS() {
         get needsReferencia() {
             return ['transferencia', 'credito', 'debito', 'otros'].includes(this.metodo_pago);
         },
+
+// Recetas
+get productosQueRequierenReceta() {
+    const nombres = [];
+    const seen = new Set();
+    this.items.forEach(it => {
+        const req = (it.requiere_receta === true);
+        if (req && !seen.has(it.producto_id)) {
+            seen.add(it.producto_id);
+            nombres.push(it.nombre);
+        }
+    });
+    return nombres;
+},
+get requiereReceta() {
+    return this.productosQueRequierenReceta.length > 0;
+},
+get recetasOk() {
+    return !this.requiereReceta || this.recetasSeleccionadas.length > 0;
+},
         get submitDisabled() {
             if (this.items.length === 0) return true;
             if (this.metodo_pago === 'efectivo' && this.efectivoInsuficiente) return true;
@@ -1266,6 +1485,9 @@ function ventaPOS() {
             // Botón global "Limpiar venta" desde header
             window.addEventListener('pos-limpiar-venta', () => this.resetVenta(true));
 
+            // Abrir modal de recetas desde cualquier botón (compatibilidad openrecetar/openRecetar)
+            window.addEventListener('pos-open-recetas', () => this.openRecetas());
+
 
             if (!this.fecha) {
                 const now = new Date();
@@ -1274,6 +1496,7 @@ function ventaPOS() {
 
             // Watchers (autosave)
             this.$watch('items', () => this.saveToStorage(), { deep: true });
+            this.$watch('recetasSeleccionadas', () => this.saveToStorage(), { deep: true });
             this.$watch('cliente_id', () => this.saveToStorage());
             this.$watch('observaciones', () => this.saveToStorage());
             this.$watch('metodo_pago', () => this.saveToStorage());
@@ -1291,6 +1514,177 @@ function ventaPOS() {
 
             this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
         },
+
+
+        /* ======= Recetas (Modal) ======= */
+        openRecetas() {
+            this.recetaError = '';
+            this.recetasOpen = true;
+            this.recetasTab = 'seleccionar';
+
+            // Preseleccionar cliente en la receta (si hay cliente en la venta)
+            if (this.cliente_id && !this.nuevaReceta.cliente_id) {
+                this.nuevaReceta.cliente_id = String(this.cliente_id);
+            }
+
+            // Fecha por defecto (hoy)
+            if (!this.nuevaReceta.fecha) {
+                const d = new Date();
+                this.nuevaReceta.fecha = d.toISOString().slice(0, 10);
+            }
+
+            // Cargar listado para el modal
+            this.loadRecetas(true);
+
+            // Focus al buscador
+            this.$nextTick(() => {
+                if (this.$refs.recetaBuscar) this.$refs.recetaBuscar.focus();
+            });
+        },
+        // Alias por compatibilidad (si algún botón llama openrecetar/openRecetar)
+        openRecetar() { this.openRecetas(); },
+
+        closeRecetas() {
+            this.recetasOpen = false;
+            this.recetaError = '';
+            this.recetaLoading = false;
+            // No borramos recetasSeleccionadas: el usuario ya las eligió para la venta
+        },
+
+        async loadRecetas(force = false) {
+            if (!this.recetasOpen && !force) return;
+
+            this.recetaLoading = true;
+            this.recetaError = '';
+
+            try {
+                const params = new URLSearchParams();
+                params.set('json', '1');
+                params.set('limit', '50');
+
+                // Si hay cliente en la venta, filtrar por ese cliente para hacerlo rápido
+                if (this.cliente_id) params.set('cliente_id', String(this.cliente_id));
+
+                const q = String(this.recetaBuscar || '').trim();
+                if (q) params.set('numero_receta', q);
+
+                const url = `{{ route('recetas.index') }}?${params.toString()}`;
+
+                const res = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+
+                if (!res.ok) {
+                    throw new Error('No se pudo cargar el listado de recetas.');
+                }
+
+                const data = await res.json();
+                this.recetasListado = Array.isArray(data.data) ? data.data : [];
+            } catch (e) {
+                this.recetaError = e?.message || 'Error al cargar recetas.';
+                this.recetasListado = [];
+            } finally {
+                this.recetaLoading = false;
+            }
+        },
+
+        addRecetaSeleccionada(r) {
+            if (!r || !r.id) return;
+            const id = Number(r.id);
+
+            const exists = this.recetasSeleccionadas.some(x => Number(x.id) === id);
+            if (exists) return;
+
+            this.recetasSeleccionadas.push({
+                id,
+                numero_receta: r.numero_receta || null,
+                fecha: r.fecha || null,
+                fecha_fmt: r.fecha_fmt || null,
+                cliente_id: r.cliente_id || null,
+                cliente_nombre: r.cliente_nombre || null,
+            });
+
+            // Cerrar modal (flujo rápido)
+            this.closeRecetas();
+        },
+
+        removeReceta(id) {
+            const nid = Number(id);
+            this.recetasSeleccionadas = this.recetasSeleccionadas.filter(r => Number(r.id) !== nid);
+        },
+
+        async crearReceta() {
+            this.recetaError = '';
+
+            const payload = {
+                cliente_id: this.nuevaReceta.cliente_id ? Number(this.nuevaReceta.cliente_id) : null,
+                numero_receta: String(this.nuevaReceta.numero_receta || '').trim(),
+                fecha: this.nuevaReceta.fecha || null,
+                medico: String(this.nuevaReceta.medico || '').trim() || null,
+                observaciones: String(this.nuevaReceta.observaciones || '').trim() || null,
+            };
+
+            // Validación mínima (evita requests vacíos)
+            if (!payload.cliente_id) {
+                this.recetaError = 'Selecciona un cliente para la receta.';
+                return;
+            }
+            if (!payload.numero_receta) {
+                this.recetaError = 'Ingresa el número de receta.';
+                return;
+            }
+            if (!payload.fecha) {
+                this.recetaError = 'Selecciona la fecha de la receta.';
+                return;
+            }
+
+            this.recetaLoading = true;
+
+            try {
+                const res = await fetch(`{{ route('recetas.store') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': `{{ csrf_token() }}`,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok || data.success === false) {
+                    throw new Error(data.message || 'No se pudo crear la receta.');
+                }
+
+                const receta = data.receta || data.data || null;
+                if (receta && receta.id) {
+                    this.addRecetaSeleccionada(receta);
+
+                    // Reset form de receta
+                    this.nuevaReceta.numero_receta = '';
+                    this.nuevaReceta.medico = '';
+                    this.nuevaReceta.observaciones = '';
+                    // mantener cliente/fecha (útil si crea varias)
+
+                    // refrescar listado (por si quiere seleccionar otra)
+                    this.loadRecetas(true);
+                } else {
+                    throw new Error('La receta fue creada, pero no se pudo leer la respuesta.');
+                }
+            } catch (e) {
+                this.recetaError = e?.message || 'Error al crear receta.';
+            } finally {
+                this.recetaLoading = false;
+                // volver al tab seleccionar (UX)
+                this.recetasTab = 'seleccionar';
+            }
+        },
+
 
         /* ======= Hotkeys ======= */
         handleHotkeys(e) {
@@ -1498,6 +1892,8 @@ if (e.key === 'F11') {
                 codigo_barra: p.codigo_barra || '',
                 imagen_url: p.imagen_url || null,
 
+                requiere_receta: !!(p.requiere_receta),
+
                 lotes: (p.lotes || []),
                 lote_id: firstLote ? firstLote.id : null,
                 lote: firstLote,
@@ -1659,12 +2055,14 @@ if (e.key === 'F11') {
                     accion: this.accion,
                     mantener_en_pantalla: this.mantener_en_pantalla,
                     vista: this.vista,
+                    recetasSeleccionadas: this.recetasSeleccionadas,
                     items: this.items.map(it => ({
                         key: it.key,
                         producto_id: it.producto_id,
                         nombre: it.nombre,
                         codigo_barra: it.codigo_barra,
                         imagen_url: it.imagen_url,
+                        requiere_receta: !!it.requiere_receta,
 
                         lotes: it.lotes || [],
                         lote_id: it.lote_id,
@@ -1729,6 +2127,7 @@ if (e.key === 'F11') {
                 nombre: it.nombre || 'Producto',
                 codigo_barra: it.codigo_barra || '',
                 imagen_url: it.imagen_url || null,
+                requiere_receta: !!it.requiere_receta,
 
                 lotes: Array.isArray(it.lotes) ? it.lotes : [],
                 lote_id: it.lote_id,
@@ -1770,6 +2169,7 @@ if (e.key === 'F11') {
             this.cambio = 0;
 
             this.cliente_id = '';
+            this.recetasSeleccionadas = [];
             this.fecha = this.toDatetimeLocal(new Date());
 
             this.efectivoInsuficiente = false;
@@ -1799,6 +2199,13 @@ if (e.key === 'F11') {
 
             if (this.submitDisabled) return;
 
+            // Si hay productos que requieren receta, debe seleccionar/crear una receta antes de continuar
+            if (this.requiereReceta && this.recetasSeleccionadas.length === 0) {
+                this.openRecetas();
+                alert('Hay productos que requieren receta. Selecciona o crea una receta para continuar.');
+                return;
+            }
+
             const payload = {
                 fecha: this.fecha,
                 cliente_id: this.cliente_id || null,
@@ -1809,6 +2216,7 @@ if (e.key === 'F11') {
                 monto_recibido: this.metodo_pago === 'efectivo' ? Number(this.monto_recibido || 0) : null,
                 cambio: this.metodo_pago === 'efectivo' ? Number(this.cambio || 0) : null,
                 descuento: Number(this.descuento_global_pct || 0),
+                recetas: this.recetasSeleccionadas.map(r => Number(r.id)),
                 productos: this.items.map(it => {
                     const presentacionId = it.presentacion_id ? Number(it.presentacion_id) : null;
 
@@ -1958,5 +2366,12 @@ if (e.key === 'F11') {
         }
     }
 }
+
+// Compatibilidad: si existe algún onclick="openrecetar()" u "openRecetar()"
+window.openrecetar = function () {
+    window.dispatchEvent(new CustomEvent('pos-open-recetas'));
+};
+window.openRecetar = window.openrecetar;
+
 </script>
 @endpush

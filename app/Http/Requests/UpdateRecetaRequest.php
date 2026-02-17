@@ -14,18 +14,18 @@ class UpdateRecetaRequest extends FormRequest
 
     public function rules(): array
     {
-        $recetaId = $this->route('receta');
+        $recetaId = $this->route('receta')?->id;
 
         return [
-            'cliente_id' => 'required|exists:clientes,id',
-            'medico' => 'required|string|max:100',
-            'numero_receta' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('recetas')->ignore($recetaId)
-            ],
-            'fecha' => 'required|date|before_or_equal:today',
+            'cliente_id' => ['required', 'integer', 'exists:clientes,id'],
+            'medico' => ['required', 'string', 'max:100'],
+            'especialidad' => ['nullable', 'string', 'max:100'],
+
+            'numero_receta' => ['required', 'string', 'max:50', Rule::unique('recetas', 'numero_receta')->ignore($recetaId)],
+            'fecha' => ['required', 'date'],
+
+            'diagnostico' => ['nullable', 'string', 'max:2000'],
+            'observaciones' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -33,11 +33,8 @@ class UpdateRecetaRequest extends FormRequest
     {
         return [
             'cliente_id.required' => 'Debe seleccionar un cliente.',
-            'medico.required' => 'El nombre del médico es obligatorio.',
-            'numero_receta.required' => 'El número de receta es obligatorio.',
-            'numero_receta.unique' => 'El número de receta ya está registrado en otra receta.',
-            'fecha.required' => 'La fecha es obligatoria.',
-            'fecha.before_or_equal' => 'La fecha no puede ser futura.',
+            'cliente_id.exists' => 'El cliente seleccionado no existe.',
+            'numero_receta.unique' => 'El número de receta ya está registrado.',
         ];
     }
 }

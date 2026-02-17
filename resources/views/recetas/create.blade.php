@@ -3,129 +3,116 @@
 @section('title', 'Registrar Nueva Receta')
 
 @section('header')
-    <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+    Registrar Receta
+@endsection
+
+@section('page-actions')
+    <div>
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
             Registrar Nueva Receta Médica
         </h2>
-        <a href="{{ route('recetas.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Completa los datos obligatorios y agrega información clínica opcional.
+        </p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{{ route('recetas.index') }}" 
+           class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 shadow-sm">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
-            Volver al Listado
+            Volver
         </a>
     </div>
 @endsection
 
 @section('content')
-<div class="max-w-4xl mx-auto">
-    
-    <!-- Mensajes de Error Generales -->
+<div class="max-w-5xl mx-auto">
+
     @if ($errors->any())
-    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800">Se encontraron {{ $errors->count() }} errores:</h3>
-                <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+        <div class="rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-900/20 p-4 mb-6">
+            <div class="flex gap-3">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-rose-600 dark:text-rose-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-rose-800 dark:text-rose-200">Se encontraron {{ $errors->count() }} errores</h3>
+                    <ul class="mt-2 text-sm text-rose-700 dark:text-rose-200/90 list-disc list-inside space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
         </div>
-    </div>
     @endif
 
-    <!-- Formulario Principal -->
-    <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <form action="{{ route('recetas.store') }}" method="POST" class="p-6">
             @csrf
 
             <!-- Información de la Receta -->
             <div class="mb-8">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     Datos de la Receta
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    <!-- Número de Receta -->
+
                     <div>
-                        <label for="numero_receta" class="block text-sm font-medium text-gray-700 mb-1">
-                            Número de Receta <span class="text-red-500">*</span>
+                        <label for="numero_receta" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            Número de Receta <span class="text-rose-500">*</span>
                         </label>
-                        <input type="text" 
-                               name="numero_receta" 
+                        <input type="text"
+                               name="numero_receta"
                                id="numero_receta"
                                value="{{ old('numero_receta') }}"
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('numero_receta') border-red-500 @enderror"
-                               placeholder="Ej: RX-2025-00001"
+                               class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('numero_receta') border-rose-500 @enderror"
+                               placeholder="Ej: RX-2026-00001"
                                required>
                         @error('numero_receta')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1 text-xs text-gray-500">Número único de identificación de la receta</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Número único de identificación de la receta.</p>
                     </div>
 
-                    <!-- Fecha de Emisión -->
                     <div>
-                        <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">
-                            Fecha de Emisión <span class="text-red-500">*</span>
+                        <label for="fecha" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            Fecha de Emisión <span class="text-rose-500">*</span>
                         </label>
-                        <input type="date" 
-                               name="fecha" 
+                        <input type="date"
+                               name="fecha"
                                id="fecha"
                                value="{{ old('fecha', now()->format('Y-m-d')) }}"
                                max="{{ now()->format('Y-m-d') }}"
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('fecha') border-red-500 @enderror"
+                               class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('fecha') border-rose-500 @enderror"
                                required>
                         @error('fecha')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
-
-                    <!-- Fecha de Vencimiento -->
                     <div>
-                        <label for="fecha_vencimiento" class="block text-sm font-medium text-gray-700 mb-1">
-                            Fecha de Vencimiento
+                        <label for="cliente_id" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            Cliente/Paciente <span class="text-rose-500">*</span>
                         </label>
-                        <input type="date" 
-                               name="fecha_vencimiento" 
-                               id="fecha_vencimiento"
-                               value="{{ old('fecha_vencimiento') }}"
-                               min="{{ now()->format('Y-m-d') }}"
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('fecha_vencimiento') border-red-500 @enderror">
-                        @error('fecha_vencimiento')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-xs text-gray-500">Opcional. Si no se especifica, la receta no vencerá</p>
-                    </div>
-
-                    <!-- Cliente -->
-                    <div>
-                        <label for="cliente_id" class="block text-sm font-medium text-gray-700 mb-1">
-                            Cliente/Paciente <span class="text-red-500">*</span>
-                        </label>
-                        <select name="cliente_id" 
+                        <select name="cliente_id"
                                 id="cliente_id"
-                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('cliente_id') border-red-500 @enderror"
+                                class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('cliente_id') border-rose-500 @enderror"
                                 required>
                             <option value="">Seleccione un cliente</option>
                             @foreach($clientes as $cliente)
-                                <option value="{{ $cliente->id }}" {{ old('cliente_id') == $cliente->id ? 'selected' : '' }}>
+                                <option value="{{ $cliente->id }}" {{ (string)old('cliente_id') === (string)$cliente->id ? 'selected' : '' }}>
                                     {{ $cliente->nombre }} - {{ $cliente->tipo_documento }}: {{ $cliente->documento }}
                                 </option>
                             @endforeach
                         </select>
                         @error('cliente_id')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -134,122 +121,92 @@
 
             <!-- Información del Médico -->
             <div class="mb-8">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
                     Datos del Médico
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    <!-- Nombre del Médico -->
+
                     <div>
-                        <label for="medico" class="block text-sm font-medium text-gray-700 mb-1">
-                            Nombre del Médico <span class="text-red-500">*</span>
+                        <label for="medico" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            Nombre del Médico <span class="text-rose-500">*</span>
                         </label>
-                        <input type="text" 
-                               name="medico" 
+                        <input type="text"
+                               name="medico"
                                id="medico"
                                value="{{ old('medico') }}"
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('medico') border-red-500 @enderror"
+                               class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('medico') border-rose-500 @enderror"
                                placeholder="Dr. Juan Pérez"
                                required>
                         @error('medico')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <!-- Especialidad -->
                     <div>
-                        <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-1">
-                            Especialidad
-                        </label>
-                        <input type="text" 
-                               name="especialidad" 
+                        <label for="especialidad" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Especialidad</label>
+                        <input type="text"
+                               name="especialidad"
                                id="especialidad"
                                value="{{ old('especialidad') }}"
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('especialidad') border-red-500 @enderror"
+                               class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('especialidad') border-rose-500 @enderror"
                                placeholder="Ej: Medicina General, Cardiología">
                         @error('especialidad')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
-
-                    <!-- CMP (Colegio Médico del Perú) -->
-                    <div>
-                        <label for="cmp" class="block text-sm font-medium text-gray-700 mb-1">
-                            CMP
-                        </label>
-                        <input type="text" 
-                               name="cmp" 
-                               id="cmp"
-                               value="{{ old('cmp') }}"
-                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('cmp') border-red-500 @enderror"
-                               placeholder="Número de colegiatura">
-                        @error('cmp')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
                 </div>
             </div>
 
             <!-- Detalles Clínicos -->
             <div class="mb-8">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                     </svg>
                     Detalles Clínicos
                 </h3>
 
                 <div class="grid grid-cols-1 gap-6">
-                    
-                    <!-- Diagnóstico -->
                     <div>
-                        <label for="diagnostico" class="block text-sm font-medium text-gray-700 mb-1">
-                            Diagnóstico
-                        </label>
-                        <textarea name="diagnostico" 
+                        <label for="diagnostico" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Diagnóstico</label>
+                        <textarea name="diagnostico"
                                   id="diagnostico"
                                   rows="3"
-                                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('diagnostico') border-red-500 @enderror"
+                                  class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('diagnostico') border-rose-500 @enderror"
                                   placeholder="Descripción del diagnóstico médico">{{ old('diagnostico') }}</textarea>
                         @error('diagnostico')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <!-- Observaciones -->
                     <div>
-                        <label for="observaciones" class="block text-sm font-medium text-gray-700 mb-1">
-                            Observaciones
-                        </label>
-                        <textarea name="observaciones" 
+                        <label for="observaciones" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                        <textarea name="observaciones"
                                   id="observaciones"
                                   rows="3"
-                                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('observaciones') border-red-500 @enderror"
+                                  class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 @error('observaciones') border-rose-500 @enderror"
                                   placeholder="Indicaciones adicionales, restricciones, etc.">{{ old('observaciones') }}</textarea>
                         @error('observaciones')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
-
                 </div>
             </div>
 
-            <!-- Botones de Acción -->
-            <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-                <a href="{{ route('recetas.index') }}" 
-                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded inline-flex items-center">
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ route('recetas.index') }}"
+                   class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                     Cancelar
                 </a>
-                <button type="submit" 
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded inline-flex items-center">
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-sm transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
@@ -260,51 +217,23 @@
         </form>
     </div>
 
-    <!-- Información de Ayuda -->
-    <div class="mt-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
-        <div class="flex">
+    <div class="mt-6 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/20 p-4">
+        <div class="flex gap-3">
             <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="h-5 w-5 text-blue-600 dark:text-blue-300" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                 </svg>
             </div>
-            <div class="ml-3">
-                <h3 class="text-sm font-medium text-blue-800">Información importante</h3>
-                <div class="mt-2 text-sm text-blue-700">
-                    <ul class="list-disc list-inside space-y-1">
-                        <li>Los campos marcados con <span class="text-red-500">*</span> son obligatorios</li>
-                        <li>El número de receta debe ser único en el sistema</li>
-                        <li>La fecha de vencimiento es opcional, si no se especifica la receta no vencerá</li>
-                        <li>Después de registrar la receta podrá agregar los medicamentos prescritos</li>
-                    </ul>
-                </div>
+            <div>
+                <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-100">Información importante</h3>
+                <ul class="mt-2 text-sm text-blue-800 dark:text-blue-100/90 list-disc list-inside space-y-1">
+                    <li>Los campos marcados con <span class="text-rose-500">*</span> son obligatorios.</li>
+                    <li>El número de receta debe ser único en el sistema.</li>
+                </ul>
             </div>
         </div>
     </div>
 
 </div>
 
-@push('scripts')
-<script>
-    // Auto-calcular fecha de vencimiento (30 días por defecto) si el usuario selecciona fecha de emisión
-    document.getElementById('fecha').addEventListener('change', function() {
-        const fechaEmision = new Date(this.value);
-        const fechaVencimientoInput = document.getElementById('fecha_vencimiento');
-        
-        if (!fechaVencimientoInput.value) {
-            const fechaVencimiento = new Date(fechaEmision);
-            fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
-            
-            const year = fechaVencimiento.getFullYear();
-            const month = String(fechaVencimiento.getMonth() + 1).padStart(2, '0');
-            const day = String(fechaVencimiento.getDate()).padStart(2, '0');
-            
-            fechaVencimientoInput.value = `${year}-${month}-${day}`;
-        }
-    });
-
-    // Mejorar UX del select de clientes con búsqueda (opcional, requiere librería)
-    // Si quieres implementar búsqueda en el select, considera usar Select2 o Choices.js
-</script>
-@endpush
 @endsection

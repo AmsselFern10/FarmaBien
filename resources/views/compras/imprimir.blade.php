@@ -107,6 +107,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed; /* Esto ayuda a respetar los anchos de columna */
         }
         
         thead {

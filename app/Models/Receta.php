@@ -11,8 +11,11 @@ class Receta extends Model
     protected $fillable = [
         'cliente_id',
         'medico',
+        'especialidad',
         'numero_receta',
         'fecha',
+        'diagnostico',
+        'observaciones',
     ];
 
     protected $casts = [

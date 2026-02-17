@@ -110,72 +110,80 @@
         </div>
     </div>
 
-    <!-- Filtros + Tabla -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-            <form method="GET" action="{{ route('compras.index') }}">
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Estado</label>
-                        <select name="estado" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
-                            <option value="">Todos</option>
-                            <option value="recibida" {{ request('estado') == 'recibida' ? 'selected' : '' }}>Recibida</option>
-                            <option value="anulada" {{ request('estado') == 'anulada' ? 'selected' : '' }}>Anulada</option>
-                        </select>
-                    </div>
+  <div id="filtrosCompra" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Filtros de Búsqueda</h3>
+    </div>
+    
+    <form id="formFiltrosCompras" method="GET" action="{{ route('compras.index') }}" class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Proveedor</label>
-                        <select name="proveedor_id" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
-                            <option value="">Todos</option>
-                            @foreach($proveedores as $proveedor)
-                                <option value="{{ $proveedor->id }}" {{ request('proveedor_id') == $proveedor->id ? 'selected' : '' }}>
-                                    {{ $proveedor->nombre }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">Estado</label>
+                <select name="estado" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                    <option value="">Todos</option>
+                    <option value="recibida" {{ request('estado') == 'recibida' ? 'selected' : '' }}>Recibidas</option>
+                    <option value="anulada" {{ request('estado') == 'anulada' ? 'selected' : '' }}>Anuladas</option>
+                </select>
+            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Desde</label>
-                        <input type="date" name="fecha_inicio" value="{{ request('fecha_inicio') }}"
-                               class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
-                    </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">Proveedor</label>
+                <select name="proveedor_id" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                    <option value="">Todos</option>
+                    @foreach(($proveedores ?? []) as $proveedor)
+                        <option value="{{ $proveedor->id }}" {{ request('proveedor_id') == $proveedor->id ? 'selected' : '' }}>
+                            {{ $proveedor->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Hasta</label>
-                        <input type="date" name="fecha_fin" value="{{ request('fecha_fin') }}"
-                               class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
-                    </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">Desde</label>
+                <input type="date" name="fecha_inicio" value="{{ request('fecha_inicio') }}"
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Orden</label>
-                        <select name="orden" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
-                            <option value="id_asc" {{ request('orden', 'id_asc') == 'id_asc' ? 'selected' : '' }}>ID (1 → 9 → 10)</option>
-                            <option value="id_desc" {{ request('orden') == 'id_desc' ? 'selected' : '' }}>ID (últimas primero)</option>
-                            <option value="fecha_desc" {{ request('orden') == 'fecha_desc' ? 'selected' : '' }}>Fecha (recientes)</option>
-                            <option value="fecha_asc" {{ request('orden') == 'fecha_asc' ? 'selected' : '' }}>Fecha (antiguas)</option>
-                        </select>
-                    </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">Hasta</label>
+                <input type="date" name="fecha_fin" value="{{ request('fecha_fin') }}"
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+            </div>
 
-                    <div class="flex items-end gap-2">
-                        <button type="submit" class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold rounded-lg transition-all duration-200">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                            </svg>
-                            Filtrar
-                        </button>
-                        @if(request()->hasAny(['estado', 'proveedor_id', 'fecha_inicio', 'fecha_fin', 'orden']))
-                            <a href="{{ route('compras.index') }}"
-                               class="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg transition-colors duration-200">
-                                Limpiar
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            </form>
+            <div>
+                <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">Orden</label>
+                <select name="orden" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                    <option value="id_asc" {{ request('orden', 'id_asc') == 'id_asc' ? 'selected' : '' }}>ID (1 → 10)</option>
+                    <option value="id_desc" {{ request('orden') == 'id_desc' ? 'selected' : '' }}>ID (Últimas primero)</option>
+                    <option value="fecha_desc" {{ request('orden') == 'fecha_desc' ? 'selected' : '' }}>Fecha (Recientes)</option>
+                    <option value="fecha_asc" {{ request('orden') == 'fecha_asc' ? 'selected' : '' }}>Fecha (Antiguas)</option>
+                </select>
+            </div>
+
+            <div class="flex items-end">
+                <button type="submit" 
+                        class="w-full inline-flex justify-center items-center px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filtrar
+                </button>
+            </div>
         </div>
 
+        @if(request()->hasAny(['estado', 'proveedor_id', 'fecha_inicio', 'fecha_fin', 'orden']))
+            <div class="mt-4 flex justify-end">
+                <a href="{{ route('compras.index') }}" 
+                   class="px-6 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200 shadow-sm">
+                    Limpiar Filtros
+                </a>
+            </div>
+        @endif
+    </form>
+</div>
+         
+ <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">

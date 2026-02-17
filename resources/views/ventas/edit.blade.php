@@ -142,6 +142,16 @@ $ventaData = [
     'referencia_pago' => $venta->referencia_pago ?? null,
     'descuento_porcentaje' => $venta->descuento_porcentaje ?? 0,
     'observaciones' => $venta->observaciones ?? null,
+    'recetas' => ($venta->recetas ?? collect())->map(function($r){
+        return [
+            'id' => $r->id,
+            'numero_receta' => $r->numero_receta,
+            'fecha' => $r->fecha?->format('Y-m-d'),
+            'fecha_fmt' => $r->fecha?->format('d/m/Y'),
+            'cliente_id' => $r->cliente_id,
+            'cliente_nombre' => $r->cliente?->nombre,
+        ];
+    })->values(),
     'detalles' => ($venta->detalles ?? collect())->map(function($d) {
         
         // Extraemos el valor real usando el operador nullsafe (?->)
@@ -651,10 +661,10 @@ $ventaData = [
                         </button>
                     </div>
                     <div class="relative">
-                        <select id="cliente_id_select" name="cliente_id" x-model="cliente_id" class="w-full pl-3 pr-10 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 appearance-none">
+                        <select id="cliente_id_select" name="cliente_id" x-ref="clienteSelect" x-model="cliente_id" x-effect="clientes.length; $el.value = (cliente_id ? String(cliente_id) : '')" class="w-full pl-3 pr-10 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 appearance-none">
                             <option value="">— Cliente de mostrador —</option>
                             <template x-for="c in clientes" :key="c.id">
-                                <option :value="String(c.id)" x-text="c.nombre"></option>
+                                <option :value="String(c.id)" :selected="String(c.id) === String(cliente_id)" x-text="c.nombre"></option>
                             </template>
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
@@ -813,6 +823,43 @@ $ventaData = [
                     <option value="pagar_luego">⏳ Pagar Luego</option>
                     <option value="otros">🧾 Otros</option>
                 </select>
+            </div>
+
+            
+            {{-- Recetas (solo si algún producto requiere receta) --}}
+            <div x-show="requiereReceta" x-transition
+                 class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-900/10 p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-amber-800 dark:text-amber-200">Productos que requieren receta</p>
+                        <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            <span x-text="productosQueRequierenReceta.join(', ')"></span>
+                        </p>
+
+                        <div class="mt-2 flex flex-wrap gap-2" x-show="recetasSeleccionadas.length">
+                            <template x-for="r in recetasSeleccionadas" :key="r.id">
+                                <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/70 dark:bg-gray-800/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
+                                    <span x-text="(r.numero_receta ? ('#' + r.numero_receta) : ('Receta ' + r.id)) + (r.cliente_nombre ? (' · ' + r.cliente_nombre) : '')"></span>
+                                    <button type="button" class="text-amber-700 dark:text-amber-200 hover:text-rose-600"
+                                            @click="removeReceta(r.id)" title="Quitar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </span>
+                            </template>
+                        </div>
+
+                        <p x-show="!recetasOk" class="mt-2 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                            Debes seleccionar o crear una receta para continuar.
+                        </p>
+                    </div>
+
+                    <button type="button" @click="openRecetas()"
+                            class="shrink-0 inline-flex items-center px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-sm">
+                        Gestionar
+                    </button>
+                </div>
             </div>
 
             {{-- Sección de Efectivo Estilo Referencia --}}
@@ -1108,6 +1155,160 @@ $ventaData = [
     </div>
 
 </div>
+
+
+
+{{-- MODAL RECETA (seleccionar / crear) --}}
+<div x-show="recetasOpen" x-transition x-cloak class="fixed inset-0 bg-black/50 z-[80] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white">Receta médica</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Selecciona una receta existente o crea una nueva y la vinculamos a la venta.
+                </p>
+            </div>
+            <button type="button" @click="closeRecetas()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div x-show="recetaError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" x-text="recetaError"></div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div class="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-sm">
+                    <button type="button" @click="recetasTab='seleccionar'"
+                            :class="recetasTab==='seleccionar' ? 'px-4 py-2 bg-amber-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
+                        Seleccionar
+                    </button>
+                    <button type="button" @click="recetasTab='crear'"
+                            :class="recetasTab==='crear' ? 'px-4 py-2 bg-amber-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
+                        Crear nueva
+                    </button>
+                </div>
+
+                <div class="flex-1" x-show="recetasTab==='seleccionar'">
+                    <label class="sr-only">Buscar receta</label>
+                    <input x-ref="recetaBuscarInput" type="text" x-model="recetaBuscar"
+                           @input.debounce.250ms="loadRecetas()"
+                           placeholder="Buscar por número (ej: 1234)…"
+                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                </div>
+            </div>
+
+            {{-- Seleccionar --}}
+            <div x-show="recetasTab==='seleccionar'" class="space-y-2">
+                <div class="text-sm text-slate-600 dark:text-slate-400" x-show="recetaLoading">Cargando recetas…</div>
+
+                <div class="max-h-[45vh] overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 dark:bg-gray-900/30">
+                            <tr class="text-left">
+                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">N°</th>
+                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">Cliente</th>
+                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">Fecha</th>
+                                <th class="px-4 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="r in recetasListado" :key="r.id">
+                                <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/30">
+                                    <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white" x-text="r.numero_receta || ('#' + r.id)"></td>
+                                    <td class="px-4 py-3 text-slate-700 dark:text-slate-200" x-text="r.cliente_nombre || '—'"></td>
+                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="r.fecha_fmt || r.fecha || '—'"></td>
+                                    <td class="px-4 py-3 text-right">
+                                        <button type="button" @click="addRecetaSeleccionada(r)"
+                                                class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
+                                            Seleccionar
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <tr x-show="!recetaLoading && recetasListado.length === 0">
+                                <td colspan="4" class="px-4 py-6 text-center text-slate-600 dark:text-slate-400">
+                                    No hay recetas para mostrar.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3" x-show="recetasSeleccionadas.length">
+                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Seleccionadas</div>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="r in recetasSeleccionadas" :key="'sel-'+r.id">
+                            <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
+                                <span x-text="(r.numero_receta ? ('#' + r.numero_receta) : ('Receta ' + r.id)) + (r.cliente_nombre ? (' · ' + r.cliente_nombre) : '')"></span>
+                                <button type="button" class="hover:text-rose-600 dark:hover:text-rose-400" @click="removeReceta(r.id)">✕</button>
+                            </span>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Crear --}}
+            <div x-show="recetasTab==='crear'" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Cliente</label>
+                        <select x-model="nuevaReceta.cliente_id"
+                                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                            <option value="">Seleccionar…</option>
+                            <template x-for="c in clientes" :key="c.id">
+                                <option :value="String(c.id)" x-text="c.nombre"></option>
+                            </template>
+                        </select>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tip: si ya seleccionaste cliente en la venta, se preselecciona aquí.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Número de receta</label>
+                        <input type="text" x-model="nuevaReceta.numero_receta"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                        <input type="date" x-model="nuevaReceta.fecha"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Médico (opcional)</label>
+                        <input type="text" x-model="nuevaReceta.medico"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones (opcional)</label>
+                    <textarea rows="3" x-model="nuevaReceta.observaciones"
+                              class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" @click="recetasTab='seleccionar'"
+                            class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
+                        Cancelar
+                    </button>
+                    <button type="button" @click="crearReceta()"
+                            class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold">
+                        Crear receta
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-2">
+            <button type="button" @click="closeRecetas()"
+                    class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -1271,6 +1472,17 @@ function ventaPOS() {
         nuevoCliente: { nombre: '', tipo_documento: 'Cedula', documento: '', telefono: '', direccion: '' },
         clienteError: '',
 
+        // Recetas (para productos que requieren receta)
+        recetasOpen: false,
+        recetasTab: 'seleccionar', // seleccionar | crear
+        recetasSeleccionadas: [],
+        recetasListado: [],
+        recetaBuscar: '',
+        recetaLoading: false,
+        recetaError: '',
+        nuevaReceta: { cliente_id: '', numero_receta: '', fecha: '', medico: '', observaciones: '' },
+
+
         /* ======= Computados ======= */
         get subtotal_bruto() {
             return this.items.reduce((a, it) => a + Number(it.subtotal_bruto || 0), 0);
@@ -1298,7 +1510,29 @@ function ventaPOS() {
             if (this.needsBanco && !this.banco) return true;
             if (this.needsReferencia && !String(this.referencia || '').trim()) return true;
             if (this.metodo_pago === 'pagar_luego' && !this.cliente_id) return true;
+            if (!this.recetasOk) return true;
             return false;
+        },
+
+        
+        // Recetas: se validan a nivel de venta (no por producto)
+        get requiereReceta() {
+            return this.items.some(it => {
+                if (!it) return false;
+                if (it.requiere_receta !== undefined) return !!it.requiere_receta;
+                const p = (this.catalogoProductos || []).find(x => Number(x.id) === Number(it.producto_id));
+                return !!(p && (p.requiere_receta === true || p.requiere_receta === 1 || String(p.requiere_receta) === '1'));
+            });
+        },
+        get productosQueRequierenReceta() {
+            const names = this.items
+                .filter(it => !!it.requiere_receta)
+                .map(it => it.nombre || 'Producto')
+                .filter(Boolean);
+            return Array.from(new Set(names));
+        },
+        get recetasOk() {
+            return !this.requiereReceta || (Array.isArray(this.recetasSeleccionadas) && this.recetasSeleccionadas.length > 0);
         },
 
         /* ======= Init ======= */
@@ -1329,8 +1563,19 @@ function ventaPOS() {
 // el cliente real de la venta original.
 if (this.isEdit && this.ventaEdit) {
     const originalCliente = this.ventaEdit.cliente_id ? String(this.ventaEdit.cliente_id) : '';
-    if (!this.cliente_id && originalCliente) {
+    const emptyLikeCliente = (v) => (v === '' || v === null || v === undefined || String(v).toLowerCase() === 'null' || String(v) === '0');
+    if (emptyLikeCliente(this.cliente_id) && originalCliente) {
         this.cliente_id = originalCliente;
+    }
+}
+
+// FIX: si hay draft sin recetas, restaurar recetas originales de la venta.
+if (this.isEdit && this.ventaEdit) {
+    const origRecetas = this.normalizeRecetas(this.ventaEdit.recetas || []);
+    if ((!Array.isArray(this.recetasSeleccionadas) || this.recetasSeleccionadas.length === 0) && origRecetas.length > 0) {
+        this.recetasSeleccionadas = origRecetas;
+    } else {
+        this.recetasSeleccionadas = this.normalizeRecetas(this.recetasSeleccionadas);
     }
 }
 
@@ -1372,7 +1617,7 @@ if (this.isEdit && this.ventaEdit) {
             // Hotkeys
             window.addEventListener('keydown', (e) => this.handleHotkeys(e));
 
-            this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
+            this.$nextTick(() => { this.forceClienteSelect(); setTimeout(() => this.forceClienteSelect(), 80); this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
         },
 
         /* ======= Hotkeys ======= */
@@ -1404,6 +1649,15 @@ if (this.isEdit && this.ventaEdit) {
             const n = Number(v || 0);
             return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
+        forceClienteSelect() {
+            try {
+                const sel = (this.$refs && this.$refs.clienteSelect) ? this.$refs.clienteSelect : document.getElementById('cliente_id_select');
+                if (!sel) return;
+                const v = this.cliente_id ? String(this.cliente_id) : '';
+                if (sel.value !== v) sel.value = v;
+            } catch (e) {}
+        },
+
         toDatetimeLocal(d) {
             const pad = (n) => String(n).padStart(2, '0');
             return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -1539,6 +1793,8 @@ if (this.isEdit && this.ventaEdit) {
                 nombre: p.nombre,
                 codigo_barra: p.codigo_barra || '',
                 imagen_url: p.imagen_url || null,
+
+                    requiere_receta: !!(p.requiere_receta),
 
                 lotes: (p.lotes || []),
                 lote_id: firstLote ? firstLote.id : null,
@@ -1707,12 +1963,14 @@ if (this.isEdit && this.ventaEdit) {
                     accion: this.accion,
                     mantener_en_pantalla: this.mantener_en_pantalla,
                     vista: this.vista,
+                    recetasSeleccionadas: this.recetasSeleccionadas || [],
                     items: this.items.map(it => ({
                         key: it.key,
                         producto_id: it.producto_id,
                         nombre: it.nombre,
                         codigo_barra: it.codigo_barra,
                         imagen_url: it.imagen_url,
+                        requiere_receta: !!it.requiere_receta,
 
                         lotes: it.lotes || [],
                         lote_id: it.lote_id,
@@ -1746,7 +2004,7 @@ if (this.isEdit && this.ventaEdit) {
                 const data = JSON.parse(raw);
 
                 this.fecha = data.fecha || '';
-                this.cliente_id = data.cliente_id || '';
+                this.cliente_id = (data.cliente_id !== null && data.cliente_id !== undefined && String(data.cliente_id).toLowerCase() !== 'null' && String(data.cliente_id) !== '0') ? String(data.cliente_id) : '';
                 this.observaciones = data.observaciones || '';
 
                 this.metodo_pago = data.metodo_pago || 'efectivo';
@@ -1759,6 +2017,12 @@ if (this.isEdit && this.ventaEdit) {
                 this.mantener_en_pantalla = (data.mantener_en_pantalla === true || data.mantener_en_pantalla === 1);
 
                 this.vista = data.vista || this.vista;
+
+
+                this.recetasSeleccionadas = Array.isArray(data.recetasSeleccionadas)
+                    ? data.recetasSeleccionadas
+                    : (Array.isArray(data.recetas) ? data.recetas : []);
+                this.recetasSeleccionadas = this.normalizeRecetas(this.recetasSeleccionadas);
 
                 if (Array.isArray(data.items)) {
                     this.items = data.items.map(it => this.hydrateItem(it));
@@ -1778,7 +2042,10 @@ if (this.isEdit && this.ventaEdit) {
                 codigo_barra: it.codigo_barra || '',
                 imagen_url: it.imagen_url || null,
 
-                lotes: Array.isArray(it.lotes) ? it.lotes : [],
+                
+
+                        requiere_receta: !!it.requiere_receta,
+lotes: Array.isArray(it.lotes) ? it.lotes : [],
                 lote_id: it.lote_id,
                 lote: it.lote || null,
 
@@ -1821,6 +2088,8 @@ if (this.isEdit && this.ventaEdit) {
             this.cambio = Number(vv.cambio || 0);
 
             this.cliente_id = vv.cliente_id ? String(vv.cliente_id) : '';
+
+            this.recetasSeleccionadas = this.normalizeRecetas(Array.isArray(vv.recetas) ? vv.recetas : []);
 
             // Fecha (datetime-local)
             this.fecha = vv.fecha_input || this.fecha || '';
@@ -1900,6 +2169,8 @@ if (this.isEdit && this.ventaEdit) {
                     nombre: p.nombre,
                     codigo_barra: p.codigo_barra || '',
                     imagen_url: p.imagen_url || null,
+
+                    requiere_receta: !!(pcat && pcat.requiere_receta),
 
                     lotes,
                     lote_id: loteId ? String(loteId) : '',
@@ -1991,6 +2262,13 @@ if (this.isEdit && this.ventaEdit) {
 
             if (this.submitDisabled) return;
 
+
+            if (!this.recetasOk) {
+                this.recetaError = 'Debes seleccionar o crear una receta para continuar.';
+                this.openRecetas();
+                return;
+            }
+
             // ✅ En edición: motivo obligatorio (mín. 10 caracteres)
             if (this.isEdit) {
                 const m = String(this.motivo || '').trim();
@@ -2005,6 +2283,7 @@ if (this.isEdit && this.ventaEdit) {
                 fecha: this.fecha,
                 motivo: this.motivo,
                 cliente_id: this.cliente_id || null,
+                recetas: this.normalizeRecetas(this.recetasSeleccionadas).map(r => Number(r.id)),
                 observaciones: this.observaciones || null,
                 metodo_pago: this.metodo_pago,
                 banco: this.needsBanco ? this.banco : null,
@@ -2012,6 +2291,7 @@ if (this.isEdit && this.ventaEdit) {
                 monto_recibido: this.metodo_pago === 'efectivo' ? Number(this.monto_recibido || 0) : null,
                 cambio: this.metodo_pago === 'efectivo' ? Number(this.cambio || 0) : null,
                 descuento: Number(this.descuento_global_pct || 0),
+                recetas: (this.recetasSeleccionadas || []).map(r => Number(r.id)),
                 productos: this.items.map(it => {
                     const presentacionId = it.presentacion_id ? Number(it.presentacion_id) : null;
 
@@ -2071,6 +2351,8 @@ if (this.isEdit && this.ventaEdit) {
 
             if (keepHere) {
                 // En edición, "mantenerme aquí" significa volver al POS (nueva venta)
+                try { localStorage.removeItem('ventas_pos_draft_v2_fullwidth'); } catch(e) {}
+                try { localStorage.removeItem('ventas_pos_draft_v2'); } catch(e) {}
                 window.location.href = `{{ route('ventas.create') }}`;
                 return;
             }
@@ -2158,6 +2440,155 @@ if (this.isEdit && this.ventaEdit) {
 
             this.nuevoCliente = { nombre: '', tipo_documento: 'Cedula', documento: '', telefono: '', direccion: '' };
             this.closeNuevoCliente();
+        }
+
+        ,
+
+        /* ======= Recetas ======= */
+        openRecetas() {
+            this.recetasOpen = true;
+            this.recetasTab = 'seleccionar';
+            this.recetaError = this.recetaError || '';
+            // Prellenar cliente para crear receta
+            this.nuevaReceta.cliente_id = this.nuevaReceta.cliente_id || (this.cliente_id ? String(this.cliente_id) : '');
+            this.loadRecetas();
+            this.$nextTick(() => { this.$refs?.recetaBuscarInput?.focus?.(); });
+        },
+        closeRecetas() {
+            this.recetasOpen = false;
+            this.recetaBuscar = '';
+            this.recetaError = '';
+        },
+        async loadRecetas() {
+            this.recetaLoading = true;
+            this.recetaError = '';
+            try {
+                const params = new URLSearchParams();
+                params.set('json', '1');
+                params.set('limit', '50');
+
+                const cid = String(this.nuevaReceta?.cliente_id || this.cliente_id || '').trim();
+                if (cid) params.set('cliente_id', cid);
+
+                const q = String(this.recetaBuscar || '').trim();
+                if (q) params.set('numero_receta', q);
+
+                const res = await fetch(`{{ route('recetas.index') }}?${params.toString()}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!res.ok) throw new Error('No se pudo cargar recetas');
+                const data = await res.json();
+                this.recetasListado = Array.isArray(data.data) ? data.data : [];
+            } catch (e) {
+                this.recetaError = 'No se pudieron cargar las recetas.';
+            } finally {
+                this.recetaLoading = false;
+            }
+        },
+        
+        normalizeRecetas(list) {
+            if (!Array.isArray(list)) return [];
+            return list
+                .map(r => {
+                    if (r === null || r === undefined) return null;
+
+                    // Si viene como ID (number/string)
+                    if (typeof r === 'number' || typeof r === 'string') {
+                        const id = Number(r);
+                        if (!Number.isFinite(id) || id <= 0) return null;
+                        return { id, numero_receta: null, cliente_nombre: null, medico: null, fecha: null };
+                    }
+
+                    // Si viene como objeto
+                    if (typeof r === 'object') {
+                        const id = Number(r.id ?? r.receta_id ?? r.value);
+                        if (!Number.isFinite(id) || id <= 0) return null;
+
+                        return {
+                            ...r,
+                            id,
+                            numero_receta: r.numero_receta ?? r.numero ?? null,
+                            cliente_nombre: r.cliente_nombre ?? (r.cliente && r.cliente.nombre ? r.cliente.nombre : null) ?? null,
+                        };
+                    }
+
+                    return null;
+                })
+                .filter(Boolean);
+        },
+addRecetaSeleccionada(receta) {
+            if (!receta || !receta.id) return;
+            const exists = (this.recetasSeleccionadas || []).some(r => String(r.id) === String(receta.id));
+            if (exists) return;
+            this.recetasSeleccionadas = [...(this.recetasSeleccionadas || []), receta];
+            this.saveToStorage();
+        },
+        removeReceta(id) {
+            this.recetasSeleccionadas = (this.recetasSeleccionadas || []).filter(r => String(r.id) !== String(id));
+            this.saveToStorage();
+        },
+        async crearReceta() {
+            this.recetaError = '';
+
+            // Validaciones mínimas
+            const payload = { ...this.nuevaReceta };
+            payload.cliente_id = payload.cliente_id ? Number(payload.cliente_id) : null;
+
+            if (!payload.cliente_id) {
+                this.recetaError = 'Selecciona un cliente para crear la receta.';
+                return;
+            }
+            if (!String(payload.numero_receta || '').trim()) {
+                this.recetaError = 'Ingresa el número de receta.';
+                return;
+            }
+            if (!String(payload.medico || '').trim()) {
+                this.recetaError = 'Ingresa el médico.';
+                return;
+            }
+            if (!String(payload.fecha || '').trim()) {
+                this.recetaError = 'Ingresa la fecha.';
+                return;
+            }
+
+            try {
+                const res = await fetch(`{{ route('recetas.store') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': `{{ csrf_token() }}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) {
+                    let msg = 'Error al registrar la receta.';
+                    try {
+                        const data = await res.json();
+                        msg = data.message || msg;
+                    } catch (e) {}
+                    this.recetaError = msg;
+                    return;
+                }
+
+                const data = await res.json();
+                const receta = data.receta || data.data || null;
+                if (receta && receta.id) {
+                    this.addRecetaSeleccionada(receta);
+                    // Cambiar a seleccionar y refrescar listado
+                    this.recetasTab = 'seleccionar';
+                    this.recetaBuscar = '';
+                    await this.loadRecetas();
+                    // reset form
+                    this.nuevaReceta = { cliente_id: String(payload.cliente_id), numero_receta: '', fecha: '', medico: '', observaciones: '' };
+                } else {
+                    this.recetaError = 'La receta se registró, pero no se pudo leer la respuesta.';
+                }
+            } catch (e) {
+                this.recetaError = 'No se pudo registrar la receta.';
+            }
         }
     }
 }

@@ -75,26 +75,40 @@ Route::middleware('auth')->group(function () {
     | VENTAS - CRUD COMPLETO
     |--------------------------------------------------------------------------
     */
+// =========================================================================
+// MÓDULO DE VENTAS
+// =========================================================================
+Route::group(['middleware' => ['auth']], function () {
+
+    // Recurso principal (index, create, store, show, edit, update, destroy)
     Route::resource('ventas', VentaController::class);
 
-    // Rutas adicionales para ventas
-    Route::post('ventas/{venta}/anular', [VentaController::class, 'anular'])
-        ->name('ventas.anular')
-        ->middleware('permission:anular ventas');
+    // Acciones de impresión y documentos
+    Route::controller(VentaController::class)->prefix('ventas/{venta}')->group(function () {
+        
+        Route::get('ticket', 'ticket')
+            ->name('ventas.ticket')
+            ->middleware('permission:ver ventas');
 
-    Route::get('ventas/{venta}/ticket', [VentaController::class, 'ticket'])
-        ->name('ventas.ticket')
-        ->middleware('permission:ver ventas');
-    Route::get('ventas/{venta}/imprimir-a4', [VentaController::class, 'imprimirA4'])
-    ->name('ventas.imprimir')
-    ->middleware('permission:ver ventas');
+        Route::get('imprimir-a4', 'imprimirA4')
+            ->name('ventas.imprimir')
+            ->middleware('permission:ver ventas');
 
-    Route::get('ventas/{venta}/pdf', [VentaController::class, 'generarPDF'])
-    ->name('ventas.pdf')
-    ->middleware('permission:ver ventas');
+        Route::get('pdf', 'generarPDF')
+            ->name('ventas.pdf')
+            ->middleware('permission:ver ventas');
+
+        Route::post('anular', 'anular')
+            ->name('ventas.anular')
+            ->middleware('permission:anular ventas');
+    });
+
+    // Búsqueda específica (Fuera del prefijo {venta} porque usa un ID genérico)
     Route::get('ventas/buscar/{id}', [VentaController::class, 'buscarPorId'])
-    ->name('ventas.buscar')
-    ->middleware('permission:ver ventas');
+        ->name('ventas.buscar')
+        ->middleware('permission:ver ventas');
+
+});
     /*
     |--------------------------------------------------------------------------
     | COMPRAS - CRUD COMPLETO

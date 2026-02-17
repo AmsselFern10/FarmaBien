@@ -96,13 +96,7 @@
                                         </div>
             
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <button type="button" onclick="abrirModalProductos()"
-                                                    class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-sm">
-                                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                                </svg>
-                                                Catálogo
-                                            </button>
+                                        
             
                                             <div class="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-sm">
                                                 <button type="button" onclick="cambiarVista('tabla')" id="btnVistaTabla"
@@ -120,28 +114,46 @@
             
                                 <div class="p-4 space-y-4">
             
-                                    {{-- Barra de escaneo compacta --}}
-                                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 p-3">
-                                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-                                            <div class="lg:col-span-9">
-                                                <label for="barcodeInput" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                                    Escanear / escribir código de barras
-                                                </label>
-                                                <input id="barcodeInput" type="text" inputmode="numeric" autocomplete="off"
-                                                       class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                                       placeholder="Clic aquí y escanea…">
+                                            {{-- Barra de escaneo compacta --}}
+                                                {{-- Barra de escaneo compacta --}}
+<div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 p-3">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+        
+        {{-- Input: Ahora ocupa 7 columnas para dejar espacio a los botones --}}
+        <div class="lg:col-span-7">
+            <label for="barcodeInput" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Escanear / escribir código de barras
+            </label>
+            <input id="barcodeInput" type="text" inputmode="numeric" autocomplete="off"
+                   class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                   placeholder="Clic aquí y escanea…">
+        </div>
+
+        {{-- Botón Agregar: Ocupa 2.5 columnas aprox --}}
+        <div class="lg:col-span-2.5 flex">
+            <button type="button" id="btnAgregarBarcode"
+                    class="inline-flex items-center justify-center w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Agregar
+            </button>
+        </div>
+
+        {{-- Botón Catálogo: Ocupa 2.5 columnas aprox --}}
+        <div class="lg:col-span-2.5 flex">
+            <button type="button" onclick="abrirModalProductos()"
+                    class="inline-flex items-center justify-center w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-sm text-sm transition-colors">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+                Catálogo
+            </button>
+        </div>
+
+    </div>
 </div>
-            
-                                            <div class="lg:col-span-3">
-                                                <button type="button" id="btnAgregarBarcode"
-                                                        class="inline-flex items-center justify-center w-full px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                                    </svg>
-                                                    Agregar
-                                                </button>
-                                            </div>
-                                        </div>
+
             
 
                                         <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">ENTER también agrega si tu escáner lo envía.</p>
@@ -213,145 +225,160 @@
                             </div>
                         </div>
             
-
-{{-- Datos + Resumen (abajo, después de productos) --}}
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-                <div class="lg:col-span-8">
-{{-- Datos de compra --}}
-                                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-                                        <div class="flex items-center space-x-3">
-                                            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos de la Compra</h3>
-                                                <p class="text-sm text-slate-500 dark:text-slate-400">Información general del registro</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                
-                                    <div class="p-4">
-                                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                                            <div class="sm:col-span-8">
-                                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Proveedor</label>
-                                                <select name="proveedor_id" required
-                                                        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                                                    <option value="">Seleccionar proveedor...</option>
-                                                    @foreach($proveedores as $p)
-                                                        <option value="{{ $p->id }}" @selected(old('proveedor_id', $compra->proveedor_id) == $p->id)>{{ $p->nombre }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <button type="button" id="btnCrearProveedor"
-                                                        class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
-                                                    + Crear proveedor
-                                                </button>
-                                            </div>
-                
-                                            <div class="sm:col-span-2">
-                                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
-                                                <input type="date" name="fecha" value="{{ old('fecha', optional($compra->fecha)->toDateString() ?? now()->toDateString()) }}"
-                                                       class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                                            </div>
-                
-                                            <div class="sm:col-span-6">
-                                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
-                                                <textarea name="observaciones" rows="2"
-                                                          placeholder="Opcional: factura, condiciones, notas…"
-                                                          class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('observaciones', $compra->observaciones ?? '') }}</textarea>
-                                                @error('observaciones')
-                                                    <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
-                                                @enderror
-                                            </div>
-
-                                            <div class="sm:col-span-6">
-                                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo de anulación</label>
-                                                <textarea name="motivo_anulacion" rows="2"
-                                                          placeholder="Opcional: motivo si la compra fue anulada"
-                                                          class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('motivo_anulacion', $compra->motivo_anulacion ?? '') }}</textarea>
-                                                <input type="hidden" name="motivo_cambios" id="motivo_cambios" value="{{ old('motivo_cambios', old('motivo_anulacion', $compra->motivo_anulacion ?? '')) }}">
-                                                @error('motivo_anulacion')
-                                                    <p class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</p>
-                                                @enderror
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                
-                                
-                </div>
-
-                <div class="lg:col-span-4">
-{{-- Resumen Total --}}
-                                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Subtotal bruto</span>
-                                        <span class="text-sm font-bold text-slate-900 dark:text-white">
-                                            S/ <span id="subtotalDisplay">0.00</span>
-                                        </span>
-                                    </div>
-                
-                                    <div class="flex items-center justify-between gap-3">
-                                        <label for="descuento" class="text-sm font-semibold text-slate-600 dark:text-slate-400">Descuento (%)</label>
-                                        <div class="flex items-center gap-2">
-                                            <input type="number" step="0.01" min="0" max="100" name="descuento" id="descuento"
-                                                   value="{{ old('descuento', $compra->descuento ?? 0) }}"
-                                                   class="w-28 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                                            <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">%</span>
-                                        </div>
-                                    </div>
-                
-                                    <div class="flex items-center justify-between gap-3 -mt-1">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Desc. productos</span>
-                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            S/ <span id="descuentoLineasDisplay">0.00</span>
-                                        </span>
-                                    </div>
-                
-                                    <div class="flex items-center justify-between gap-3 -mt-1">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Monto descuento (total)</span>
-                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            S/ <span id="descuentoMontoDisplay">0.00</span>
-                                        </span>
-                                    </div>
-                
-                                    <p id="descuentoHint" class="text-xs text-slate-500 dark:text-slate-400 hidden">
-                                        El descuento fue ajustado para estar entre 0% y 100%.
-                                    </p>
-                
-                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Total de la compra</span>
-                                        <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                                            S/ <span id="totalDisplay">{{ number_format(old('total', $compra->total ?? 0), 2) }}</span>
-                                        </span>
-                                    </div>
-                
-                                    <input type="hidden" name="total" id="total" value="{{ old('total', $compra->total ?? 0) }}">
-
-<div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-stretch justify-end gap-3">
-    <a href="{{ route('compras.index') }}"
-       class="inline-flex items-center justify-center px-5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-        Cancelar
-    </a>
-
-    <button type="submit"
-            class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all hover:shadow-md hover:scale-[1.01]">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-        Guardar cambios
-    </button>
-</div>
-                                </div>
+{{-- Datos + Resumen --}}
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    
+    {{-- Columna Izquierda: Datos de compra --}}
+    <div class="lg:col-span-8 h-full">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos de la Compra</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Información general del registro</p>
+                    </div>
                 </div>
             </div>
 
+            <div class="p-6 flex-grow">
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                    {{-- Proveedor --}}
+                    <div class="sm:col-span-8">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Proveedor</label>
+                        <select name="proveedor_id" required
+                                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccionar proveedor...</option>
+                            @foreach($proveedores as $p)
+                                <option value="{{ $p->id }}" @selected(old('proveedor_id', $compra->proveedor_id) == $p->id)>{{ $p->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" id="btnCrearProveedor"
+                                class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
+                            + Crear proveedor
+                        </button>
+                    </div>
 
-                                </div>
+                    {{-- Fecha --}}
+                    <div class="sm:col-span-4">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                        <input type="date" name="fecha" value="{{ old('fecha', optional($compra->fecha)->toDateString() ?? now()->toDateString()) }}"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
 
-    </form>
+                    {{-- Observaciones --}}
+                    <div class="sm:col-span-6">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                        <textarea name="observaciones" rows="4"
+                                  placeholder="Opcional: factura, condiciones, notas…"
+                                  class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('observaciones', $compra->observaciones ?? '') }}</textarea>
+                    </div>
+
+                    {{-- Motivo de Anulación --}}
+                    <div class="sm:col-span-6">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo de anulación</label>
+                        <textarea name="motivo_anulacion" rows="4"
+                                  placeholder="Opcional: motivo si la compra fue anulada"
+                                  class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('motivo_anulacion', $compra->motivo_anulacion ?? '') }}</textarea>
+                        <input type="hidden" name="motivo_cambios" id="motivo_cambios" value="{{ old('motivo_cambios', old('motivo_anulacion', $compra->motivo_anulacion ?? '')) }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Columna Derecha: Resumen Total --}}
+    <div class="lg:col-span-4 h-full" x-data="{ open: false, accion: '{{ old('accion', 'guardar') }}' }">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 space-y-4 h-full flex flex-col justify-between">
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Subtotal bruto</span>
+                    <span class="text-sm font-bold text-slate-900 dark:text-white">S/ <span id="subtotalDisplay">0.00</span></span>
+                </div>
+
+                <div class="flex items-center justify-between gap-3">
+                    <label for="descuento" class="text-sm font-semibold text-slate-600 dark:text-slate-400">Descuento (%)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.01" min="0" max="100" name="descuento" id="descuento" value="{{ old('descuento', $compra->descuento ?? 0) }}"
+                               class="w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-right">
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">%</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Desc. productos</span>
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">S/ <span id="descuentoLineasDisplay">0.00</span></span>
+                </div>
+
+                <div class="flex items-center justify-between gap-3 -mt-1">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Monto descuento (total)</span>
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">S/ <span id="descuentoMontoDisplay">0.00</span></span>
+                </div>
+
+                <div class="pt-3 border-t-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <span class="text-base font-bold text-slate-800 dark:text-slate-200">TOTAL</span>
+                    <span class="text-2xl font-black text-blue-600 dark:text-blue-400">
+                        S/ <span id="totalDisplay">{{ number_format(old('total', $compra->total ?? 0), 2) }}</span>
+                    </span>
+                </div>
+                
+                <input type="hidden" name="total" id="total" value="{{ old('total', $compra->total ?? 0) }}">
+                <input type="hidden" name="accion" :value="accion">
+            </div>
+
+            {{-- Footer y Botones --}}
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2.5">
+                
+                <div class="flex items-center justify-end">
+                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                        <input type="checkbox" name="mantener_en_pantalla" value="1" @checked(old('mantener_en_pantalla'))
+                               class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+                        Mantenerme aquí
+                    </label>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    {{-- GRUPO DE BOTÓN DIVIDIDO (Dropup) --}}
+                    <div class="relative flex w-full">
+                        <button type="button" onclick="submitCompra()"
+                                class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-l-xl font-bold text-base shadow-lg active:scale-[0.98] transition-transform uppercase border-r border-blue-500">
+                            <span x-text="accion === 'facturar' ? 'Guardar y Facturar' : 'GUARDAR CAMBIOS'"></span>
+                        </button>
+
+                        <button type="button" @click="open = !open" @click.away="open = false"
+                                class="px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-r-xl shadow-lg active:scale-[0.98] transition-transform">
+                            <svg class="w-5 h-5 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                            </svg>
+                        </button>
+
+                        {{-- Menú Dropup --}}
+                        <div x-show="open" x-transition 
+                             class="absolute bottom-full mb-2 right-0 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-2xl z-50 overflow-hidden">
+                            <button type="button" @click="accion = 'guardar'; open = false" 
+                                    class="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/30 text-slate-700 dark:text-slate-200 border-b border-gray-100 dark:border-gray-600 uppercase">
+                                Solo Guardar Cambios
+                            </button>
+                            <button type="button" @click="accion = 'facturar'; open = false" 
+                                    class="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/30 text-slate-700 dark:text-slate-200 uppercase">
+                                Guardar y Facturar
+                            </button>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('compras.index') }}" 
+                       class="px-4 py-2 text-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors">
+                        Cancelar Operación
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- MODAL: advertencia precio en 0 --}}
@@ -2224,6 +2251,107 @@ function agregarProductoDesdeBarcode() {
     mostrarPreviewBarcode(null, '');
 }
 
+
+/** =========================
+ *  Acciones: Guardar / Facturar (split button)
+ *  ========================= */
+function closeAccionCompraMenu() {
+    const menu = document.getElementById('menuAccionCompra');
+    if (menu) menu.classList.add('hidden');
+}
+
+function toggleAccionCompraMenu() {
+    const menu = document.getElementById('menuAccionCompra');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+}
+
+function setAccionCompra(valor) {
+    const inp = document.getElementById('accion_compra');
+    if (inp) inp.value = valor;
+    syncAccionCompraUI();
+    closeAccionCompraMenu();
+}
+
+function syncAccionCompraUI() {
+    const inp = document.getElementById('accion_compra');
+    const accion = inp ? (inp.value || 'guardar') : 'guardar';
+
+    const lblGuardar = document.getElementById('labelAccionGuardarCompra');
+    const lblFacturar = document.getElementById('labelAccionFacturarCompra');
+
+    if (lblGuardar && lblFacturar) {
+        if (accion === 'facturar') {
+            lblGuardar.classList.add('hidden');
+            lblFacturar.classList.remove('hidden');
+        } else {
+            lblFacturar.classList.add('hidden');
+            lblGuardar.classList.remove('hidden');
+        }
+    }
+}
+
+function submitCompra() {
+    const form = document.getElementById('formCompra');
+    if (!form) return;
+    if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+    } else {
+        form.submit();
+    }
+}
+
+/** =========================
+ *  Atajos (F6 a F11) - referencia Ventas
+ *  ========================= */
+function handleHotkeysCompras(e) {
+    if (e.defaultPrevented) return;
+
+    const key = e.key;
+    const allowed = ['F6','F7','F8','F9','F10','F11'];
+    if (!allowed.includes(key)) return;
+
+    e.preventDefault();
+
+    if (key === 'F6') {
+        const inp = document.getElementById('barcodeInput');
+        if (inp) {
+            inp.focus();
+            inp.select?.();
+            inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    if (key === 'F7') {
+        if (typeof abrirModalProductos === 'function') abrirModalProductos();
+    }
+
+    if (key === 'F8') {
+        const sel = document.getElementById('proveedor_id') || document.querySelector('select[name="proveedor_id"]');
+        if (sel) {
+            sel.focus();
+            sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    if (key === 'F9') {
+        document.getElementById('btnCrearProveedor')?.click();
+    }
+
+    if (key === 'F10') {
+        const desc = document.getElementById('descuento');
+        if (desc) {
+            desc.focus();
+            desc.select?.();
+            desc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    if (key === 'F11') {
+        submitCompra();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initResizableColumns();
     initReorderableColumns();
@@ -2234,6 +2362,16 @@ document.addEventListener('DOMContentLoaded', () => {
     contadorProductos = existentes;
 
     document.getElementById('btnCrearProveedor')?.addEventListener('click', abrirModalProveedor);
+
+    // Acción split button: sincroniza UI, cierre por click fuera y hotkeys
+    syncAccionCompraUI();
+    document.addEventListener('click', (ev) => {
+        const menu = document.getElementById('menuAccionCompra');
+        const btn = ev.target.closest && ev.target.closest('[onclick="toggleAccionCompraMenu()"]');
+        const insideMenu = menu && menu.contains(ev.target);
+        if (!btn && !insideMenu) closeAccionCompraMenu();
+    });
+    window.addEventListener('keydown', handleHotkeysCompras);
 
     actualizarAvisosVacio();
 
@@ -2358,6 +2496,8 @@ if (formCompra) {
                 return;
             }
         }
+        // Marca para limpiar el formulario de creación en la siguiente carga exitosa
+        try { sessionStorage.setItem('compra_clear_after_submit', '1'); } catch (e) {}
     });
 }
     // Pre-render del catálogo

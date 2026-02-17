@@ -207,132 +207,153 @@
             
 
 {{-- Datos + Resumen (abajo, después de productos) --}}
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-                <div class="lg:col-span-8">
-{{-- Datos de compra --}}
-                                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-                                        <div class="flex items-center space-x-3">
-                                            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos de la Compra</h3>
-                                                <p class="text-sm text-slate-500 dark:text-slate-400">Información general del registro</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                
-                                    <div class="p-4">
-                                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                                            <div class="sm:col-span-8">
-                                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Proveedor</label>
-                                                <select id="proveedor_id" name="proveedor_id" required
-                                                        class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                                                    <option value="">Seleccionar proveedor...</option>
-                                                    @foreach($proveedores as $p)
-                                                        <option value="{{ $p->id }}" @selected(old('proveedor_id') == $p->id)>{{ $p->nombre }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <button type="button" id="btnCrearProveedor"
-                                                        class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
-                                                    + Crear proveedor
-                                                </button>
-                                            </div>
-                
-                                            <div class="sm:col-span-2">
-                                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
-                                                <input type="date" name="fecha" value="{{ old('fecha', now()->toDateString()) }}"
-                                                       class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                                            </div>
-                
-                                            <div class="sm:col-span-4">
-                                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
-                                                <textarea name="observaciones" rows="2"
-                                                          placeholder="Opcional: factura, condiciones, notas…"
-                                                          class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('observaciones') }}</textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                
-                                
-                </div>
-
-                <div class="lg:col-span-4">
-{{-- Resumen Total --}}
-                                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Subtotal bruto</span>
-                                        <span class="text-sm font-bold text-slate-900 dark:text-white">
-                                            S/ <span id="subtotalDisplay">0.00</span>
-                                        </span>
-                                    </div>
-                
-                                    <div class="flex items-center justify-between gap-3">
-                                        <label for="descuento" class="text-sm font-semibold text-slate-600 dark:text-slate-400">Descuento (%)</label>
-                                        <div class="flex items-center gap-2">
-                                            <input type="number" step="0.01" min="0" max="100" name="descuento" id="descuento"
-                                                   value="{{ old('descuento', 0) }}"
-                                                   class="w-28 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                                            <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">%</span>
-                                        </div>
-                                    </div>
-                
-                                    <div class="flex items-center justify-between gap-3 -mt-1">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Desc. productos</span>
-                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            S/ <span id="descuentoLineasDisplay">0.00</span>
-                                        </span>
-                                    </div>
-                
-                                    <div class="flex items-center justify-between gap-3 -mt-1">
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">Monto descuento (total)</span>
-                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            S/ <span id="descuentoMontoDisplay">0.00</span>
-                                        </span>
-                                    </div>
-                
-                                    <p id="descuentoHint" class="text-xs text-slate-500 dark:text-slate-400 hidden">
-                                        El descuento fue ajustado para estar entre 0% y 100%.
-                                    </p>
-                
-                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Total de la compra</span>
-                                        <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                                            S/ <span id="totalDisplay">{{ number_format(old('total', 0), 2) }}</span>
-                                        </span>
-                                    </div>
-                
-                                    <input type="hidden" name="total" id="total" value="{{ old('total', 0) }}">
-
-<div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-    <div class="flex flex-col sm:flex-row gap-2">
-        <a href="{{ route('compras.index') }}"
-           class="w-full inline-flex items-center justify-center px-5 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-            Cancelar
-        </a>
-        <button type="submit"
-                class="w-full inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-sm transition-all hover:shadow-md">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            Registrar Compra
-        </button>
-    </div>
-</div>
-                                </div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    
+    {{-- Columna Izquierda: Datos de compra --}}
+    <div class="lg:col-span-8 h-full">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos de la Compra</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Información general del registro</p>
+                    </div>
                 </div>
             </div>
 
+            <div class="p-6 flex-grow">
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                    <div class="sm:col-span-8">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Proveedor</label>
+                        <select id="proveedor_id" name="proveedor_id" required
+                                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccionar proveedor...</option>
+                            @foreach($proveedores as $p)
+                                <option value="{{ $p->id }}" @selected(old('proveedor_id') == $p->id)>{{ $p->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" id="btnCrearProveedor"
+                                class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
+                            + Crear proveedor
+                        </button>
+                    </div>
 
-                                </div>
+                    <div class="sm:col-span-4">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                        <input type="date" name="fecha" value="{{ old('fecha', now()->toDateString()) }}"
+                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
 
-    </form>
+                    {{-- Aumentamos rows a 5 para dar más altura a esta columna --}}
+                    <div class="sm:col-span-12">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                        <textarea name="observaciones" rows="5"
+                                  placeholder="Opcional: factura, condiciones, notas…"
+                                  class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('observaciones') }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Columna Derecha: Resumen Total --}}
+    <div class="lg:col-span-4 h-full" x-data="{ open: false, accion: '{{ old('accion', 'guardar') }}' }">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 space-y-4 h-full flex flex-col justify-between">
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Subtotal bruto</span>
+                    <span class="text-sm font-bold text-slate-900 dark:text-white">S/ <span id="subtotalDisplay">0.00</span></span>
+                </div>
+
+                <div class="flex items-center justify-between gap-3">
+                    <label for="descuento" class="text-sm font-semibold text-slate-600 dark:text-slate-400">Descuento (%)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.01" min="0" max="100" name="descuento" id="descuento" value="{{ old('descuento', 0) }}"
+                               class="w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-right">
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">%</span>
+                    </div>
+                </div>
+
+                {{-- Campos restaurados --}}
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Desc. productos</span>
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">S/ <span id="descuentoLineasDisplay">0.00</span></span>
+                </div>
+
+                <div class="flex items-center justify-between gap-3 -mt-1">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Monto descuento (total)</span>
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">S/ <span id="descuentoMontoDisplay">0.00</span></span>
+                </div>
+
+                <div class="pt-3 border-t-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <span class="text-base font-bold text-slate-800 dark:text-slate-200">TOTAL</span>
+                    <span class="text-2xl font-black text-blue-600 dark:text-blue-400">
+                        S/ <span id="totalDisplay">{{ number_format(old('total', 0), 2) }}</span>
+                    </span>
+                </div>
+                <input type="hidden" name="total" id="total" value="{{ old('total', 0) }}">
+                <input type="hidden" name="accion" :value="accion">
+            </div>
+
+            {{-- Footer y Botones (Estilo Ventas) --}}
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2.5">
+                
+                {{-- Checkbox --}}
+                <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input type="checkbox" name="mantener_en_pantalla" value="1" @checked(old('mantener_en_pantalla'))
+                           class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+                    Mantenerme aquí
+                </label>
+
+                <div class="flex flex-col gap-3">
+                    {{-- GRUPO DE BOTÓN DIVIDIDO (Dropup) --}}
+                    <div class="relative flex w-full">
+                        {{-- Botón Principal --}}
+                        <button type="button" onclick="submitCompra()"
+                                class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-l-xl font-bold text-base shadow-lg active:scale-[0.98] transition-transform uppercase border-r border-blue-500">
+                            <span x-text="accion === 'facturar' ? 'Guardar y Facturar' : 'GUARDAR COMPRA'"></span>
+                        </button>
+
+                        {{-- Flecha Dropup --}}
+                        <button type="button" @click="open = !open" @click.away="open = false"
+                                class="px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-r-xl shadow-lg active:scale-[0.98] transition-transform">
+                            <svg class="w-5 h-5 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                            </svg>
+                        </button>
+
+                        {{-- Menú que abre hacia arriba --}}
+                        <div x-show="open" x-transition:enter="transition ease-out duration-100" 
+                             x-transition:enter-start="opacity-0 transform scale-95" 
+                             x-transition:enter-end="opacity-100 transform scale-100"
+                             class="absolute bottom-full mb-2 right-0 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-2xl z-50 overflow-hidden">
+                            <button type="button" @click="accion = 'guardar'; open = false" 
+                                    class="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/30 text-slate-700 dark:text-slate-200 border-b border-gray-100 dark:border-gray-600 uppercase">
+                                Solo Guardar Compra
+                            </button>
+                            <button type="button" @click="accion = 'facturar'; open = false" 
+                                    class="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/30 text-slate-700 dark:text-slate-200 uppercase">
+                                Guardar y Facturar
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- BOTÓN CANCELAR --}}
+                    <a href="{{ route('compras.index') }}" 
+                       class="px-4 py-2 text-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors">
+                        Cancelar Operación
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
 {{-- MODAL: advertencia precio en 0 --}}
 <div id="modalPrecioCero" class="fixed inset-0 z-[90] hidden">
     <div class="absolute inset-0 bg-black/50" onclick="cerrarModalPrecioCero()"></div>
@@ -714,6 +735,9 @@ function saveCompraDraft() {
         const observaciones = document.querySelector('textarea[name="observaciones"]')?.value || '';
         const descuento = document.getElementById('descuento')?.value || '0';
 
+        const accion = document.getElementById('accion_compra')?.value || 'guardar';
+        const mantener = document.getElementById('mantener_en_pantalla')?.checked ? 1 : 0;
+
         const payload = {
             vistaActual,
             contadorProductos,
@@ -723,6 +747,8 @@ function saveCompraDraft() {
             fecha,
             observaciones,
             descuento,
+            accion,
+            mantener_en_pantalla: mantener,
         };
 
         localStorage.setItem(COMPRA_DRAFT_KEY, JSON.stringify(payload));
@@ -758,6 +784,15 @@ function restoreCompraDraft() {
         if (txtObs && data.observaciones !== undefined) txtObs.value = String(data.observaciones || '');
         const inpDesc = document.getElementById('descuento');
         if (inpDesc && data.descuento !== undefined) inpDesc.value = String(data.descuento ?? '0');
+
+        // acción + mantenerme aquí
+        const inpAccion = document.getElementById('accion_compra');
+        if (inpAccion && data.accion !== undefined) inpAccion.value = String(data.accion || 'guardar');
+
+        const chkMant = document.getElementById('mantener_en_pantalla');
+        if (chkMant && data.mantener_en_pantalla !== undefined) chkMant.checked = !!Number(data.mantener_en_pantalla);
+
+        try { syncAccionCompraUI(); } catch (e) {}
 
         // estado productos
         const v = data.vistaActual || localStorage.getItem(COMPRA_VISTA_KEY) || vistaActual;
@@ -820,6 +855,13 @@ function resetCompra(clearStorage = false) {
     const barcodeInput = document.getElementById('barcodeInput');
     if (barcodeInput) barcodeInput.value = '';
     try { mostrarPreviewBarcode(null, ''); } catch (e) {}
+
+    // acción + mantenerme aquí
+    const inpAccion = document.getElementById('accion_compra');
+    if (inpAccion) inpAccion.value = 'guardar';
+    const chkMant = document.getElementById('mantener_en_pantalla');
+    if (chkMant) chkMant.checked = false;
+    try { syncAccionCompraUI(); } catch (e) {}
 
     calcularTotalGeneral();
     actualizarAvisosVacio();
@@ -2425,7 +2467,124 @@ function agregarProductoDesdeBarcode() {
     mostrarPreviewBarcode(null, '');
 }
 
+
+/** =========================
+ *  Acciones: Guardar / Facturar (split button)
+ *  ========================= */
+function closeAccionCompraMenu() {
+    const menu = document.getElementById('menuAccionCompra');
+    if (menu) menu.classList.add('hidden');
+}
+
+function toggleAccionCompraMenu() {
+    const menu = document.getElementById('menuAccionCompra');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+}
+
+function setAccionCompra(valor) {
+    const inp = document.getElementById('accion_compra');
+    if (inp) inp.value = valor;
+    syncAccionCompraUI();
+    closeAccionCompraMenu();
+    try { saveCompraDraftDebounced(); } catch (e) {}
+}
+
+function syncAccionCompraUI() {
+    const inp = document.getElementById('accion_compra');
+    const accion = inp ? (inp.value || 'guardar') : 'guardar';
+
+    const lblGuardar = document.getElementById('labelAccionGuardarCompra');
+    const lblFacturar = document.getElementById('labelAccionFacturarCompra');
+
+    if (lblGuardar && lblFacturar) {
+        if (accion === 'facturar') {
+            lblGuardar.classList.add('hidden');
+            lblFacturar.classList.remove('hidden');
+        } else {
+            lblFacturar.classList.add('hidden');
+            lblGuardar.classList.remove('hidden');
+        }
+    }
+}
+
+function submitCompra() {
+    const form = document.getElementById('formCompra');
+    if (!form) return;
+    // RequestSubmit mantiene validación HTML5 + dispara el listener submit existente
+    if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+    } else {
+        form.submit();
+    }
+}
+
+/** =========================
+ *  Atajos (F6 a F11) - referencia Ventas
+ *  ========================= */
+function handleHotkeysCompras(e) {
+    if (e.defaultPrevented) return;
+
+    const key = e.key;
+    const allowed = ['F6','F7','F8','F9','F10','F11'];
+    if (!allowed.includes(key)) return;
+
+    e.preventDefault();
+
+    if (key === 'F6') {
+        const inp = document.getElementById('barcodeInput');
+        if (inp) {
+            inp.focus();
+            inp.select?.();
+            inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    if (key === 'F7') {
+        if (typeof abrirModalProductos === 'function') abrirModalProductos();
+    }
+
+    if (key === 'F8') {
+        const sel = document.getElementById('proveedor_id') || document.querySelector('select[name="proveedor_id"]');
+        if (sel) {
+            sel.focus();
+            sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    if (key === 'F9') {
+        document.getElementById('btnCrearProveedor')?.click();
+    }
+
+    if (key === 'F10') {
+        const desc = document.getElementById('descuento');
+        if (desc) {
+            desc.focus();
+            desc.select?.();
+            desc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    if (key === 'F11') {
+        submitCompra();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    const __hasErrors = {{ $errors->any() ? 'true' : 'false' }};
+    try {
+        const flag = sessionStorage.getItem('compra_clear_after_submit');
+        if (flag && !__hasErrors) {
+            // Compra guardada OK: limpiar borrador y formulario
+            resetCompra(true);
+            try { localStorage.removeItem(COMPRA_VISTA_KEY); } catch (e) {}
+            sessionStorage.removeItem('compra_clear_after_submit');
+        } else if (flag && __hasErrors) {
+            // Hubo errores: no limpiar, y descartar flag
+            sessionStorage.removeItem('compra_clear_after_submit');
+        }
+    } catch (e) {}
+
     // Restaurar borrador (si existe) antes de inicializar UI compleja
     restoreCompraDraft();
 
@@ -2436,6 +2595,20 @@ document.addEventListener('DOMContentLoaded', () => {
     contadorProductos = Math.max(contadorProductos, existentes);
 
     document.getElementById('btnCrearProveedor')?.addEventListener('click', abrirModalProveedor);
+
+    // Acción split button: sincroniza UI, cierre por click fuera y cambio de checkbox
+    syncAccionCompraUI();
+    document.getElementById('mantener_en_pantalla')?.addEventListener('change', saveCompraDraftDebounced);
+    document.getElementById('accion_compra')?.addEventListener('change', saveCompraDraftDebounced);
+
+    document.addEventListener('click', (ev) => {
+        const menu = document.getElementById('menuAccionCompra');
+        const btn = ev.target.closest && ev.target.closest('[onclick="toggleAccionCompraMenu()"]');
+        const insideMenu = menu && menu.contains(ev.target);
+        if (!btn && !insideMenu) closeAccionCompraMenu();
+    });
+
+    window.addEventListener('keydown', handleHotkeysCompras);
 
     // Botón global "Limpiar" (header)
     window.addEventListener('compras-limpiar', () => resetCompra(true));
@@ -2552,6 +2725,8 @@ if (formCompra) {
                 return;
             }
         }
+        // Marca para limpiar el formulario una vez la compra se guarde correctamente
+        try { sessionStorage.setItem('compra_clear_after_submit', '1'); } catch (e) {}
     });
 }
     // Pre-render del catálogo
