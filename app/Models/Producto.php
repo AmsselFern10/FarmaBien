@@ -16,6 +16,10 @@ class Producto extends Model
         'codigo_barra',
         'nombre',
         'descripcion',
+        'laboratorio',
+        'principio_activo',
+        'concentracion',
+        'via_administracion',
         'imagen',
         'categoria_id',
         'precio_compra',      // ✅ AGREGADO

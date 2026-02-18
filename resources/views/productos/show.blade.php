@@ -204,6 +204,65 @@
             </div>
         </div>
 
+
+@php
+    $hasDatosFarmaco = !empty($producto->laboratorio) || !empty($producto->principio_activo) || !empty($producto->concentracion) || !empty($producto->via_administracion);
+@endphp
+
+@if($hasDatosFarmaco)
+<!-- Datos farmacológicos -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos farmacológicos</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Información opcional para búsquedas y ficha IA</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @if($producto->principio_activo)
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Principio activo</p>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $producto->principio_activo }}</p>
+            </div>
+            @endif
+
+            @if($producto->concentracion)
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Concentración</p>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $producto->concentracion }}</p>
+            </div>
+            @endif
+
+            @if($producto->via_administracion)
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Vía de administración</p>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $producto->via_administracion }}</p>
+            </div>
+            @endif
+
+            @if($producto->laboratorio)
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Laboratorio</p>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $producto->laboratorio }}</p>
+            </div>
+            @endif
+        </div>
+
+        <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            Nota: estos campos son opcionales y ayudan a mejorar la búsqueda (Lupa Inteligente) y la ficha informativa.
+        </p>
+    </div>
+</div>
+@endif
         <!-- Precios -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50 border-b border-gray-200 dark:border-gray-700">
@@ -409,7 +468,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
                         <div>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Última actualización</p>
+                            <p class="text-xs text-slatse-500 dark:text-slate-400">Última actualización</p>
                             <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $producto->updated_at->format('d/m/Y H:i') }}</p>
                         </div>
                     </div>

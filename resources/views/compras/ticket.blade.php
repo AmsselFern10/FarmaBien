@@ -58,16 +58,23 @@
             margin: 2px 0;
         }
         .kv .k{ font-weight:700; }
-        .kv .v{ text-align:right; white-space:nowrap; }
+        .kv .v{ text-align:right; white-space:nowrap; overflow:hidden; text-overflow: ellipsis; }
+
+        .info-grid{
+            display:flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .info-col{ flex:1; min-width: 0; }
+        .info-col.right-col{ text-align:right; }
+        .info-col.right-col .kv .k{ text-align:left; }
 
         .block{ margin: 4px 0; }
         .wrap{ overflow-wrap:anywhere; word-break:break-word; }
 
         /* Tables */
         table{ width:100%; border-collapse: collapse; }
-        .items{
-            table-layout: fixed;
-        }
+        .items{ table-layout: fixed; }
         .items thead th{
             font-size: 10px;
             padding: 2px 0 3px;
@@ -110,13 +117,8 @@
         }
 
         /* Totals */
-        .totals{
-            table-layout: fixed;
-        }
-        .totals td{
-            padding: 2px 0;
-            font-size: 11px;
-        }
+        .totals{ table-layout: fixed; }
+        .totals td{ padding: 2px 0; font-size: 11px; }
         .totals .k{ width: 60%; font-weight: 800; }
         .totals .v{
             width: 40%;
@@ -134,9 +136,12 @@
             font-size: 14px;
             font-weight: 900;
         }
-        .total-final .label{ float:left; }
-        .total-final .value{ float:right; white-space:nowrap; }
-        .clearfix::after{ content:""; display:block; clear:both; }
+        .total-final .row{
+            display:flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .total-final .value{ white-space:nowrap; }
 
         .print-button{
             position: fixed;
@@ -158,13 +163,18 @@
     </style>
 </head>
 <body>
+@php
+    $moneda = env('MONEDA_SIMBOLO', 'C$');
+    $proveedorNombre = \Illuminate\Support\Str::limit($compra->proveedor->nombre ?? '-', 26);
+@endphp
+
     <button class="print-button no-print" onclick="window.print()">Imprimir</button>
 
     <div class="center">
-        <div class="title">{{ env('EMPRESA_NOMBRE', 'FarmaBien') }}</div>
-        <div class="small">RUC: {{ env('EMPRESA_RUC', '-') }}</div>
-        <div class="small">{{ env('EMPRESA_DIRECCION', '-') }}</div>
-        <div class="small">Tel: {{ env('EMPRESA_TELEFONO', '-') }}</div>
+        <div class="title">{{ env('EMPRESA_NOMBRE', $empresa['nombre'] ?? 'FarmaBien') }}</div>
+        <div class="small">RUC: {{ env('EMPRESA_RUC', $empresa['ruc'] ?? '-') }}</div>
+        <div class="small">{{ env('EMPRESA_DIRECCION', $empresa['direccion'] ?? '-') }}</div>
+        <div class="small">Tel: {{ env('EMPRESA_TELEFONO', $empresa['telefono'] ?? '-') }}</div>
     </div>
 
     <div class="rule-strong"></div>
@@ -176,15 +186,18 @@
 
     <div class="rule"></div>
 
-    <div class="kv"><span class="k">FECHA:</span><span class="v">{{ optional($compra->fecha)->format('d/m/Y H:i') }}</span></div>
-    <div class="kv"><span class="k">CAJERO:</span><span class="v">{{ $compra->usuario->name ?? '-' }}</span></div>
-
-    <div class="block wrap">
-        <div class="bold">PROVEEDOR:</div>
-        <div style="margin-left: 8px;">{{ $compra->proveedor->nombre ?? '-' }}</div>
-        @if(!empty($compra->proveedor?->ruc))
-            <div class="xs" style="margin-left: 8px;">RUC: {{ $compra->proveedor->ruc }}</div>
-        @endif
+    {{-- INFO EN DOS COLUMNAS: IZQ (fecha/cajero) - DER (proveedor) --}}
+    <div class="info-grid">
+        <div class="info-col">
+            <div class="kv"><span class="k">FECHA:</span><span class="v">{{ optional($compra->fecha)->format('d/m/Y H:i') }}</span></div>
+            <div class="kv"><span class="k">CAJERO:</span><span class="v">{{ $compra->usuario->name ?? '-' }}</span></div>
+        </div>
+        <div class="info-col right-col">
+            <div class="kv"><span class="k">PROVEEDOR:</span><span class="v">{{ $proveedorNombre }}</span></div>
+            @if(!empty($compra->proveedor?->ruc))
+                <div class="kv"><span class="k">RUC:</span><span class="v">{{ \Illuminate\Support\Str::limit($compra->proveedor->ruc, 20) }}</span></div>
+            @endif
+        </div>
     </div>
 
     <div class="rule-strong"></div>
@@ -216,16 +229,20 @@
                         : (float)$detalle->precio_unitario;
 
                     $totalLinea = (float)($detalle->subtotal ?? 0);
+                    $descMonto = (float)($detalle->descuento_monto ?? 0);
                 @endphp
                 <tr>
                     <td>
                         <div class="item-name">{{ $detalle->producto->nombre ?? 'Producto' }}</div>
-                        <div class="item-pres">
-                            {{ $usaPres ? ($detalle->nombre_presentacion ?? 'Presentación') : 'Unidad' }}
-                        </div>
+                        <div class="item-pres">{{ $usaPres ? ($detalle->nombre_presentacion ?? 'Presentación') : 'Unidad' }}</div>
                     </td>
                     <td class="qty">{{ $cant }}</td>
-                    <td class="num">{{ number_format($precio, 2) }}</td>
+                    <td class="num">
+                        <div>{{ number_format($precio, 2) }}</div>
+                        @if($descMonto > 0)
+                            <div class="xs">Desc: -{{ number_format($descMonto, 2) }}</div>
+                        @endif
+                    </td>
                     <td class="num">{{ number_format($totalLinea, 2) }}</td>
                 </tr>
             @endforeach
@@ -237,17 +254,19 @@
     <table class="totals">
         <tr>
             <td class="k">SUBTOTAL:</td>
-            <td class="v">S/ {{ number_format((float)($compra->subtotal_bruto ?? 0), 2) }}</td>
+            <td class="v">{{ $moneda }} {{ number_format((float)($compra->subtotal_bruto ?? 0), 2) }}</td>
         </tr>
         <tr>
             <td class="k">DESCUENTO:</td>
-            <td class="v">S/ {{ number_format((float)($compra->descuento_monto_total ?? 0), 2) }}</td>
+            <td class="v">{{ $moneda }} {{ number_format((float)($compra->descuento_monto_total ?? 0), 2) }}</td>
         </tr>
     </table>
 
-    <div class="total-final clearfix">
-        <span class="label">TOTAL:</span>
-        <span class="value">S/ {{ number_format((float)($compra->total ?? 0), 2) }}</span>
+    <div class="total-final">
+        <div class="row">
+            <span>TOTAL:</span>
+            <span class="value">{{ $moneda }} {{ number_format((float)($compra->total ?? 0), 2) }}</span>
+        </div>
     </div>
 
     @if(!empty($compra->observaciones))

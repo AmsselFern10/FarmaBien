@@ -14,6 +14,12 @@ return new class extends Migration
             $table->string('codigo_barra', 50)->unique()->nullable();
             $table->string('nombre', 150);
             $table->text('descripcion')->nullable();
+
+            // Datos farmacológicos (opcionales)
+            $table->string('laboratorio', 150)->nullable();
+            $table->string('principio_activo', 150)->nullable();
+            $table->string('concentracion', 100)->nullable();
+            $table->string('via_administracion', 80)->nullable();
             $table->string('imagen')->nullable();
 
             $table->foreignId('categoria_id')->constrained('categorias');

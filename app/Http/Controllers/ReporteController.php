@@ -2,161 +2,144 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Venta;
-use App\Models\Compra;
+use App\Http\Requests\Reportes\AjustesInventarioReporteRequest;
+use App\Http\Requests\Reportes\ComprasReporteRequest;
+use App\Http\Requests\Reportes\LotesReporteRequest;
+use App\Http\Requests\Reportes\MovimientosInventarioReporteRequest;
+use App\Http\Requests\Reportes\ProductosMasVendidosReporteRequest;
+use App\Http\Requests\Reportes\VencimientosReporteRequest;
+use App\Http\Requests\Reportes\VentasReporteRequest;
+use App\Models\Cliente;
 use App\Models\Producto;
-use App\Models\MovimientoInventario;
+use App\Models\Proveedor;
+use App\Models\User;
+use App\Models\Compra;
+use App\Models\Venta;
 use App\Services\InventarioService;
-use Illuminate\Http\Request;
+use App\Services\ReporteExportService;
+use App\Services\ReporteService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class ReporteController extends Controller
 {
-    protected $inventarioService;
+    protected InventarioService $inventarioService;
+    protected ReporteService $reporteService;
+    protected ReporteExportService $exportService;
 
-    public function __construct(InventarioService $inventarioService)
+    public function __construct(InventarioService $inventarioService, ReporteService $reporteService, ReporteExportService $exportService)
     {
         $this->inventarioService = $inventarioService;
-        
-        $this->middleware('permission:ver reportes ventas')->only(['ventas', 'ventasPorPeriodo']);
-        $this->middleware('permission:ver reportes compras')->only(['compras', 'comprasPorPeriodo']);
+        $this->reporteService = $reporteService;
+        $this->exportService = $exportService;
+
+        $this->middleware('permission:ver reportes ventas')->only(['ventas', 'flujoCaja']);
+        $this->middleware('permission:ver reportes compras')->only(['compras']);
         $this->middleware('permission:ver reportes inventario')->only([
-            'inventario', 'valorizacion', 'movimientos'
+            'inventario', 'valorizacion', 'movimientos', 'ajustes', 'lotes', 'vencimientos'
         ]);
     }
 
-    /**
-     * Menú principal de reportes.
-     */
     public function index()
     {
         return view('reportes.index');
     }
 
-    /**
-     * Reporte de ventas.
-     */
-    public function ventas(Request $request)
+    public function ventas(VentasReporteRequest $request)
     {
-        $fechaInicio = $request->input('fecha_inicio', now()->startOfMonth()->format('Y-m-d'));
-        $fechaFin = $request->input('fecha_fin', now()->format('Y-m-d'));
+        $filters = $request->filters();
+        $payload = $this->reporteService->ventas($filters);
 
-        $ventas = Venta::with(['cliente', 'usuario'])
-            ->completadas()
-            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->orderBy('fecha', 'desc')
-            ->get();
+        $export = $request->input('export');
+        if ($export) {
+            $rows = $this->reporteService->ventasExportRows($filters);
+            $columns = !empty($rows)
+                ? array_keys($rows[0])
+                : ['ID', 'Fecha', 'Cliente', 'Cajero', 'Método Pago', 'Subtotal', 'Descuento %', 'Descuento $', 'Total'];
+            $fileBase = 'ventas_' . now()->format('Ymd_His');
 
-        $totalVentas = $ventas->sum('total');
-        $cantidadVentas = $ventas->count();
-        $promedioVenta = $cantidadVentas > 0 ? $totalVentas / $cantidadVentas : 0;
+            if ($export === 'pdf') {
+                $resp = $this->exportService->downloadPdfTable($fileBase, 'Reporte de Ventas', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar PDF instala dompdf/dompdf (o barryvdh/laravel-dompdf).');
+            }
 
-        // Ventas por día
-        $ventasPorDia = $ventas->groupBy(function ($venta) {
-            return $venta->fecha->format('Y-m-d');
-        })->map(function ($ventasDia) {
-            return [
-                'fecha' => $ventasDia->first()->fecha->format('d/m/Y'),
-                'cantidad' => $ventasDia->count(),
-                'total' => $ventasDia->sum('total'),
-            ];
-        });
+                        if (in_array($export, ['excel', 'xlsx'], true)) {
+                $resp = $this->exportService->downloadExcel($fileBase, 'Reporte de Ventas', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar a Excel instala: composer require phpoffice/phpspreadsheet');
+            }
 
-        // Ventas por usuario
-        $ventasPorUsuario = $ventas->groupBy('user_id')->map(function ($ventasUsuario) {
-            return [
-                'usuario' => $ventasUsuario->first()->usuario->name,
-                'cantidad' => $ventasUsuario->count(),
-                'total' => $ventasUsuario->sum('total'),
-            ];
-        });
+            return $this->exportService->downloadCsv($fileBase, $columns, $rows);
+        }
 
-        // Ventas por método de pago
-        $ventasPorMetodoPago = $ventas->groupBy('metodo_pago')->map(function ($ventasMetodo) {
-            return [
-                'metodo' => $ventasMetodo->first()->metodo_pago,
-                'cantidad' => $ventasMetodo->count(),
-                'total' => $ventasMetodo->sum('total'),
-            ];
-        });
+        $fechaInicio = $request->fechaInicioString();
+        $fechaFin = $request->fechaFinString();
 
-        return view('reportes.ventas', compact(
-            'ventas',
+        $clientes = Cliente::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $usuarios = User::query()->orderBy('name')->get(['id', 'name']);
+        $productos = Producto::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $categorias = DB::table('categorias')->orderBy('nombre')->get(['id', 'nombre']);
+
+        return view('reportes.ventas', array_merge($payload, compact(
             'fechaInicio',
             'fechaFin',
-            'totalVentas',
-            'cantidadVentas',
-            'promedioVenta',
-            'ventasPorDia',
-            'ventasPorUsuario',
-            'ventasPorMetodoPago'
-        ));
+            'clientes',
+            'usuarios',
+            'productos',
+            'categorias'
+        )));
     }
 
-    /**
-     * Reporte de compras.
-     */
-    public function compras(Request $request)
+    public function compras(ComprasReporteRequest $request)
     {
-        $fechaInicio = $request->input('fecha_inicio', now()->startOfMonth()->format('Y-m-d'));
-        $fechaFin = $request->input('fecha_fin', now()->format('Y-m-d'));
+        $filters = $request->filters();
+        $payload = $this->reporteService->compras($filters);
 
-        $compras = Compra::with(['proveedor', 'usuario', 'detalles'])
-            ->recibidas()
-            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-            ->orderBy('fecha', 'desc')
-            ->get();
+        $export = $request->input('export');
+        if ($export) {
+            $rows = $this->reporteService->comprasExportRows($filters);
+            $columns = !empty($rows)
+                ? array_keys($rows[0])
+                : ['ID', 'Fecha', 'Proveedor', 'Usuario', 'Subtotal', 'Descuento %', 'Descuento $', 'Total'];
+            $fileBase = 'compras_' . now()->format('Ymd_His');
 
-        $totalCompras = $compras->sum('total');
-        $cantidadCompras = $compras->count();
-        $promedioCompra = $cantidadCompras > 0 ? $totalCompras / $cantidadCompras : 0;
+            if ($export === 'pdf') {
+                $resp = $this->exportService->downloadPdfTable($fileBase, 'Reporte de Compras', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar PDF instala dompdf/dompdf (o barryvdh/laravel-dompdf).');
+            }
 
-        // Compras por proveedor
-        $comprasPorProveedor = $compras->groupBy('proveedor_id')->map(function ($comprasProveedor) {
-            return [
-                'proveedor' => $comprasProveedor->first()->proveedor->nombre,
-                'cantidad' => $comprasProveedor->count(),
-                'total' => $comprasProveedor->sum('total'),
-            ];
-        })->sortByDesc('total');
+                        if (in_array($export, ['excel', 'xlsx'], true)) {
+                $resp = $this->exportService->downloadExcel($fileBase, 'Reporte de Compras', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar a Excel instala: composer require phpoffice/phpspreadsheet');
+            }
 
-        // Total de productos comprados
-        $totalProductosComprados = DB::table('detalle_compra')
-            ->join('compras', 'detalle_compra.compra_id', '=', 'compras.id')
-            ->whereBetween('compras.fecha', [$fechaInicio, $fechaFin])
-            ->where('compras.estado', 'recibida')
-            ->sum('detalle_compra.cantidad');
+            return $this->exportService->downloadCsv($fileBase, $columns, $rows);
+        }
 
-        return view('reportes.compras', compact(
-            'compras',
+        $fechaInicio = $request->fechaInicioString();
+        $fechaFin = $request->fechaFinString();
+
+        $proveedores = Proveedor::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $usuarios = User::query()->orderBy('name')->get(['id', 'name']);
+        $productos = Producto::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $categorias = DB::table('categorias')->orderBy('nombre')->get(['id', 'nombre']);
+
+        return view('reportes.compras', array_merge($payload, compact(
             'fechaInicio',
             'fechaFin',
-            'totalCompras',
-            'cantidadCompras',
-            'promedioCompra',
-            'comprasPorProveedor',
-            'totalProductosComprados'
-        ));
+            'proveedores',
+            'usuarios',
+            'productos',
+            'categorias'
+        )));
     }
 
-    /**
-     * Reporte de inventario.
-     */
     public function inventario()
     {
-        // Resumen por categoría
         $resumenCategorias = $this->inventarioService->resumenPorCategoria();
-
-        // Productos con stock bajo
         $productosStockBajo = $this->inventarioService->productosConStockBajo();
-
-        // Lotes próximos a vencer
         $lotesProximosVencer = $this->inventarioService->lotesProximosVencer(30);
-
-        // Lotes vencidos
         $lotesVencidos = $this->inventarioService->lotesVencidos();
-
-        // Valorización
         $valorizacion = $this->inventarioService->valorizacionInventario();
 
         return view('reportes.inventario', compact(
@@ -168,9 +151,6 @@ class ReporteController extends Controller
         ));
     }
 
-    /**
-     * Reporte de valorización del inventario.
-     */
     public function valorizacion()
     {
         $valorizacion = $this->inventarioService->valorizacionInventario();
@@ -178,78 +158,296 @@ class ReporteController extends Controller
         return view('reportes.valorizacion', compact('valorizacion'));
     }
 
-    /**
-     * Reporte de movimientos de inventario.
-     */
-    public function movimientos(Request $request)
+    public function movimientos(MovimientosInventarioReporteRequest $request)
     {
-        $fechaInicio = $request->input('fecha_inicio', now()->startOfMonth()->format('Y-m-d'));
-        $fechaFin = $request->input('fecha_fin', now()->format('Y-m-d'));
-        $tipo = $request->input('tipo'); // entrada, salida, ajuste
+        $filters = $request->filters();
+        $payload = $this->reporteService->movimientosInventario($filters);
 
-        $query = MovimientoInventario::with(['producto', 'lote', 'usuario'])
-            ->whereBetween('fecha_movimiento', [$fechaInicio, $fechaFin])
-            ->orderBy('fecha_movimiento', 'desc');
+        $export = $request->input('export');
+        if ($export) {
+            $rows = $this->reporteService->movimientosExportRows($filters);
+            $columns = !empty($rows)
+                ? array_keys($rows[0])
+                : ['Fecha', 'Tipo', 'Producto', 'Lote', 'Cantidad', 'Saldo Anterior', 'Saldo Nuevo', 'Origen', 'Origen ID', 'Motivo', 'Usuario'];
+            $fileBase = 'movimientos_inventario_' . now()->format('Ymd_His');
 
-        if ($tipo) {
-            $query->where('tipo', $tipo);
+            if ($export === 'pdf') {
+                $resp = $this->exportService->downloadPdfTable($fileBase, 'Movimientos de Inventario', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar PDF instala dompdf/dompdf (o barryvdh/laravel-dompdf).');
+            }
+
+                        if (in_array($export, ['excel', 'xlsx'], true)) {
+                $resp = $this->exportService->downloadExcel($fileBase, 'Movimientos de Inventario', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar a Excel instala: composer require phpoffice/phpspreadsheet');
+            }
+
+            return $this->exportService->downloadCsv($fileBase, $columns, $rows);
         }
 
-        $movimientos = $query->get();
+        $fechaInicio = $request->fechaInicioString();
+        $fechaFin = $request->fechaFinString();
+        $tipo = $request->input('tipo');
 
-        // Estadísticas
-        $totalEntradas = $movimientos->where('tipo', 'entrada')->sum('cantidad');
-        $totalSalidas = abs($movimientos->where('tipo', 'salida')->sum('cantidad'));
-        $totalAjustes = $movimientos->where('tipo', 'ajuste')->sum('cantidad');
+        $productos = Producto::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $usuarios = User::query()->orderBy('name')->get(['id', 'name']);
 
-        // Movimientos por tipo
-        $movimientosPorTipo = $movimientos->groupBy('tipo')->map(function ($movsTipo) {
-            return [
-                'tipo' => $movsTipo->first()->tipo,
-                'cantidad' => $movsTipo->count(),
-                'total_unidades' => $movsTipo->sum('cantidad'),
-            ];
-        });
-
-        return view('reportes.movimientos', compact(
-            'movimientos',
+        return view('reportes.movimientos', array_merge($payload, compact(
             'fechaInicio',
             'fechaFin',
             'tipo',
-            'totalEntradas',
-            'totalSalidas',
-            'totalAjustes',
-            'movimientosPorTipo'
+            'productos',
+            'usuarios'
+        )));
+    }
+
+    public function ajustes(AjustesInventarioReporteRequest $request)
+    {
+        $filters = $request->filters();
+        $payload = $this->reporteService->ajustesInventario($filters);
+
+        // FIX: asegurar contador para tarjetas (evita 0 cuando el servicio no lo envía)
+        if (!isset($payload['cantidadMovimientos'])) {
+            $payload['cantidadMovimientos'] = isset($payload['movimientos']) && is_array($payload['movimientos'])
+                ? count($payload['movimientos'])
+                : 0;
+        }
+
+        $export = $request->input('export');
+        if ($export) {
+            $rows = $this->reporteService->movimientosExportRows($filters);
+            $columns = !empty($rows)
+                ? array_keys($rows[0])
+                : ['Fecha', 'Tipo', 'Producto', 'Lote', 'Cantidad', 'Saldo Anterior', 'Saldo Nuevo', 'Origen', 'Origen ID', 'Motivo', 'Usuario'];
+            $fileBase = 'ajustes_inventario_' . now()->format('Ymd_His');
+
+            if ($export === 'pdf') {
+                $resp = $this->exportService->downloadPdfTable($fileBase, 'Ajustes de Inventario', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar PDF instala dompdf/dompdf (o barryvdh/laravel-dompdf).');
+            }
+
+                        if (in_array($export, ['excel', 'xlsx'], true)) {
+                $resp = $this->exportService->downloadExcel($fileBase, 'Ajustes de Inventario', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar a Excel instala: composer require phpoffice/phpspreadsheet');
+            }
+
+            return $this->exportService->downloadCsv($fileBase, $columns, $rows);
+        }
+
+        $fechaInicio = $request->fechaInicioString();
+        $fechaFin = $request->fechaFinString();
+
+        $productos = Producto::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $usuarios = User::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('reportes.ajustes', array_merge($payload, compact(
+            'fechaInicio',
+            'fechaFin',
+            'productos',
+            'usuarios'
+        )));
+    }
+
+    public function lotes(LotesReporteRequest $request)
+    {
+        $filters = $request->filters();
+        $payload = $this->reporteService->lotes($filters);
+
+        $export = $request->input('export');
+        if ($export) {
+            $rows = $this->reporteService->lotesExportRows($filters);
+            $columns = !empty($rows)
+                ? array_keys($rows[0])
+                : ['ID', 'Producto', 'Proveedor', 'Compra ID', 'Lote', 'Vencimiento', 'Ingreso', 'Stock Inicial', 'Stock Actual', 'Precio Compra', 'Valor', 'Estado', 'Activo'];
+            $fileBase = 'lotes_' . now()->format('Ymd_His');
+
+            if ($export === 'pdf') {
+                $resp = $this->exportService->downloadPdfTable($fileBase, 'Reporte de Lotes', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar PDF instala dompdf/dompdf (o barryvdh/laravel-dompdf).');
+            }
+
+                        if (in_array($export, ['excel', 'xlsx'], true)) {
+                $resp = $this->exportService->downloadExcel($fileBase, 'Reporte de Lotes', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar a Excel instala: composer require phpoffice/phpspreadsheet');
+            }
+
+            return $this->exportService->downloadCsv($fileBase, $columns, $rows);
+        }
+
+        $productos = Producto::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $proveedores = Proveedor::query()->orderBy('nombre')->get(['id', 'nombre']);
+
+        return view('reportes.lotes', array_merge($payload, compact(
+            'productos',
+            'proveedores'
+        )));
+    }
+
+    public function vencimientos(VencimientosReporteRequest $request)
+    {
+        $filters = $request->filters();
+        $payload = $this->reporteService->vencimientos($filters);
+
+        $export = $request->input('export');
+        if ($export) {
+            $rows = $this->reporteService->vencimientosExportRows($filters);
+            $columns = !empty($rows)
+                ? array_keys($rows[0])
+                : ['ID', 'Producto', 'Proveedor', 'Compra ID', 'Lote', 'Vencimiento', 'Días', 'Stock Actual', 'Precio Compra', 'Valor', 'Estado', 'Activo'];
+            $fileBase = 'vencimientos_' . now()->format('Ymd_His');
+
+            if ($export === 'pdf') {
+                $resp = $this->exportService->downloadPdfTable($fileBase, 'Reporte de Vencimientos', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar PDF instala dompdf/dompdf (o barryvdh/laravel-dompdf).');
+            }
+
+                        if (in_array($export, ['excel', 'xlsx'], true)) {
+                $resp = $this->exportService->downloadExcel($fileBase, 'Reporte de Vencimientos', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar a Excel instala: composer require phpoffice/phpspreadsheet');
+            }
+
+            return $this->exportService->downloadCsv($fileBase, $columns, $rows);
+        }
+
+        $productos = Producto::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $proveedores = Proveedor::query()->orderBy('nombre')->get(['id', 'nombre']);
+
+        $dias = (int) ($filters['dias'] ?? 30);
+        $modo = (string) ($filters['modo'] ?? 'todos');
+
+        return view('reportes.vencimientos', array_merge($payload, compact(
+            'productos',
+            'proveedores',
+            'dias',
+            'modo'
+        )));
+    }
+
+    
+    public function flujoCaja(Request $request)
+    {
+        $fechaInicio = $request->input('fecha_inicio');
+        $fechaFin = $request->input('fecha_fin');
+
+        // Defaults: hoy
+        if (!$fechaInicio) $fechaInicio = now()->format('Y-m-d');
+        if (!$fechaFin) $fechaFin = now()->format('Y-m-d');
+
+        $inicio = Carbon::parse($fechaInicio)->startOfDay();
+        $fin = Carbon::parse($fechaFin)->endOfDay();
+
+        $ventas = Venta::query()
+            ->with(['cliente:id,nombre', 'usuario:id,name'])
+            ->where('estado', 'completada')
+            ->where(function ($q) use ($inicio, $fin) {
+                $q->whereBetween('fecha', [$inicio, $fin])
+                  ->orWhereBetween('created_at', [$inicio, $fin]);
+            })
+            ->orderByRaw('COALESCE(fecha, created_at) DESC')
+            ->get();
+
+        $compras = Compra::query()
+            ->with(['proveedor:id,nombre', 'usuario:id,name'])
+            ->where('estado', 'recibida')
+            ->where(function ($q) use ($inicio, $fin) {
+                $q->whereBetween('fecha', [$inicio, $fin])
+                  ->orWhereBetween('created_at', [$inicio, $fin]);
+            })
+            ->orderByRaw('COALESCE(fecha, created_at) DESC')
+            ->get();
+
+        $totalVentas = (float) $ventas->sum('total');
+        $totalCompras = (float) $compras->sum('total');
+        $balance = $totalVentas - $totalCompras;
+
+        // Ventas por método (KPI)
+        $ventasEfectivo = (float) $ventas->where('metodo_pago', 'efectivo')->sum('total');
+        $ventasTransferencia = (float) $ventas->where('metodo_pago', 'transferencia')->sum('total');
+        $ventasTarjetas = (float) $ventas->whereIn('metodo_pago', ['credito', 'debito'])->sum('total');
+        $ventasPagarLuego = (float) $ventas->where('metodo_pago', 'pagar_luego')->sum('total');
+        $ventasOtros = (float) $ventas->where('metodo_pago', 'otros')->sum('total');
+
+        $comprasEfectivo = (float) $compras->where('metodo_pago', 'efectivo')->sum('total');
+        $comprasTransferencia = (float) $compras->where('metodo_pago', 'transferencia')->sum('total');
+        $comprasTarjetas = (float) $compras->whereIn('metodo_pago', ['credito', 'debito'])->sum('total');
+        $comprasPagarLuego = (float) $compras->where('metodo_pago', 'pagar_luego')->sum('total');
+        $comprasOtros = (float) $compras->where('metodo_pago', 'otros')->sum('total');
+
+        // Series (por día) para gráficos
+        $ventasPorDia = $ventas->groupBy(function ($v) {
+            $f = $v->fecha ?: $v->created_at;
+            return optional($f)->format('Y-m-d') ?: 'sin_fecha';
+        })->map(fn($g) => (float) $g->sum('total'))->sortKeys();
+
+        $comprasPorDia = $compras->groupBy(function ($c) {
+            $f = $c->fecha ?: $c->created_at;
+            return optional($f)->format('Y-m-d') ?: 'sin_fecha';
+        })->map(fn($g) => (float) $g->sum('total'))->sortKeys();
+
+        // Tabla resumen por método
+        $ventasPorMetodo = $ventas->groupBy(fn($v) => $v->metodo_pago ?: 'sin_metodo')->map(function ($g, $metodo) {
+            return [
+                'metodo' => $metodo,
+                'cantidad' => $g->count(),
+                'total' => (float) $g->sum('total'),
+                'recibido' => (float) $g->sum('monto_recibido'),
+                'cambio' => (float) $g->sum('cambio'),
+            ];
+        })->values();
+
+        return view('reportes.flujo-caja', compact(
+            'fechaInicio',
+            'fechaFin',
+            'ventas',
+            'compras',
+            'totalVentas',
+            'totalCompras',
+            'balance',
+            'ventasEfectivo',
+            'ventasTransferencia',
+            'ventasTarjetas',
+            'ventasPagarLuego',
+            'ventasOtros',
+            'comprasEfectivo',
+            'comprasTransferencia',
+            'comprasTarjetas',
+            'comprasPagarLuego',
+            'comprasOtros',
+            'ventasPorDia',
+            'comprasPorDia',
+            'ventasPorMetodo'
         ));
     }
 
-    /**
-     * Productos más vendidos.
-     */
-    public function productosMasVendidos(Request $request)
-    {
-        $fechaInicio = $request->input('fecha_inicio', now()->startOfMonth()->format('Y-m-d'));
-        $fechaFin = $request->input('fecha_fin', now()->format('Y-m-d'));
-        $limite = $request->input('limite', 20);
 
-        $productos = DB::table('detalle_venta')
-            ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
-            ->join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
-            ->join('categorias', 'productos.categoria_id', '=', 'categorias.id')
-            ->whereBetween('ventas.fecha', [$fechaInicio, $fechaFin])
-            ->where('ventas.estado', 'completada')
-            ->select(
-                'productos.id',
-                'productos.nombre',
-                'categorias.nombre as categoria',
-                DB::raw('SUM(detalle_venta.cantidad) as total_vendido'),
-                DB::raw('SUM(detalle_venta.subtotal) as total_ingresos'),
-                DB::raw('COUNT(DISTINCT detalle_venta.venta_id) as numero_ventas')
-            )
-            ->groupBy('productos.id', 'productos.nombre', 'categorias.nombre')
-            ->orderBy('total_vendido', 'desc')
-            ->limit($limite)
-            ->get();
+    public function productosMasVendidos(ProductosMasVendidosReporteRequest $request)
+    {
+        $fechaInicio = $request->fechaInicioString();
+        $fechaFin = $request->fechaFinString();
+        $limite = (int) $request->input('limite', 20);
+
+        $filters = $request->filters();
+        $productos = $this->reporteService->productosMasVendidos($filters);
+
+        $export = $request->input('export');
+        if ($export) {
+            $rows = $this->reporteService->productosMasVendidosExportRows($filters);
+            $columns = !empty($rows)
+                ? array_keys($rows[0])
+                : ['Producto', 'Categoría', 'Unidades (base)', 'Ingresos', 'N° Ventas'];
+            $fileBase = 'productos_mas_vendidos_' . now()->format('Ymd_His');
+
+            if ($export === 'pdf') {
+                $resp = $this->exportService->downloadPdfTable($fileBase, 'Productos más Vendidos', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar PDF instala dompdf/dompdf (o barryvdh/laravel-dompdf).');
+            }
+
+                        if (in_array($export, ['excel', 'xlsx'], true)) {
+                $resp = $this->exportService->downloadExcel($fileBase, 'Productos más Vendidos', $columns, $rows);
+                return $resp ?: back()->with('error', 'Para exportar a Excel instala: composer require phpoffice/phpspreadsheet');
+            }
+
+            return $this->exportService->downloadCsv($fileBase, $columns, $rows);
+        }
 
         return view('reportes.productos-mas-vendidos', compact(
             'productos',
@@ -257,16 +455,5 @@ class ReporteController extends Controller
             'fechaFin',
             'limite'
         ));
-    }
-
-    /**
-     * Exportar reporte a Excel (requiere maatwebsite/excel).
-     */
-    public function exportarVentas(Request $request)
-    {
-        // Implementar con Laravel Excel
-        // return Excel::download(new VentasExport($request->all()), 'ventas.xlsx');
-        
-        return back()->with('info', 'Exportación en desarrollo...');
     }
 }

@@ -37,6 +37,7 @@
         
         .company-info {
             flex: 1;
+            min-width: 0;
         }
         
         .company-name {
@@ -102,7 +103,24 @@
             color: #000;
         }
         
-        /* Table */
+        
+        /* Prevent horizontal overflow */
+        .table-wrap{
+            width:100%;
+            overflow-x:auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* Allow long strings (barcodes/lotes/emails) to wrap instead of widening the page */
+        .company-details, .info-box, .product-name, .product-category, .lote-info, td, th{
+            overflow-wrap:anywhere;
+            word-break: break-word;
+        }
+        /* Keep numeric columns compact */
+        td.right, td.center, th.right, th.center{
+            white-space: nowrap;
+        }
+
+/* Table */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -291,6 +309,10 @@
     </style>
 </head>
 <body>
+@php
+    $moneda = env('MONEDA_SIMBOLO', 'C$');
+@endphp
+
     <button class="print-button no-print" onclick="window.print()">
         🖨️ Imprimir
     </button>
@@ -315,13 +337,12 @@
             <div class="document-number">#{{ str_pad($compra->id, 6, '0', STR_PAD_LEFT) }}</div>
         </div>
     </div>
-</div>
-        
+
         <!-- Info Section -->
         <div class="info-section">
             <div class="info-box">
                 <h3>Proveedor</h3>
-                <p><strong>{{ $compra->proveedor->nombre }}</strong></p>
+                <p><strong>{{ \Illuminate\Support\Str::limit($compra->proveedor->nombre, 38) }}</strong></p>
                 <p>RUC: {{ $compra->proveedor->ruc }}</p>
                 @if($compra->proveedor->telefono)
                 <p>Tel: {{ $compra->proveedor->telefono }}</p>
@@ -347,19 +368,20 @@
         </div>
         
         <!-- Products Table -->
+        <div class="table-wrap">
         <table>
             <thead>
                 <tr>
                     <th style="width: 4%" class="center">#</th>
-                    <th style="width: 26%">Producto</th>
-                    <th style="width: 16%">Presentación</th>
-                    <th style="width: 9%" class="center">Unid/Pres</th>
-                    <th style="width: 9%" class="right">Cant. Pres</th>
-                    <th style="width: 10%" class="right">Total Unid</th>
+                    <th style="width: 23%">Producto</th>
+                    <th style="width: 14%">Presentación</th>
+                    <th style="width: 7%" class="center">Unid/Pres</th>
+                    <th style="width: 7%" class="right">Cant. Pres</th>
+                    <th style="width: 7%" class="right">Total Unid</th>
                     <th style="width: 10%">Lote</th>
-                    <th style="width: 9%" class="center">Venc.</th>
-                    <th style="width: 8%" class="right">P. Unit</th>
-                    <th style="width: 9%" class="right">Subtotal</th>
+                    <th style="width: 8%" class="center">Venc.</th>
+                    <th style="width: 10%" class="right">P. Unit</th>
+                    <th style="width: 10%" class="right">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
@@ -395,7 +417,7 @@
                     <td class="right">
                         {{ number_format((float) $detalle->precio_unitario, 2) }}
                         @if($detalle->usaPresentacion() && $detalle->unidades_por_presentacion > 1)
-                            <div class="product-category">Por pres: S/ {{ number_format((float) $detalle->precio_presentacion, 2) }}</div>
+                            <div class="product-category">Por pres: {{ $moneda }} {{ number_format((float) $detalle->precio_presentacion, 2) }}</div>
                         @endif
                     </td>
                     <td class="right bold">{{ number_format((float) $detalle->subtotal, 2) }}</td>
@@ -403,13 +425,14 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
         
         <!-- Totals -->
         <div class="totals">
             <table>
                 <tr class="total-final">
                     <td class="label">TOTAL</td>
-                    <td class="amount">S/ {{ number_format($compra->total, 2) }}</td>
+                    <td class="amount">{{ $moneda }} {{ number_format($compra->total, 2) }}</td>
                 </tr>
             </table>
         </div>

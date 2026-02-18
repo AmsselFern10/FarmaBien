@@ -13,8 +13,10 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ProductoAIController;
 
-// ✅ API (JSON) para presentaciones por producto (para el create de compras)
+
+
 use App\Http\Controllers\Api\ProductoPresentacionController;
 
 /*
@@ -25,6 +27,15 @@ use App\Http\Controllers\Api\ProductoPresentacionController;
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+Route::post('/productos/{producto}/ia/ficha', [ProductoAIController::class, 'ficha'])
+    ->name('productos.ia.ficha')
+    ->middleware(['auth']);
+
+Route::post('/productos/ia/buscar', [ProductoAIController::class, 'buscar'])
+    ->name('productos.ia.buscar')
+    ->middleware(['auth']);
 
 /*
 |--------------------------------------------------------------------------
@@ -231,31 +242,51 @@ Route::resource('proveedores', ProveedorController::class)
     | REPORTES
     |--------------------------------------------------------------------------
     */
-    Route::prefix('reportes')->name('reportes.')->group(function () {
-        Route::get('/', [ReporteController::class, 'index'])
-            ->name('index')
-            ->middleware('permission:ver reportes ventas');
+   Route::prefix('reportes')->name('reportes.')->group(function () {
+    Route::get('/', [ReporteController::class, 'index'])
+        ->name('index')
+        ->middleware('permission:ver reportes ventas');
 
-        Route::get('/ventas', [ReporteController::class, 'ventas'])
-            ->name('ventas')
-            ->middleware('permission:ver reportes ventas');
+    Route::get('/ventas', [ReporteController::class, 'ventas'])
+        ->name('ventas')
+        ->middleware('permission:ver reportes ventas');
 
-        Route::get('/compras', [ReporteController::class, 'compras'])
-            ->name('compras')
-            ->middleware('permission:ver reportes compras');
+    Route::get('/compras', [ReporteController::class, 'compras'])
+        ->name('compras')
+        ->middleware('permission:ver reportes compras');
 
-        Route::get('/inventario', [ReporteController::class, 'inventario'])
-            ->name('inventario')
-            ->middleware('permission:ver reportes inventario');
+Route::get('/inventario', [ReporteController::class, 'inventario'])
+    ->name('inventario')
+    ->middleware('permission:ver reportes inventario');
 
-        Route::get('/productos-mas-vendidos', [ReporteController::class, 'productosMasVendidos'])
-            ->name('productos-mas-vendidos')
-            ->middleware('permission:ver reportes ventas');
+     Route::get('/flujo-caja', [ReporteController::class, 'flujoCaja'])
+    ->name('flujo-caja'); // Este es el nombre real
+    Route::get('/productos-mas-vendidos', [ReporteController::class, 'productosMasVendidos'])
+        ->name('productos-mas-vendidos')
+        ->middleware('permission:ver reportes ventas');
 
-        Route::get('/productos-bajo-stock', [ReporteController::class, 'productosBajoStock'])
-            ->name('productos-bajo-stock')
-            ->middleware('permission:ver reportes inventario');
-    });
+    Route::get('/productos-bajo-stock', [ReporteController::class, 'productosBajoStock'])
+        ->name('productos-bajo-stock')
+        ->middleware('permission:ver reportes inventario');
+
+    
+
+    Route::get('/ajustes', [ReporteController::class, 'ajustes'])
+        ->name('ajustes')
+        ->middleware('permission:ver reportes inventario'); // Ajusta el permiso según necesites
+
+    Route::get('/lotes', [ReporteController::class, 'lotes'])
+        ->name('lotes')
+        ->middleware('permission:ver reportes inventario');
+
+    Route::get('/movimientos', [ReporteController::class, 'movimientos'])
+        ->name('movimientos')
+        ->middleware('permission:ver reportes inventario');
+
+    Route::get('/vencimientos', [ReporteController::class, 'vencimientos'])
+        ->name('vencimientos')
+        ->middleware('permission:ver reportes inventario');
+});
 });
 
 // Rutas personalizadas primero

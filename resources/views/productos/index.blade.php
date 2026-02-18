@@ -85,8 +85,20 @@ class="space-y-6">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                             </svg>
                             Filtrar
+                        
                         </button>
+
+                        <!-- Lupa Inteligente (IA) -->
+                        <button type="button"
+                                onclick="abrirModalLupaIA()"
+                                class="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+
                         @if(request()->hasAny(['buscar', 'categoria_id']))
+
                         <a href="{{ route('productos.index') }}" 
                            class="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg transition-colors duration-200">
                             Limpiar
@@ -174,12 +186,20 @@ class="space-y-6">
                     </svg>
                 @endif
                 <!-- Badge de estado -->
-                <div class="absolute top-3 right-3">
+                <div class="absolute top-3 right-3 flex items-center gap-2">
                     @if($producto->activo)
                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-500 text-white shadow-lg">Activo</span>
                     @else
                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-500 text-white shadow-lg">Inactivo</span>
                     @endif
+
+                    @can('ver productos')
+                    <button type="button"
+                            onclick="abrirModalProductoIA({{ $producto->id }}, @js($producto->nombre))"
+                            class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 font-bold shadow-lg transition">
+                        ?
+                    </button>
+                    @endcan
                 </div>
                 @if($producto->requiere_receta)
                 <div class="absolute top-3 left-3">
@@ -352,6 +372,14 @@ class="space-y-6">
                                 <!-- Acciones -->
                                 <div class="flex gap-2">
                                     @can('ver productos')
+                                    <button type="button"
+                                            onclick="abrirModalProductoIA({{ $producto->id }}, @js($producto->nombre))"
+                                            class="p-2 bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 rounded-lg transition-colors duration-200"
+                                            title="Info IA">
+                                        ?
+                                    </button>
+                                    @endcan
+@can('ver productos')
                                     <a href="{{ route('productos.show', $producto) }}" 
                                        class="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors duration-200"
                                        title="Ver detalles">
@@ -474,6 +502,15 @@ class="space-y-6">
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div class="flex justify-end gap-2">
                                 @can('ver productos')
+                                <button type="button"
+                                        onclick="abrirModalProductoIA({{ $producto->id }}, @js($producto->nombre))"
+                                        class="text-violet-600 dark:text-violet-300 hover:text-violet-900 dark:hover:text-violet-200"
+                                        title="Info IA">
+                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-violet-300 dark:border-violet-700 font-bold">?</span>
+                                </button>
+                                @endcan
+
+@can('ver productos')
                                 <a href="{{ route('productos.show', $producto) }}" 
                                    class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                                    title="Ver">
@@ -534,4 +571,328 @@ class="space-y-6">
     </div>
     @endif
 </div>
+
+<!-- ===================== MODAL: LUPA INTELIGENTE (IA) ===================== -->
+<div id="modalLupaIA" class="hidden fixed z-50 inset-0 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 transition-opacity" onclick="cerrarModalLupaIA()"></div>
+
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Lupa Inteligente</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Describe lo que buscas en lenguaje natural (ej: “algo para dolor y fiebre”).</p>
+          </div>
+          <button type="button" onclick="cerrarModalLupaIA()"
+              class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-gray-700 dark:hover:bg-gray-600">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div class="md:col-span-9">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">¿Qué necesitas?</label>
+            <input id="lupa_q" type="text"
+                   placeholder="Ej: analgésico sin receta, jarabe para tos, paracetamol 500..."
+                   class="block w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 dark:bg-gray-700 dark:text-white">
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Nota: la IA ayuda a encontrar productos del catálogo; verifica prospecto/receta para uso clínico.
+            </p>
+          </div>
+
+          <div class="md:col-span-3 flex flex-col justify-end gap-2">
+            <button type="button" onclick="buscarConLupaIA()"
+                    class="inline-flex justify-center items-center px-4 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white font-semibold rounded-lg transition-all duration-200">
+              Buscar
+            </button>
+            <button type="button" onclick="usarTextoLupaEnFiltro()"
+                    class="inline-flex justify-center items-center px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition">
+              Usar en filtro
+            </button>
+          </div>
+        </div>
+
+        <div id="lupa_loading" class="hidden text-sm text-slate-600 dark:text-slate-300">
+          Buscando con IA...
+        </div>
+
+        <div id="lupa_error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+
+        <div id="lupa_results" class="space-y-2"></div>
+      </div>
+
+      <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end">
+        <button type="button" onclick="cerrarModalLupaIA()"
+          class="px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: INFO PRODUCTO (IA) ===================== -->
+<div id="modalProductoIA" class="hidden fixed z-50 inset-0 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 transition-opacity" onclick="cerrarModalProductoIA()"></div>
+
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white" id="modalProductoIA_title">Info del producto</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Generado por IA (educativo)</p>
+          </div>
+          <button type="button" onclick="cerrarModalProductoIA()"
+              class="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-gray-700 dark:hover:bg-gray-600">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <div id="modalProductoIA_loading" class="text-sm text-slate-600 dark:text-slate-300">
+          Consultando IA...
+        </div>
+
+        <pre id="modalProductoIA_body"
+          class="hidden mt-4 whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-gray-900/40 border border-slate-200 dark:border-gray-700 rounded-lg p-4"></pre>
+
+        <div id="modalProductoIA_error"
+          class="hidden mt-4 text-sm text-red-600 dark:text-red-400"></div>
+
+        <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+          Nota: información educativa; verifica prospecto/receta y consulta a un profesional.
+        </p>
+      </div>
+
+      <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end">
+        <button type="button" onclick="cerrarModalProductoIA()"
+          class="px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@push('scripts')
+<script>
+const __productoIaUrlTpl = @json(route('productos.ia.ficha', ['producto' => '__ID__']));
+const __lupaIaUrl = @json(route('productos.ia.buscar'));
+
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function csrfToken() {
+  const el = document.querySelector('meta[name="csrf-token"]');
+  return el ? el.getAttribute('content') : '';
+}
+
+/* ---------- Modal helpers ---------- */
+function abrirModalLupaIA() {
+  const modal = document.getElementById('modalLupaIA');
+  modal.classList.remove('hidden');
+
+  // Prefill con el buscador normal (si existe)
+  const normal = document.querySelector('input[name="buscar"]');
+  const input = document.getElementById('lupa_q');
+  if (input) input.value = (normal?.value || '').trim();
+
+  setTimeout(() => input?.focus(), 50);
+}
+function cerrarModalLupaIA() {
+  document.getElementById('modalLupaIA').classList.add('hidden');
+  limpiarResultadosLupa();
+}
+
+function limpiarResultadosLupa() {
+  const results = document.getElementById('lupa_results');
+  const errorBox = document.getElementById('lupa_error');
+  const loading = document.getElementById('lupa_loading');
+  if (results) results.innerHTML = '';
+  if (errorBox) { errorBox.classList.add('hidden'); errorBox.textContent = ''; }
+  if (loading) loading.classList.add('hidden');
+}
+
+function usarTextoLupaEnFiltro() {
+  const q = (document.getElementById('lupa_q')?.value || '').trim();
+  const normal = document.querySelector('input[name="buscar"]');
+  if (normal) normal.value = q;
+
+  // submit del form principal
+  const form = normal?.closest('form');
+  if (form) form.submit();
+}
+
+/* ---------- Lupa: buscar ---------- */
+let __lupaAbort = null;
+
+function buscarConLupaIA() {
+  const q = (document.getElementById('lupa_q')?.value || '').trim();
+  if (q.length < 2) return;
+
+  const loading = document.getElementById('lupa_loading');
+  const results = document.getElementById('lupa_results');
+  const errorBox = document.getElementById('lupa_error');
+
+  if (__lupaAbort) __lupaAbort.abort();
+  __lupaAbort = new AbortController();
+
+  if (results) results.innerHTML = '';
+  if (errorBox) { errorBox.classList.add('hidden'); errorBox.textContent = ''; }
+  if (loading) loading.classList.remove('hidden');
+
+  fetch(__lupaIaUrl, {
+    method: 'POST',
+    signal: __lupaAbort.signal,
+    headers: {
+      'X-CSRF-TOKEN': csrfToken(),
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ q })
+  })
+  .then(async (r) => {
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.message || 'Error consultando IA');
+
+    if (loading) loading.classList.add('hidden');
+    renderResultadosLupa(data.results || []);
+  })
+  .catch((err) => {
+    if (err?.name === 'AbortError') return;
+    if (loading) loading.classList.add('hidden');
+    if (errorBox) {
+      errorBox.classList.remove('hidden');
+      errorBox.textContent = err?.message || 'No se pudo consultar la IA.';
+    }
+  });
+}
+
+function renderResultadosLupa(items) {
+  const results = document.getElementById('lupa_results');
+  if (!results) return;
+
+  if (!items.length) {
+    results.innerHTML = `
+      <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-slate-600 dark:text-slate-300">
+        No encontré coincidencias. Prueba con: <span class="font-semibold">principio activo</span>, <span class="font-semibold">categoría</span> o <span class="font-semibold">síntoma</span>.
+      </div>`;
+    return;
+  }
+
+  results.innerHTML = items.map((p) => {
+    const badges = [
+      p.activo ? `<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Activo</span>`
+               : `<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">Inactivo</span>`,
+      p.requiere_receta ? `<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">Receta</span>` : ''
+    ].filter(Boolean).join(' ');
+
+    const stockClass = (p.stock_total <= (p.stock_minimo ?? 0)) ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white';
+
+    return `
+      <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="font-semibold text-slate-900 dark:text-white truncate">${escapeHtml(p.nombre)}</h4>
+              ${badges}
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              ${escapeHtml(p.categoria || 'Sin categoría')}
+              ${p.codigo_barra ? ` • <span class="font-mono">${escapeHtml(p.codigo_barra)}</span>` : ''}
+            </p>
+            <div class="mt-2 flex items-center gap-4 text-sm">
+              <span class="font-bold text-blue-600 dark:text-blue-400">S/ ${escapeHtml(p.precio_venta)}</span>
+              <span class="font-bold ${stockClass}">Stock: ${escapeHtml(p.stock_total)} unid.</span>
+            </div>
+            ${p.explicacion ? `<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">${escapeHtml(p.explicacion)}</p>` : ''}
+          </div>
+
+          <div class="flex flex-col gap-2 shrink-0">
+            <a href="${escapeHtml(p.url_show)}"
+               class="inline-flex justify-center items-center px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition">
+              Ver
+            </a>
+            <button type="button"
+                    onclick="abrirModalProductoIA(${p.id}, ${JSON.stringify(p.nombre)})"
+                    class="inline-flex justify-center items-center px-3 py-2 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-200 text-sm font-semibold rounded-lg hover:bg-violet-100 dark:hover:bg-violet-900/50 transition">
+              Info IA
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ---------- Info IA del producto ---------- */
+function abrirModalProductoIA(id, nombre) {
+  const modal = document.getElementById('modalProductoIA');
+  const title = document.getElementById('modalProductoIA_title');
+  const body = document.getElementById('modalProductoIA_body');
+  const loading = document.getElementById('modalProductoIA_loading');
+  const errorBox = document.getElementById('modalProductoIA_error');
+
+  title.textContent = `Info: ${nombre}`;
+  body.classList.add('hidden');
+  body.textContent = '';
+  errorBox.classList.add('hidden');
+  errorBox.textContent = '';
+  loading.classList.remove('hidden');
+
+  modal.classList.remove('hidden');
+
+  const url = __productoIaUrlTpl.replace('__ID__', id);
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'X-CSRF-TOKEN': csrfToken(),
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({})
+  })
+  .then(async (r) => {
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.message || 'Error consultando IA');
+    loading.classList.add('hidden');
+    body.classList.remove('hidden');
+    body.textContent = data.content || 'Sin respuesta.';
+  })
+  .catch((err) => {
+    loading.classList.add('hidden');
+    errorBox.classList.remove('hidden');
+    errorBox.textContent = err.message || 'No se pudo consultar la IA.';
+  });
+}
+
+function cerrarModalProductoIA() {
+  document.getElementById('modalProductoIA').classList.add('hidden');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { cerrarModalProductoIA(); cerrarModalLupaIA(); }
+  if (e.key === 'Enter') {
+    const lupaModal = document.getElementById('modalLupaIA');
+    const lupaInput = document.getElementById('lupa_q');
+    if (!lupaModal.classList.contains('hidden') && document.activeElement === lupaInput) {
+      e.preventDefault();
+      buscarConLupaIA();
+    }
+  }
+});
+</script>
+@endpush
+
+
 @endsection

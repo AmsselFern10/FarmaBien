@@ -158,6 +158,115 @@
                         @enderror
                     </div>
 
+
+                    <!-- Datos farmacológicos (opcional) -->
+                    <div class="md:col-span-2">
+                        <div class="flex items-center gap-2 mb-3 mt-2">
+                            <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8m-8 0a2 2 0 00-2 2v2a2 2 0 002 2h8a2 2 0 002-2V6a2 2 0 00-2-2m-8 0V2m8 2V2"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Datos farmacológicos (opcional)</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Mejora la búsqueda y la ficha IA del producto</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Principio activo -->
+                    <div>
+                        <label for="principio_activo" class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                            Principio activo
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 21a9 9 0 100-18 9 9 0 000 18z"></path>
+                                </svg>
+                            </div>
+                            <input type="text"
+                                   name="principio_activo"
+                                   id="principio_activo"
+                                   value="{{ old('principio_activo', $producto->principio_activo) }}"
+                                   class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200 @error('principio_activo') border-red-500 @enderror"
+                                   placeholder="Ej: Paracetamol">
+                        </div>
+                        @error('principio_activo')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Concentración -->
+                    <div>
+                        <label for="concentracion" class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                            Concentración
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v18m0 0l-4-4m4 4l4-4M6 7h12"></path>
+                                </svg>
+                            </div>
+                            <input type="text"
+                                   name="concentracion"
+                                   id="concentracion"
+                                   value="{{ old('concentracion', $producto->concentracion) }}"
+                                   class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200 @error('concentracion') border-red-500 @enderror"
+                                   placeholder="Ej: 500 mg, 250 mg/5 mL">
+                        </div>
+                        @error('concentracion')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Laboratorio -->
+                    <div>
+                        <label for="laboratorio" class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                            Laboratorio
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M5 21V7a2 2 0 012-2h10a2 2 0 012 2v14M9 21V9h6v12"></path>
+                                </svg>
+                            </div>
+                            <input type="text"
+                                   name="laboratorio"
+                                   id="laboratorio"
+                                   value="{{ old('laboratorio', $producto->laboratorio) }}"
+                                   class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200 @error('laboratorio') border-red-500 @enderror"
+                                   placeholder="Ej: Bayer, MK, Genfar">
+                        </div>
+                        @error('laboratorio')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Vía de administración -->
+                    <div>
+                        <label for="via_administracion" class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                            Vía de administración
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8L13 15M3 17l6-6m0 0V5m0 6H3"></path>
+                                </svg>
+                            </div>
+                            <input type="text"
+                                   name="via_administracion"
+                                   id="via_administracion"
+                                   value="{{ old('via_administracion', $producto->via_administracion) }}"
+                                   class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200 @error('via_administracion') border-red-500 @enderror"
+                                   placeholder="Ej: Oral, Tópica, IM, IV">
+                        </div>
+                        @error('via_administracion')
+                            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+
                     <!-- Ubicación -->
                     <div>
                         <label for="ubicacion" class="block text-sm font-medium text-slate-900 dark:text-white mb-2">

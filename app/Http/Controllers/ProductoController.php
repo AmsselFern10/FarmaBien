@@ -35,7 +35,11 @@ class ProductoController extends Controller
     if ($request->filled('buscar')) {
         $query->where(function ($q) use ($request) {
             $q->where('nombre', 'like', "%{$request->buscar}%")
-              ->orWhere('codigo_barra', 'like', "%{$request->buscar}%");
+              ->orWhere('codigo_barra', 'like', "%{$request->buscar}%")
+              ->orWhere('principio_activo', 'like', "%{$request->buscar}%")
+              ->orWhere('laboratorio', 'like', "%{$request->buscar}%")
+              ->orWhere('concentracion', 'like', "%{$request->buscar}%")
+              ->orWhere('via_administracion', 'like', "%{$request->buscar}%");
         });
     }
 
