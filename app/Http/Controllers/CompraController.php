@@ -53,9 +53,8 @@ class CompraController extends Controller
         }
 
         $compras = $query->orderBy('fecha', 'desc')->paginate(15)->withQueryString();
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
 
-        return view('compras.index', compact('compras', 'proveedores'));
+        return view('compras.index', compact('compras'));
     }
 
     public function create()
