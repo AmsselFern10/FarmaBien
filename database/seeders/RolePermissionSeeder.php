@@ -32,6 +32,12 @@ class RolePermissionSeeder extends Seeder
             'ver alertas vencimientos',
             'ver alertas stock bajo',
 
+            // Laboratorios
+            'ver laboratorios',
+            'crear laboratorios',
+            'editar laboratorios',
+            'desactivar laboratorios',
+
             // Categorías
             'ver categorias',
             'crear categorias',
@@ -43,6 +49,12 @@ class RolePermissionSeeder extends Seeder
             'crear productos',
             'editar productos',
             'desactivar productos',
+
+            // Presentaciones de Productos
+            'ver presentaciones',
+            'crear presentaciones',
+            'editar presentaciones',
+            'desactivar presentaciones',
 
             // Lotes
             'ver lotes',
@@ -70,23 +82,26 @@ class RolePermissionSeeder extends Seeder
 
             // Ventas
             'ver ventas',
-            'ver ventas propias', // Solo sus propias ventas
+            'ver ventas propias',
             'realizar ventas',
             'anular ventas',
             'ver detalle ventas',
 
-            // Movimientos de inventario
+            // Kardex y Movimientos de Inventario
             'ver movimientos inventario',
             'ajustar inventario',
+            'ver kardex',
+            'exportar kardex',
 
-            // Recetas
+            // Recetas Médicas
             'ver recetas',
             'registrar recetas',
-
-            // Venta - Receta (tabla pivot)
+            'validar recetas',
+            'dispensar recetas',
+            'anular recetas',
             'ver ventas recetas',
 
-            // Usuarios
+            // Usuarios y Seguridad
             'ver usuarios',
             'crear usuarios',
             'editar usuarios',
@@ -100,107 +115,99 @@ class RolePermissionSeeder extends Seeder
         }
 
         // =====================================================================
-        // CREAR ROLES
+        // CREAR ROLES PROFESIONALES FARMACÉUTICOS
         // =====================================================================
         
         $admin = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
+        $farmaceutico = Role::firstOrCreate(['name' => 'Farmaceutico', 'guard_name' => 'web']);
         $cajero = Role::firstOrCreate(['name' => 'Cajero', 'guard_name' => 'web']);
         $inventario = Role::firstOrCreate(['name' => 'Inventario', 'guard_name' => 'web']);
 
         // =====================================================================
-        // ASIGNAR PERMISOS A ROLES
+        // ASIGNACIÓN DE PERMISOS A ROLES
         // =====================================================================
 
-        // ---------------------------------------------------------------------
-        // ADMIN → TODOS LOS PERMISOS
-        // ---------------------------------------------------------------------
+        // 1. ADMIN → TODOS LOS PERMISOS
         $admin->syncPermissions(Permission::all());
 
-        // ---------------------------------------------------------------------
-        // CAJERO → Ventas, Clientes, Recetas
-        // ---------------------------------------------------------------------
-        $cajero->syncPermissions([
-            // Dashboard básico
+        // 2. FARMACÉUTICO / REGENTE → Control Técnico, Recetas Retenidas, Lotes, Catálogos, Alertas
+        $farmaceutico->syncPermissions([
             'ver dashboard',
+            'ver alertas vencimientos',
+            'ver alertas stock bajo',
+            'ver reportes ventas',
+            'ver reportes inventario',
+            'ver reportes compras',
+            'exportar reportes',
+
+            // Catálogos
+            'ver laboratorios', 'crear laboratorios', 'editar laboratorios',
+            'ver categorias', 'crear categorias', 'editar categorias',
+            'ver productos', 'crear productos', 'editar productos',
+            'ver presentaciones', 'crear presentaciones', 'editar presentaciones',
+            'ver proveedores',
+            'ver clientes', 'crear clientes', 'editar clientes',
+
+            // Lotes e Inventario
+            'ver lotes', 'crear lotes', 'editar lotes', 'desactivar lotes',
+            'ver movimientos inventario', 'ajustar inventario', 'ver kardex', 'exportar kardex',
+
+            // Recetas (Control Total de Prescripciones)
+            'ver recetas', 'registrar recetas', 'validar recetas', 'dispensar recetas', 'anular recetas', 'ver ventas recetas',
+
+            // Compras y Ventas (Auditoría)
+            'ver compras', 'ver detalle compras',
+            'ver ventas', 'ver detalle ventas',
+        ]);
+
+        // 3. CAJERO / DISPENSADOR → Ventas, Dispensación de Recetas, Clientes
+        $cajero->syncPermissions([
+            'ver dashboard',
+            'ver alertas vencimientos',
             
-            // Productos (solo lectura para buscar en ventas)
+            // Catálogos (Lectura para consulta en mostrador)
             'ver productos',
-            
-            // Lotes (CRÍTICO: necesita ver lotes para vender)
+            'ver presentaciones',
             'ver lotes',
-            
-            // Clientes
-            'ver clientes',
-            'crear clientes',
-            'editar clientes',
+            'ver clientes', 'crear clientes', 'editar clientes',
 
             // Ventas
             'realizar ventas',
-            'ver ventas propias', // Solo ve sus propias ventas
+            'ver ventas propias',
             'ver detalle ventas',
 
             // Recetas
             'ver recetas',
             'registrar recetas',
+            'dispensar recetas',
             'ver ventas recetas',
-            
-            // Alertas
-            'ver alertas vencimientos', // Para no vender productos vencidos
         ]);
 
-        // ---------------------------------------------------------------------
-        // INVENTARIO → Compras, Productos, Lotes, Proveedores
-        // ---------------------------------------------------------------------
+        // 4. INVENTARIO / BODEGA → Compras, Lotes, Kardex, Ajustes, Proveedores
         $inventario->syncPermissions([
-            // Dashboard
             'ver dashboard',
-            'ver reportes inventario',
-            'ver reportes compras',
-            
-            // Alertas
             'ver alertas vencimientos',
             'ver alertas stock bajo',
-            
-            // Categorías
-            'ver categorias',
-            'crear categorias',
-            'editar categorias',
-            'desactivar categorias',
+            'ver reportes inventario',
+            'ver reportes compras',
 
-            // Productos
-            'ver productos',
-            'crear productos',
-            'editar productos',
-            'desactivar productos',
+            // Catálogos
+            'ver laboratorios', 'crear laboratorios', 'editar laboratorios',
+            'ver categorias', 'crear categorias', 'editar categorias',
+            'ver productos', 'crear productos', 'editar productos',
+            'ver presentaciones', 'crear presentaciones', 'editar presentaciones',
+            'ver proveedores', 'crear proveedores', 'editar proveedores',
 
-            // Lotes
-            'ver lotes',
-            'crear lotes',
-            'editar lotes',
-            'desactivar lotes',
+            // Lotes y Compras
+            'ver lotes', 'crear lotes', 'editar lotes', 'desactivar lotes',
+            'ver compras', 'registrar compras', 'ver detalle compras',
 
-            // Proveedores
-            'ver proveedores',
-            'crear proveedores',
-            'editar proveedores',
-            'desactivar proveedores',
-
-            // Compras
-            'ver compras',
-            'registrar compras',
-            'ver detalle compras',
-
-            // Movimientos de Inventario
-            'ver movimientos inventario',
-            'ajustar inventario',
-            
-            // Ventas (solo lectura para análisis)
-            'ver ventas',
-            'ver detalle ventas',
+            // Kardex
+            'ver movimientos inventario', 'ajustar inventario', 'ver kardex', 'exportar kardex',
         ]);
 
-        echo "✅ Roles y permisos creados correctamente\n";
-        echo "📊 Total permisos: " . Permission::count() . "\n";
-        echo "👥 Roles creados: Admin, Cajero, Inventario\n";
+        echo " Roles y permisos sincronizados exitosamente.\n";
+        echo " Total de permisos: " . Permission::count() . "\n";
+        echo " Roles configurados: Admin, Farmaceutico, Cajero, Inventario\n";
     }
 }

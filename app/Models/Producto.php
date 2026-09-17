@@ -11,20 +11,32 @@ class Producto extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'productos';
+
     protected $fillable = [
         'codigo_barra',
         'nombre',
+        'principio_activo',
+        'concentracion',
+        'forma_farmaceutica',
         'descripcion',
         'imagen',
         'categoria_id',
+        'laboratorio_id',
+        'registro_sanitario',
+        'tipo_control',
+        'precio_compra',
         'precio_venta',
         'stock_minimo',
+        'ubicacion',
         'requiere_receta',
         'activo',
     ];
 
     protected $casts = [
+        'precio_compra' => 'decimal:2',
         'precio_venta' => 'decimal:2',
+        'stock_minimo' => 'integer',
         'requiere_receta' => 'boolean',
         'activo' => 'boolean',
     ];
@@ -33,6 +45,21 @@ class Producto extends Model
     public function categoria(): BelongsTo
     {
         return $this->belongsTo(Categoria::class);
+    }
+
+    public function laboratorio(): BelongsTo
+    {
+        return $this->belongsTo(Laboratorio::class);
+    }
+
+    public function presentaciones(): HasMany
+    {
+        return $this->hasMany(PresentacionProducto::class)->orderBy('orden', 'asc');
+    }
+
+    public function presentacionesActivas(): HasMany
+    {
+        return $this->hasMany(PresentacionProducto::class)->where('activo', true)->orderBy('orden', 'asc');
     }
 
     public function lotes(): HasMany
@@ -45,6 +72,21 @@ class Producto extends Model
         return $this->hasMany(MovimientoInventario::class);
     }
 
+    public function detallesCompra(): HasMany
+    {
+        return $this->hasMany(DetalleCompra::class);
+    }
+
+    public function detallesVenta(): HasMany
+    {
+        return $this->hasMany(DetalleVenta::class);
+    }
+
+    public function recetaDetalles(): HasMany
+    {
+        return $this->hasMany(RecetaDetalle::class);
+    }
+
     // Scopes
     public function scopeActivos($query)
     {
@@ -53,31 +95,60 @@ class Producto extends Model
 
     public function scopeConReceta($query)
     {
-        return $query->where('requiere_receta', true);
+        return $query->where('requiere_receta', true)
+            ->orWhereIn('tipo_control', ['receta_medica', 'receta_retenida']);
     }
 
     public function scopeBajoStock($query)
     {
+        $today = now()->toDateString();
         return $query->whereRaw('(
-            SELECT COALESCE(SUM(stock_inicial), 0) 
+            SELECT COALESCE(SUM(stock_actual), 0) 
             FROM lotes 
             WHERE lotes.producto_id = productos.id 
             AND lotes.activo = 1
-        ) < stock_minimo');
+            AND lotes.fecha_vencimiento > ?
+        ) < stock_minimo', [$today]);
     }
 
-    // Accessor: Stock total actual
+    // Accessors
     public function getStockTotalAttribute(): int
     {
-        return $this->lotes()
+        return (int) $this->lotes()
             ->where('activo', true)
-            ->get()
             ->sum('stock_actual');
     }
 
-    // Método: Verificar si tiene stock disponible
+    public function getStockDisponibleAttribute(): int
+    {
+        return (int) $this->lotes()
+            ->disponibles()
+            ->sum('stock_actual');
+    }
+
     public function tieneStock(int $cantidad = 1): bool
     {
-        return $this->stock_total >= $cantidad;
+        return $this->stock_disponible >= $cantidad;
+    }
+
+    public function getMargenGananciaAttribute(): ?float
+    {
+        if (!$this->precio_compra || $this->precio_compra <= 0) {
+            return null;
+        }
+
+        return round((($this->precio_venta - $this->precio_compra) / $this->precio_compra) * 100, 2);
+    }
+
+    public function getNombreCompletoAttribute(): string
+    {
+        $partes = [$this->nombre];
+        if ($this->concentracion) {
+            $partes[] = $this->concentracion;
+        }
+        if ($this->forma_farmaceutica) {
+            $partes[] = "({$this->forma_farmaceutica})";
+        }
+        return implode(' ', $partes);
     }
 }

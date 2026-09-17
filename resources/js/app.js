@@ -1,4 +1,6 @@
+
 import './bootstrap';
+import './farma-core';
 
 import Alpine from 'alpinejs';
 

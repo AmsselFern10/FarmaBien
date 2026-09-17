@@ -13,17 +13,23 @@ class DetalleCompra extends Model
         'compra_id',
         'producto_id',
         'lote_id',
-        'cantidad',
+        'presentacion_id',
+        'tipo_presentacion',
+        'unidades_por_presentacion',
+        'cantidad_presentaciones',
+        'cantidad_unidades_base',
         'precio_unitario',
         'subtotal',
     ];
 
     protected $casts = [
+        'unidades_por_presentacion' => 'integer',
+        'cantidad_presentaciones' => 'integer',
+        'cantidad_unidades_base' => 'integer',
         'precio_unitario' => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];
 
-    // Relaciones
     public function compra(): BelongsTo
     {
         return $this->belongsTo(Compra::class);
@@ -37,5 +43,10 @@ class DetalleCompra extends Model
     public function lote(): BelongsTo
     {
         return $this->belongsTo(Lote::class);
+    }
+
+    public function presentacion(): BelongsTo
+    {
+        return $this->belongsTo(PresentacionProducto::class, 'presentacion_id');
     }
 }

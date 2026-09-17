@@ -14,7 +14,12 @@ class MovimientoInventario extends Model
         'lote_id',
         'user_id',
         'tipo',
+        'subtipo',
         'cantidad',
+        'stock_anterior',
+        'stock_posterior',
+        'costo_unitario',
+        'costo_total',
         'origen',
         'origen_id',
         'motivo',
@@ -22,6 +27,11 @@ class MovimientoInventario extends Model
     ];
 
     protected $casts = [
+        'cantidad' => 'integer',
+        'stock_anterior' => 'integer',
+        'stock_posterior' => 'integer',
+        'costo_unitario' => 'decimal:2',
+        'costo_total' => 'decimal:2',
         'fecha_movimiento' => 'datetime',
     ];
 

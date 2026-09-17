@@ -11,21 +11,29 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('lotes', function (Blueprint $table) {
+        Schema::create('lotes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('producto_id')->constrained('productos');
-            $table->foreignId('compra_id')->constrained('compras'); // ✅ NUEVO
-            $table->foreignId('proveedor_id')->constrained('proveedores');
+            $table->foreignId('producto_id')->constrained('productos')->restrictOnDelete();
+            $table->foreignId('compra_id')->nullable()->constrained('compras')->nullOnDelete();
+            $table->foreignId('proveedor_id')->nullable()->constrained('proveedores')->nullOnDelete();
+            
             $table->string('numero_lote', 50);
             $table->date('fecha_vencimiento');
-            $table->integer('stock_inicial'); // ✅ CAMBIADO de 'stock'
+            
+            // Stock en UNIDADES BASE mínimas
+            $table->integer('stock_inicial');
+            $table->integer('stock_actual'); // Columna física persistida e indexada para alto rendimiento
+            
+            // Costo de compra por unidad base
             $table->decimal('precio_compra', 10, 2);
             $table->boolean('activo')->default(true);
+            
             $table->timestamps();
             
-            // Un número de lote debe ser único por producto
-            $table->unique(['numero_lote', 'producto_id']);
+            // Índices para optimizar búsquedas FIFO y alertas de vencimiento
             $table->index(['producto_id', 'activo', 'fecha_vencimiento']);
+            $table->index(['producto_id', 'stock_actual']);
+            $table->index('numero_lote');
         });
     }
 

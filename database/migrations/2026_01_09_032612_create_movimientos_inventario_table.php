@@ -11,26 +11,48 @@ return new class extends Migration
      */
     public function up(): void
     {
-           Schema::create('movimientos_inventario', function (Blueprint $table) {
+        Schema::create('movimientos_inventario', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('producto_id')->constrained('productos');
-            $table->foreignId('lote_id')->constrained('lotes');
-            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('producto_id')->constrained('productos')->restrictOnDelete();
+            $table->foreignId('lote_id')->constrained('lotes')->restrictOnDelete();
+            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
             
             $table->enum('tipo', ['entrada', 'salida', 'ajuste']);
-            $table->integer('cantidad'); // Positivo para entrada, negativo para salida
+            $table->enum('subtipo', [
+                'compra',
+                'venta',
+                'anulacion_venta',
+                'anulacion_compra',
+                'ajuste_manual',
+                'merma_vencimiento',
+                'merma_danio',
+                'vencimiento_automatico',
+                'modificacion_venta',
+                'modificacion_compra'
+            ])->default('ajuste_manual');
+            
+            $table->integer('cantidad'); // Positivo para entrada, negativo para salida (en unidades base)
+            
+            // Saldos para Kardex de auditoría
+            $table->integer('stock_anterior');
+            $table->integer('stock_posterior');
+            
+            // Costos para Kardex valorizado
+            $table->decimal('costo_unitario', 10, 2)->default(0);
+            $table->decimal('costo_total', 10, 2)->default(0);
             
             // Referencia polimórfica al origen
-            $table->string('origen')->nullable(); // 'venta', 'compra', 'ajuste'
+            $table->string('origen', 50)->nullable(); // 'venta', 'compra', 'ajuste_manual', etc.
             $table->unsignedBigInteger('origen_id')->nullable();
             
-            $table->string('motivo', 200)->nullable();
+            $table->string('motivo', 255)->nullable();
             $table->dateTime('fecha_movimiento');
             
             $table->timestamps();
             
             $table->index(['producto_id', 'fecha_movimiento']);
-            $table->index(['lote_id', 'tipo']);
+            $table->index(['lote_id', 'fecha_movimiento']);
+            $table->index(['tipo', 'subtipo']);
             $table->index(['origen', 'origen_id']);
         });
     }

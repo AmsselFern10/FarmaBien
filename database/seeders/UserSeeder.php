@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
@@ -14,66 +13,50 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // =====================================================================
-        // CREAR USUARIO ADMINISTRADOR
-        // =====================================================================
+        // 1. Administrador General
         $admin = User::firstOrCreate(
             ['email' => 'admin@farmabien.com'],
             [
-                'name' => 'Administrador',
-                'password' => Hash::make('admin123'),
-                'email_verified_at' => now(),
+                'name' => 'Administrador FarmaBien',
+                'password' => Hash::make('password'),
+                'active' => true,
             ]
         );
-        $admin->assignRole('Admin');
+        $admin->syncRoles(['Admin']);
 
-        // =====================================================================
-        // CREAR USUARIO CAJERO
-        // =====================================================================
+        // 2. Farmacéutico / Director Técnico
+        $farmaceutico = User::firstOrCreate(
+            ['email' => 'farmaceutico@farmabien.com'],
+            [
+                'name' => 'Dr. Farmacéutico Regente',
+                'password' => Hash::make('password'),
+                'active' => true,
+            ]
+        );
+        $farmaceutico->syncRoles(['Farmaceutico']);
+
+        // 3. Cajero / Vendedor
         $cajero = User::firstOrCreate(
             ['email' => 'cajero@farmabien.com'],
             [
-                'name' => 'Cajero',
-                'password' => Hash::make('cajero123'),
-                'email_verified_at' => now(),
+                'name' => 'Cajero Mostrador 1',
+                'password' => Hash::make('password'),
+                'active' => true,
             ]
         );
-        $cajero->assignRole('Cajero');
+        $cajero->syncRoles(['Cajero']);
 
-        // =====================================================================
-        // CREAR USUARIO INVENTARIO
-        // =====================================================================
+        // 4. Encargado de Inventario / Bodega
         $inventario = User::firstOrCreate(
             ['email' => 'inventario@farmabien.com'],
             [
-                'name' => 'Inventario',
-                'password' => Hash::make('inventario123'),
-                'email_verified_at' => now(),
+                'name' => 'Encargado de Inventario',
+                'password' => Hash::make('password'),
+                'active' => true,
             ]
         );
-        $inventario->assignRole('Inventario');
+        $inventario->syncRoles(['Inventario']);
 
-        // =====================================================================
-        // MENSAJE DE CONFIRMACIÓN
-        // =====================================================================
-        echo "\n";
-        echo "✅ Usuarios creados correctamente:\n";
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-        echo "👤 ADMIN\n";
-        echo "   Email: admin@farmabien.com\n";
-        echo "   Password: admin123\n";
-        echo "   Rol: Admin\n";
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-        echo "👤 CAJERO\n";
-        echo "   Email: cajero@farmabien.com\n";
-        echo "   Password: cajero123\n";
-        echo "   Rol: Cajero\n";
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-        echo "👤 INVENTARIO\n";
-        echo "   Email: inventario@farmabien.com\n";
-        echo "   Password: inventario123\n";
-        echo "   Rol: Inventario\n";
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-        echo "\n";
+        echo " Usuarios base creados con sus roles asignados.\n";
     }
 }

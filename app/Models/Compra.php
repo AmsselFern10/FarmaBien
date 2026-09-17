@@ -5,30 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Compra extends Model
 {
+    protected $table = 'compras';
+
     protected $fillable = [
         'proveedor_id',
         'user_id',
-        'anulado_por',
-        'reemplazada_por',        // ✅ NUEVO
-        'compra_original_id',     // ✅ NUEVO
+        'numero_comprobante',
+        'subtotal',
+        'impuesto',
         'total',
         'estado',
         'fecha',
         'fecha_anulacion',
+        'anulado_por',
         'motivo_anulacion',
+        'compra_original_id',
+        'reemplazada_por',
     ];
 
     protected $casts = [
+        'subtotal' => 'decimal:2',
+        'impuesto' => 'decimal:2',
         'total' => 'decimal:2',
         'fecha' => 'datetime',
         'fecha_anulacion' => 'datetime',
     ];
 
-    // Relaciones existentes
+    // Relaciones
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class);
@@ -54,8 +60,6 @@ class Compra extends Model
         return $this->hasMany(Lote::class);
     }
 
-    // ✅ NUEVAS RELACIONES
-    
     public function compraOriginal(): BelongsTo
     {
         return $this->belongsTo(Compra::class, 'compra_original_id');
@@ -98,8 +102,7 @@ class Compra extends Model
             ->whereNull('reemplazada_por');
     }
 
-    // ✅ NUEVOS MÉTODOS
-    
+    // Métodos
     public function puedeAnularse(): bool
     {
         return $this->estado === 'recibida' 
@@ -125,11 +128,9 @@ class Compra extends Model
     public function compraActiva()
     {
         $compra = $this;
-        
         while ($compra->reemplazada_por) {
             $compra = $compra->reemplazadaPor;
         }
-        
         return $compra;
     }
 

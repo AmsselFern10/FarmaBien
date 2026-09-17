@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lote extends Model
 {
+    protected $table = 'lotes';
+
     protected $fillable = [
         'producto_id',
         'compra_id',
@@ -15,12 +17,15 @@ class Lote extends Model
         'numero_lote',
         'fecha_vencimiento',
         'stock_inicial',
+        'stock_actual',
         'precio_compra',
         'activo',
     ];
 
     protected $casts = [
         'fecha_vencimiento' => 'date',
+        'stock_inicial' => 'integer',
+        'stock_actual' => 'integer',
         'precio_compra' => 'decimal:2',
         'activo' => 'boolean',
     ];
@@ -46,10 +51,14 @@ class Lote extends Model
         return $this->hasMany(MovimientoInventario::class);
     }
 
-    // Accessor: Stock actual calculado
-    public function getStockActualAttribute(): int
+    public function detallesVenta(): HasMany
     {
-        return $this->stock_inicial + $this->movimientos()->sum('cantidad');
+        return $this->hasMany(DetalleVenta::class);
+    }
+
+    public function detallesCompra(): HasMany
+    {
+        return $this->hasMany(DetalleCompra::class);
     }
 
     // Scopes
@@ -61,34 +70,31 @@ class Lote extends Model
     public function scopeDisponibles($query)
     {
         return $query->where('activo', true)
-            ->where('fecha_vencimiento', '>', now())
-            ->whereRaw('stock_inicial + (
-                SELECT COALESCE(SUM(cantidad), 0) 
-                FROM movimientos_inventario 
-                WHERE movimientos_inventario.lote_id = lotes.id
-            ) > 0');
+            ->where('fecha_vencimiento', '>', now()->toDateString())
+            ->where('stock_actual', '>', 0);
     }
 
     public function scopeVencidos($query)
     {
-        return $query->where('fecha_vencimiento', '<', now());
+        return $query->where('fecha_vencimiento', '<=', now()->toDateString());
     }
 
     public function scopeProximosVencer($query, int $dias = 30)
     {
-        return $query->where('fecha_vencimiento', '<=', now()->addDays($dias))
-            ->where('fecha_vencimiento', '>', now());
+        return $query->where('fecha_vencimiento', '<=', now()->addDays($dias)->toDateString())
+            ->where('fecha_vencimiento', '>', now()->toDateString())
+            ->where('stock_actual', '>', 0);
     }
 
     // Métodos
     public function estaVencido(): bool
     {
-        return $this->fecha_vencimiento < now();
+        return $this->fecha_vencimiento <= now()->toDateString();
     }
 
     public function proximoAVencer(int $dias = 30): bool
     {
-        return $this->fecha_vencimiento <= now()->addDays($dias) 
+        return $this->fecha_vencimiento <= now()->addDays($dias)->toDateString() 
             && !$this->estaVencido();
     }
 

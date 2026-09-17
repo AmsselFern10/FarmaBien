@@ -6,18 +6,27 @@ use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Models\Lote;
 use App\Models\Producto;
+use App\Models\PresentacionProducto;
 use App\Models\MovimientoInventario;
 use App\Models\Receta;
+use App\Models\RecetaDetalle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
 
 class VentaService
 {
+    protected RecetaService $recetaService;
+
+    public function __construct(RecetaService $recetaService)
+    {
+        $this->recetaService = $recetaService;
+    }
+
     /**
-     * Procesar una venta completa
+     * Procesar una venta en mostrador con soporte para presentaciones fraccionadas, recetas médicas y Kardex auditado
      * 
-     * @param array $data Datos de la venta
+     * @param array $data
      * @return Venta
      * @throws Exception
      */
@@ -25,38 +34,51 @@ class VentaService
     {
         return DB::transaction(function () use ($data) {
             
-            // 1. Validar que todos los productos requieren receta (si aplica)
-            $this->validarRecetasMedicas($data);
-            
-            // 2. Crear la venta (sin total aún)
+            $this->validarDatosVenta($data);
+
+            // 1. Crear cabecera de la venta
             $venta = Venta::create([
                 'cliente_id' => $data['cliente_id'] ?? null,
-                'user_id' => Auth::id(),
+                'user_id' => Auth::id() ?? 1,
+                'tipo_comprobante' => $data['tipo_comprobante'] ?? 'ticket',
+                'serie' => $data['serie'] ?? null,
+                'numero_comprobante' => $data['numero_comprobante'] ?? null,
+                'subtotal' => 0,
+                'descuento' => $data['descuento'] ?? 0,
+                'impuesto' => 0,
                 'total' => 0,
-                'metodo_pago' => $data['metodo_pago'],
+                'metodo_pago' => $data['metodo_pago'] ?? 'efectivo',
                 'estado' => 'completada',
                 'fecha' => now(),
             ]);
 
-            $total = 0;
+            $totalAcumulado = 0;
 
-            // 3. Procesar cada producto
+            // 2. Procesar cada producto del carrito
             foreach ($data['productos'] as $item) {
-                $total += $this->procesarDetalleVenta($venta, $item);
+                $subtotalItem = $this->procesarDetalleVenta($venta, $item);
+                $totalAcumulado += $subtotalItem;
             }
 
-            // 4. Actualizar el total de la venta
-            $venta->update(['total' => $total]);
+            // 3. Aplicar descuento y actualizar total
+            $descuento = (float) ($data['descuento'] ?? 0);
+            $totalFinal = max(0, round($totalAcumulado - $descuento, 2));
 
-            // 5. Asociar recetas si existen
+            $venta->update([
+                'subtotal' => $totalAcumulado,
+                'total' => $totalFinal,
+            ]);
+
+            // 4. Asociar recetas generales a la venta si existen
             if (!empty($data['recetas'])) {
-                $venta->recetas()->attach($data['recetas']);
+                $venta->recetas()->syncWithoutDetaching($data['recetas']);
             }
 
-            // 6. Retornar venta con relaciones cargadas
             return $venta->load([
-                'detalles.producto',
+                'detalles.producto.laboratorio',
                 'detalles.lote',
+                'detalles.presentacion',
+                'detalles.recetaDetalle.receta',
                 'cliente',
                 'recetas'
             ]);
@@ -64,45 +86,118 @@ class VentaService
     }
 
     /**
-     * Procesar un detalle de venta individual
+     * Procesar un ítem individual de la venta con bloqueo pesimista y validación médica
      * 
      * @param Venta $venta
      * @param array $item
-     * @return float Subtotal del detalle
+     * @return float
      * @throws Exception
      */
     protected function procesarDetalleVenta(Venta $venta, array $item): float
     {
-        // 1. Obtener el lote
-        $lote = Lote::with('producto')->findOrFail($item['lote_id']);
-        
-        // 2. Validaciones
-        $this->validarLoteParaVenta($lote, $item['cantidad']);
+        // 1. Obtener y bloquear el lote para prevenir concurrencia
+        $lote = Lote::with('producto')
+            ->where('id', $item['lote_id'])
+            ->lockForUpdate()
+            ->firstOrFail();
 
-        // 3. Calcular subtotal
-        $precioUnitario = $item['precio_unitario'] ?? $lote->producto->precio_venta;
-        $subtotal = $item['cantidad'] * $precioUnitario;
+        $producto = $lote->producto;
 
-        // 4. Crear detalle de venta
+        // 2. Validaciones sanitarias y de lote
+        if (!$lote->activo) {
+            throw new Exception("El lote '{$lote->numero_lote}' del producto '{$producto->nombre}' está inactivo.");
+        }
+
+        if ($lote->estaVencido()) {
+            throw new Exception("No se puede vender: el lote '{$lote->numero_lote}' de '{$producto->nombre}' venció el {$lote->fecha_vencimiento->format('d/m/Y')}.");
+        }
+
+        // 3. Determinar presentación y factor de conversión
+        $presentacionId = $item['presentacion_id'] ?? null;
+        $cantidadPresentaciones = (int) $item['cantidad'];
+
+        if ($cantidadPresentaciones <= 0) {
+            throw new Exception("La cantidad solicitada para {$producto->nombre} debe ser mayor a 0.");
+        }
+
+        if ($presentacionId) {
+            $presentacion = PresentacionProducto::where('producto_id', $producto->id)
+                ->where('id', $presentacionId)
+                ->firstOrFail();
+            $unidadesPorPresentacion = $presentacion->unidades_por_presentacion;
+            $precioUnitario = (float) ($item['precio_unitario'] ?? $presentacion->precio_venta ?? $producto->precio_venta);
+        } else {
+            $unidadesPorPresentacion = 1;
+            $precioUnitario = (float) ($item['precio_unitario'] ?? $producto->precio_venta);
+        }
+
+        // Unidades base totales requeridas para descontar del lote
+        $cantidadUnidadesBase = $cantidadPresentaciones * $unidadesPorPresentacion;
+
+        // 4. Validar existencia de stock suficiente en el lote
+        if ($lote->stock_actual < $cantidadUnidadesBase) {
+            throw new Exception(
+                "Stock insuficiente para '{$producto->nombre}'. " .
+                "Disponible en lote {$lote->numero_lote}: {$lote->stock_actual} unidades base. Requerido: {$cantidadUnidadesBase}."
+            );
+        }
+
+        // 5. Validar Receta Médica si el fármaco lo requiere
+        $recetaDetalleId = $item['receta_detalle_id'] ?? null;
+        if (($producto->requiere_receta || in_array($producto->tipo_control, ['receta_medica', 'receta_retenida'])) && !$recetaDetalleId) {
+            // Si no viene vinculado a un detalle de receta específico, verificar si la venta tiene receta general
+            // O emitir advertencia/validación según el tipo_control
+            if ($producto->tipo_control === 'receta_retenida' && !$recetaDetalleId) {
+                throw new Exception("El medicamento '{$producto->nombre}' es de RECETA RETENIDA y requiere asociar obligatoriamente la receta médica correspondiente.");
+            }
+        }
+
+        // Si se vinculó a una prescripción médica, procesar la dispensación
+        if ($recetaDetalleId) {
+            $this->recetaService->dispensarMedicamento($recetaDetalleId, $cantidadUnidadesBase);
+        }
+
+        // 6. Descontar stock del lote
+        $stockAnterior = $lote->stock_actual;
+        $stockPosterior = $stockAnterior - $cantidadUnidadesBase;
+        $lote->stock_actual = $stockPosterior;
+        $lote->save();
+
+        // 7. Calcular subtotal de la línea
+        $subtotal = round($cantidadPresentaciones * $precioUnitario, 2);
+
+        // 8. Crear Detalle de Venta
         DetalleVenta::create([
             'venta_id' => $venta->id,
-            'producto_id' => $lote->producto_id,
+            'producto_id' => $producto->id,
             'lote_id' => $lote->id,
-            'cantidad' => $item['cantidad'],
+            'presentacion_id' => $presentacionId,
+            'receta_detalle_id' => $recetaDetalleId,
+            'cantidad' => $cantidadPresentaciones,
+            'unidades_por_presentacion' => $unidadesPorPresentacion,
+            'cantidad_unidades_base' => $cantidadUnidadesBase,
             'precio_unitario' => $precioUnitario,
             'subtotal' => $subtotal,
         ]);
 
-        // 5. Registrar movimiento de inventario (SALIDA)
+        // 9. Registrar en Kardex Auditoría (SALIDA por VENTA)
+        $costoUnitarioBase = (float) $lote->precio_compra;
+        $costoTotalMovimiento = round($cantidadUnidadesBase * $costoUnitarioBase, 2);
+
         MovimientoInventario::create([
-            'producto_id' => $lote->producto_id,
+            'producto_id' => $producto->id,
             'lote_id' => $lote->id,
-            'user_id' => Auth::id(),
+            'user_id' => Auth::id() ?? 1,
             'tipo' => 'salida',
-            'cantidad' => -$item['cantidad'], // Negativo para salida
+            'subtipo' => 'venta',
+            'cantidad' => -$cantidadUnidadesBase,
+            'stock_anterior' => $stockAnterior,
+            'stock_posterior' => $stockPosterior,
+            'costo_unitario' => $costoUnitarioBase,
+            'costo_total' => $costoTotalMovimiento,
             'origen' => 'venta',
             'origen_id' => $venta->id,
-            'motivo' => "Venta #{$venta->id}",
+            'motivo' => "Venta #{$venta->id} - {$cantidadPresentaciones} x " . ($presentacionId ? $presentacion->nombre : 'Unidad Base') . " (Lote: {$lote->numero_lote})",
             'fecha_movimiento' => now(),
         ]);
 
@@ -110,75 +205,29 @@ class VentaService
     }
 
     /**
-     * Validar que el lote esté disponible para venta
-     * 
-     * @param Lote $lote
-     * @param int $cantidad
-     * @throws Exception
-     */
-    protected function validarLoteParaVenta(Lote $lote, int $cantidad): void
-    {
-        // 1. Verificar que el lote esté activo
-        if (!$lote->activo) {
-            throw new Exception(
-                "El lote {$lote->numero_lote} del producto {$lote->producto->nombre} está inactivo."
-            );
-        }
-
-        // 2. Verificar que no esté vencido
-        if ($lote->estaVencido()) {
-            throw new Exception(
-                "El lote {$lote->numero_lote} del producto {$lote->producto->nombre} está vencido (Vencimiento: {$lote->fecha_vencimiento->format('d/m/Y')})."
-            );
-        }
-
-        // 3. Verificar stock disponible
-        if (!$lote->tieneStock($cantidad)) {
-            throw new Exception(
-                "Stock insuficiente para {$lote->producto->nombre}. " .
-                "Disponible en lote {$lote->numero_lote}: {$lote->stock_actual}, Solicitado: {$cantidad}"
-            );
-        }
-    }
-
-    /**
-     * Validar que los productos que requieren receta tengan una asociada
+     * Validar datos generales de la venta
      * 
      * @param array $data
      * @throws Exception
      */
-    protected function validarRecetasMedicas(array $data): void
+    protected function validarDatosVenta(array $data): void
     {
-        // Obtener IDs de productos en la venta
-        $productosIds = collect($data['productos'])->pluck('producto_id')->unique();
-        
-        // Verificar cuáles requieren receta
-        $productosConReceta = Producto::whereIn('id', $productosIds)
-            ->where('requiere_receta', true)
-            ->get();
+        if (empty($data['productos']) || !is_array($data['productos'])) {
+            throw new Exception('Debe incluir al menos un producto en la venta.');
+        }
 
-        // Si hay productos que requieren receta
-        if ($productosConReceta->isNotEmpty()) {
-            // Verificar que se haya proporcionado al menos una receta
-            if (empty($data['recetas'])) {
-                $nombres = $productosConReceta->pluck('nombre')->join(', ');
-                throw new Exception(
-                    "Los siguientes productos requieren receta médica: {$nombres}"
-                );
+        foreach ($data['productos'] as $index => $item) {
+            if (empty($item['producto_id']) || empty($item['lote_id'])) {
+                throw new Exception("El ítem #{$index} no cuenta con producto o lote asignado.");
             }
-
-            // Validar que las recetas existan
-            $recetasIds = $data['recetas'];
-            $recetasValidas = Receta::whereIn('id', $recetasIds)->count();
-            
-            if ($recetasValidas !== count($recetasIds)) {
-                throw new Exception("Una o más recetas médicas no son válidas.");
+            if (($item['cantidad'] ?? 0) <= 0) {
+                throw new Exception("La cantidad en el ítem #{$index} debe ser mayor a 0.");
             }
         }
     }
 
     /**
-     * Anular una venta
+     * Anular una venta con reversión exacta de inventario y recetas
      * 
      * @param int $ventaId
      * @param string $motivo
@@ -189,33 +238,58 @@ class VentaService
     {
         return DB::transaction(function () use ($ventaId, $motivo) {
             
-            // 1. Obtener la venta
-            $venta = Venta::with('detalles')->findOrFail($ventaId);
+            $venta = Venta::with('detalles')
+                ->where('id', $ventaId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            // 2. Validar que pueda anularse
             if (!$venta->puedeAnularse()) {
-                throw new Exception("La venta #{$ventaId} no puede ser anulada porque ya está anulada.");
+                throw new Exception("La venta #{$ventaId} no puede ser anulada porque ya está anulada o fue modificada.");
             }
 
-            // 3. Revertir movimientos de inventario (crear movimientos inversos)
+            // Revertir cada detalle de la venta
             foreach ($venta->detalles as $detalle) {
+                $lote = Lote::where('id', $detalle->lote_id)->lockForUpdate()->firstOrFail();
+                
+                $stockAnterior = $lote->stock_actual;
+                $stockPosterior = $stockAnterior + $detalle->cantidad_unidades_base;
+                
+                $lote->stock_actual = $stockPosterior;
+                $lote->save();
+
+                // Revertir Kardex
+                $costoUnitarioBase = (float) $lote->precio_compra;
+                $costoTotal = round($detalle->cantidad_unidades_base * $costoUnitarioBase, 2);
+
                 MovimientoInventario::create([
                     'producto_id' => $detalle->producto_id,
-                    'lote_id' => $detalle->lote_id,
-                    'user_id' => Auth::id(),
+                    'lote_id' => $lote->id,
+                    'user_id' => Auth::id() ?? 1,
                     'tipo' => 'entrada',
-                    'cantidad' => $detalle->cantidad, // Positivo para entrada (revertir salida)
+                    'subtipo' => 'anulacion_venta',
+                    'cantidad' => $detalle->cantidad_unidades_base,
+                    'stock_anterior' => $stockAnterior,
+                    'stock_posterior' => $stockPosterior,
+                    'costo_unitario' => $costoUnitarioBase,
+                    'costo_total' => $costoTotal,
                     'origen' => 'anulacion_venta',
                     'origen_id' => $venta->id,
                     'motivo' => "Anulación de venta #{$venta->id}: {$motivo}",
                     'fecha_movimiento' => now(),
                 ]);
+
+                // Revertir dispensación de receta si aplica
+                if ($detalle->receta_detalle_id) {
+                    $this->recetaService->revertirDispensacion(
+                        $detalle->receta_detalle_id,
+                        $detalle->cantidad_unidades_base
+                    );
+                }
             }
 
-            // 4. Actualizar estado de la venta
             $venta->update([
                 'estado' => 'anulada',
-                'anulado_por' => Auth::id(),
+                'anulado_por' => Auth::id() ?? 1,
                 'fecha_anulacion' => now(),
                 'motivo_anulacion' => $motivo,
             ]);
@@ -225,177 +299,31 @@ class VentaService
     }
 
     /**
-     * Obtener ventas del día actual
+     * Búsqueda optimizada de productos para el mostrador de ventas (FIFO de lotes)
      * 
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function ventasDelDia()
-    {
-        return Venta::with(['cliente', 'usuario', 'detalles.producto'])
-            ->whereDate('fecha', today())
-            ->completadas()
-            ->orderBy('fecha', 'desc')
-            ->get();
-    }
-
-    /**
-     * Obtener total de ventas del día
-     * 
-     * @return float
-     */
-    public function totalVentasDelDia(): float
-    {
-        return Venta::whereDate('fecha', today())
-            ->completadas()
-            ->sum('total');
-    }
-
-    /**
-     * Obtener ventas de un usuario específico
-     * 
-     * @param int $userId
-     * @param string|null $fechaInicio
-     * @param string|null $fechaFin
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function ventasDelUsuario(int $userId, ?string $fechaInicio = null, ?string $fechaFin = null)
-    {
-        $query = Venta::with(['cliente', 'detalles.producto'])
-            ->where('user_id', $userId);
-
-        if ($fechaInicio) {
-            $query->whereDate('fecha', '>=', $fechaInicio);
-        }
-
-        if ($fechaFin) {
-            $query->whereDate('fecha', '<=', $fechaFin);
-        }
-
-        return $query->orderBy('fecha', 'desc')->get();
-    }
-
-    /**
-     * Buscar productos disponibles para venta
-     * 
-     * @param string $termino Término de búsqueda (nombre o código)
+     * @param string $termino
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function buscarProductosParaVenta(string $termino)
     {
-        return Producto::with(['categoria', 'lotes' => function ($query) {
-                $query->disponibles()
-                    ->orderBy('fecha_vencimiento', 'asc'); // FIFO: primero los que vencen antes
-            }])
+        return Producto::with([
+                'categoria',
+                'laboratorio',
+                'presentacionesActivas',
+                'lotes' => function ($query) {
+                    $query->disponibles()->orderBy('fecha_vencimiento', 'asc'); // FIFO
+                }
+            ])
             ->activos()
             ->where(function ($query) use ($termino) {
                 $query->where('nombre', 'like', "%{$termino}%")
+                    ->orWhere('principio_activo', 'like', "%{$termino}%")
                     ->orWhere('codigo_barra', 'like', "%{$termino}%");
             })
             ->get()
             ->filter(function ($producto) {
-                // Solo mostrar productos con lotes disponibles
                 return $producto->lotes->isNotEmpty();
-            });
-    }
-
-    /**
-     * Modificar una venta existente
-     * 
-     * Este método:
-     * 1. Anula la venta original
-     * 2. Crea una nueva venta con los datos corregidos
-     * 3. Mantiene la trazabilidad entre ambas
-     * 
-     * @param int $ventaId ID de la venta a modificar
-     * @param array $data Nuevos datos de la venta
-     * @param string $motivo Motivo de la modificación
-     * @return Venta Nueva venta creada
-     * @throws Exception
-     */
-    public function modificarVenta(int $ventaId, array $data, string $motivo): Venta
-    {
-        return DB::transaction(function () use ($ventaId, $data, $motivo) {
-            
-            // 1. Obtener la venta original
-            $ventaOriginal = Venta::with('detalles')->findOrFail($ventaId);
-
-            // 2. Validar que pueda modificarse
-            if (!$ventaOriginal->puedeModificarse()) {
-                throw new Exception(
-                    "La venta #{$ventaId} no puede modificarse. " .
-                    "Estado: {$ventaOriginal->estado}, " .
-                    "Reemplazada: " . ($ventaOriginal->reemplazada_por ? 'Sí' : 'No')
-                );
-            }
-
-            // 3. Revertir inventario de la venta original
-            foreach ($ventaOriginal->detalles as $detalle) {
-                MovimientoInventario::create([
-                    'producto_id' => $detalle->producto_id,
-                    'lote_id' => $detalle->lote_id,
-                    'user_id' => Auth::id(),
-                    'tipo' => 'entrada',
-                    'cantidad' => $detalle->cantidad, // Positivo para revertir
-                    'origen' => 'modificacion_venta',
-                    'origen_id' => $ventaOriginal->id,
-                    'motivo' => "Modificación de venta #{$ventaOriginal->id}: {$motivo}",
-                    'fecha_movimiento' => now(),
-                ]);
-            }
-
-            // 4. Crear la nueva venta
-            $nuevaVenta = $this->procesarVenta($data);
-
-            // 5. Establecer relaciones de trazabilidad
-            
-            // Marcar la original como anulada y reemplazada
-            $ventaOriginal->update([
-                'estado' => 'anulada',
-                'anulado_por' => Auth::id(),
-                'fecha_anulacion' => now(),
-                'motivo_anulacion' => "Modificada - Razón: {$motivo}. Nueva venta: #{$nuevaVenta->id}",
-                'reemplazada_por' => $nuevaVenta->id,
-            ]);
-
-            // Marcar la nueva como modificación de la original
-            $nuevaVenta->update([
-                'venta_original_id' => $ventaOriginal->id,
-            ]);
-
-            // 6. Retornar nueva venta con relaciones
-            return $nuevaVenta->load([
-                'detalles.producto',
-                'detalles.lote',
-                'cliente',
-                'recetas',
-                'ventaOriginal'
-            ]);
-        });
-    }
-
-    /**
-     * Obtener historial de modificaciones de una venta
-     * 
-     * @param int $ventaId
-     * @return \Illuminate\Support\Collection
-     */
-    public function historialModificacionesVenta(int $ventaId)
-    {
-        $venta = Venta::findOrFail($ventaId);
-        
-        return $venta->cadenaModificaciones()->map(function ($v, $index) {
-            return [
-                'version' => $index + 1,
-                'id' => $v->id,
-                'fecha' => $v->fecha,
-                'total' => $v->total,
-                'estado' => $v->estado,
-                'usuario' => $v->usuario->name,
-                'cliente' => $v->cliente ? $v->cliente->nombre : 'Público general',
-                'es_original' => is_null($v->venta_original_id),
-                'es_activa' => is_null($v->reemplazada_por) && $v->estado === 'completada',
-                'motivo_anulacion' => $v->motivo_anulacion,
-            ];
-        });
+            })
+            ->values();
     }
 }

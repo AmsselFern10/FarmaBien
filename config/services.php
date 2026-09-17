@@ -31,4 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'ai' => [
+        'key'      => env('AI_API_KEY'),
+        'provider' => env('AI_PROVIDER', 'openai'), // openai, gemini, or custom
+        'url'      => env('AI_API_URL'),
+        'model'    => env('AI_MODEL', 'gpt-4o-mini'),
+        'timeout'  => (int) env('AI_TIMEOUT', 10),
+    ],
+
 ];

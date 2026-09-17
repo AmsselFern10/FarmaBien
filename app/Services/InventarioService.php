@@ -12,9 +12,9 @@ use Exception;
 class InventarioService
 {
     /**
-     * Realizar ajuste de inventario manual
+     * Realizar ajuste de inventario manual con bloqueo de concurrencia y Kardex auditado
      * 
-     * @param array $data
+     * @param array $data ['lote_id', 'stock_nuevo', 'motivo', 'subtipo']
      * @return MovimientoInventario
      * @throws Exception
      */
@@ -22,31 +22,52 @@ class InventarioService
     {
         return DB::transaction(function () use ($data) {
             
-            // 1. Obtener el lote
-            $lote = Lote::with('producto')->findOrFail($data['lote_id']);
+            // 1. Obtener el lote con bloqueo pesimista (lockForUpdate)
+            $lote = Lote::with('producto')
+                ->where('id', $data['lote_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            // 2. Validar que el lote esté activo
             if (!$lote->activo) {
-                throw new Exception("El lote {$lote->numero_lote} está inactivo.");
+                throw new Exception("El lote {$lote->numero_lote} del producto {$lote->producto->nombre} está inactivo.");
             }
 
-            // 3. Calcular la cantidad del ajuste
-            $stockActual = $lote->stock_actual;
-            $stockNuevo = $data['stock_nuevo'];
-            $diferencia = $stockNuevo - $stockActual;
+            $stockAnterior = $lote->stock_actual;
+            $stockNuevo = (int) $data['stock_nuevo'];
+            
+            if ($stockNuevo < 0) {
+                throw new Exception("El nuevo stock no puede ser un número negativo.");
+            }
 
-            // Si no hay diferencia, no hacer nada
+            $diferencia = $stockNuevo - $stockAnterior;
+
             if ($diferencia === 0) {
-                throw new Exception("El stock nuevo es igual al stock actual.");
+                throw new Exception("El stock nuevo ({$stockNuevo}) es idéntico al stock actual ({$stockAnterior}). No hay cambios que registrar.");
             }
 
-            // 4. Crear movimiento de ajuste
+            // 2. Determinar tipo y subtipo
+            $tipo = $diferencia > 0 ? 'entrada' : 'salida';
+            $subtipo = $data['subtipo'] ?? ($diferencia > 0 ? 'ajuste_positivo' : 'ajuste_negativo');
+            
+            // 3. Actualizar el stock del lote
+            $lote->stock_actual = $stockNuevo;
+            $lote->save();
+
+            // 4. Registrar movimiento en Kardex
+            $costoUnitario = (float) $lote->precio_compra;
+            $costoTotal = round(abs($diferencia) * $costoUnitario, 2);
+
             $movimiento = MovimientoInventario::create([
                 'producto_id' => $lote->producto_id,
                 'lote_id' => $lote->id,
-                'user_id' => Auth::id(),
-                'tipo' => 'ajuste',
-                'cantidad' => $diferencia, // Positivo o negativo según el ajuste
+                'user_id' => Auth::id() ?? 1,
+                'tipo' => $tipo,
+                'subtipo' => $subtipo,
+                'cantidad' => $diferencia,
+                'stock_anterior' => $stockAnterior,
+                'stock_posterior' => $stockNuevo,
+                'costo_unitario' => $costoUnitario,
+                'costo_total' => $costoTotal,
                 'origen' => 'ajuste_manual',
                 'origen_id' => null,
                 'motivo' => $data['motivo'] ?? 'Ajuste manual de inventario',
@@ -58,74 +79,59 @@ class InventarioService
     }
 
     /**
-     * Obtener productos con stock bajo
+     * Obtener productos con stock bajo (optimizado con consulta directa)
      * 
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function productosConStockBajo()
     {
-        return Producto::with(['categoria', 'lotes' => function ($query) {
-                $query->activos();
+        return Producto::with(['categoria', 'laboratorio', 'lotes' => function ($query) {
+                $query->disponibles()->orderBy('fecha_vencimiento', 'asc');
             }])
             ->activos()
             ->bajoStock()
             ->get()
             ->map(function ($producto) {
-                $producto->stock_disponible = $producto->stock_total;
+                $producto->stock_disponible = $producto->stock_disponible;
                 return $producto;
             });
     }
 
     /**
-     * Obtener lotes próximos a vencer
+     * Obtener lotes próximos a vencer con stock disponible
      * 
-     * @param int $dias Días de anticipación (default: 30)
+     * @param int $dias
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function lotesProximosVencer(int $dias = 30)
     {
-        return Lote::with(['producto', 'proveedor'])
-            ->activos()
+        return Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
             ->proximosVencer($dias)
-            ->whereRaw('stock_inicial + (
-                SELECT COALESCE(SUM(cantidad), 0) 
-                FROM movimientos_inventario 
-                WHERE movimientos_inventario.lote_id = lotes.id
-            ) > 0') // Solo lotes con stock
             ->orderBy('fecha_vencimiento', 'asc')
             ->get()
             ->map(function ($lote) {
-                $lote->stock_disponible = $lote->stock_actual;
-                $lote->dias_para_vencer = now()->diffInDays($lote->fecha_vencimiento);
+                $lote->dias_para_vencer = (int) now()->diffInDays($lote->fecha_vencimiento, false);
                 return $lote;
             });
     }
 
     /**
-     * Obtener lotes vencidos con stock
+     * Obtener lotes vencidos que aún tienen stock
      * 
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function lotesVencidos()
     {
-        return Lote::with(['producto', 'proveedor'])
+        return Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
             ->activos()
             ->vencidos()
-            ->whereRaw('stock_inicial + (
-                SELECT COALESCE(SUM(cantidad), 0) 
-                FROM movimientos_inventario 
-                WHERE movimientos_inventario.lote_id = lotes.id
-            ) > 0')
+            ->where('stock_actual', '>', 0)
             ->orderBy('fecha_vencimiento', 'asc')
-            ->get()
-            ->map(function ($lote) {
-                $lote->stock_disponible = $lote->stock_actual;
-                return $lote;
-            });
+            ->get();
     }
 
     /**
-     * Obtener kardex de un producto (historial de movimientos)
+     * Obtener Kardex completo de un producto
      * 
      * @param int $productoId
      * @param string|null $fechaInicio
@@ -145,105 +151,71 @@ class InventarioService
             $query->whereDate('fecha_movimiento', '<=', $fechaFin);
         }
 
-        $movimientos = $query->orderBy('fecha_movimiento', 'asc')->get();
-
-        // Calcular stock acumulado
-        $stockAcumulado = 0;
-        
-        return $movimientos->map(function ($movimiento) use (&$stockAcumulado) {
-            $stockAcumulado += $movimiento->cantidad;
-            $movimiento->stock_acumulado = $stockAcumulado;
-            return $movimiento;
-        });
+        return $query->orderBy('fecha_movimiento', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
     }
 
     /**
-     * Obtener kardex de un lote específico
+     * Obtener Kardex de un lote específico
      * 
      * @param int $loteId
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function kardexLote(int $loteId)
     {
-        $lote = Lote::findOrFail($loteId);
-        
-        $movimientos = MovimientoInventario::with(['usuario'])
+        return MovimientoInventario::with(['usuario', 'producto'])
             ->where('lote_id', $loteId)
-            ->orderBy('fecha_movimiento', 'asc')
-            ->get();
-
-        // Calcular stock acumulado partiendo del stock inicial
-        $stockAcumulado = $lote->stock_inicial;
-        
-        return $movimientos->map(function ($movimiento) use (&$stockAcumulado) {
-            $stockAcumulado += $movimiento->cantidad;
-            $movimiento->stock_acumulado = $stockAcumulado;
-            return $movimiento;
-        });
-    }
-
-    /**
-     * Obtener resumen de inventario por categoría
-     * 
-     * @return \Illuminate\Support\Collection
-     */
-    public function resumenPorCategoria()
-    {
-        return DB::table('productos')
-            ->join('categorias', 'productos.categoria_id', '=', 'categorias.id')
-            ->select(
-                'categorias.nombre as categoria',
-                DB::raw('COUNT(productos.id) as total_productos'),
-                DB::raw('SUM(COALESCE((
-                    SELECT SUM(l.stock_inicial + COALESCE((
-                        SELECT SUM(m.cantidad)
-                        FROM movimientos_inventario m
-                        WHERE m.lote_id = l.id
-                    ), 0))
-                    FROM lotes l
-                    WHERE l.producto_id = productos.id
-                    AND l.activo = 1
-                ), 0)) as stock_total')
-            )
-            ->where('productos.activo', true)
-            ->groupBy('categorias.id', 'categorias.nombre')
+            ->orderBy('fecha_movimiento', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
     }
 
     /**
-     * Desactivar lotes vencidos automáticamente
+     * Desactivar lotes vencidos automáticamente y registrar merma en Kardex
      * 
-     * @return int Cantidad de lotes desactivados
+     * @return int Cantidad de lotes dados de baja
      */
     public function desactivarLotesVencidos(): int
     {
         return DB::transaction(function () {
-            $lotesVencidos = Lote::activos()
-                ->vencidos()
+            $lotesVencidos = Lote::where('activo', true)
+                ->where('fecha_vencimiento', '<=', now()->toDateString())
+                ->where('stock_actual', '>', 0)
+                ->lockForUpdate()
                 ->get();
 
             $contador = 0;
 
             foreach ($lotesVencidos as $lote) {
-                // Solo desactivar si tiene stock
-                if ($lote->stock_actual > 0) {
-                    $lote->update(['activo' => false]);
-                    
-                    // Registrar movimiento
-                    MovimientoInventario::create([
-                        'producto_id' => $lote->producto_id,
-                        'lote_id' => $lote->id,
-                        'user_id' => Auth::id(),
-                        'tipo' => 'ajuste',
-                        'cantidad' => -$lote->stock_actual,
-                        'origen' => 'vencimiento_automatico',
-                        'origen_id' => null,
-                        'motivo' => "Lote vencido - Fecha: {$lote->fecha_vencimiento->format('d/m/Y')}",
-                        'fecha_movimiento' => now(),
-                    ]);
+                $stockAnterior = $lote->stock_actual;
+                $costoUnitario = (float) $lote->precio_compra;
+                $costoTotal = round($stockAnterior * $costoUnitario, 2);
 
-                    $contador++;
-                }
+                // Actualizar lote
+                $lote->stock_actual = 0;
+                $lote->activo = false;
+                $lote->save();
+
+                // Registrar en Kardex como merma por vencimiento
+                MovimientoInventario::create([
+                    'producto_id' => $lote->producto_id,
+                    'lote_id' => $lote->id,
+                    'user_id' => Auth::id() ?? 1,
+                    'tipo' => 'salida',
+                    'subtipo' => 'merma_vencimiento',
+                    'cantidad' => -$stockAnterior,
+                    'stock_anterior' => $stockAnterior,
+                    'stock_posterior' => 0,
+                    'costo_unitario' => $costoUnitario,
+                    'costo_total' => $costoTotal,
+                    'origen' => 'vencimiento_automatico',
+                    'origen_id' => null,
+                    'motivo' => "Baja automática por vencimiento (Fecha: {$lote->fecha_vencimiento->format('d/m/Y')})",
+                    'fecha_movimiento' => now(),
+                ]);
+
+                $contador++;
             }
 
             return $contador;
@@ -251,42 +223,46 @@ class InventarioService
     }
 
     /**
-     * Obtener valorización del inventario
+     * Valorización integral del inventario (PEPS / Costo de adquisición por lote)
      * 
      * @return array
      */
     public function valorizacionInventario(): array
     {
-        $lotes = Lote::with('producto')
-            ->activos()
+        $lotes = Lote::with(['producto.categoria', 'producto.laboratorio'])
+            ->where('activo', true)
+            ->where('stock_actual', '>', 0)
             ->get();
 
         $valorTotal = 0;
         $cantidadTotal = 0;
+        $productosIds = [];
         $detalles = [];
 
         foreach ($lotes as $lote) {
-            $stockActual = $lote->stock_actual;
-            
-            if ($stockActual > 0) {
-                $valorLote = $stockActual * $lote->precio_compra;
-                $valorTotal += $valorLote;
-                $cantidadTotal += $stockActual;
+            $valorLote = round($lote->stock_actual * $lote->precio_compra, 2);
+            $valorTotal += $valorLote;
+            $cantidadTotal += $lote->stock_actual;
+            $productosIds[$lote->producto_id] = true;
 
-                $detalles[] = [
-                    'producto' => $lote->producto->nombre,
-                    'lote' => $lote->numero_lote,
-                    'stock' => $stockActual,
-                    'precio_compra' => $lote->precio_compra,
-                    'valor_total' => $valorLote,
-                ];
-            }
+            $detalles[] = [
+                'producto_id' => $lote->producto_id,
+                'producto' => $lote->producto->nombre_completo ?? $lote->producto->nombre,
+                'categoria' => $lote->producto->categoria->nombre ?? 'Sin categoría',
+                'laboratorio' => $lote->producto->laboratorio->nombre ?? 'Sin laboratorio',
+                'lote' => $lote->numero_lote,
+                'fecha_vencimiento' => $lote->fecha_vencimiento->format('d/m/Y'),
+                'stock' => $lote->stock_actual,
+                'precio_compra' => (float) $lote->precio_compra,
+                'valor_total' => $valorLote,
+            ];
         }
 
         return [
-            'valor_total' => $valorTotal,
-            'cantidad_total_unidades' => $cantidadTotal,
+            'valor_total' => round($valorTotal, 2),
+            'total_unidades' => $cantidadTotal,
             'total_lotes_activos' => count($detalles),
+            'total_productos' => count($productosIds),
             'detalles' => collect($detalles)->sortByDesc('valor_total')->values()->all(),
         ];
     }
