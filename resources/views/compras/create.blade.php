@@ -293,34 +293,52 @@ class="space-y-4 transition-all duration-200">
         @endif
 
         <!-- ============================================================== -->
-        <!-- VISTA COMPACTA (ERP / FULL WIDTH / ALTA DENSIDAD)              -->
+        <!-- VISTA COMPACTA (ERP / UNIFIED CONTAINER / ALTA DENSIDAD)       -->
         <!-- ============================================================== -->
         <template x-if="formLayout === 'compact'">
-            <div class="space-y-3">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 space-y-4 animate-fadeIn">
                 
-                <!-- Panel Superior: Cabecera + Liquidación en Grid Horizontal -->
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-                    <!-- Datos Cabecera (8 cols) -->
-                    <div class="lg:col-span-8 bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs space-y-3">
-                        <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
-                            <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200 tracking-wider">
-                                1. Datos del Proveedor y Comprobante Fiscal
-                            </h3>
-                            <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">Esc = Cancelar</span>
+                <!-- Toolbar Superior -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-300 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/60 -mx-4 -mt-4 p-3 rounded-t-2xl">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
+                        <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">FICHA RÁPIDA DE COMPRA & INGRESO DE LOTES</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">Esc = Salir</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ route('compras.index') }}" 
+                           class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold transition">
+                            Cancelar (Esc)
+                        </a>
+                        <button type="submit" 
+                                class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Guardar Compra</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grid de Paneles Superiores -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <!-- Panel 1: Datos Fiscales y Proveedor (8 cols) -->
+                    <div class="lg:col-span-8 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            <span>1. Identificación del Proveedor & Comprobante</span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <!-- Proveedor -->
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                            <!-- Proveedor (Col 5) -->
+                            <div class="sm:col-span-5">
+                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     Proveedor <span class="text-rose-500">*</span>
                                 </label>
                                 <select name="proveedor_id" 
                                         x-model="formData.proveedor_id" 
                                         required
-                                        class="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                                    <option value="">-- Seleccione Proveedor --</option>
+                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                    <option value="">Seleccione Proveedor...</option>
                                     @foreach($proveedores as $prov)
                                         <option value="{{ $prov->id }}">
                                             {{ $prov->nombre }} {{ $prov->ruc ? "({$prov->ruc})" : '' }}
@@ -329,132 +347,118 @@ class="space-y-4 transition-all duration-200">
                                 </select>
                             </div>
 
-                            <!-- N° Comprobante -->
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            <!-- N° Comprobante (Col 4) -->
+                            <div class="sm:col-span-4">
+                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     N° Factura / Boleta
                                 </label>
                                 <input type="text" 
                                        name="numero_comprobante" 
                                        x-model="formData.numero_comprobante" 
                                        placeholder="Ej: F001-0004523"
-                                       class="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                       class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 font-mono">
                             </div>
 
-                            <!-- Fecha Emisión -->
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    Fecha de Documento <span class="text-rose-500">*</span>
+                            <!-- Fecha Documento (Col 3) -->
+                            <div class="sm:col-span-3">
+                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                    Fecha Documento <span class="text-rose-500">*</span>
                                 </label>
                                 <input type="date" 
                                        name="fecha" 
                                        x-model="formData.fecha" 
                                        required
-                                       class="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                       class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Resumen de Liquidación (4 cols) - Light Mode Blanco -->
-                    <div class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-2">
-                        <div class="flex items-center space-x-2 pb-1.5 border-b border-slate-200 dark:border-slate-800">
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">Resumen de Liquidación</h4>
+                    <!-- Panel 2: Resumen de Liquidación (4 cols) -->
+                    <div class="lg:col-span-4 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 flex flex-col justify-between space-y-2">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Resumen de Liquidación</span>
                         </div>
-                        
+
                         <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div class="text-slate-600 dark:text-slate-300">
-                                <span class="text-[10px] text-slate-500 block">Lotes a Ingresar:</span>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-500 block">Lotes a Ingresar:</span>
                                 <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="items.length + ' líneas'"></span>
                             </div>
-                            <div class="text-slate-600 dark:text-slate-300">
-                                <span class="text-[10px] text-slate-500 block">Unidades al Kardex:</span>
+                            <div>
+                                <span class="text-[10px] font-semibold text-slate-500 block">Unidades al Kardex:</span>
                                 <span class="font-bold text-emerald-600 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
                             </div>
                         </div>
 
-                        <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Monto Total:</span>
+                        <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Liquidado:</span>
                             <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
                                 $<span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
-
-                        <!-- Botones Acción -->
-                        <div class="pt-1 flex items-center space-x-2">
-                            <a href="{{ route('compras.index') }}" 
-                               class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition text-center">
-                                Cancelar
-                            </a>
-                            <button type="submit" 
-                                    class="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                <span>Guardar Compra</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Panel Inferior: Tabla Full Width de Medicamentos, Presentaciones y Lotes -->
-                <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
-                            <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200 tracking-wider">
-                                2. Desglose de Medicamentos, Presentaciones y Lotes
-                            </h3>
+                <!-- Panel 3: Desglose de Fármacos, Presentaciones y Lotes -->
+                <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            <span>2. Desglose de Medicamentos, Presentaciones y Lotes</span>
                         </div>
+
                         <button type="button" 
                                 @click="agregarItem()" 
-                                class="inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-2xs transition cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                             <span>Agregar Fármaco / Lote</span>
                         </button>
                     </div>
 
-                    <!-- Tabla con Anchos Óptimos -->
-                    <div class="overflow-x-auto">
+                    <!-- Tabla de Lotes -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
                         <table class="w-full text-left text-xs border-collapse min-w-[850px]">
                             <thead>
-                                <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                    <th class="py-2.5 px-2 text-center w-8">#</th>
-                                    <th class="py-2.5 px-3 min-w-[200px]">Medicamento / Fármaco</th>
-                                    <th class="py-2.5 px-3 min-w-[200px]">Presentación</th>
-                                    <th class="py-2.5 px-2 text-center w-20">Cant.</th>
-                                    <th class="py-2.5 px-2 text-right w-24">P. Compra ($)</th>
-                                    <th class="py-2.5 px-2 w-28">N° Lote</th>
-                                    <th class="py-2.5 px-2 w-32">F. Vencimiento</th>
-                                    <th class="py-2.5 px-3 text-right w-24">Subtotal</th>
-                                    <th class="py-2.5 px-2 text-center w-8"></th>
+                                <tr class="bg-slate-100/90 dark:bg-slate-700/80 text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+                                    <th class="py-2 px-2 text-center w-8">#</th>
+                                    <th class="py-2 px-3 min-w-[200px]">Medicamento / Fármaco</th>
+                                    <th class="py-2 px-3 min-w-[190px]">Presentación</th>
+                                    <th class="py-2 px-2 text-center w-20">Cant.</th>
+                                    <th class="py-2 px-2 text-right w-24">P. Compra ($)</th>
+                                    <th class="py-2 px-2 w-28">N° Lote</th>
+                                    <th class="py-2 px-2 w-32">F. Vencimiento</th>
+                                    <th class="py-2 px-3 text-right w-24">Subtotal</th>
+                                    <th class="py-2 px-2 text-center w-8"></th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
                                 <template x-for="(item, idx) in items" :key="item.uid">
                                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                                         <!-- Indice -->
-                                        <td class="py-2.5 px-2 text-center text-[11px] font-bold text-slate-400" x-text="idx + 1"></td>
+                                        <td class="py-2 px-2 text-center text-[11px] font-bold text-slate-400" x-text="idx + 1"></td>
 
                                         <!-- Producto -->
-                                        <td class="py-2.5 px-3">
+                                        <td class="py-2 px-3">
                                             <select :name="'productos[' + idx + '][producto_id]'" 
                                                     x-model="item.producto_id" 
                                                     @change="onProductoChange(idx)"
                                                     required
-                                                    class="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 font-medium">
-                                                <option value="">-- Seleccionar Medicamento --</option>
+                                                    class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                                <option value="">Seleccione Medicamento...</option>
                                                 <template x-for="p in catalogo" :key="p.id">
                                                     <option :value="p.id" x-text="p.nombre + (p.principio_activo ? ' (' + p.principio_activo + ')' : '')"></option>
                                                 </template>
                                             </select>
                                         </td>
 
-                                        <!-- Presentación con Botón de Creación Rápida -->
+                                        <!-- Presentación con Atajo -->
                                         <td class="py-2.5 px-3">
                                             <div class="flex items-center space-x-1.5">
                                                 <select :name="'productos[' + idx + '][presentacion_id]'" 
                                                         x-model="item.presentacion_id" 
                                                         @change="onPresentacionChange(idx)"
-                                                        class="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                                                     <option value="">Unidad Base (x1)</option>
                                                     <template x-for="pres in item.presentacionesDisponibles" :key="pres.id">
                                                         <option :value="pres.id" x-text="pres.nombre + ' (x' + pres.unidades + ')'"></option>
@@ -463,7 +467,7 @@ class="space-y-4 transition-all duration-200">
                                                 <button type="button" 
                                                         @click="abrirModalPresentacion(idx)"
                                                         :disabled="!item.producto_id"
-                                                        :title="item.producto_id ? 'Crear nueva presentación para este medicamento' : 'Seleccione un medicamento primero'"
+                                                        title="Crear nueva presentación para este medicamento"
                                                         class="p-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 transition shrink-0 disabled:opacity-40 cursor-pointer">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                                 </button>
@@ -474,18 +478,18 @@ class="space-y-4 transition-all duration-200">
                                         </td>
 
                                         <!-- Cantidad -->
-                                        <td class="py-2.5 px-2">
+                                        <td class="py-2 px-2">
                                             <input type="number" 
                                                    :name="'productos[' + idx + '][cantidad_presentaciones]'" 
                                                    x-model.number="item.cantidad" 
                                                    min="1" 
                                                    required
                                                    placeholder="1"
-                                                   class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-center focus:ring-2 focus:ring-emerald-500">
+                                                   class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-center focus:ring-1 focus:ring-emerald-500">
                                         </td>
 
                                         <!-- Precio Compra -->
-                                        <td class="py-2.5 px-2">
+                                        <td class="py-2 px-2">
                                             <input type="number" 
                                                    step="0.01" 
                                                    min="0" 
@@ -493,35 +497,35 @@ class="space-y-4 transition-all duration-200">
                                                    x-model="item.precio_unitario" 
                                                    required
                                                    placeholder="0.00"
-                                                   class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-right focus:ring-2 focus:ring-emerald-500">
+                                                   class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-right focus:ring-1 focus:ring-emerald-500">
                                         </td>
 
                                         <!-- N° Lote -->
-                                        <td class="py-2.5 px-2">
+                                        <td class="py-2 px-2">
                                             <input type="text" 
                                                    :name="'productos[' + idx + '][numero_lote]'" 
                                                    x-model="item.numero_lote" 
                                                    required
                                                    placeholder="LOTE-123"
-                                                   class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white uppercase font-mono focus:ring-2 focus:ring-emerald-500">
+                                                   class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white uppercase font-mono focus:ring-1 focus:ring-emerald-500">
                                         </td>
 
                                         <!-- Fecha Vencimiento -->
-                                        <td class="py-2.5 px-2">
+                                        <td class="py-2 px-2">
                                             <input type="date" 
                                                    :name="'productos[' + idx + '][fecha_vencimiento]'" 
                                                    x-model="item.fecha_vencimiento" 
                                                    required
-                                                   class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                                   class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                                         </td>
 
                                         <!-- Subtotal -->
-                                        <td class="py-2.5 px-3 text-right font-bold text-slate-900 dark:text-white">
+                                        <td class="py-2 px-3 text-right font-bold text-slate-900 dark:text-white">
                                             $<span x-text="calcularSubtotal(item)"></span>
                                         </td>
 
                                         <!-- Botón Eliminar Fila -->
-                                        <td class="py-2.5 px-2 text-center">
+                                        <td class="py-2 px-2 text-center">
                                             <button type="button" 
                                                     @click="eliminarItem(idx)" 
                                                     title="Eliminar fila"
@@ -534,6 +538,16 @@ class="space-y-4 transition-all duration-200">
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Footer / Toolbar Inferior -->
+                <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-slate-400 text-[11px]">
+                    <span>Los datos se sincronizan automáticamente en borrador temporal.</span>
+                    <button type="submit" 
+                            class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Guardar Compra</span>
+                    </button>
                 </div>
             </div>
         </template>
