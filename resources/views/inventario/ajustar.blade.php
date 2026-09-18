@@ -68,17 +68,22 @@ function ajusteForm() {
 </script>
 @endpush
 @section('content')
+@php
+$lotesJson = $lotes->map(function($l) {
+    return [
+        'id'               => $l->id,
+        'numero_lote'      => $l->numero_lote,
+        'producto'         => $l->producto->nombre ?? 'N/A',
+        'stock_actual'     => $l->stock_actual,
+        'stock_inicial'    => $l->stock_inicial,
+        'fecha_vencimiento'=> $l->fecha_vencimiento?->format('d/m/Y') ?? '—',
+        'vencido'          => $l->estaVencido(),
+        'precio_compra'    => (float)$l->precio_compra,
+    ];
+})->values();
+@endphp
 <script>
-window._ajusteLotes = @json($lotes->map(fn($l) => [
-    'id' => $l->id,
-    'numero_lote' => $l->numero_lote,
-    'producto' => $l->producto->nombre ?? 'N/A',
-    'stock_actual' => $l->stock_actual,
-    'stock_inicial' => $l->stock_inicial,
-    'fecha_vencimiento' => $l->fecha_vencimiento?->format('d/m/Y') ?? '—',
-    'vencido' => $l->estaVencido(),
-    'precio_compra' => (float)$l->precio_compra,
-])->values());
+window._ajusteLotes = @json($lotesJson);
 </script>
 
 <div x-data="ajusteForm()" x-init="init()" class="max-w-2xl mx-auto space-y-4">
