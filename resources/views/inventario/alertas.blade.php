@@ -2,12 +2,22 @@
 @section('title', 'Alertas de Inventario - FarmaBien')
 @section('content')
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-300/80 dark:border-slate-800 pb-3">
+
+    {-- Breadcrumb --}
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+        <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <a href="{{ route('inventario.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inventario</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-800 dark:text-slate-200 font-semibold">Alertas de Stock</span>
+    </nav>
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">Alertas de Inventario</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400">Lotes vencidos, proximos a vencer y productos bajo stock.</p>
         </div>
-        <a href="{{ route('inventario.index') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition shrink-0">
+        <a href="{{ route('inventario.index') }}" class="inline-flex items-center space-x-2 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition shrink-0">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             <span>Volver al Dashboard</span>
         </a>
@@ -29,9 +39,9 @@
             <div class="text-3xl font-extrabold text-amber-600 dark:text-amber-400">{{ $porVencerCount }}</div>
             <div class="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-1">Lotes Proximos a Vencer</div>
         </div>
-        <div class="bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800 p-4 text-center">
-            <div class="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">{{ $bajoStockCount }}</div>
-            <div class="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mt-1">Productos Bajo Stock Minimo</div>
+        <div class="bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-800 p-4 text-center">
+            <div class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ $bajoStockCount }}</div>
+            <div class="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-1">Productos Bajo Stock Minimo</div>
         </div>
     </div>
 
@@ -114,7 +124,7 @@
                         <td class="px-4 py-2.5 text-slate-600 dark:text-slate-400">{{ $lote->fecha_vencimiento->format('d/m/Y') }}</td>
                         <td class="px-4 py-2.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">{{ $lote->stock_actual }}</td>
                         <td class="px-4 py-2.5">
-                            <a href="{{ route('inventario.kardex-producto', $lote->producto_id) }}" class="text-indigo-600 hover:underline text-[10px] font-semibold">Ver Kardex</a>
+                            <a href="{{ route('inventario.kardex-producto', $lote->producto_id) }}" class="text-emerald-600 hover:underline text-[10px] font-semibold">Ver Kardex</a>
                         </td>
                     </tr>
                     @endforeach
@@ -127,18 +137,18 @@
     </div>
 
     {{-- Bajo Stock --}}
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-indigo-200 dark:border-indigo-800/60 shadow-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 shadow-sm">
         <div class="flex items-center justify-between px-5 py-4 border-b border-indigo-100 dark:border-indigo-900/50">
             <div class="flex items-center space-x-2">
                 <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
-                <h3 class="text-sm font-bold text-indigo-700 dark:text-indigo-400">Medicamentos Bajo Stock Minimo</h3>
+                <h3 class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Medicamentos Bajo Stock Minimo</h3>
             </div>
-            <span class="text-xs font-extrabold px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700">{{ $bajoStockCount }}</span>
+            <span class="text-xs font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-indigo-700">{{ $bajoStockCount }}</span>
         </div>
         @if($bajoStockCount > 0)
         <div class="overflow-x-auto">
             <table class="w-full text-xs">
-                <thead class="bg-indigo-50/50 dark:bg-indigo-950/10"><tr>
+                <thead class="bg-indigo-50/50 dark:bg-emerald-950/10"><tr>
                     <th class="text-left px-4 py-2.5 font-semibold text-slate-600 dark:text-slate-400">Medicamento</th>
                     <th class="text-left px-4 py-2.5 font-semibold text-slate-600 dark:text-slate-400">Categoria</th>
                     <th class="text-right px-4 py-2.5 font-semibold text-slate-600 dark:text-slate-400">Stock Min.</th>
@@ -153,7 +163,7 @@
                         <td class="px-4 py-2.5 text-right font-mono text-slate-500">{{ $producto->stock_minimo }}</td>
                         <td class="px-4 py-2.5 text-right font-mono font-bold text-amber-600 dark:text-amber-400">{{ $producto->stock_disponible }}</td>
                         <td class="px-4 py-2.5">
-                            <a href="{{ route('inventario.kardex-producto', $producto->id) }}" class="text-indigo-600 hover:underline text-[10px] font-semibold mr-2">Kardex</a>
+                            <a href="{{ route('inventario.kardex-producto', $producto->id) }}" class="text-emerald-600 hover:underline text-[10px] font-semibold mr-2">Kardex</a>
                             <a href="{{ route('compras.create') }}" class="text-emerald-600 hover:underline text-[10px] font-semibold">Generar Compra</a>
                         </td>
                     </tr>
