@@ -56,8 +56,8 @@
                         <div>
                             <dt class="text-sm font-medium text-slate-500 dark:text-slate-400">Fecha de Emisión</dt>
                             <dd class="mt-1 text-sm text-slate-900 dark:text-white">
-                                {{ $receta->fecha->format('d/m/Y') }}
-                                <span class="text-slate-500 dark:text-slate-400">({{ $receta->fecha->diffForHumans() }})</span>
+                                {{ $receta->fecha_emision?->format('d/m/Y') }}
+                                <span class="text-slate-500 dark:text-slate-400">({{ $receta->fecha_emision?->diffForHumans() }})</span>
                             </dd>
                         </div>
 </dl>
@@ -76,7 +76,7 @@
                 <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                         <dt class="text-sm font-medium text-slate-500 dark:text-slate-400">Nombre del Médico</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-white font-semibold">{{ $receta->medico }}</dd>
+                        <dd class="mt-1 text-sm text-slate-900 dark:text-white font-semibold">{{ $receta->medico_nombre }}</dd>
                     </div>
 
                     @if($receta->especialidad)
