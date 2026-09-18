@@ -536,80 +536,75 @@
 <!-- ======================================================== -->
 <!-- MODAL: LUPA INTELIGENTE CON IA (Búsqueda Semántica)      -->
 <!-- ======================================================== -->
-<div id="modalLupaIA" class="hidden fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <!-- Backdrop -->
-        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity" onclick="cerrarModalLupaIA()"></div>
-
-        <!-- Modal Panel -->
-        <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200 dark:border-slate-800">
-            <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-violet-50 via-white to-indigo-50 dark:from-violet-950/30 dark:via-slate-900 dark:to-indigo-950/30 flex items-center justify-between">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-xs text-base">
-                        ✨
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Lupa Inteligente con IA</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Búsqueda semántica por síntomas, indicaciones y lenguaje natural.</p>
-                    </div>
+<div id="modalLupaIA" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true" style="display: none;">
+    <!-- Modal Panel -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-violet-50 via-white to-indigo-50 dark:from-violet-950/30 dark:via-slate-900 dark:to-indigo-950/30 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-xs text-base">
+                    ✨
                 </div>
-                <button type="button" onclick="cerrarModalLupaIA()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                    ✕
-                </button>
-            </div>
-
-            <!-- Body -->
-            <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                        Describe el síntoma o consulta clínica:
-                    </label>
-                    <div class="flex gap-2">
-                        <input type="text" 
-                               id="lupa_q" 
-                               placeholder="Ej: algo para dolor de cabeza y fiebre, jarabe para tos seca..." 
-                               class="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition">
-                        
-                        <button type="button" 
-                                onclick="buscarConLupaIA()" 
-                                class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-semibold text-xs shadow-xs transition flex items-center space-x-1.5 shrink-0">
-                            <span>Consultar IA</span>
-                        </button>
-                    </div>
-                    <!-- Ejemplos rápidos -->
-                    <div class="flex flex-wrap gap-1.5 mt-2">
-                        <span class="text-[11px] text-slate-400 font-medium">Sugerencias:</span>
-                        <button type="button" onclick="probarSintoma('dolor de cabeza y fiebre')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Dolor de cabeza</button>
-                        <button type="button" onclick="probarSintoma('tos seca y garganta irritada')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Tos y garganta</button>
-                        <button type="button" onclick="probarSintoma('acidez estomacal y gastritis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Acidez / Gastritis</button>
-                        <button type="button" onclick="probarSintoma('alergia y rinitis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Alergia</button>
-                    </div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Lupa Inteligente con IA</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Búsqueda semántica por síntomas, indicaciones y lenguaje natural.</p>
                 </div>
+            </div>
+            <button type="button" onclick="cerrarModalLupaIA()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                ✕
+            </button>
+        </div>
 
-                <!-- Loading State -->
-                <div id="lupa_loading" class="hidden py-8 text-center space-y-2">
-                    <div class="inline-block w-7 h-7 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Analizando consulta clínica y catálogo...</p>
+        <!-- Body -->
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Describe el síntoma o consulta clínica:
+                </label>
+                <div class="flex gap-2">
+                    <input type="text" 
+                           id="lupa_q" 
+                           placeholder="Ej: algo para dolor de cabeza y fiebre, jarabe para tos seca..." 
+                           class="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition">
+                    
+                    <button type="button" 
+                            onclick="buscarConLupaIA()" 
+                            class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-semibold text-xs shadow-xs transition flex items-center space-x-1.5 shrink-0">
+                        <span>Consultar IA</span>
+                    </button>
                 </div>
-
-                <!-- Results Container -->
-                <div id="lupa_results" class="max-h-80 overflow-y-auto space-y-2.5 pr-1"></div>
-
-                <!-- Error Container -->
-                <div id="lupa_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
+                <!-- Ejemplos rápidos -->
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                    <span class="text-[11px] text-slate-400 font-medium">Sugerencias:</span>
+                    <button type="button" onclick="probarSintoma('dolor de cabeza y fiebre')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Dolor de cabeza</button>
+                    <button type="button" onclick="probarSintoma('tos seca y garganta irritada')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Tos y garganta</button>
+                    <button type="button" onclick="probarSintoma('acidez estomacal y gastritis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Acidez / Gastritis</button>
+                    <button type="button" onclick="probarSintoma('alergia y rinitis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Alergia</button>
+                </div>
             </div>
 
-            <!-- Footer -->
-            <div class="px-6 py-3.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <button type="button" onclick="usarTextoLupaEnFiltro()" class="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline">
-                    🔍 Filtrar con este texto en la página principal
-                </button>
-
-                <button type="button" onclick="cerrarModalLupaIA()" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                    Cerrar
-                </button>
+            <!-- Loading State -->
+            <div id="lupa_loading" class="hidden py-8 text-center space-y-2">
+                <div class="inline-block w-7 h-7 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Analizando consulta clínica y catálogo...</p>
             </div>
+
+            <!-- Results Container -->
+            <div id="lupa_results" class="max-h-80 overflow-y-auto space-y-2.5 pr-1"></div>
+
+            <!-- Error Container -->
+            <div id="lupa_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-3.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <button type="button" onclick="usarTextoLupaEnFiltro()" class="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline">
+                🔍 Filtrar con este texto en la página principal
+            </button>
+
+            <button type="button" onclick="cerrarModalLupaIA()" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                Cerrar
+            </button>
         </div>
     </div>
 </div>
@@ -617,108 +612,103 @@
 <!-- ======================================================== -->
 <!-- MODAL: FICHA CLÍNICA IA DEL MEDICAMENTO                  -->
 <!-- ======================================================== -->
-<div id="modalProductoIA" class="hidden fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <!-- Backdrop -->
-        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity" onclick="cerrarModalProductoIA()"></div>
-
-        <!-- Modal Panel -->
-        <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200 dark:border-slate-800">
-            <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 flex items-center justify-between">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs text-base">
-                        💊
-                    </div>
-                    <div>
-                        <div class="flex items-center space-x-2">
-                            <h3 id="modalProductoIA_title" class="text-base font-bold text-slate-900 dark:text-white">Ficha Farmacológica IA</h3>
-                            <span id="ia_status_badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">Motor Local</span>
-                        </div>
-                        <p id="modalProductoIA_subtitle" class="text-xs text-slate-500 dark:text-slate-400">Guía asistida de uso clínico, posología, advertencias y recomendaciones farmacéuticas.</p>
-                    </div>
+<div id="modalProductoIA" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true" style="display: none;">
+    <!-- Modal Panel -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs text-base">
+                    💊
                 </div>
-                <button type="button" onclick="cerrarModalProductoIA()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                    ✕
-                </button>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h3 id="modalProductoIA_title" class="text-base font-bold text-slate-900 dark:text-white">Ficha Farmacológica IA</h3>
+                        <span id="ia_status_badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">Motor Local</span>
+                    </div>
+                    <p id="modalProductoIA_subtitle" class="text-xs text-slate-500 dark:text-slate-400">Guía asistida de uso clínico, posología, advertencias y recomendaciones farmacéuticas.</p>
+                </div>
+            </div>
+            <button type="button" onclick="cerrarModalProductoIA()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                ✕
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <!-- Loading State -->
+            <div id="modalProductoIA_loading" class="py-8 text-center space-y-2">
+                <div class="inline-block w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Consultando base farmacológica e IA...</p>
             </div>
 
-            <!-- Body -->
-            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-                <!-- Loading State -->
-                <div id="modalProductoIA_loading" class="py-8 text-center space-y-2">
-                    <div class="inline-block w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Consultando base farmacológica e IA...</p>
+            <!-- Structured Content Container -->
+            <div id="modalProductoIA_content" class="hidden space-y-3.5">
+                <!-- Uso Clínico e Indicaciones -->
+                <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1">
+                        <span>🎯</span>
+                        <span>Uso Clínico e Indicaciones Terapéuticas</span>
+                    </div>
+                    <p id="ia_uso_clinico" class="text-xs text-indigo-950 dark:text-indigo-200 leading-relaxed"></p>
                 </div>
 
-                <!-- Structured Content Container -->
-                <div id="modalProductoIA_content" class="hidden space-y-3.5">
-                    <!-- Uso Clínico e Indicaciones -->
-                    <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1">
-                            <span>🎯</span>
-                            <span>Uso Clínico e Indicaciones Terapéuticas</span>
-                        </div>
-                        <p id="ia_uso_clinico" class="text-xs text-indigo-950 dark:text-indigo-200 leading-relaxed"></p>
+                <!-- Posología -->
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 mb-1">
+                        <span>⏱️</span>
+                        <span>Posología y Modo de Uso Recomendado</span>
                     </div>
-
-                    <!-- Posología -->
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-                            <span>⏱️</span>
-                            <span>Posología y Modo de Uso Recomendado</span>
-                        </div>
-                        <p id="ia_posologia" class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed"></p>
-                    </div>
-
-                    <!-- Recomendaciones Farmacéuticas -->
-                    <div class="p-3.5 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-teal-800 dark:text-teal-300 mb-1">
-                            <span>💡</span>
-                            <span>Recomendaciones del Farmacéutico al Paciente</span>
-                        </div>
-                        <p id="ia_recomendaciones" class="text-xs text-teal-950 dark:text-teal-200 leading-relaxed"></p>
-                    </div>
-
-                    <!-- Advertencias -->
-                    <div class="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-amber-800 dark:text-amber-300 mb-1">
-                            <span>⚠️</span>
-                            <span>Advertencias y Efectos Adversos</span>
-                        </div>
-                        <p id="ia_advertencias" class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed"></p>
-                    </div>
-
-                    <!-- Contraindicaciones -->
-                    <div class="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-rose-700 dark:text-rose-300 mb-1">
-                            <span>🚫</span>
-                            <span>Contraindicaciones Clínicas e Interacciones</span>
-                        </div>
-                        <p id="ia_contraindicaciones" class="text-xs text-rose-800 dark:text-rose-200 leading-relaxed"></p>
-                    </div>
-
-                    <!-- Sustitutos Genéricos en Catálogo -->
-                    <div class="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                            <span>🔄</span>
-                            <span>Alternativas y Sustitutos en Inventario FarmaBien</span>
-                        </div>
-                        <div id="ia_sustitutos" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
-                    </div>
+                    <p id="ia_posologia" class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed"></p>
                 </div>
 
-                <!-- Error Container -->
-                <div id="modalProductoIA_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
+                <!-- Recomendaciones Farmacéuticas -->
+                <div class="p-3.5 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-teal-800 dark:text-teal-300 mb-1">
+                        <span>💡</span>
+                        <span>Recomendaciones del Farmacéutico al Paciente</span>
+                    </div>
+                    <p id="ia_recomendaciones" class="text-xs text-teal-950 dark:text-teal-200 leading-relaxed"></p>
+                </div>
+
+                <!-- Advertencias -->
+                <div class="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-amber-800 dark:text-amber-300 mb-1">
+                        <span>⚠️</span>
+                        <span>Advertencias y Efectos Adversos</span>
+                    </div>
+                    <p id="ia_advertencias" class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed"></p>
+                </div>
+
+                <!-- Contraindicaciones -->
+                <div class="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-rose-700 dark:text-rose-300 mb-1">
+                        <span>🚫</span>
+                        <span>Contraindicaciones Clínicas e Interacciones</span>
+                    </div>
+                    <p id="ia_contraindicaciones" class="text-xs text-rose-800 dark:text-rose-200 leading-relaxed"></p>
+                </div>
+
+                <!-- Sustitutos Genéricos en Catálogo -->
+                <div class="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                        <span>🔄</span>
+                        <span>Alternativas y Sustitutos en Inventario FarmaBien</span>
+                    </div>
+                    <div id="ia_sustitutos" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                </div>
             </div>
 
-            <!-- Footer -->
-            <div class="px-6 py-3.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                <span>Nota: Orientación educativa. Requiere verificación médica/farmacéutica.</span>
-                <button type="button" onclick="cerrarModalProductoIA()" class="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition">
-                    Entendido
-                </button>
-            </div>
+            <!-- Error Container -->
+            <div id="modalProductoIA_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-3.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <span>Nota: Orientación educativa. Requiere verificación médica/farmacéutica.</span>
+            <button type="button" onclick="cerrarModalProductoIA()" class="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition">
+                Entendido
+            </button>
         </div>
     </div>
 </div>

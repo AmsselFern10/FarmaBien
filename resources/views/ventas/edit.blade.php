@@ -658,48 +658,49 @@ function posVentaEditData() {
     <!-- MODAL VISTA PREVIA TICKET -->
     <div x-show="modalTicketPreview" 
          x-cloak 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         @keydown.escape.window="modalTicketPreview = false">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="modalTicketPreview = false"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-300 dark:border-slate-800">
-                <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Vista Previa de Ticket</h3>
-                    <button type="button" @click="modalTicketPreview = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
-                </div>
-                <div class="p-5 bg-slate-100 dark:bg-slate-950 flex justify-center">
-                    <div class="bg-white text-slate-900 font-mono text-xs p-4 rounded-xl shadow-md border border-slate-300 space-y-2.5 w-full max-w-xs">
-                        <div class="text-center font-extrabold text-sm uppercase">{{ config('app.name', 'FarmaBien') }}</div>
-                        <div class="border-t border-dashed border-slate-400 my-1"></div>
-                        <div class="text-[10px] space-y-0.5">
-                            <div>CLIENTE: <strong x-text="getClienteNombre()"></strong></div>
-                            <div>PAGO: <span class="uppercase font-bold" x-text="formData.metodo_pago"></span></div>
-                        </div>
-                        <div class="border-t border-dashed border-slate-400 my-1"></div>
-                        <table class="w-full text-[10px] text-left">
-                            <tbody>
-                                <template x-for="item in items" :key="item.uid">
-                                    <tr class="border-b border-slate-100">
-                                        <td class="py-1" x-text="item.nombre + ' x' + item.cantidad"></td>
-                                        <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                        <div class="border-t border-dashed border-slate-400 my-1"></div>
-                        <div class="flex justify-between font-black text-sm pt-1">
-                            <span>TOTAL:</span>
-                            <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
-                        </div>
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         @keydown.escape.window="modalTicketPreview = false"
+         style="display: none;">
+        <div @click.away="modalTicketPreview = false"
+             x-show="modalTicketPreview" 
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-md border border-slate-300 dark:border-slate-800 my-auto">
+            <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Vista Previa de Ticket</h3>
+                <button type="button" @click="modalTicketPreview = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
+            <div class="p-5 bg-slate-100 dark:bg-slate-950 flex justify-center">
+                <div class="bg-white text-slate-900 font-mono text-xs p-4 rounded-xl shadow-md border border-slate-300 space-y-2.5 w-full max-w-xs">
+                    <div class="text-center font-extrabold text-sm uppercase">{{ config('app.name', 'FarmaBien') }}</div>
+                    <div class="border-t border-dashed border-slate-400 my-1"></div>
+                    <div class="text-[10px] space-y-0.5">
+                        <div>CLIENTE: <strong x-text="getClienteNombre()"></strong></div>
+                        <div>PAGO: <span class="uppercase font-bold" x-text="formData.metodo_pago"></span></div>
+                    </div>
+                    <div class="border-t border-dashed border-slate-400 my-1"></div>
+                    <table class="w-full text-[10px] text-left">
+                        <tbody>
+                            <template x-for="item in items" :key="item.uid">
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-1" x-text="item.nombre + ' x' + item.cantidad"></td>
+                                    <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                    <div class="border-t border-dashed border-slate-400 my-1"></div>
+                    <div class="flex justify-between font-black text-sm pt-1">
+                        <span>TOTAL:</span>
+                        <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
                     </div>
                 </div>
-                <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                    <button type="button" @click="modalTicketPreview = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
-                        Cerrar
-                    </button>
-                </div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button type="button" @click="modalTicketPreview = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
+                    Cerrar
+                </button>
             </div>
         </div>
     </div>
@@ -707,40 +708,41 @@ function posVentaEditData() {
     <!-- MODAL NUEVO CLIENTE RÁPIDO -->
     <div x-show="modalNuevoCliente" 
          x-cloak 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         @keydown.escape.window="modalNuevoCliente = false">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="modalNuevoCliente = false"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-300 dark:border-slate-800">
-                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente</h3>
-                    <button type="button" @click="modalNuevoCliente = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         @keydown.escape.window="modalNuevoCliente = false"
+         style="display: none;">
+        <div @click.away="modalNuevoCliente = false"
+             x-show="modalNuevoCliente" 
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-md border border-slate-300 dark:border-slate-800 my-auto">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente</h3>
+                <button type="button" @click="modalNuevoCliente = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
+            <div class="p-6 space-y-3">
+                <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs" x-text="errorClienteMsg"></div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo <span class="text-rose-500">*</span></label>
+                    <input type="text" x-model="nuevoCliente.nombre" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
                 </div>
-                <div class="p-6 space-y-3">
-                    <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs" x-text="errorClienteMsg"></div>
+                <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo <span class="text-rose-500">*</span></label>
-                        <input type="text" x-model="nuevoCliente.nombre" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cédula / RUC</label>
+                        <input type="text" x-model="nuevoCliente.documento" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
                     </div>
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cédula / RUC</label>
-                            <input type="text" x-model="nuevoCliente.documento" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
-                            <input type="text" x-model="nuevoCliente.telefono" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
-                        </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
+                        <input type="text" x-model="nuevoCliente.telefono" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
                     </div>
                 </div>
-                <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
-                    <button type="button" @click="modalNuevoCliente = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">Cancelar</button>
-                    <button type="button" @click="registrarClienteRapido()" :disabled="guardandoCliente" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
-                        <span x-text="guardandoCliente ? 'Guardando...' : 'Guardar y Seleccionar'"></span>
-                    </button>
-                </div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
+                <button type="button" @click="modalNuevoCliente = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">Cancelar</button>
+                <button type="button" @click="registrarClienteRapido()" :disabled="guardandoCliente" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
+                    <span x-text="guardandoCliente ? 'Guardando...' : 'Guardar y Seleccionar'"></span>
+                </button>
             </div>
         </div>
     </div>

@@ -360,77 +360,62 @@
     <!-- Modal Anular Venta -->
     <div x-show="modalAnular" 
          x-cloak 
-         class="fixed inset-0 z-50 overflow-y-auto" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
          aria-labelledby="modal-title" 
          role="dialog" 
-         aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="modalAnular" 
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" 
-                 @click="modalAnular = false"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div x-show="modalAnular" 
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-200 dark:border-slate-800">
-                
-                <form :action="'/ventas/' + ventaId + '/anular'" method="POST">
-                    @csrf
-                    <div class="p-6">
-                        <div class="flex items-center space-x-3 text-rose-600 mb-4">
-                            <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-slate-900 dark:text-white" id="modal-title">
-                                    Anular Venta <span x-text="comprobanteInfo"></span>
-                                </h3>
-                                <p class="text-xs text-slate-500">Esta acción revertirá las salidas del inventario y reingresará el stock a los lotes originales.</p>
-                            </div>
+         aria-modal="true"
+         style="display: none;">
+        <div x-show="modalAnular" 
+             @click.away="modalAnular = false"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-lg border border-slate-300 dark:border-slate-800 my-auto">
+            
+            <form :action="'/ventas/' + ventaId + '/anular'" method="POST">
+                @csrf
+                <div class="p-6">
+                    <div class="flex items-center space-x-3 text-rose-600 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         </div>
-
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    Motivo de Anulación <span class="text-rose-500">*</span>
-                                </label>
-                                <textarea name="motivo" 
-                                          x-model="motivoAnulacion" 
-                                          rows="3" 
-                                          required
-                                          minlength="5"
-                                          placeholder="Indique la justificación (ej: error en producto solicitado por cliente, devolución inmediata, error de digitación)..."
-                                          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 placeholder-slate-400"></textarea>
-                            </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900 dark:text-white" id="modal-title">
+                                Anular Venta <span x-text="comprobanteInfo"></span>
+                            </h3>
+                            <p class="text-xs text-slate-500">Esta acción revertirá las salidas del inventario y reingresará el stock a los lotes originales.</p>
                         </div>
                     </div>
 
-                    <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-2">
-                        <button type="button" 
-                                @click="modalAnular = false" 
-                                class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                            Cancelar
-                        </button>
-                        <button type="submit" 
-                                :disabled="!motivoAnulacion || motivoAnulacion.trim().length < 5"
-                                class="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition">
-                            Confirmar Anulación
-                        </button>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                Motivo de Anulación <span class="text-rose-500">*</span>
+                            </label>
+                            <textarea name="motivo" 
+                                      x-model="motivoAnulacion" 
+                                      rows="3" 
+                                      required
+                                      minlength="5"
+                                      placeholder="Indique la justificación (ej: error en producto solicitado por cliente, devolución inmediata, error de digitación)..."
+                                      class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 placeholder-slate-400"></textarea>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-2">
+                    <button type="button" 
+                            @click="modalAnular = false" 
+                            class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            :disabled="!motivoAnulacion || motivoAnulacion.trim().length < 5"
+                            class="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition">
+                        Confirmar Anulación
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

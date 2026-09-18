@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 @layer utilities {
-    /* Smooth view fade-in with slight vertical slide */
+    /* Smooth view fade-in */
     .page-fade-in {
-        animation: pageFadeSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation: pageFadeIn 0.15s ease-out;
     }
 
     /* Skeleton shimmer animation */
@@ -16,14 +16,12 @@
     }
 }
 
-@keyframes pageFadeSlideIn {
+@keyframes pageFadeIn {
     0% {
         opacity: 0;
-        transform: translateY(4px);
     }
     100% {
         opacity: 1;
-        transform: translateY(0);
     }
 }
 

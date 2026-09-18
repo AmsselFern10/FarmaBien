@@ -1038,27 +1038,19 @@ function posVentaData() {
     <!-- ============================================================== -->
     <div x-show="modalCobro" 
          x-cloak 
-         class="fixed inset-0 z-50 overflow-y-auto" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
          aria-labelledby="modal-cobro-title" 
          role="dialog" 
-         aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="modalCobro" 
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" 
-                 @click="modalCobro = false"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div x-show="modalCobro" 
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100"
-                 class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-slate-300 dark:border-slate-800">
-                
-                <!-- Modal Header -->
+         aria-modal="true"
+         style="display: none;">
+        <div x-show="modalCobro" 
+             @click.away="modalCobro = false"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-4xl border border-slate-300 dark:border-slate-800 my-auto">
+            
+            <!-- Modal Header -->
                 <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-xs"></span>
@@ -1255,305 +1247,319 @@ function posVentaData() {
                             class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         <span x-text="procesandoVenta ? 'Procesando...' : 'Confirmar & Emitir Ticket'"></span>
-                    </button>
                 </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
+                <button type="button" 
+                        @click="modalCobro = false" 
+                        class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    Volver a la Venta
+                </button>
+                <button type="button" 
+                        @click="procesarVentaFinal()"
+                        :disabled="procesandoVenta"
+                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span x-text="procesandoVenta ? 'Procesando...' : 'Confirmar & Emitir Ticket'"></span>
+                </button>
             </div>
         </div>
     </div>
 
 
     <!-- ============================================================== -->
-    <!-- MODAL 3: VISTA PREVIA DEDICADA DE TICKET TÉRMICO (MODAL F7)   -->
+    <!-- MODAL 2: VISTA PREVIA DEDICADA DE TICKET TÉRMICO (MODAL F7)   -->
     <!-- ============================================================== -->
     <div x-show="modalTicketPreview" 
          x-cloak 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         @keydown.escape.window="modalTicketPreview = false">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="modalTicketPreview = false"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-300 dark:border-slate-800">
-                
-                <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-xs"></span>
-                        <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Vista Previa de Impresión Térmica</h3>
-                    </div>
-                    <button type="button" @click="modalTicketPreview = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         @keydown.escape.window="modalTicketPreview = false"
+         style="display: none;">
+        <div @click.away="modalTicketPreview = false"
+             x-show="modalTicketPreview" 
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-md border border-slate-300 dark:border-slate-800 my-auto">
+            
+            <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-xs"></span>
+                    <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Vista Previa de Impresión Térmica</h3>
                 </div>
+                <button type="button" @click="modalTicketPreview = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
 
-                <div class="p-5 bg-slate-100 dark:bg-slate-950 flex justify-center">
-                    <div class="bg-white text-slate-900 font-mono text-xs p-4 rounded-xl shadow-md border border-slate-300 space-y-2.5 w-full max-w-xs">
-                        <div class="text-center">
-                            <div class="font-extrabold text-sm uppercase">{{ config('app.name', 'FarmaBien') }}</div>
-                            <div class="text-[10px]">RUC: {{ env('EMPRESA_RUC', '20123456789') }}</div>
-                            <div class="text-[9px] text-slate-600">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123') }}</div>
-                            <div class="text-[9px] text-slate-600">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
-                        </div>
+            <div class="p-5 bg-slate-100 dark:bg-slate-950 flex justify-center">
+                <div class="bg-white text-slate-900 font-mono text-xs p-4 rounded-xl shadow-md border border-slate-300 space-y-2.5 w-full max-w-xs">
+                    <div class="text-center">
+                        <div class="font-extrabold text-sm uppercase">{{ config('app.name', 'FarmaBien') }}</div>
+                        <div class="text-[10px]">RUC: {{ env('EMPRESA_RUC', '20123456789') }}</div>
+                        <div class="text-[9px] text-slate-600">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123') }}</div>
+                        <div class="text-[9px] text-slate-600">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
+                    </div>
 
-                        <div class="border-t border-dashed border-slate-400 my-1"></div>
+                    <div class="border-t border-dashed border-slate-400 my-1"></div>
 
-                        <div class="text-[10px] space-y-0.5">
-                            <div>FECHA: {{ now()->format('d/m/Y H:i') }}</div>
-                            <div>CAJERO: {{ auth()->user()->name ?? 'Cajero 1' }}</div>
-                            <div>CLIENTE: <strong x-text="getClienteNombre()"></strong></div>
-                            <div>DOC: <span x-text="getClienteDocumento()"></span></div>
-                            <div>PAGO: <span class="uppercase font-bold" x-text="formData.metodo_pago"></span></div>
-                        </div>
+                    <div class="text-[10px] space-y-0.5">
+                        <div>FECHA: {{ now()->format('d/m/Y H:i') }}</div>
+                        <div>CAJERO: {{ auth()->user()->name ?? 'Cajero 1' }}</div>
+                        <div>CLIENTE: <strong x-text="getClienteNombre()"></strong></div>
+                        <div>DOC: <span x-text="getClienteDocumento()"></span></div>
+                        <div>PAGO: <span class="uppercase font-bold" x-text="formData.metodo_pago"></span></div>
+                    </div>
 
-                        <div class="border-t border-dashed border-slate-400 my-1"></div>
+                    <div class="border-t border-dashed border-slate-400 my-1"></div>
 
-                        <table class="w-full text-[10px] text-left">
-                            <thead>
-                                <tr class="border-b border-slate-300 font-bold">
-                                    <th>CANT/ITEM</th>
-                                    <th class="text-right">TOTAL</th>
+                    <table class="w-full text-[10px] text-left">
+                        <thead>
+                            <tr class="border-b border-slate-300 font-bold">
+                                <th>CANT/ITEM</th>
+                                <th class="text-right">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="item in items" :key="item.uid">
+                                <tr class="border-b border-slate-100">
+                                    <td class="py-1">
+                                        <div class="font-bold" x-text="item.nombre"></div>
+                                        <div class="text-[9px] text-slate-500" x-text="(item.presentacion_id ? item.presentacionesDisponibles.find(p => p.id == item.presentacion_id)?.nombre : 'Unidad') + ' x' + item.cantidad + ' ($' + parseFloat(item.precio_unitario).toFixed(2) + ')'"></div>
+                                    </td>
+                                    <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="item in items" :key="item.uid">
-                                    <tr class="border-b border-slate-100">
-                                        <td class="py-1">
-                                            <div class="font-bold" x-text="item.nombre"></div>
-                                            <div class="text-[9px] text-slate-500" x-text="(item.presentacion_id ? item.presentacionesDisponibles.find(p => p.id == item.presentacion_id)?.nombre : 'Unidad') + ' x' + item.cantidad + ' ($' + parseFloat(item.precio_unitario).toFixed(2) + ')'"></div>
-                                        </td>
-                                        <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                            </template>
+                        </tbody>
+                    </table>
 
-                        <div class="border-t border-dashed border-slate-400 my-1"></div>
+                    <div class="border-t border-dashed border-slate-400 my-1"></div>
 
-                        <div class="space-y-0.5 text-right text-[11px]">
-                            <div class="flex justify-between">
-                                <span>SUBTOTAL:</span>
-                                <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
-                            </div>
-                            <div class="flex justify-between text-rose-600" x-show="formData.descuento > 0">
-                                <span>DESCUENTO:</span>
-                                <span class="font-bold" x-text="'-$' + parseFloat(formData.descuento).toFixed(2)"></span>
-                            </div>
-                            <div class="flex justify-between font-black text-sm border-t border-slate-300 pt-1">
-                                <span>TOTAL:</span>
-                                <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
-                            </div>
+                    <div class="space-y-0.5 text-right text-[11px]">
+                        <div class="flex justify-between">
+                            <span>SUBTOTAL:</span>
+                            <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
                         </div>
-
-                        <div class="border-t border-dashed border-slate-400 my-1"></div>
-                        <div class="text-center text-[9px] text-slate-500">
-                            ¡Gracias por su preferencia!
+                        <div class="flex justify-between text-rose-600" x-show="formData.descuento > 0">
+                            <span>DESCUENTO:</span>
+                            <span class="font-bold" x-text="'-$' + parseFloat(formData.descuento).toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between font-black text-sm border-t border-slate-300 pt-1">
+                            <span>TOTAL:</span>
+                            <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
                         </div>
                     </div>
-                </div>
 
-                <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
-                    <button type="button" @click="modalTicketPreview = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
-                        Cerrar
-                    </button>
-                    <button type="button" @click="modalTicketPreview = false; modalCobro = true;" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
-                        Proceder al Cobro &rarr;
-                    </button>
+                    <div class="border-t border-dashed border-slate-400 my-1"></div>
+                    <div class="text-center text-[9px] text-slate-500">
+                        ¡Gracias por su preferencia!
+                    </div>
                 </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
+                <button type="button" @click="modalTicketPreview = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
+                    Cerrar
+                </button>
+                <button type="button" @click="modalTicketPreview = false; modalCobro = true;" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
+                    Proceder al Cobro &rarr;
+                </button>
             </div>
         </div>
     </div>
 
 
     <!-- ============================================================== -->
-    <!-- MODAL 4: INFORMACIÓN DE PRODUCTO & DESGLOSE DE LOTES / UBICACIÓN -->
+    <!-- MODAL 3: INFORMACIÓN DE PRODUCTO & DESGLOSE DE LOTES / UBICACIÓN -->
     <!-- ============================================================== -->
     <div x-show="modalInfoProducto" 
          x-cloak 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         @keydown.escape.window="modalInfoProducto = false">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="modalInfoProducto = false"></div>
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         @keydown.escape.window="modalInfoProducto = false"
+         style="display: none;">
+        <div @click.away="modalInfoProducto = false"
+             x-show="modalInfoProducto" 
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-lg border border-slate-300 dark:border-slate-800 my-auto">
+            
+            <template x-if="productoInfo">
+                <div>
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900 dark:text-white" x-text="productoInfo.nombre"></h3>
+                                <p class="text-[11px] text-slate-500" x-text="productoInfo.principio_activo || 'Sin principio activo'"></p>
+                            </div>
+                        </div>
+                        <button type="button" @click="modalInfoProducto = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                    </div>
 
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-300 dark:border-slate-800">
-                
-                <template x-if="productoInfo">
-                    <div>
-                        <!-- Header -->
-                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
-                            <div class="flex items-center space-x-2.5">
-                                <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                                </div>
+                    <div class="p-6 space-y-4">
+                        <!-- Ubicación Física Destacada -->
+                        <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg">📍</span>
                                 <div>
-                                    <h3 class="text-sm font-bold text-slate-900 dark:text-white" x-text="productoInfo.nombre"></h3>
-                                    <p class="text-[11px] text-slate-500" x-text="productoInfo.principio_activo || 'Sin principio activo'"></p>
+                                    <span class="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-300 block">Ubicación Física en Farmacia:</span>
+                                    <span class="text-xs font-black text-emerald-900 dark:text-emerald-200" x-text="productoInfo.ubicacion || 'Sin estantería asignada'"></span>
                                 </div>
                             </div>
-                            <button type="button" @click="modalInfoProducto = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                            <span class="text-[10px] px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-semibold border border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300">
+                                Laboratorio: <span x-text="productoInfo.laboratorio?.nombre || 'General'"></span>
+                            </span>
                         </div>
 
-                        <div class="p-6 space-y-4">
-                            <!-- Ubicación Física Destacada -->
-                            <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-lg">📍</span>
-                                    <div>
-                                        <span class="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-300 block">Ubicación Física en Farmacia:</span>
-                                        <span class="text-xs font-black text-emerald-900 dark:text-emerald-200" x-text="productoInfo.ubicacion || 'Sin estantería asignada'"></span>
-                                    </div>
-                                </div>
-                                <span class="text-[10px] px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-semibold border border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300">
-                                    Laboratorio: <span x-text="productoInfo.laboratorio?.nombre || 'General'"></span>
-                                </span>
+                        <!-- Tabla de Lotes Disponibles -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                                    Lotes Disponibles (Criterio FEFO)
+                                </h4>
+                                <span class="text-[10px] text-slate-500" x-text="(productoInfo.lotes?.length || 0) + ' lote(s)'"></span>
                             </div>
 
-                            <!-- Tabla de Lotes Disponibles -->
-                            <div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
-                                        Lotes Disponibles (Criterio FEFO)
-                                    </h4>
-                                    <span class="text-[10px] text-slate-500" x-text="(productoInfo.lotes?.length || 0) + ' lote(s)'"></span>
-                                </div>
-
-                                <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <table class="w-full text-left text-xs border-collapse">
-                                        <thead class="bg-slate-50 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">
-                                            <tr>
-                                                <th class="py-2 px-3">N° Lote</th>
-                                                <th class="py-2 px-3">Vencimiento</th>
-                                                <th class="py-2 px-3 text-center">Stock</th>
-                                                <th class="py-2 px-3 text-center">Estado</th>
-                                                <th class="py-2 px-3 text-right">Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                                            <template x-for="(lote, lIdx) in (productoInfo.lotes || [])" :key="lote.id">
-                                                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-                                                    <td class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-white" x-text="lote.numero_lote"></td>
-                                                    <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300" x-text="lote.fecha_vencimiento ? lote.fecha_vencimiento.substring(0, 10) : 'N/A'"></td>
-                                                    <td class="py-2.5 px-3 text-center font-bold text-emerald-600" x-text="lote.stock_actual + ' u.'"></td>
-                                                    <td class="py-2.5 px-3 text-center">
-                                                        <span x-show="lIdx === 0" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                                                            FEFO (Sale 1°)
-                                                        </span>
-                                                        <span x-show="lIdx > 0" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                                            Siguiente
-                                                        </span>
-                                                    </td>
-                                                    <td class="py-2.5 px-3 text-right">
-                                                        <button type="button" 
-                                                                @click="agregarAlCarrito(productoInfo, null, lote.id); modalInfoProducto = false;"
-                                                                class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition">
-                                                            Despachar
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                            <tr x-show="!productoInfo.lotes || productoInfo.lotes.length === 0">
-                                                <td colspan="5" class="py-4 text-center text-slate-400 text-xs">
-                                                    No hay lotes con stock para este medicamento.
+                            <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead class="bg-slate-50 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                                        <tr>
+                                            <th class="py-2 px-3">N° Lote</th>
+                                            <th class="py-2 px-3">Vencimiento</th>
+                                            <th class="py-2 px-3 text-center">Stock</th>
+                                            <th class="py-2 px-3 text-center">Estado</th>
+                                            <th class="py-2 px-3 text-right">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                                        <template x-for="(lote, lIdx) in (productoInfo.lotes || [])" :key="lote.id">
+                                            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                                                <td class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-white" x-text="lote.numero_lote"></td>
+                                                <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300" x-text="lote.fecha_vencimiento ? lote.fecha_vencimiento.substring(0, 10) : 'N/A'"></td>
+                                                <td class="py-2.5 px-3 text-center font-bold text-emerald-600" x-text="lote.stock_actual + ' u.'"></td>
+                                                <td class="py-2.5 px-3 text-center">
+                                                    <span x-show="lIdx === 0" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                                        FEFO (Sale 1°)
+                                                    </span>
+                                                    <span x-show="lIdx > 0" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                        Siguiente
+                                                    </span>
+                                                </td>
+                                                <td class="py-2.5 px-3 text-right">
+                                                    <button type="button" 
+                                                            @click="agregarAlCarrito(productoInfo, null, lote.id); modalInfoProducto = false;"
+                                                            class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition">
+                                                        Despachar
+                                                    </button>
                                                 </td>
                                             </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        </template>
+                                        <tr x-show="!productoInfo.lotes || productoInfo.lotes.length === 0">
+                                            <td colspan="5" class="py-4 text-center text-slate-400 text-xs">
+                                                No hay lotes con stock para este medicamento.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-
-                        <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                            <button type="button" @click="modalInfoProducto = false" class="px-4 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-xl text-xs font-semibold">
-                                Cerrar
-                            </button>
-                        </div>
                     </div>
-                </template>
-            </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                        <button type="button" @click="modalInfoProducto = false" class="px-4 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-xl text-xs font-semibold">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 
 
     <!-- ============================================================== -->
-    <!-- MODAL 5: REGISTRAR NUEVO CLIENTE RÁPIDO                        -->
+    <!-- MODAL 4: REGISTRAR NUEVO CLIENTE RÁPIDO                        -->
     <!-- ============================================================== -->
     <div x-show="modalNuevoCliente" 
          x-cloak 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         @keydown.escape.window="modalNuevoCliente = false">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="modalNuevoCliente = false"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-300 dark:border-slate-800">
-                
-                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente Rápido</h3>
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         @keydown.escape.window="modalNuevoCliente = false"
+         style="display: none;">
+        <div @click.away="modalNuevoCliente = false"
+             x-show="modalNuevoCliente" 
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-md border border-slate-300 dark:border-slate-800 my-auto">
+            
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
                     </div>
-                    <button type="button" @click="modalNuevoCliente = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente Rápido</h3>
+                </div>
+                <button type="button" @click="modalNuevoCliente = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
+
+            <div class="p-6 space-y-3">
+                <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs" x-text="errorClienteMsg"></div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Nombre Completo / Razón Social <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" 
+                           x-model="nuevoCliente.nombre" 
+                           placeholder="Ej: Juan Pérez o Distribuidora S.A."
+                           required
+                           class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
                 </div>
 
-                <div class="p-6 space-y-3">
-                    <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs" x-text="errorClienteMsg"></div>
-
+                <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Nombre Completo / Razón Social <span class="text-rose-500">*</span>
+                            Cédula / RUC
                         </label>
                         <input type="text" 
-                               x-model="nuevoCliente.nombre" 
-                               placeholder="Ej: Juan Pérez o Distribuidora S.A."
-                               required
+                               x-model="nuevoCliente.documento" 
+                               placeholder="001-000000-0000A"
                                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
                     </div>
-
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Cédula / RUC
-                            </label>
-                            <input type="text" 
-                                   x-model="nuevoCliente.documento" 
-                                   placeholder="001-000000-0000A"
-                                   class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Teléfono
-                            </label>
-                            <input type="text" 
-                                   x-model="nuevoCliente.telefono" 
-                                   placeholder="8888-9999"
-                                   class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
-                        </div>
-                    </div>
-
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Dirección
+                            Teléfono
                         </label>
                         <input type="text" 
-                               x-model="nuevoCliente.direccion" 
-                               placeholder="Dirección o barrio..."
+                               x-model="nuevoCliente.telefono" 
+                               placeholder="8888-9999"
                                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
                     </div>
                 </div>
 
-                <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
-                    <button type="button" @click="modalNuevoCliente = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
-                        Cancelar
-                    </button>
-                    <button type="button" 
-                            @click="registrarClienteRapido()"
-                            :disabled="guardandoCliente"
-                            class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1">
-                        <span x-text="guardandoCliente ? 'Guardando...' : 'Guardar y Seleccionar'"></span>
-                    </button>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Dirección
+                    </label>
+                    <input type="text" 
+                           x-model="nuevoCliente.direccion" 
+                           placeholder="Dirección o barrio..."
+                           class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
                 </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
+                <button type="button" @click="modalNuevoCliente = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
+                    Cancelar
+                </button>
+                <button type="button" 
+                        @click="registrarClienteRapido()"
+                        :disabled="guardandoCliente"
+                        class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1">
+                    <span x-text="guardandoCliente ? 'Guardando...' : 'Guardar y Seleccionar'"></span>
+                </button>
             </div>
         </div>
     </div>
