@@ -1,283 +1,114 @@
 @extends('layouts.app')
-
-@section('title', 'Reporte de Lotes')
-
-@section('header')
-    Reportes / Lotes
-@endsection
-
-@section('page-actions')
-    <div>
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Lotes</h2>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Estado, stock, proveedor y vencimiento (con export).</p>
-    </div>
-@endsection
-
+@section('title', 'Lotes de Inventario - FarmaBien')
 @section('content')
-@php
-    $moneda = config('app.moneda', 'C$');
-
-    $porEstado = collect($lotesPorEstado ?? []);
-    $labelsEstado = $porEstado->pluck('estado');
-    $cntEstado = $porEstado->pluck('cantidad');
-
-    $topProv = collect($lotes ?? [])->groupBy(fn($l) => $l->proveedor?->nombre ?? '—')
-        ->map(fn($g) => (int)$g->count())
-        ->sortDesc()->take(10);
-    $labelsProv = $topProv->keys()->values();
-    $cntProv = $topProv->values();
-@endphp
-
-<div class="max-w-7xl mx-auto px-4 sm:px-1 lg:px-3 py-2">
-
-    @if (session('error'))
-        <div class="mb-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-800 dark:text-rose-200">
-            <p class="font-bold">{{ session('error') }}</p>
+<div class="space-y-5">
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-300/80 dark:border-slate-800 pb-3">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Lotes de Inventario</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Estado, stock, proveedor y vencimiento por lote.</p>
         </div>
-    @endif
+        <div class="flex items-center gap-2">
+            <a href="{{ route('inventario.ajustar') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                <span>Ajustar Stock</span>
+            </a>
+            <a href="{{ route('inventario.index') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
+        </div>
+    </div>
 
     {{-- Filtros --}}
-    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 shadow-sm p-5 mb-4">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-3" id="formFiltrosLotes">
-            <input type="hidden" name="export" id="export" value="">
-
-            <div class="md:col-span-3">
-                <label class="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Producto</label>
-                <select name="producto_id"
-                        class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500">
+    <form method="GET" action="{{ route('inventario.lotes') }}" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Buscar lote o medicamento</label>
+                <input type="text" name="buscar" value="{{ request('buscar') }}" placeholder="Numero de lote, nombre medicamento..." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Estado de Vencimiento</label>
+                <select name="filtro_vencimiento" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
                     <option value="">Todos</option>
-                    @foreach(($productos ?? []) as $p)
-                        <option value="{{ $p->id }}" {{ (string)request('producto_id') === (string)$p->id ? 'selected' : '' }}>{{ $p->nombre }}</option>
-                    @endforeach
+                    <option value="proximos_30" {{ request('filtro_vencimiento')=='proximos_30'?'selected':'' }}>Proximos 30 dias</option>
+                    <option value="proximos_60" {{ request('filtro_vencimiento')=='proximos_60'?'selected':'' }}>Proximos 60 dias</option>
+                    <option value="vencidos" {{ request('filtro_vencimiento')=='vencidos'?'selected':'' }}>Vencidos</option>
                 </select>
             </div>
-
-            <div class="md:col-span-3">
-                <label class="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Proveedor</label>
-                <select name="proveedor_id"
-                        class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500">
-                    <option value="">Todos</option>
-                    @foreach(($proveedores ?? []) as $pr)
-                        <option value="{{ $pr->id }}" {{ (string)request('proveedor_id') === (string)$pr->id ? 'selected' : '' }}>{{ $pr->nombre }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="md:col-span-2">
-                <label class="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Estado</label>
-                <select name="estado"
-                        class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500">
-                    <option value="">Todos</option>
-                    @foreach(['activo'=>'Activo','agotado'=>'Agotado','vencido'=>'Vencido','bloqueado'=>'Bloqueado'] as $k=>$v)
-                        <option value="{{ $k }}" {{ request('estado')===$k ? 'selected' : '' }}>{{ $v }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="md:col-span-2">
-                <label class="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Próximos (días)</label>
-                <input type="number" min="1" max="365" name="proximos_dias" value="{{ request('proximos_dias') }}" placeholder="30"
-                       class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500" />
-            </div>
-
-            <div class="md:col-span-2 flex items-end gap-3">
-                <label class="inline-flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
-                    <input type="checkbox" name="con_stock" value="1" {{ request('con_stock') ? 'checked' : '' }}
-                           class="rounded border-slate-300 dark:border-slate-600 text-cyan-600 focus:ring-cyan-500" />
-                    Con stock
-                </label>
-                <label class="inline-flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
-                    <input type="checkbox" name="vencidos" value="1" {{ request('vencidos') ? 'checked' : '' }}
-                           class="rounded border-slate-300 dark:border-slate-600 text-cyan-600 focus:ring-cyan-500" />
-                    Vencidos
-                </label>
-            </div>
-
-            <div class="md:col-span-2 flex items-end">
-                <label class="inline-flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
-                    <input type="checkbox" name="activo" value="1" {{ request()->has('activo') ? (request('activo') ? 'checked' : '') : '' }}
-                           class="rounded border-slate-300 dark:border-slate-600 text-cyan-600 focus:ring-cyan-500" />
-                    Solo activos
-                </label>
-            </div>
-
-            <div class="md:col-span-2">
-                <label class="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Ingreso inicio</label>
-                <input type="date" name="ingreso_inicio" value="{{ request('ingreso_inicio') }}"
-                       class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500" />
-            </div>
-
-            <div class="md:col-span-2">
-                <label class="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Ingreso fin</label>
-                <input type="date" name="ingreso_fin" value="{{ request('ingreso_fin') }}"
-                       class="mt-1 w-full px-3 py-2 bg-white dark:bg-gray-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500" />
-            </div>
-
-            <div class="md:col-span-12 flex flex-col md:flex-row gap-2 md:items-end md:justify-end mt-1">
-                <button type="submit"
-                        class="inline-flex w-full md:w-auto justify-center items-center px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-extrabold rounded-lg shadow-sm">
-                    Aplicar
-                </button>
-
-                <button type="button"
-                        onclick="document.getElementById('export').value='pdf'; document.getElementById('formFiltrosLotes').submit();"
-                        class="inline-flex w-full md:w-auto justify-center items-center px-4 py-2 bg-white dark:bg-gray-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-gray-700 shadow-sm">
-                    PDF
-                </button>
-
-                <button type="button"
-                        onclick="document.getElementById('export').value='excel'; document.getElementById('formFiltrosLotes').submit();"
-                        class="inline-flex w-full md:w-auto justify-center items-center px-4 py-2 bg-white dark:bg-gray-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-gray-700 shadow-sm">
-                    Excel
-                </button>
-
-                @if(request()->hasAny(['producto_id','proveedor_id','estado','activo','con_stock','vencidos','proximos_dias','ingreso_inicio','ingreso_fin']))
-                    <a href="{{ route('reportes.lotes') }}"
-                       class="inline-flex w-full md:w-auto justify-center items-center px-4 py-2 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 font-bold rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/30 shadow-sm">
-                        Limpiar
-                    </a>
-                @endif
-            </div>
-        </form>
-
-        <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">Exportación: PDF (tabla) / Excel (CSV). Primero revisa la vista previa y luego exporta.</p>
-    </div>
-
-    {{-- KPIs --}}
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
-            <p class="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Lotes</p>
-            <p class="mt-1 text-2xl font-extrabold text-cyan-600 dark:text-cyan-300">{{ (int)($totalLotes ?? 0) }}</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
-            <p class="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Stock total</p>
-            <p class="mt-1 text-2xl font-extrabold text-indigo-600 dark:text-indigo-300">{{ number_format((int)($stockTotal ?? 0), 0) }}</p>
+        <div class="flex items-center gap-2 mt-3">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition">Filtrar</button>
+            <a href="{{ route('inventario.lotes') }}" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">Limpiar</a>
+            <span class="text-xs text-slate-400 ml-2">{{ $lotes->total() }} lotes encontrados</span>
         </div>
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
-            <p class="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Valor</p>
-            <p class="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-300">{{ $moneda }} {{ number_format((float)($valorTotal ?? 0), 2) }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
-            <p class="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Vencidos</p>
-            <p class="mt-1 text-2xl font-extrabold text-rose-600 dark:text-rose-300">{{ (int)($vencidosCount ?? 0) }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
-            <p class="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Próx. 30 días</p>
-            <p class="mt-1 text-2xl font-extrabold text-amber-600 dark:text-amber-300">{{ (int)($proximosCount ?? 0) }}</p>
-        </div>
-    </div>
-
-    {{-- Gráficos --}}
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
-            <div class="flex items-center justify-between">
-                <h3 class="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Por estado</h3>
-                <span class="text-xs text-slate-500 dark:text-slate-400">Cantidad</span>
-            </div>
-            <div class="mt-3 h-64">
-                <canvas id="chartLotesEstado"></canvas>
-            </div>
-        </div>
-
-        <div class="xl:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 p-5 shadow-sm">
-            <div class="flex items-center justify-between">
-                <h3 class="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Top proveedores</h3>
-                <span class="text-xs text-slate-500 dark:text-slate-400">Cantidad de lotes</span>
-            </div>
-            <div class="mt-3 h-64">
-                <canvas id="chartLotesProv"></canvas>
-            </div>
-        </div>
-    </div>
+    </form>
 
     {{-- Tabla --}}
-    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 shadow-sm p-5">
-        <div class="flex items-center justify-between">
-            <h3 class="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Detalle de lotes</h3>
-            <span class="text-xs text-slate-500 dark:text-slate-400">{{ (int)($totalLotes ?? 0) }} registros</span>
-        </div>
-
-        <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-            <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 dark:bg-gray-900/40">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-800/50">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">ID</th>
-                        <th class="px-3 py-2 text-left text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Producto</th>
-                        <th class="px-3 py-2 text-left text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Proveedor</th>
-                        <th class="px-3 py-2 text-left text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Lote</th>
-                        <th class="px-3 py-2 text-left text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Vencimiento</th>
-                        <th class="px-3 py-2 text-right text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Stock</th>
-                        <th class="px-3 py-2 text-right text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Precio</th>
-                        <th class="px-3 py-2 text-right text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Valor</th>
-                        <th class="px-3 py-2 text-left text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Estado</th>
-                        <th class="px-3 py-2 text-left text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">Activo</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">N Lote</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Medicamento</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Proveedor</th>
+                        <th class="text-right px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Stock Ini.</th>
+                        <th class="text-right px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Stock Act.</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Vencimiento</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Estado</th>
+                        <th class="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                    @foreach(($lotes ?? []) as $l)
-                        @php
-                            $valor = ((float)($l->precio_compra ?? 0)) * (int)($l->stock_actual ?? 0);
-                            $fv = $l->fecha_vencimiento ? \Illuminate\Support\Carbon::parse($l->fecha_vencimiento) : null;
-                            $vencido = $fv ? $fv->startOfDay()->lt(today()) : false;
-                        @endphp
-                        <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/40">
-                            <td class="px-3 py-2 whitespace-nowrap text-slate-700 dark:text-slate-200">{{ $l->id }}</td>
-                            <td class="px-3 py-2 text-slate-700 dark:text-slate-200">{{ $l->producto?->nombre ?? '—' }}</td>
-                            <td class="px-3 py-2 text-slate-700 dark:text-slate-200">{{ $l->proveedor?->nombre ?? '—' }}</td>
-                            <td class="px-3 py-2 text-slate-700 dark:text-slate-200">{{ $l->numero_lote ?? '—' }}</td>
-                            <td class="px-3 py-2 whitespace-nowrap {{ $vencido ? 'text-rose-700 dark:text-rose-300 font-bold' : 'text-slate-700 dark:text-slate-200' }}">
-                                {{ $fv ? $fv->format('Y-m-d') : '—' }}
-                            </td>
-                            <td class="px-3 py-2 text-right text-slate-700 dark:text-slate-200">{{ (int)($l->stock_actual ?? 0) }}</td>
-                            <td class="px-3 py-2 text-right text-slate-700 dark:text-slate-200">{{ number_format((float)($l->precio_compra ?? 0), 2) }}</td>
-                            <td class="px-3 py-2 text-right font-bold text-emerald-700 dark:text-emerald-300">{{ number_format($valor, 2) }}</td>
-                            <td class="px-3 py-2 text-slate-700 dark:text-slate-200">{{ $l->estado ?? '—' }}</td>
-                            <td class="px-3 py-2 text-slate-700 dark:text-slate-200">{{ $l->activo ? 'Sí' : 'No' }}</td>
-                        </tr>
-                    @endforeach
-
-                    @if(empty($lotes) || count($lotes) === 0)
-                        <tr>
-                            <td colspan="10" class="px-3 py-8 text-center text-slate-500 dark:text-slate-400">
-                                No hay lotes con esos filtros.
-                            </td>
-                        </tr>
-                    @endif
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    @forelse($lotes as $lote)
+                    @php
+                        $hoy = now()->toDateString();
+                        $venc = $lote->fecha_vencimiento->toDateString();
+                        $dias = (int) now()->diffInDays($lote->fecha_vencimiento, false);
+                        $estadoClass = $venc < $hoy ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400' : ($dias <= 30 ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400');
+                        $estadoLabel = $venc < $hoy ? 'Vencido' : ($dias <= 30 ? 'Por vencer' : 'Vigente');
+                    @endphp
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition {{ $venc < $hoy ? 'bg-rose-50/30 dark:bg-rose-950/10' : '' }}">
+                        <td class="px-4 py-3 font-mono font-bold text-slate-700 dark:text-slate-300">{{ $lote->numero_lote }}</td>
+                        <td class="px-4 py-3">
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">{{ $lote->producto->nombre ?? 'N/A' }}</p>
+                            <p class="text-[10px] text-slate-400">{{ $lote->producto->categoria->nombre ?? '' }} · {{ $lote->producto->laboratorio->nombre ?? '' }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ $lote->proveedor->nombre ?? '—' }}</td>
+                        <td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">{{ number_format($lote->stock_inicial) }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <span class="font-mono font-bold text-slate-900 dark:text-white">{{ number_format($lote->stock_actual) }}</span>
+                            @if($lote->stock_actual == 0)<span class="ml-1 text-[10px] text-rose-500 font-semibold">AGOTADO</span>@endif
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="font-semibold {{ $venc < $hoy ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300' }}">{{ $lote->fecha_vencimiento->format('d/m/Y') }}</p>
+                            @if($dias > 0 && $dias <= 60)<p class="text-[10px] text-amber-500">{{ $dias }} dias restantes</p>@endif
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold {{ $estadoClass }}">{{ $estadoLabel }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('inventario.kardex-producto', $lote->producto_id) }}" class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 font-semibold text-[10px]">Kardex</a>
+                                @can('ajustar inventario')
+                                <a href="{{ route('inventario.ajustar') }}?lote={{ $lote->id }}" class="text-amber-600 hover:text-amber-800 dark:text-amber-400 font-semibold text-[10px]">Ajustar</a>
+                                @endcan
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="8" class="px-4 py-12 text-center text-slate-400">
+                        <svg class="w-10 h-10 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        No se encontraron lotes con los filtros aplicados.
+                    </td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
+        @if($lotes->hasPages())
+        <div class="px-4 py-3 border-t border-slate-100 dark:border-slate-800">{{ $lotes->links() }}</div>
+        @endif
     </div>
-
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (typeof Chart === 'undefined') return;
-
-        const labelsEstado = @json($labelsEstado);
-        const cntEstado = @json($cntEstado);
-
-        const labelsProv = @json($labelsProv);
-        const cntProv = @json($cntProv);
-
-        const c1 = document.getElementById('chartLotesEstado');
-        if (c1) {
-            new Chart(c1, {
-                type: 'pie',
-                data: { labels: labelsEstado, datasets: [{ label: 'Lotes', data: cntEstado }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        const c2 = document.getElementById('chartLotesProv');
-        if (c2) {
-            new Chart(c2, {
-                type: 'bar',
-                data: { labels: labelsProv, datasets: [{ label: 'Lotes', data: cntProv }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-    });
-</script>
 @endsection

@@ -183,6 +183,14 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.alertas') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Alertas de Stock</span>
                 </a>
+
+                @can('ajustar inventario')
+                <a href="{{ route('inventario.ajustar') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('inventario.ajustar*') ? 'bg-indigo-600/20 text-indigo-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.ajustar*') ? '!bg-indigo-400' : '' }}"></span>
+                    <span>Ajustar Stock</span>
+                </a>
+                @endcan
             </div>
         </div>
         @endcan
