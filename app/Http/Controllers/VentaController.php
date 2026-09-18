@@ -62,13 +62,34 @@ class VentaController extends Controller
 
         $ventas = $query->orderBy('fecha', 'desc')->paginate(15)->withQueryString();
 
-        return view('ventas.index', compact('ventas'));
+        $stats = [
+            'total' => Venta::count(),
+            'completadas' => Venta::where('estado', 'completada')->count(),
+            'anuladas' => Venta::where('estado', 'anulada')->count(),
+            'ingresos' => Venta::where('estado', 'completada')->sum('total'),
+        ];
+
+        return view('ventas.index', compact('ventas', 'stats'));
     }
 
     public function create()
     {
         $clientes = Cliente::activos()->orderBy('nombre')->get();
-        return view('ventas.create', compact('clientes'));
+        $categorias = \App\Models\Categoria::activas()->orderBy('nombre')->get();
+        $productos = Producto::with([
+                'categoria',
+                'laboratorio',
+                'presentacionesActivas',
+                'lotes' => function ($query) {
+                    $query->disponibles()->orderBy('fecha_vencimiento', 'asc'); // FEFO
+                }
+            ])
+            ->activos()
+            ->get()
+            ->filter(fn($p) => $p->lotes->isNotEmpty())
+            ->values();
+
+        return view('ventas.create', compact('clientes', 'categorias', 'productos'));
     }
 
     public function store(StoreVentaRequest $request)
@@ -126,14 +147,29 @@ class VentaController extends Controller
 
         $venta->load([
             'detalles.producto.presentacionesActivas',
+            'detalles.producto.lotes',
             'detalles.lote',
+            'detalles.presentacion',
             'cliente',
             'recetas'
         ]);
 
         $clientes = Cliente::activos()->orderBy('nombre')->get();
+        $categorias = \App\Models\Categoria::activas()->orderBy('nombre')->get();
+        $productos = Producto::with([
+                'categoria',
+                'laboratorio',
+                'presentacionesActivas',
+                'lotes' => function ($query) {
+                    $query->disponibles()->orderBy('fecha_vencimiento', 'asc');
+                }
+            ])
+            ->activos()
+            ->get()
+            ->filter(fn($p) => $p->lotes->isNotEmpty())
+            ->values();
 
-        return view('ventas.edit', compact('venta', 'clientes'));
+        return view('ventas.edit', compact('venta', 'clientes', 'categorias', 'productos'));
     }
 
     public function update(UpdateVentaRequest $request, Venta $venta)

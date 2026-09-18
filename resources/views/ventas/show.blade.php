@@ -1,594 +1,387 @@
 @extends('layouts.app')
 
-@section('title', 'Detalle de Venta')
-
-@section('header')
-    Detalle de Venta
-@endsection
-
-@section('page-actions')
-    <div>
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
-            Venta #{{ $venta->id }}
-        </h2>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            {{ optional($venta->fecha)->format('d/m/Y H:i') ?? '—' }}
-            @if($venta->cliente)
-                — {{ $venta->cliente->nombre }}
-            @else
-                — Público general
-            @endif
-        </p>
-    </div>
-
-    <div class="flex flex-wrap gap-3">
-        <a href="{{ route('ventas.index') }}"
-           class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 shadow-sm">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Volver
-        </a>
-
-        @can('anular ventas')
-            @if($venta->puedeModificarse())
-                <a href="{{ route('ventas.edit', $venta) }}"
-                   class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                    Modificar
-                </a>
-
-                <button onclick="modalAnular()"
-                        class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Anular
-                </button>
-            @endif
-        @endcan
-    </div>
-@endsection
+@section('title', 'Detalle de Venta #' . str_pad($venta->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 
 @section('content')
+<div x-data="{
+    modalAnular: false,
+    motivoAnulacion: ''
+}" class="space-y-5">
+    
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+        <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <a href="{{ route('ventas.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Ventas POS</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-800 dark:text-slate-200 font-semibold">Ticket #{{ str_pad($venta->id, 5, '0', STR_PAD_LEFT) }}</span>
+    </nav>
 
-    {{-- Alertas de estado / trazabilidad --}}
-    @if($venta->estado === 'anulada')
-        <div class="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-600 p-4 rounded-lg">
-            <div class="flex">
-                <svg class="h-6 w-6 text-red-600 dark:text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                </svg>
-                <div>
-                    <p class="text-sm font-semibold text-red-800 dark:text-red-300">
-                        Venta Anulada — {{ optional($venta->fecha_anulacion)->format('d/m/Y H:i') ?? '—' }}
-                    </p>
-                    @if($venta->motivo_anulacion)
-                        <p class="text-sm text-red-700 dark:text-red-400 mt-1">
-                            Motivo: {{ $venta->motivo_anulacion }}
-                        </p>
+    <!-- Header & Action Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white">
+                    Venta #{{ str_pad($venta->id, 5, '0', STR_PAD_LEFT) }}
+                </h1>
+                
+                <!-- Status Badge -->
+                @if($venta->estado === 'completada')
+                    @if($venta->reemplazada_por)
+                        <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            Modificada (Reemplazada)
+                        </span>
+                    @else
+                        <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            Completada
+                        </span>
                     @endif
-                    @if($venta->anuladoPor)
-                        <p class="text-xs text-red-600 dark:text-red-500 mt-1">
-                            Anulado por: {{ $venta->anuladoPor->name }}
-                        </p>
-                    @endif
-                </div>
+                @elseif($venta->estado === 'anulada')
+                    <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        Anulada
+                    </span>
+                @endif
             </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Cajero: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $venta->usuario->name ?? 'Sistema' }}</span> • Fecha: {{ $venta->fecha ? $venta->fecha->format('d/m/Y H:i') : '-' }}
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Volver -->
+            <a href="{{ route('ventas.index') }}" 
+               class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition">
+                &larr; Volver
+            </a>
+
+            <!-- Ticket -->
+            <a href="{{ route('ventas.ticket', $venta) }}" 
+               target="_blank"
+               class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold border border-indigo-200 dark:border-indigo-800 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Imprimir Ticket</span>
+            </a>
+
+            <!-- Modificar -->
+            @if($venta->puedeModificarse())
+                @can('anular ventas')
+                <a href="{{ route('ventas.edit', $venta) }}" 
+                   class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shadow-xs transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Modificar</span>
+                </a>
+
+                <!-- Anular -->
+                <button type="button" 
+                        @click="modalAnular = true" 
+                        class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>Anular Venta</span>
+                </button>
+                @endcan
+            @endif
+        </div>
+    </div>
+
+    <!-- Traceability / Modification Banner -->
+    @if($venta->venta_original_id)
+        <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-200 text-xs flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span>Esta venta es una <strong>versión modificada</strong> que reemplaza a la venta original <strong>#{{ str_pad($venta->venta_original_id, 5, '0', STR_PAD_LEFT) }}</strong>.</span>
+            </div>
+            <a href="{{ route('ventas.show', $venta->ventaOriginal) }}" class="font-bold text-blue-700 dark:text-blue-300 underline hover:no-underline">
+                Ver Venta Original &rarr;
+            </a>
         </div>
     @endif
 
     @if($venta->reemplazada_por)
-        <div class="mb-6 bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-400 dark:border-purple-600 p-4 rounded-lg">
-            <div class="flex">
-                <svg class="h-6 w-6 text-purple-600 dark:text-purple-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                </svg>
-                <div>
-                    <p class="text-sm font-semibold text-purple-800 dark:text-purple-300">
-                        Venta Modificada — Esta venta fue reemplazada por
-                        <a href="{{ route('ventas.show', $venta->reemplazada_por) }}" class="underline hover:text-purple-900 dark:hover:text-purple-200">
-                            Venta #{{ $venta->reemplazada_por }}
-                        </a>
-                    </p>
-                </div>
+        <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span>Esta venta fue <strong>modificada</strong> y ha sido sustituida por la nueva versión <strong>#{{ str_pad($venta->reemplazada_por, 5, '0', STR_PAD_LEFT) }}</strong>.</span>
             </div>
+            <a href="{{ route('ventas.show', $venta->reemplazadaPor) }}" class="font-bold text-amber-700 dark:text-amber-300 underline hover:no-underline">
+                Ver Nueva Versión Activa &rarr;
+            </a>
         </div>
     @endif
 
-    @if($venta->venta_original_id)
-        <div class="mb-6 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-600 p-4 rounded-lg">
-            <div class="flex">
-                <svg class="h-6 w-6 text-blue-600 dark:text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                </svg>
-                <div>
-                    <p class="text-sm font-semibold text-blue-800 dark:text-blue-300">
-                        Esta venta es una modificación de
-                        <a href="{{ route('ventas.show', $venta->venta_original_id) }}" class="underline hover:text-blue-900 dark:hover:text-blue-200">
-                            Venta #{{ $venta->venta_original_id }}
-                        </a>
-                    </p>
-                </div>
+    @if($venta->estado === 'anulada')
+        <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1">
+            <div class="font-bold flex items-center space-x-2">
+                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>VENTA ANULADA</span>
             </div>
+            <p class="text-[11px] text-rose-800 dark:text-rose-300">
+                <strong>Motivo:</strong> {{ $venta->motivo_anulacion ?: 'No especificado' }} • 
+                <strong>Anulada por:</strong> {{ $venta->anuladoPor->name ?? 'Sistema' }} el {{ $venta->fecha_anulacion ? $venta->fecha_anulacion->format('d/m/Y H:i') : '-' }}
+            </p>
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {{-- Columna principal --}}
-        <div class="lg:col-span-2 space-y-6">
-
-            {{-- Información general --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Información de la Venta</h3>
-                            <p class="text-base text-slate-500 dark:text-slate-400">Datos generales</p>
-                        </div>
-                    </div>
+    <!-- Information Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- Cliente y Cajero -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
+            <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <span>Datos del Cliente & Atención</span>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-slate-900 dark:text-white">{{ $venta->cliente->nombre ?? 'Público General' }}</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                    Doc: {{ $venta->cliente->documento ?? 'Sin Documento' }}
+                </p>
+                @if($venta->cliente && $venta->cliente->telefono)
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Tel: {{ $venta->cliente->telefono }}</p>
+                @endif
+                <div class="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300">
+                    Atendido por: <strong class="text-slate-800 dark:text-slate-200">{{ $venta->usuario->name ?? 'Sistema' }}</strong>
                 </div>
+            </div>
+        </div>
 
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cliente</p>
-                            <p class="text-base font-bold text-slate-900 dark:text-white mt-1">
-                                {{ $venta->cliente?->nombre ?? 'Público general' }}
-                            </p>
-                        </div>
+        <!-- Forma de Pago & Recetas -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
+            <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                <span>Método de Pago & Control</span>
+            </div>
+            <div class="text-[11px] space-y-1 text-slate-600 dark:text-slate-300">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Método:</span>
+                    <span class="font-bold text-slate-900 dark:text-white uppercase">{{ $venta->metodo_pago ?? 'Efectivo' }}</span>
+                </div>
+                @if($venta->metodo_pago === 'efectivo' && $venta->monto_recibido !== null)
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Efectivo Recibido:</span>
+                    <span class="font-bold text-slate-900 dark:text-white">${{ number_format($venta->monto_recibido, 2) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Cambio / Vuelto:</span>
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400">${{ number_format($venta->cambio, 2) }}</span>
+                </div>
+                @endif
+                @if($venta->referencia_pago)
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Referencia:</span>
+                    <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $venta->referencia_pago }}</span>
+                </div>
+                @endif
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Recetas Médicas (Rx):</span>
+                    <span class="font-bold {{ $venta->recetas && $venta->recetas->count() ? 'text-amber-600' : 'text-slate-600' }}">
+                        {{ $venta->recetas ? $venta->recetas->count() : 0 }} vinculada(s)
+                    </span>
+                </div>
+            </div>
+        </div>
 
-                        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cajero</p>
-                            <p class="text-base font-bold text-slate-900 dark:text-white mt-1">
-                                {{ $venta->usuario?->name ?? '—' }}
-                            </p>
-                        </div>
+        <!-- Totales Financieros -->
+        <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2 flex flex-col justify-between">
+            <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Resumen de Liquidación</span>
+            </div>
+            <div class="space-y-1 text-xs">
+                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>Subtotal Bruto:</span>
+                    <span class="font-bold text-slate-900 dark:text-white">${{ number_format($venta->subtotal_bruto ?: $venta->total, 2) }}</span>
+                </div>
+                @if($venta->descuento_monto_total > 0)
+                <div class="flex justify-between text-rose-600 dark:text-rose-400">
+                    <span>Descuento Total:</span>
+                    <span class="font-bold">-${{ number_format($venta->descuento_monto_total, 2) }}</span>
+                </div>
+                @endif
+                <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
+                    <span class="font-semibold text-slate-600 dark:text-slate-300">Monto Total:</span>
+                    <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">${{ number_format($venta->total, 2) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Método de pago</p>
-                            <p class="text-base font-bold text-slate-900 dark:text-white mt-1">
-                                {{ $venta->metodo_pago ?? '—' }}
-                            </p>
-                        </div>
-                    </div>
+    <!-- Items & Lots Breakdown Table -->
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs overflow-hidden space-y-0">
+        <div class="p-3.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-800 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                Detalle de Medicamentos y Lotes Despachados
+            </h3>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                {{ $venta->detalles->count() }} ítems en la orden
+            </span>
+        </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha</p>
-                            <p class="text-base font-bold text-slate-900 dark:text-white mt-1">
-                                {{ optional($venta->fecha)->format('d/m/Y H:i') ?? '—' }}
-                            </p>
-                        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                        <th class="py-2.5 px-3">#</th>
+                        <th class="py-2.5 px-3">Medicamento / Fármaco</th>
+                        <th class="py-2.5 px-3">Presentación</th>
+                        <th class="py-2.5 px-3 text-center">Cant. Despachada</th>
+                        <th class="py-2.5 px-3 text-center">Factor</th>
+                        <th class="py-2.5 px-3 text-center">Unidades Base</th>
+                        <th class="py-2.5 px-3">Lote & Vencimiento</th>
+                        <th class="py-2.5 px-3 text-right">P. Unit</th>
+                        <th class="py-2.5 px-3 text-right">Descuento</th>
+                        <th class="py-2.5 px-3 text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                    @foreach($venta->detalles as $idx => $detalle)
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <!-- # -->
+                        <td class="py-3 px-3 text-slate-400 font-bold">{{ $idx + 1 }}</td>
 
-                        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estado</p>
-                            <div class="mt-2">
-                                @if($venta->estado === 'completada')
-                                    <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                                        Completada
-                                    </span>
-                                @else
-                                    <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-                                        Anulada
-                                    </span>
+                        <!-- Medicamento -->
+                        <td class="py-3 px-3">
+                            <a href="{{ route('productos.show', $detalle->producto) }}" class="font-bold text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 transition">
+                                {{ $detalle->producto->nombre ?? 'Producto eliminado' }}
+                            </a>
+                            <div class="text-[10px] text-slate-400 mt-0.5">
+                                {{ $detalle->producto->principio_activo ?? '' }} • Lab: {{ $detalle->producto->laboratorio->nombre ?? 'Sin Lab' }}
+                                @if($detalle->producto && $detalle->producto->requiere_receta)
+                                    <span class="ml-1 px-1 py-0.2 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">Rx Requerida</span>
                                 @endif
                             </div>
-                        </div>
+                        </td>
 
-                        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recetas</p>
-                            <p class="text-base font-bold text-slate-900 dark:text-white mt-1">
-                                {{ $venta->recetas?->count() ?? 0 }}
-                            </p>
-                        </div>
-                    </div>
+                        <!-- Presentación -->
+                        <td class="py-3 px-3 text-slate-700 dark:text-slate-300">
+                            {{ $detalle->tipo_presentacion ?: ($detalle->presentacion->nombre ?? 'Unidad Base') }}
+                        </td>
 
-                    @if($venta->observaciones)
-                        <div class="mt-5 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl">
-                            <p class="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Observaciones</p>
-                            <p class="text-sm text-amber-800 dark:text-amber-200 mt-1 whitespace-pre-line">{{ $venta->observaciones }}</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
+                        <!-- Cantidad Despachada -->
+                        <td class="py-3 px-3 text-center font-bold text-slate-900 dark:text-white">
+                            {{ $detalle->cantidad_presentaciones ?: $detalle->cantidad_unidades_base }}
+                        </td>
 
-            {{-- Detalle de productos --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Detalle de Productos</h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Items vendidos (con trazabilidad por lote)</p>
-                        </div>
-                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            {{ $venta->detalles->count() }} item(s)
-                        </span>
-                    </div>
-                </div>
+                        <!-- Factor -->
+                        <td class="py-3 px-3 text-center text-slate-500 dark:text-slate-400">
+                            x{{ $detalle->unidades_por_presentacion ?: 1 }}
+                        </td>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700/50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Producto</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Presentación</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Unid/Pres</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Cant. Pres</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total Unid</th>
-                                <th class="px-4 py-3 text-right text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">P. Unit</th>
-                                <th class="px-4 py-3 text-right text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Desc</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($venta->detalles as $d)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <div class="font-semibold text-slate-900 dark:text-white">
-                                            {{ $d->producto?->nombre ?? '—' }}
-                                        </div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                            Lote: <span class="font-semibold">{{ $d->numero_lote ?? $d->lote?->numero_lote ?? '—' }}</span>
-                                            @if($d->lote?->fecha_vencimiento)
-                                                · Vence: {{ $d->lote->fecha_vencimiento->format('d/m/Y') }}
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-4 text-center text-sm text-slate-700 dark:text-slate-200">
-                                        {{ $d->tipo_presentacion ?? ($d->presentacion?->nombre ?? 'Unidad') }}
-                                    </td>
-                                    <td class="px-4 py-4 text-center text-sm text-slate-700 dark:text-slate-200">
-                                        {{ (int) ($d->unidades_por_presentacion ?? 1) }}
-                                    </td>
-                                    <td class="px-4 py-4 text-center text-sm font-semibold text-slate-900 dark:text-white">
-                                        {{ (int) ($d->cantidad_presentaciones ?? 0) }}
-                                    </td>
-                                    <td class="px-4 py-4 text-center text-sm font-semibold text-slate-900 dark:text-white">
-                                        {{ (int) ($d->cantidad_unidades_base ?? 0) }}
-                                    </td>
-                                    <td class="px-4 py-4 text-right text-sm text-slate-700 dark:text-slate-200">
-                                        {{ number_format((float) ($d->precio_unitario ?? 0), 2) }}
-                                    </td>
-                                    <td class="px-4 py-4 text-right text-sm text-slate-700 dark:text-slate-200">
-                                        @if(((float)($d->descuento_monto ?? 0)) > 0)
-                                            <span class="text-red-600 dark:text-red-400 font-semibold">
-                                                -{{ number_format((float) $d->descuento_monto, 2) }}
-                                            </span>
-                                            <div class="text-[11px] text-slate-500 dark:text-slate-400">({{ number_format((float)($d->descuento_porcentaje ?? 0), 2) }}%)</div>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <span class="text-sm font-bold text-slate-900 dark:text-white">
-                                            {{ number_format((float) ($d->subtotal ?? 0), 2) }}
-                                        </span>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                        <!-- Total Base -->
+                        <td class="py-3 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                            {{ $detalle->cantidad_unidades_base }} u.
+                        </td>
 
-                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div class="text-sm text-slate-600 dark:text-slate-300">
-                            <span class="font-semibold">Total unidades:</span>
-                            {{ (int) $venta->detalles->sum('cantidad_unidades_base') }}
-                        </div>
-                        <div class="text-sm text-slate-600 dark:text-slate-300">
-                            <span class="font-semibold">Descuento total:</span>
-                            <span class="text-red-600 dark:text-red-400 font-bold">-{{ number_format((float) ($venta->descuento_monto_total ?? 0), 2) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Recetas asociadas --}}
-            @if($venta->recetas && $venta->recetas->count())
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Recetas asociadas</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Requeridas para medicamentos controlados</p>
-                    </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($venta->recetas as $r)
-                                <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                                    <div class="font-semibold text-slate-900 dark:text-white">Receta #{{ $r->id }}</div>
-                                    <div class="text-sm text-slate-600 dark:text-slate-300 mt-1">{{ $r->paciente ?? 'Paciente: —' }}</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                        {{ $r->created_at?->format('d/m/Y H:i') ?? '' }}
-                                    </div>
+                        <!-- Lote y Vencimiento -->
+                        <td class="py-3 px-3">
+                            @if($detalle->lote)
+                                <div class="font-mono font-bold text-slate-900 dark:text-white text-[11px]">
+                                    {{ $detalle->lote->numero_lote }}
                                 </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endif
+                                <div class="flex items-center space-x-1.5 mt-0.5">
+                                    <span class="text-[10px] text-slate-400">
+                                        Vence: {{ $detalle->lote->fecha_vencimiento ? $detalle->lote->fecha_vencimiento->format('d/m/Y') : '-' }}
+                                    </span>
+                                    @if($detalle->lote->estaVencido())
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-700">Vencido</span>
+                                    @elseif($detalle->lote->proximoAVencer(30))
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-700">Próx. Vencer</span>
+                                    @else
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">Vigente</span>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-slate-400 italic text-[10px]">Sin lote</span>
+                            @endif
+                        </td>
 
-            {{-- Historial de modificaciones (cadena) --}}
-            @if(!empty($historial) && $historial->count())
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Historial de modificaciones</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Cadena completa de versiones</p>
-                    </div>
+                        <!-- Precio Unitario -->
+                        <td class="py-3 px-3 text-right text-slate-700 dark:text-slate-300">
+                            ${{ number_format($detalle->precio_unitario, 2) }}
+                        </td>
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-700/50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Versión</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Venta</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fecha</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Cliente</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Usuario</th>
-                                    <th class="px-6 py-3 text-right text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total</th>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                @foreach($historial as $h)
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                        <td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">V{{ $h['version'] }}</td>
-                                        <td class="px-6 py-4">
-                                            <a class="text-purple-700 dark:text-purple-300 font-semibold hover:underline" href="{{ route('ventas.show', $h['id']) }}">
-                                                #{{ $h['id'] }}
-                                            </a>
-                                            @if($h['es_activa'])
-                                                <span class="ml-2 px-2 py-1 text-[11px] font-bold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">ACTIVA</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-200">{{ optional($h['fecha'])->format('d/m/Y H:i') }}</td>
-                                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $h['cliente'] }}</td>
-                                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $h['usuario'] }}</td>
-                                        <td class="px-6 py-4 text-right text-sm font-bold text-slate-900 dark:text-white">{{ number_format((float)($h['total'] ?? 0), 2) }}</td>
-                                        <td class="px-6 py-4">
-                                            @if(($h['estado'] ?? '') === 'completada')
-                                                <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Completada</span>
-                                            @else
-                                                <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">Anulada</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
+                        <!-- Descuento -->
+                        <td class="py-3 px-3 text-right">
+                            @if((float)$detalle->descuento_monto > 0)
+                                <span class="text-rose-600 dark:text-rose-400 font-bold">
+                                    -${{ number_format($detalle->descuento_monto, 2) }}
+                                </span>
+                            @else
+                                <span class="text-slate-400">-</span>
+                            @endif
+                        </td>
 
-        </div>
-
-        {{-- Sidebar --}}
-        <div class="space-y-6">
-
-            {{-- Resumen financiero --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Resumen</h3>
-                </div>
-                <div class="p-6 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Subtotal bruto</span>
-                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ number_format((float)($venta->subtotal_bruto ?? 0), 2) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Descuento total</span>
-                        <span class="text-sm font-bold text-red-600 dark:text-red-400">-{{ number_format((float)($venta->descuento_monto_total ?? 0), 2) }}</span>
-                    </div>
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between items-center">
-                        <span class="text-base font-semibold text-slate-900 dark:text-white">TOTAL</span>
-                        <span class="text-xl font-extrabold text-green-600 dark:text-green-400">{{ number_format((float)($venta->total ?? 0), 2) }}</span>
-                    </div>
-                    @if(((float)($venta->descuento_porcentaje ?? 0)) > 0)
-                        <div class="text-xs text-slate-500 dark:text-slate-400">
-                            Descuento global configurado: <span class="font-semibold">{{ number_format((float)$venta->descuento_porcentaje, 2) }}%</span>
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Pago / caja --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Pago</h3>
-                </div>
-                <div class="p-6 space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">Método</span>
-                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ $venta->metodo_pago ?? '—' }}</span>
-                    </div>
-
-                    @php
-                        $esEfectivo = \Illuminate\Support\Str::of((string)($venta->metodo_pago ?? ''))
-                            ->lower()
-                            ->contains('efectivo');
-                    @endphp
-
-                    @if($esEfectivo)
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-slate-600 dark:text-slate-400">Recibido</span>
-                            <span class="text-sm font-bold text-slate-900 dark:text-white">{{ $venta->monto_recibido !== null ? number_format((float)$venta->monto_recibido, 2) : '—' }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-slate-600 dark:text-slate-400">Cambio</span>
-                            <span class="text-sm font-bold text-slate-900 dark:text-white">{{ $venta->cambio !== null ? number_format((float)$venta->cambio, 2) : '—' }}</span>
-                        </div>
-                    @endif
-
-                    @if(!empty($venta->referencia_pago))
-                        <div class="pt-2">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Referencia</p>
-                            <p class="text-sm font-semibold text-slate-900 dark:text-white mt-1 break-words">{{ $venta->referencia_pago }}</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Estadísticas --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Estadísticas</h3>
-
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm text-slate-600 dark:text-slate-400">Productos</span>
-                                <span class="font-bold text-slate-900 dark:text-white">{{ $venta->detalles->count() }}</span>
-                            </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div class="bg-purple-600 h-2 rounded-full" style="width: 100%"></div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm text-slate-600 dark:text-slate-400">Unidades totales</span>
-                                <span class="font-bold text-slate-900 dark:text-white">{{ (int) $venta->detalles->sum('cantidad_unidades_base') }}</span>
-                            </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div class="bg-green-600 h-2 rounded-full" style="width: 100%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Acciones de impresión --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Acciones de Impresión</h3>
-
-                    <div class="space-y-2">
-                        {{-- Ticket POS (siempre) --}}
-                        <a href="{{ route('ventas.ticket', $venta) }}"
-                           target="_blank"
-                           class="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-lg transition-all duration-200 hover:shadow-md">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"></path>
-                            </svg>
-                            Imprimir Ticket (POS)
-                        </a>
-
-                        {{-- Imprimir A4 (si existe la ruta) --}}
-                        @if (\Illuminate\Support\Facades\Route::has('ventas.imprimir'))
-                            <a href="{{ route('ventas.imprimir', $venta) }}"
-                               target="_blank"
-                               class="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 hover:shadow-md">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                                </svg>
-                                Imprimir A4
-                            </a>
-                        @endif
-
-                        {{-- Descargar PDF (si existe la ruta) --}}
-                        @if (\Illuminate\Support\Facades\Route::has('ventas.pdf'))
-                            <a href="{{ route('ventas.pdf', $venta) }}"
-                               class="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg transition-all duration-200 hover:shadow-md">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                Descargar PDF
-                            </a>
-                        @endif
-
-                        <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
-
-                        <a href="{{ route('ventas.index') }}"
-                           class="w-full inline-flex justify-center items-center px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-slate-800 dark:text-slate-200 font-semibold rounded-lg transition-colors duration-200">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                            </svg>
-                            Ver Todas las Ventas
-                        </a>
-                    </div>
-                </div>
-            </div>
-
+                        <!-- Subtotal -->
+                        <td class="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
+                            ${{ number_format($detalle->subtotal, 2) }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
 
-    {{-- Modal anular (igual estilo que compras) --}}
-    <div id="modalAnular" class="hidden fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 transition-opacity" onclick="cerrarModalAnular()"></div>
+    <!-- Observaciones -->
+    @if($venta->observaciones)
+    <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-1">
+        <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Observaciones Registradas</h4>
+        <p class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line">{{ $venta->observaciones }}</p>
+    </div>
+    @endif
 
-            <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                            <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Anular Venta #{{ $venta->id }}</h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">Esta acción no se puede deshacer</p>
-                        </div>
+    <!-- Modal Anular Venta -->
+    <div x-show="modalAnular" 
+         x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+         @keydown.escape.window="modalAnular = false">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-xl space-y-4"
+             @click.outside="modalAnular = false">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Anular Venta #{{ str_pad($venta->id, 5, '0', STR_PAD_LEFT) }}</h3>
+                </div>
+                <button @click="modalAnular = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-300">
+                ¿Está completamente seguro de anular esta venta? El stock de todos los medicamentos y lotes será reintegrado al inventario disponible.
+            </p>
+
+            <form action="{{ route('ventas.anular', $venta) }}" method="POST" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Motivo de anulación <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea name="motivo" 
+                              x-model="motivoAnulacion"
+                              rows="2" 
+                              required 
+                              minlength="5"
+                              placeholder="Ej: Devolución inmediata por error del cliente o cancelación de pedido..."
+                              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500"></textarea>
                 </div>
 
-                <form action="{{ route('ventas.anular', $venta) }}" method="POST">
-                    @csrf
-
-                    <div class="p-6">
-                        <label class="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                            Motivo de Anulación <span class="text-red-500">*</span>
-                        </label>
-                        <textarea name="motivo"
-                                  rows="4"
-                                  required
-                                  class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                  placeholder="Ingrese el motivo de la anulación..."></textarea>
-                    </div>
-
-                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
-                        <button type="button"
-                                onclick="cerrarModalAnular()"
-                                class="px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
-                            Cancelar
-                        </button>
-                        <button type="submit"
-                                class="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
-                            Anular Venta
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" 
+                            @click="modalAnular = false" 
+                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            :disabled="motivoAnulacion.trim().length < 5"
+                            :class="motivoAnulacion.trim().length < 5 ? 'opacity-50 cursor-not-allowed' : ''"
+                            class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition">
+                        Confirmar Anulación
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-
-    <script>
-        function modalAnular() {
-            const el = document.getElementById('modalAnular');
-            if (!el) return;
-            el.classList.remove('hidden');
-        }
-
-        function cerrarModalAnular() {
-            const el = document.getElementById('modalAnular');
-            if (!el) return;
-            el.classList.add('hidden');
-        }
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                cerrarModalAnular();
-            }
-        });
-    </script>
-
+</div>
 @endsection

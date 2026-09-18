@@ -1,2377 +1,957 @@
 @extends('layouts.app')
 
-@section('title', 'Registrar Venta')
-
-@section('header')
-    Registrar Venta
-@endsection
-
-@section('page-actions')
-    <div>
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
-            Nueva Venta 🧾
-        </h2>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Registra la salida de productos (POS rápido)
-        </p>
-    </div>
-    <div class="flex gap-3">
-        <button type="button"
-                onclick="window.dispatchEvent(new CustomEvent('pos-limpiar-venta'))"
-                class="inline-flex items-center px-4 py-2 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-semibold rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors duration-200 shadow-sm">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-            Limpiar venta
-        </button>
-
-        <a href="{{ route('ventas.index') }}"
-           class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 shadow-sm">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 19l-7-7 7-7"/>
-            </svg>
-            Volver
-        </a>
-
-    </div>
-@endsection
-
-@push('styles')
-<style>
-    [x-cloak] { display: none !important; }
-    .col-resize-handle{touch-action:none;}
-    th.th-resizable cursor-move{overflow:visible;}
-    #tablaProductos td{vertical-align:top;}
-</style>
-@endpush
+@section('title', 'Terminal Punto de Venta (POS)')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-1 lg:px-3 py-0 pb-2" x-data="ventaPOS()" x-init="init()" x-cloak>
+<div x-data="{
+    formLayout: localStorage.getItem('farma_pos_layout') || 'compact',
+    setLayout(layout) {
+        this.formLayout = layout;
+        localStorage.setItem('farma_pos_layout', layout);
+    },
+    catalogo: @js($productos ?? []),
+    clientes: @js($clientes ?? []),
+    categorias: @js($categorias ?? []),
+    
+    // Buscador y filtros
+    busqueda: '',
+    filtroCategoriaId: '',
+    
+    // Datos de la Venta
+    formData: {
+        cliente_id: '',
+        tipo_comprobante: 'ticket',
+        serie: '',
+        numero_comprobante: '',
+        metodo_pago: 'efectivo',
+        descuento: 0,
+        monto_recibido: ''
+    },
+    
+    // Ítems del Carrito
+    items: [],
+    
+    // Modales
+    modalCobro: false,
+    modalTicketPreview: false,
+    modalReceta: false,
+    ticketData: null,
+    procesandoVenta: false,
+    errorMsg: '',
 
-    {{-- Errores server-side (si vuelves a validar por POST tradicional) --}}
-    @if ($errors->any())
-        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-            <p class="font-bold mb-2">Hay errores en el formulario:</p>
-            <ul class="list-disc ml-5 text-sm space-y-1">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    // Receta médica temporal
+    recetaInfo: {
+        medico_nombre: '',
+        medico_cmp: '',
+        paciente_nombre: '',
+        observaciones: ''
+    },
 
-    @php
-        // Catálogo POS: map igual que compras, pero con precio_venta + lotes + presentaciones
-        $productosData = collect($productos ?? [])->map(function($p){
-            $img = $p->imagen ?? null;
-            $imgUrl = null;
-            if ($img) {
-                $imgUrl = str_starts_with($img, 'http') ? $img : asset('storage/'.$img);
+    // Métodos del Carrito
+    agregarAlCarrito(producto, presentacionId = null, loteId = null) {
+        if (!producto || !producto.lotes || producto.lotes.length === 0) {
+            alert('Este medicamento no tiene lotes con stock disponible.');
+            return;
+        }
+
+        // Seleccionar lote por defecto (primer lote FEFO)
+        const loteDefault = loteId ? producto.lotes.find(l => l.id == loteId) : producto.lotes[0];
+        if (!loteDefault) {
+            alert('Lote no disponible.');
+            return;
+        }
+
+        // Presentaciones disponibles (Unidad base + presentaciones activas)
+        const presDisponibles = [
+            { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(producto.precio_venta) || 0 }
+        ];
+        if (producto.presentaciones_activas && producto.presentaciones_activas.length > 0) {
+            producto.presentaciones_activas.forEach(pr => {
+                presDisponibles.push({
+                    id: pr.id,
+                    nombre: pr.nombre,
+                    unidades: parseInt(pr.unidades_por_presentacion) || 1,
+                    precio: parseFloat(pr.precio_venta) || (parseFloat(producto.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
+                });
+            });
+        }
+
+        // Verificar si ya está en carrito con el mismo lote y presentación
+        const existeIdx = this.items.findIndex(it => it.producto_id == producto.id && it.lote_id == loteDefault.id && it.presentacion_id == presentacionId);
+        
+        if (existeIdx !== -1) {
+            this.items[existeIdx].cantidad++;
+            return;
+        }
+
+        // Determinar presentación inicial
+        let presSel = presDisponibles[0];
+        if (presentacionId) {
+            const encontrada = presDisponibles.find(p => p.id == presentacionId);
+            if (encontrada) presSel = encontrada;
+        }
+
+        this.items.push({
+            uid: Date.now() + Math.random().toString(36).substr(2, 5),
+            producto_id: producto.id,
+            nombre: producto.nombre,
+            principio_activo: producto.principio_activo || '',
+            requiere_receta: !!producto.requiere_receta,
+            lotesDisponibles: producto.lotes,
+            lote_id: loteDefault.id,
+            lote_obj: loteDefault,
+            presentacionesDisponibles: presDisponibles,
+            presentacion_id: presSel.id,
+            factor: presSel.unidades,
+            precio_unitario: presSel.precio,
+            cantidad: 1
+        });
+    },
+
+    agregarItemVacio() {
+        if (this.catalogo.length === 0) return;
+        const p = this.catalogo[0];
+        this.agregarAlCarrito(p);
+    },
+
+    onProductoChange(idx) {
+        const item = this.items[idx];
+        const prod = this.catalogo.find(p => p.id == item.producto_id);
+        if (!prod) return;
+
+        item.nombre = prod.nombre;
+        item.principio_activo = prod.principio_activo || '';
+        item.requiere_receta = !!prod.requiere_receta;
+        item.lotesDisponibles = prod.lotes || [];
+        
+        if (prod.lotes && prod.lotes.length > 0) {
+            item.lote_id = prod.lotes[0].id;
+            item.lote_obj = prod.lotes[0];
+        }
+
+        const presDisponibles = [
+            { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(prod.precio_venta) || 0 }
+        ];
+        if (prod.presentaciones_activas && prod.presentaciones_activas.length > 0) {
+            prod.presentaciones_activas.forEach(pr => {
+                presDisponibles.push({
+                    id: pr.id,
+                    nombre: pr.nombre,
+                    unidades: parseInt(pr.unidades_por_presentacion) || 1,
+                    precio: parseFloat(pr.precio_venta) || (parseFloat(prod.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
+                });
+            });
+        }
+        item.presentacionesDisponibles = presDisponibles;
+        item.presentacion_id = null;
+        item.factor = 1;
+        item.precio_unitario = parseFloat(prod.precio_venta) || 0;
+    },
+
+    onPresentacionChange(idx) {
+        const item = this.items[idx];
+        const pres = item.presentacionesDisponibles.find(p => p.id == item.presentacion_id);
+        if (pres) {
+            item.factor = pres.unidades;
+            item.precio_unitario = pres.precio;
+        } else {
+            item.factor = 1;
+            const prod = this.catalogo.find(p => p.id == item.producto_id);
+            item.precio_unitario = prod ? parseFloat(prod.precio_venta) || 0 : 0;
+        }
+    },
+
+    onLoteChange(idx) {
+        const item = this.items[idx];
+        const lote = item.lotesDisponibles.find(l => l.id == item.lote_id);
+        if (lote) {
+            item.lote_obj = lote;
+        }
+    },
+
+    eliminarItem(idx) {
+        this.items.splice(idx, 1);
+    },
+
+    limpiarVenta() {
+        if (this.items.length > 0 && !confirm('¿Desea vaciar el carrito actual?')) {
+            return;
+        }
+        this.items = [];
+        this.formData.descuento = 0;
+        this.formData.monto_recibido = '';
+        this.errorMsg = '';
+    },
+
+    // Cálculos
+    calcularSubtotal(item) {
+        const cant = parseInt(item.cantidad) || 0;
+        const prec = parseFloat(item.precio_unitario) || 0;
+        return (cant * prec).toFixed(2);
+    },
+
+    calcularUnidadesBase(item) {
+        const cant = parseInt(item.cantidad) || 0;
+        const fac = parseInt(item.factor) || 1;
+        return cant * fac;
+    },
+
+    calcularSubtotalGeneral() {
+        return this.items.reduce((acc, it) => acc + (parseFloat(this.calcularSubtotal(it)) || 0), 0).toFixed(2);
+    },
+
+    calcularTotalGeneral() {
+        const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
+        const desc = parseFloat(this.formData.descuento) || 0;
+        return Math.max(0, sub - desc).toFixed(2);
+    },
+
+    calcularVuelto() {
+        const total = parseFloat(this.calcularTotalGeneral()) || 0;
+        const recibido = parseFloat(this.formData.monto_recibido) || 0;
+        return Math.max(0, recibido - total).toFixed(2);
+    },
+
+    setMontoRecibido(monto) {
+        this.formData.monto_recibido = monto;
+    },
+
+    tieneProductosRx() {
+        return this.items.some(it => it.requiere_receta);
+    },
+
+    // Filtrar catálogo interactivo para vista moderna
+    productosFiltrados() {
+        let prods = this.catalogo;
+        if (this.filtroCategoriaId) {
+            prods = prods.filter(p => p.categoria_id == this.filtroCategoriaId);
+        }
+        if (this.busqueda && this.busqueda.trim().length > 0) {
+            const q = this.busqueda.toLowerCase().trim();
+            prods = prods.filter(p => 
+                (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+                (p.principio_activo && p.principio_activo.toLowerCase().includes(q)) ||
+                (p.codigo_barra && p.codigo_barra.includes(q))
+            );
+        }
+        return prods;
+    },
+
+    // Enviar venta por AJAX / Form
+    async procesarVentaFinal() {
+        if (this.items.length === 0) {
+            alert('El carrito está vacío. Agregue al menos un medicamento.');
+            return;
+        }
+
+        // Validar stocks
+        for (let it of this.items) {
+            const uTotales = this.calcularUnidadesBase(it);
+            if (it.lote_obj && it.lote_obj.stock_actual < uTotales) {
+                alert(`Stock insuficiente en el lote ${it.lote_obj.numero_lote} de ${it.nombre}. Disponible: ${it.lote_obj.stock_actual} unid., Solicitado: ${uTotales} unid.`);
+                return;
+            }
+        }
+
+        this.procesandoVenta = true;
+        this.errorMsg = '';
+
+        try {
+            const payload = {
+                cliente_id: this.formData.cliente_id || null,
+                tipo_comprobante: this.formData.tipo_comprobante,
+                serie: this.formData.serie || null,
+                numero_comprobante: this.formData.numero_comprobante || null,
+                metodo_pago: this.formData.metodo_pago,
+                descuento: parseFloat(this.formData.descuento) || 0,
+                productos: this.items.map(it => ({
+                    producto_id: it.producto_id,
+                    lote_id: it.lote_id,
+                    presentacion_id: it.presentacion_id || null,
+                    cantidad: parseInt(it.cantidad) || 1,
+                    precio_unitario: parseFloat(it.precio_unitario) || 0
+                }))
+            };
+
+            const token = document.querySelector('meta[name=\'csrf-token\']')?.getAttribute('content') || '';
+            const res = await fetch('{{ route('ventas.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Error al procesar la venta');
             }
 
-            // Lotes disponibles FEFO (ya vienen filtrados por controller)
-            $lotes = ($p->lotes ?? collect())->map(function($l){
-                $fv = $l->fecha_vencimiento ? \Illuminate\Support\Carbon::parse($l->fecha_vencimiento) : null;
-                return [
-                    'id' => $l->id,
-                    'numero_lote' => $l->numero_lote,
-                    'fecha_vencimiento' => $fv?->format('Y-m-d'),
-                    'fecha_vencimiento_fmt' => $fv?->format('d/m/Y'),
-                    'stock_actual' => (int)($l->stock_actual ?? 0),
-                ];
-            })->values();
+            // Éxito: abrir preview de ticket o redirigir
+            this.modalCobro = false;
+            if (data.ticket_url) {
+                window.open(data.ticket_url, '_blank', 'width=400,height=600');
+            }
+            window.location.href = '{{ route('ventas.index') }}';
 
-            // Presentaciones (Unidad + presentaciones activas)
-            $presentaciones = collect([
-                [
-                    'id' => null,
-                    'nombre' => 'Unidad',
-                    'descripcion' => 'Venta por unidad',
-                    'unidades_por_presentacion' => 1,
-                    'precio_sugerido' => (float)($p->precio_venta ?? 0),
-                ]
-            ])->concat(
-                collect($p->presentacionesActivas ?? [])->map(function($pr){
-                    return [
-                        'id' => $pr->id,
-                        'nombre' => $pr->nombre,
-                        'descripcion' => $pr->descripcion,
-                        'unidades_por_presentacion' => (int)$pr->unidades_por_presentacion,
-                        'precio_sugerido' => (float)($pr->precio_sugerido ?? 0),
-                    ];
-                })
-            )->values();
+        } catch (err) {
+            this.errorMsg = err.message;
+        } finally {
+            this.procesandoVenta = false;
+        }
+    },
 
-            $stockTotal = $lotes->sum('stock_actual');
+    // Escanear código de barras con Enter
+    buscarPorCodigoBarra() {
+        if (!this.busqueda) return;
+        const match = this.catalogo.find(p => p.codigo_barra && p.codigo_barra.trim() === this.busqueda.trim());
+        if (match) {
+            this.agregarAlCarrito(match);
+            this.busqueda = '';
+        }
+    }
+}"
+@keydown.window="
+    if ($event.key === 'F2') { $event.preventDefault(); document.getElementById('posBuscador')?.focus(); }
+    if ($event.key === 'F4' && items.length > 0) { $event.preventDefault(); modalCobro = true; }
+    if ($event.key === 'Escape' && !modalCobro && !modalTicketPreview) { limpiarVenta(); }
+"
+class="space-y-4">
 
-            return [
-                'id' => $p->id,
-                'nombre' => $p->nombre,
-                'descripcion' => $p->descripcion ?? null,
-                'codigo_barra' => $p->codigo_barra ?? null,
-                'imagen_url' => $imgUrl,
-                'precio_venta' => (float)($p->precio_venta ?? 0),
-                'requiere_receta' => (bool)($p->requiere_receta ?? false),
-                'stock_total' => (int)$stockTotal,
-                'lotes' => $lotes,
-                'presentaciones' => $presentaciones,
-            ];
-        })->values();
-    @endphp
-
-    
-    @php
-        $clientesData = collect($clientes ?? [])->map(function($c){
-            return [
-                'id' => $c->id,
-                'nombre' => $c->nombre,
-            ];
-        })->values();
-    @endphp
-
-    <script>
-        window.__VENTAS_CATALOGO = @json($productosData);
-        window.__VENTAS_CLIENTES = @json($clientesData);
-    </script>
-
-
-    {{-- =========================
-         PRODUCTOS (full width)
-       ========================= --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col flex-1">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-                <div class="flex items-center space-x-3">
-                    <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Productos</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Escanea, busca o selecciona desde catálogo.</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-
-                    <div class="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-sm">
-                        <button type="button" @click="setVista('tabla')"
-                                :class="vista === 'tabla' ? 'px-4 py-2 bg-green-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
-                            Tabla
-                        </button>
-                        <button type="button" @click="setVista('card')"
-                                :class="vista === 'card' ? 'px-4 py-2 bg-green-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
-                            Cards
-                        </button>
-                        <button type="button" @click="setVista('ticket')"
-                                :class="vista === 'ticket' ? 'px-4 py-2 bg-green-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
-                            Ticket
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- Header & Mode Switcher -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
+        <div>
+            <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+                <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ route('ventas.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Ventas</a>
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="text-slate-800 dark:text-slate-200 font-semibold">Terminal POS Mostrador</span>
+            </nav>
+            <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <span>Punto de Venta (POS Rápido)</span>
+            </h1>
         </div>
 
-        <div class="p-4 space-y-4">
+        <div class="flex items-center space-x-3 self-start sm:self-auto">
+            <!-- Mode Switcher -->
+            <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
+                <button type="button" 
+                        @click="setLayout('modern')"
+                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    <span>Moderna (Touch)</span>
+                </button>
+                <button type="button" 
+                        @click="setLayout('compact')"
+                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Compacta (ERP)</span>
+                </button>
+            </div>
 
-            {{-- Barra de escaneo (igual a compras) --}}
-            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 p-3">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-                    <div class="lg:col-span-9">
-                        <label for="barcodeInput" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Escanear / escribir código de barras
-                        </label>
-                        <input id="barcodeInput" x-ref="barcode" type="text" inputmode="numeric" autocomplete="off"
-                               class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                               placeholder="Clic aquí y escanea…"
-                               x-model="barcode"
-                               @input.debounce.150ms="updateBarcodePreview()"
-                               @keydown.enter.prevent="agregarPorBarcode()">
-                    </div>
+            <a href="{{ route('ventas.index') }}" 
+               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
+        </div>
+    </div>
 
-                    
-                    <div class="lg:col-span-3">
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" @click="agregarPorBarcode()"
-                                    class="inline-flex items-center justify-center w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-lg shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Agregar
-                            </button>
+    <!-- Error Alert Box -->
+    <div x-show="errorMsg" x-cloak class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span x-text="errorMsg"></span>
+        </div>
+        <button type="button" @click="errorMsg = ''" class="text-slate-400 hover:text-slate-600">&times;</button>
+    </div>
 
-                            <button type="button" @click="openCatalogo()"
-                                    class="inline-flex items-center justify-center w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-sm transition-colors duration-200">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"/>
-                                </svg>
-                                Catálogo
-                            </button>
-                        </div>
-                    </div>
-
+    <!-- ============================================================== -->
+    <!-- MODO 1: VISTA COMPACTA (ERP / TECLADO RÁPIDO / ALTA DENSIDAD)  -->
+    <!-- ============================================================== -->
+    <template x-if="formLayout === 'compact'">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 space-y-4 animate-fadeIn">
+            
+            <!-- Toolbar Superior -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-300 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/60 -mx-4 -mt-4 p-3 rounded-t-2xl">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
+                    <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">TERMINAL POS DE VENTA RÁPIDA</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold hidden sm:inline">F2 = Buscar | F4 = Cobrar | Esc = Limpiar</span>
                 </div>
 
-                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">ENTER también agrega si tu escáner lo envía.</p>
+                <div class="flex items-center space-x-2">
+                    <button type="button" 
+                            @click="limpiarVenta()"
+                            class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold transition">
+                        Limpiar (Esc)
+                    </button>
+                    <button type="button" 
+                            @click="modalCobro = true"
+                            :disabled="items.length === 0"
+                            class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Cobrar (F4)</span>
+                    </button>
+                </div>
+            </div>
 
-                {{-- Preview (igual a compras) --}}
-                <div x-show="barcodePreview.show" x-transition class="mt-3">
-                    <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                        <div class="w-12 h-12 rounded-lg overflow-hidden bg-white dark:bg-gray-700 border border-slate-200 dark:border-gray-600 flex items-center justify-center">
-                            <template x-if="barcodePreview.imagen_url">
-                                <img :src="barcodePreview.imagen_url" alt="Producto" class="w-full h-full object-cover">
-                            </template>
-                            <template x-if="!barcodePreview.imagen_url">
-                                <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                                </svg>
-                            </template>
+            <!-- Grid de Paneles Superiores (Cliente + Resumen Liquidación) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                
+                <!-- Panel 1: Datos del Cliente y Comprobante (8 cols) -->
+                <div class="lg:col-span-8 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <span>1. Identificación del Cliente & Comprobante</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                        <!-- Cliente (Col 6) -->
+                        <div class="sm:col-span-6">
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Cliente
+                            </label>
+                            <select x-model="formData.cliente_id" 
+                                    class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                <option value="">Público General (Venta Libre)</option>
+                                <template x-for="cl in clientes" :key="cl.id">
+                                    <option :value="cl.id" x-text="cl.nombre + (cl.documento ? ' (' + cl.documento + ')' : '')"></option>
+                                </template>
+                            </select>
                         </div>
 
-                        <div class="min-w-0 flex-1">
-                            <p class="font-semibold text-slate-900 dark:text-white truncate" x-text="barcodePreview.nombre || '—'"></p>
-                            <p class="text-xs text-slate-600 dark:text-slate-400 truncate" x-text="barcodePreview.extra || '—'"></p>
+                        <!-- Tipo Comprobante (Col 3) -->
+                        <div class="sm:col-span-3">
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Comprobante
+                            </label>
+                            <select x-model="formData.tipo_comprobante" 
+                                    class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                <option value="ticket">Ticket</option>
+                                <option value="boleta">Boleta</option>
+                                <option value="factura">Factura</option>
+                            </select>
                         </div>
 
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
-                              :class="barcodePreview.badgeClass"
-                              x-text="barcodePreview.badge">
+                        <!-- Método Pago (Col 3) -->
+                        <div class="sm:col-span-3">
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Método Pago
+                            </label>
+                            <select x-model="formData.metodo_pago" 
+                                    class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                <option value="efectivo">Efectivo</option>
+                                <option value="tarjeta">Tarjeta (POS)</option>
+                                <option value="transferencia">Yape / Plin / Transferencia</option>
+                                <option value="mixto">Pago Mixto</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Buscador Rápido con Código de Barras -->
+                    <div class="pt-1">
+                        <div class="relative">
+                            <input type="text" 
+                                   id="posBuscador"
+                                   x-model="busqueda" 
+                                   @keydown.enter.prevent="buscarPorCodigoBarra()"
+                                   placeholder="[F2] Escanear código de barras o escribir medicamento / principio activo..."
+                                   class="w-full pl-8 pr-20 py-2 bg-emerald-50/50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 font-medium">
+                            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-emerald-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </div>
+                            <div class="absolute inset-y-0 right-0 pr-2 flex items-center space-x-1">
+                                <span class="text-[10px] font-mono bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 px-1.5 py-0.5 rounded">Enter</span>
+                            </div>
+                        </div>
+
+                        <!-- Dropdown de Resultados Rápidos al Escribir -->
+                        <div x-show="busqueda.trim().length >= 2" 
+                             x-cloak 
+                             class="absolute z-30 mt-1 w-full max-w-xl bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+                            <template x-for="prod in productosFiltrados().slice(0, 8)" :key="prod.id">
+                                <div @click="agregarAlCarrito(prod); busqueda = '';" 
+                                     class="p-2.5 hover:bg-emerald-50 dark:hover:bg-slate-700/60 cursor-pointer flex items-center justify-between transition">
+                                    <div>
+                                        <div class="font-bold text-xs text-slate-800 dark:text-white flex items-center space-x-1.5">
+                                            <span x-text="prod.nombre"></span>
+                                            <span x-show="prod.requiere_receta" class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-amber-500 text-white">Rx</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                                            <span x-text="prod.principio_activo || 'Fórmula general'"></span> &bull; 
+                                            Lote FEFO: <span class="font-semibold text-emerald-600" x-text="prod.lotes && prod.lotes[0] ? prod.lotes[0].numero_lote + ' (Stock: ' + prod.lotes[0].stock_actual + ')' : 'Sin stock'"></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-extrabold text-xs text-slate-900 dark:text-white" x-text="'$' + parseFloat(prod.precio_venta).toFixed(2)"></span>
+                                    </div>
+                                </div>
+                            </template>
+                            <div x-show="productosFiltrados().length === 0" class="p-3 text-center text-xs text-slate-400">
+                                No se encontraron medicamentos con stock disponible para "<span x-text="busqueda"></span>"
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Resumen de Liquidación (4 cols) -->
+                <div class="lg:col-span-4 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 flex flex-col justify-between space-y-2">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Resumen de Liquidación</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <span class="text-[10px] font-semibold text-slate-500 block">Ítems / Líneas:</span>
+                            <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="items.length + ' ítems'"></span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-semibold text-slate-500 block">Descuento ($):</span>
+                            <input type="number" 
+                                   step="0.10" 
+                                   min="0"
+                                   x-model="formData.descuento" 
+                                   class="w-20 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-slate-900 dark:text-white text-right">
+                        </div>
+                    </div>
+
+                    <!-- Total Gigante -->
+                    <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total a Pagar:</span>
+                        <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                            $<span x-text="calcularTotalGeneral()"></span>
                         </span>
                     </div>
                 </div>
             </div>
 
-            {{-- VISTA TABLA (full width) --}}
-            <div x-show="vista === 'tabla'" x-transition x-cloak>
-                <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div class="max-h-[72vh] lg:max-h-[calc(100vh-280px)] overflow-auto">
-                        <table id="tablaProductos" class="min-w-[1500px] w-full text-sm table-fixed">
-                            <thead class="bg-gray-50 dark:bg-gray-900/40">
-                            <tr id="theadRowProductos" class="text-left text-slate-700 dark:text-slate-300">
-                                <th class="px-2 py-3 w-10 text-center"></th>
-
-                                <th data-col="1" data-minw="160" class="px-3 py-3 relative select-none th-resizable cursor-move min-w-[160px] w-[180px]">
-                                    Producto
-                                    <div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div>
-                                </th>
-
-                                <th data-col="2" data-minw="150" class="px-3 py-3 text-center relative select-none th-resizable cursor-move min-w-[150px] w-[160px]">
-                                    Presentación
-                                    <div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div>
-                                </th>
-
-                                <th data-col="3" data-minw="120" class="px-3 py-3 text-center relative select-none th-resizable cursor-move min-w-[120px] w-[120px]">
-                                    Cantidad
-                                    <div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div>
-                                </th>
-
-                                <th data-col="4" data-minw="110" class="px-3 py-3 text-center relative select-none th-resizable cursor-move min-w-[110px] w-[150px]">
-                                    Precio
-                                    <div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div>
-                                </th>
-
-                                <th data-col="5" data-minw="120" class="px-3 py-3 text-center relative select-none th-resizable cursor-move min-w-[120px] w-[120px]">
-                                    Desc. %
-                                    <div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div>
-                                </th>
-
-                               <th data-col="6" data-minw="130" class="px-3 py-3 !text-center relative select-none th-resizable cursor-move min-w-[130px] w-[130px]">
-    <div class="flex items-center justify-center w-full">
-        Subtotal
-    </div>
-    <div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div>
-</th>
-
-                                <th data-col="7" data-minw="110" class="px-3 py-3 relative select-none th-resizable cursor-move min-w-[110px] w-[170px]">
-                                    Lote (FEFO)
-                                    <div class="col-resize-handle absolute top-0 right-0 h-full w-3 cursor-col-resize select-none z-20"></div>
-                                </th>
-
-                                <th class="px-3 py-3 w-16 text-center"></th>
-                            </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                                <template x-for="(it, idx) in items" :key="it.key">
-                                    <tr class="align-top">
-                                        <td class="px-2 py-3 text-center text-slate-400 dark:text-slate-500 select-none">⋮⋮</td>
-                                        <td data-col="1" class="px-3 py-3">
-                                            <div class="flex items-start gap-3">
-                                                <div class="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 flex items-center justify-center shrink-0">
-                                                    <template x-if="it.imagen_url">
-                                                        <img :src="it.imagen_url" class="w-full h-full object-cover" alt="">
-                                                    </template>
-                                                    <template x-if="!it.imagen_url">
-                                                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                                                        </svg>
-                                                    </template>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <p class="font-semibold text-slate-900 dark:text-white leading-5 whitespace-normal break-words" x-text="it.nombre"></p>
-                                                    <p class="text-xs text-slate-500 dark:text-slate-400 whitespace-normal break-words" x-text="it.codigo_barra ? ('CB: ' + it.codigo_barra) : '—'"></p>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <td data-col="2" class="px-3 py-3">
-                                            <label class="sr-only">Presentación</label>
-                                            <select class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400"
-                                                    x-model="it.presentacion_id"
-                                                    @change="onChangePresentacion(it)">
-                                                <template x-for="pres in it.presentaciones" :key="pres.id ?? 'u'">
-                                                    <option :value="pres.id" x-text="pres.select_label ?? pres.nombre_completo ?? pres.nombre"></option>
-                                                </template>
-                                            </select>
-
-                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" x-show="it.unidades_por_presentacion > 1">
-                                                Equivale a <span class="font-semibold" x-text="money(it.precio_unitario)"></span> / unidad
-                                            </p>
-                                        </td>
-
-
-                                        <td data-col="3" class="px-3 py-3 text-center">
-                                            <label class="sr-only">Cantidad</label>
-                                            <input type="number" min="1" step="1"
-                                                   class="w-24 mx-auto px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-center text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400"
-                                                   x-model.number="it.cantidad_presentaciones"
-                                                   @input.debounce.150ms="recalcItem(it)">
-                                        </td>
-
-
-                                        <td data-col="4" class="px-3 py-3 text-right">
-                                            
-                                            <input type="number" min="0" step="0.01"
-                                                   class="w-36 ml-auto px-3 py-2 text-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base  text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400"
-                                                   x-model.number="it.precio_display"
-                                                   @input.debounce.150ms="onChangePrecio(it)">
-                                            
-                                              <label class="block text-xs text-center font-semibold text-slate-600 dark:text-slate-300 mb-1"
-                                                   x-text="priceLabel(it)"></label>
-
-                                            
-                                        </td>
-
-
-                                        <td data-col="5" class="px-3 py-3 text-center">
-                                            <input type="number" min="0" step="0.01"
-                                                   class="w-24 mx-auto px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-center text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400"
-                                                   x-model.number="it.descuento_porcentaje"
-                                                   @input.debounce.150ms="onChangeDescuento(it)">
-                                        </td>
-
-
-                                        <td data-col="6" class="px-3 py-3 text-right">
-                                            <div class="font-semibold text-center text-slate-900 dark:text-white" x-text="money(it.subtotal)"></div>
-                                            <div class="text-xl text-slate-500 dark:text-slate-400" x-show="it.descuento_monto > 0">
-                                                -<span x-text="money(it.descuento_monto)"></span>
-                                            </div>
-                                        </td>
-
-
-
-                                        <td data-col="7" class="px-3 py-3">
-                                            <label class="sr-only">Lote</label>
-                                            <select class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400"
-                                                    x-model="it.lote_id"
-                                                    @change="onChangeLote(it)">
-                                                <template x-for="l in it.lotes" :key="l.id">
-                                                    <option :value="l.id" x-text="`${l.numero_lote} • V: ${l.fecha_vencimiento_fmt} • Stock: ${l.stock_actual}`"></option>
-                                                </template>
-                                            </select>
-                                        </td>
-
-
-
-                                        <td class="px-3 py-3 text-center">
-                                            <button type="button" @click="removeItem(it.key)"
-                                                    class="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                </svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="mt-3 text-sm text-slate-600 dark:text-slate-400" x-show="items.length === 0">
-                    Aún no has agregado productos.
-                </div>
-            </div>
-
-
-            {{-- VISTA CARDS (similar a compras) --}}
-            <div x-show="vista === 'card'" x-transition x-cloak>
-                <div class="max-h-[72vh] lg:max-h-[calc(100vh-280px)] overflow-auto pr-1">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <template x-for="it in items" :key="it.key">
-                            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between gap-3">
-                                    <div class="flex items-start gap-3 min-w-0">
-                                        <div class="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 flex items-center justify-center shrink-0">
-                                            <template x-if="it.imagen_url">
-                                                <img :src="it.imagen_url" class="w-full h-full object-cover" alt="">
-                                            </template>
-                                            <template x-if="!it.imagen_url">
-                                                <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                                                </svg>
-                                            </template>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <p class="font-bold text-slate-900 dark:text-white leading-5 truncate" x-text="it.nombre"></p>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400 whitespace-normal break-words" x-text="it.codigo_barra ? ('CB: ' + it.codigo_barra) : '—'"></p>
-                                        </div>
-                                    </div>
-
-                                    <button type="button" @click="removeItem(it.key)"
-                                            class="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Presentación</label>
-                                        <select class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white"
-                                                x-model="it.presentacion_id"
-                                                @change="onChangePresentacion(it)">
-                                            <template x-for="pres in it.presentaciones" :key="pres.id ?? 'u'">
-                                                <option :value="pres.id" x-text="pres.select_label ?? pres.nombre_completo ?? pres.nombre"></option>
-                                            </template>
-                                        </select>
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" x-show="it.unidades_por_presentacion > 1">
-                                            Equivale a <span class="font-semibold" x-text="money(it.precio_unitario)"></span> / unidad
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Lote (FEFO)</label>
-                                        <select class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white"
-                                                x-model="it.lote_id"
-                                                @change="onChangeLote(it)">
-                                            <template x-for="l in it.lotes" :key="l.id">
-                                                <option :value="l.id" x-text="`${l.numero_lote} • V: ${l.fecha_vencimiento_fmt} • Stock: ${l.stock_actual}`"></option>
-                                            </template>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Cantidad</label>
-                                        <input type="number" min="1" step="1"
-                                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white text-center"
-                                               x-model.number="it.cantidad_presentaciones"
-                                               @input.debounce.150ms="recalcItem(it)">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1" x-text="priceLabel(it)"></label>
-                                        <input type="number" min="0" step="0.01"
-                                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white text-right"
-                                               x-model.number="it.precio_display"
-                                               @input.debounce.150ms="onChangePrecio(it)">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Desc. %</label>
-                                        <input type="number" min="0" step="0.01"
-                                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white text-center"
-                                               x-model.number="it.descuento_porcentaje"
-                                               @input.debounce.150ms="onChangeDescuento(it)">
-                                    </div>
-
-                                    <div class="flex items-end justify-between gap-3">
-                                        <div class="text-xs text-slate-500 dark:text-slate-400">
-                                            Subtotal
-                                            <div class="text-[11px]" x-show="it.descuento_monto > 0">(-<span x-text="money(it.descuento_monto)"></span>)</div>
-                                        </div>
-                                        <div class="text-lg font-black text-slate-900 dark:text-white" x-text="money(it.subtotal)"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
+            <!-- Panel 3: Desglose de Fármacos, Presentaciones y Lotes FEFO -->
+            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                        <span>2. Desglose de Medicamentos, Presentaciones y Lotes (FEFO)</span>
                     </div>
 
-                    <div class="mt-3 text-sm text-slate-600 dark:text-slate-400" x-show="items.length === 0">
-                        Aún no has agregado productos.
-                    </div>
-                </div>
-            </div>
-
-            {{-- VISTA TICKET (full width) --}}
-            <div x-show="vista === 'ticket'" x-transition x-cloak>
-                <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div class="p-4 bg-white dark:bg-gray-800">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="font-bold text-slate-900 dark:text-white">Vista Ticket</h4>
-                            </div>
-                            <div class="text-xs text-slate-500 dark:text-slate-400" x-text="fecha ? ('Fecha: ' + prettyFecha(fecha)) : ''"></div>
-                        </div>
-
-                        <div class="mt-4 border-t border-dashed border-gray-300 dark:border-gray-600 pt-3 space-y-3">
-                            <template x-for="it in items" :key="it.key">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="font-semibold text-slate-900 dark:text-white" x-text="it.nombre"></p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                                            <span x-text="it.tipo_presentacion"></span>
-                                            <span class="mx-1">•</span>
-                                            <span x-text="'Cant: ' + it.cantidad_presentaciones"></span>
-                                            <span class="mx-1">•</span>
-                                            <span x-text="'Lote: ' + (it.lote?.numero_lote || '—')"></span>
-                                        </p>
-                                    </div>
-                                    <div class="text-right shrink-0">
-                                        <div class="text-xs text-slate-500 dark:text-slate-400" x-text="money(it.precio_display)"></div>
-                                        <div class="font-bold text-slate-900 dark:text-white" x-text="money(it.subtotal)"></div>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <div class="pt-3 border-t border-dashed border-gray-300 dark:border-gray-600 space-y-1 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-slate-600 dark:text-slate-300">Subtotal bruto</span>
-                                    <span class="font-semibold text-slate-900 dark:text-white" x-text="money(subtotal_bruto)"></span>
-                                </div>
-                                <div class="flex justify-between" x-show="descuento_productos > 0">
-                                    <span class="text-slate-600 dark:text-slate-300">Desc. productos</span>
-                                    <span class="font-semibold text-slate-900 dark:text-white">-<span x-text="money(descuento_productos)"></span></span>
-                                </div>
-                                <div class="flex justify-between" x-show="descuento_global_monto > 0">
-                                    <span class="text-slate-600 dark:text-slate-300">Desc. global</span>
-                                    <span class="font-semibold text-slate-900 dark:text-white">-<span x-text="money(descuento_global_monto)"></span></span>
-                                </div>
-                                <div class="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                                    <span class="font-bold text-slate-900 dark:text-white">Total</span>
-                                    <span class="font-bold text-slate-900 dark:text-white" x-text="money(total_neto)"></span>
-                                </div>
-                            </div>
-
-                            <div class="text-sm text-slate-600 dark:text-slate-400" x-show="items.length === 0">
-                                Aún no has agregado productos.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    {{-- =========================
-         DATOS + CAJA + RESUMEN (compacto, estilo compras)
-       ========================= --}}
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch mt-4">
-    
-    {{-- COLUMNA IZQUIERDA: Datos + Resumen --}}
-    <div class="lg:col-span-8 flex flex-col gap-4">
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-        <div class="flex items-center space-x-3">
-            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                </svg>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Datos de la Venta 🧾</h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Información general del comprobante</p>
-            </div>
-        </div>
-    </div>
-
-    {{-- Cuerpo con padding lateral y vertical optimizado --}}
-    <div class="px-5 py-5">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-x-5 gap-y-2">
-            
-            {{-- Columna Cliente --}}
-            <div class="md:col-span-6">
-                <div class="flex items-center justify-between mb-0.5">
-                    <label class="block text-base font-bold text-slate-700 dark:text-slate-300 italic">Cliente</label>
-                    <button type="button" @click="openNuevoCliente()" class="text-xs font-black text-blue-600 hover:text-blue-700 dark:text-blue-400 uppercase tracking-tighter">
-                        + Nuevo
-                    </button>
-                </div>
-                <div class="relative">
-                    <select name="cliente_id" x-model="cliente_id" class="w-full pl-3 pr-10 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 appearance-none">
-                        <option value="">— Cliente de mostrador —</option>
-                        <template x-for="c in clientes" :key="c.id">
-                            <option :value="String(c.id)" x-text="c.nombre"></option>
-                        </template>
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Columna Fecha --}}
-            <div class="md:col-span-3">
-                <label class="block text-base font-bold text-slate-700 dark:text-slate-300 mb-0.5 italic">Fecha</label>
-                <input type="datetime-local" name="fecha" x-model="fecha" class="w-full px-2 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            {{-- Columna Cajero --}}
-            <div class="md:col-span-3">
-                <label class="block text-base font-bold text-slate-700 dark:text-slate-300 mb-0.5 italic">Cajero</label>
-                <div class="relative">
-   <input type="text" 
-       value="{{ auth()->user()->name ?? 'Cajero' }}" 
-       readonly 
-       title="{{ auth()->user()->name ?? 'Cajero' }}"
-       class="w-full pl-8 pr-2 py-1.5 bg-slate-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 rounded-lg text-base font-semibold text-slate-600 dark:text-slate-300 truncate shadow-sm">
-                    <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Columna Observaciones --}}
-            <div class="md:col-span-12">
-                <label class="block text-base font-bold text-slate-700 dark:text-slate-300 mb-0.5 italic">Notas</label>
-                <textarea name="observaciones" rows="2" x-model="observaciones" placeholder="📝 Notas opcionales..." class="w-full px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 placeholder-slate-400"></textarea>
-            </div>
-            
-            {{-- Error abajo para no empujar contenido --}}
-            <div class="md:col-span-12" x-show="clienteRequiredError">
-                <p class="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
-                    ⚠️ Selecciona cliente para <span class="underline">Pagar Luego</span>.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-
-       {{-- Bloque 2: Resumen (Compacto Vertical con Títulos Originales) --}}
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-    {{-- Encabezado con tamaño ORIGINAL --}}
-    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-        <div class="flex items-center gap-3">
-            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2-2 4 4m0 0l2-2m-2 2V8m0 8H7a2 2 0 01-2-2V7a2 2 0 012-2h5"/>
-                </svg>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Resumen 💰</h3>
-            </div>
-        </div>
-    </div>
-
-    <div class="px-4 py-3 space-y-3">
-        {{-- Fila: Subtotal --}}
-        <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Subtotal bruto</span>
-            <span class="text-base font-bold text-slate-900 dark:text-white">C$ <span x-text="money(subtotal_bruto)"></span></span>
-        </div>
-
-        {{-- Fila: Descuento Productos --}}
-        <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-2">
-            <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Descuento por producto</span>
-            <span class="text-base font-bold text-red-600 dark:text-red-400">C$ <span x-text="money(descuento_productos)"></span></span>
-        </div>
-
-        {{-- Fila: Descuento Global (Input y Monto alineados horizontalmente) --}}
-        <div class="flex items-center justify-between gap-4 py-2 border-y border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-2">
-                <label for="descuento_global" class="text-sm font-semibold text-slate-600 dark:text-slate-400">Descuento global</label>
-                <div class="flex items-center">
-                    <input type="number" step="0.01" min="0" max="100" name="descuento" id="descuento_global" 
-                           x-model.number="descuento_global_pct" @input="recalcTotales()" 
-                           class="w-20 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                    <span class="ml-1 text-sm font-bold text-slate-500">%</span>
-                </div>
-            </div>
-            <div class="text-right">
-                <span class="text-base font-bold text-red-600 dark:text-red-400">C$ <span x-text="money(descuento_global_monto)"></span></span>
-            </div>
-        </div>
-
-        {{-- Fila: Total Neto con tamaño ORIGINAL --}}
-        <div class="pt-2 flex items-center justify-between">
-            <span class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase">Total Neto</span>
-            <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                C$ <span x-text="money(total_neto)"></span>
-            </div>
-        </div>
-    </div>
-     </div>
-</div>
-  {{-- COLUMNA DERECHA: Caja / Pago --}}
-<div class="lg:col-span-4">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-4">
-        
-        {{-- Encabezado --}}
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-white dark:from-gray-800 dark:to-gray-800/50">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                    <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m4-6h-4m4 0a2 2 0 01-2 2h-2m4-2a2 2 0 00-2-2h-2m0 4h2a2 2 0 002-2"/>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Caja / Pago 💳</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Finalizar venta</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="p-5 space-y-8">
-            
-            <div class="px-3 py-2 bg-emerald-600 rounded-xl text-white shadow-md">
-                <label class="block text-xs font-bold uppercase opacity-90 tracking-wider">Total a Pagar</label>
-                <div class="text-xl font-black">
-                    C$ <span x-text="money(total_neto)"></span>
-                </div>
-            </div>
-
-            {{-- Método de Pago --}}
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Método de pago</label>
-                <select x-ref="metodoPago" name="metodo_pago" x-model="metodo_pago" @change="onChangeMetodoPago()" class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                    <option value="efectivo">💵 Efectivo</option>
-                    <option value="transferencia">🏦 Transferencia</option>
-                    <option value="credito">💳 Crédito</option>
-                    <option value="debito">💳 Débito</option>
-                    <option value="pagar_luego">⏳ Pagar Luego</option>
-                    <option value="otros">🧾 Otros</option>
-                </select>
-            </div>
-
-
-{{-- Receta médica (si aplica) --}}
-<div x-show="requiereReceta" x-transition class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
-    <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-            <p class="font-bold text-amber-800 dark:text-amber-200">Productos que requieren receta</p>
-            <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                <span x-text="productosQueRequierenReceta.join(', ')"></span>
-            </p>
-
-            <div class="mt-2 flex flex-wrap gap-2" x-show="recetasSeleccionadas.length">
-                <template x-for="r in recetasSeleccionadas" :key="r.id">
-                    <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/70 dark:bg-gray-800/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
-                        <span x-text="(r.numero_receta ? ('#' + r.numero_receta) : ('Receta ' + r.id)) + (r.cliente_nombre ? (' · ' + r.cliente_nombre) : '')"></span>
-                        <button type="button" class="text-amber-700 dark:text-amber-200 hover:text-rose-600 dark:hover:text-rose-400"
-                                @click="removeReceta(r.id)" title="Quitar">
-                            ✕
-                        </button>
-                    </span>
-                </template>
-            </div>
-
-            <p x-show="!recetasOk" class="mt-2 text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                Debes seleccionar o crear una receta para continuar.
-            </p>
-        </div>
-
-        <button type="button" @click="openRecetas()"
-                class="shrink-0 inline-flex items-center px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-sm">
-            Gestionar
-        </button>
-    </div>
-</div>
-
- {{-- Sección de Efectivo --}}
-<div x-show="metodo_pago === 'efectivo'" x-transition class="space-y-3 relative"> {{-- Añadido 'relative' aquí --}}
-    <div class="flex items-stretch gap-3">
-        
-        {{-- Lado Izquierdo: Dinero Recibido --}}
-        <div class="flex-1">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Recibido</label>
-            <input type="number" 
-                   step="0.01" 
-                   x-ref="montoRecibido"
-                   min="0" 
-                   name="monto_recibido" 
-                   x-model.number="monto_recibido" 
-                   @input="recalcTotales()" 
-                   placeholder="0.00" 
-                   class="w-full h-[60px] px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xl font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-        </div>
-
-        {{-- Lado Derecho: Vuelto --}}
-        <div class="flex-1 flex flex-col">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 text-center">Vuelto</label>
-            <div class="flex-1 flex flex-col justify-center items-center bg-blue-50 dark:bg-blue-900/20 px-2 h-[60px] rounded-lg border border-blue-200 dark:border-blue-800">
-                <div class="text-xl font-black text-blue-700 dark:text-blue-300">
-                    C$ <span x-text="money(cambio)"></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Mensaje de Error (Ahora con posicionamiento absoluto) --}}
-    <div x-show="efectivoInsuficiente" 
-         x-transition
-         class="absolute left-0 -bottom-5 flex items-center gap-1 text-red-600 dark:text-red-400">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-        </svg>
-        <span class="text-[11px] font-bold uppercase">Monto insuficiente</span>
-    </div>
-</div>
-            {{-- Bancos / Referencia --}}
-            <div x-show="needsBanco || metodo_pago !== 'efectivo'" x-transition class="space-y-3">
-                <div x-show="needsBanco" class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Banco</label>
-                        <select x-model="banco" class="w-full px-5 py-4 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white">
-                            <option value="">Seleccionar…</option>
-                            <option value="BAC">BAC</option>
-                            <option value="LAFISE">LAFISE</option>
-                            <option value="FICOHSA">FICOHSA</option>
-                            <option value="BANPRO">BANPRO</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Referencia</label>
-                        <input type="text" x-model="referencia" placeholder="No. voucher" class="w-full px-5 py-4 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white">
-                    </div>
-                </div>
-                <div x-show="!needsBanco && metodo_pago !== 'efectivo'">
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Referencia (opcional)</label>
-                    <input type="text" x-model="referencia" placeholder="Referencia / autorización" class="w-full px-5 py-4 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-slate-900 dark:text-white">
-                </div>
-            </div>
-{{-- Footer y Botón Dividido --}}
-<div class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2.5">
-    
-    {{-- Checkbox (Tamaño Original) --}}
-    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-        <input type="checkbox" x-model.boolean="mantener_en_pantalla" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-emerald-500">
-        Mantenerme aquí
-    </label>
-
-    <div class="flex flex-col gap-3">
-        {{-- GRUPO DE BOTÓN DIVIDIDO --}}
-        <div class="relative flex w-full" x-data="{ open: false }">
-            {{-- Botón Principal --}}
-            <button type="button" 
-                    @click="submitVenta()" 
-                    :disabled="submitDisabled" 
-                    class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-l-xl font-bold text-base shadow-lg active:scale-[0.98] transition-transform disabled:opacity-50 uppercase border-r border-emerald-500">
-                <span x-text="accion === 'facturar' ? 'Registrar y Facturar' : 'REGISTRAR VENTA'"></span>
-            </button>
-
-            {{-- Flecha para cambiar acción --}}
-            <button type="button" 
-                    @click="open = !open"
-                    @click.away="open = false"
-                    class="px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-r-xl shadow-lg active:scale-[0.98] transition-transform">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-            </button>
-
-            {{-- Menú Desplegable de acciones --}}
-            <div x-show="open" 
-                 x-transition 
-                 class="absolute bottom-full mb-2 right-0 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 overflow-hidden">
-                <button type="button" 
-                        @click="accion = 'guardar'; open = false" 
-                        class="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-slate-700 dark:text-slate-200 border-b border-gray-100 dark:border-gray-600">
-                    Registrar Venta (Normal)
-                </button>
-                <button type="button" 
-                        @click="accion = 'facturar'; open = false" 
-                        class="w-full px-4 py-3 text-left text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-slate-700 dark:text-slate-200">
-                    Registrar y Facturar
-                </button>
-            </div>
-        </div>
-
-        {{-- BOTÓN CANCELAR (Tamaño Original) --}}
-        <a href="{{ route('ventas.index') }}" class="px-4 py-2 text-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-            Cancelar Operación
-        </a>
-                     </div>
-</div>
-        </div>
-    </div>
-</div>
-</div>
-{{-- =========================
-         MODAL CATÁLOGO (igual a compras)
-       ========================= --}}
-    <div x-show="catalogoOpen" x-transition x-cloak class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-6xl w-full overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Catálogo de productos</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Selecciona uno o varios productos y agrégalos al detalle.</p>
-                </div>
-                <button type="button" @click="closeCatalogo()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                    <div>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18.5a7.5 7.5 0 006.15-3.85z"/>
-                                </svg>
-                            </span>
-                            <input type="text" x-model="catalogoBuscar" @input.debounce.150ms="filtrarCatalogo()"
-                                   class="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-base text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                   placeholder="Escribe para buscar (nombre / descripción / código de barras)..."
-                                   autocomplete="off">
-                        </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            Tip: usa palabras clave (ej. “paracetamol”, “jarabe”, “7750...”).
-                        </p>
-                        <div x-show="catalogoProductos.length === 0" class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-200">
-                            <div class="font-bold">No se cargaron productos en el catálogo.</div>
-                            <div class="text-xs mt-1">
-                                Revisa que <span class="font-semibold">VentaController@create</span> esté enviando <span class="font-semibold">$productos</span> a la vista <span class="font-semibold">ventas.create</span> (como en compras).
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="md:text-right">
-                        <div class="text-sm font-semibold text-slate-700 dark:text-slate-300">Seleccionados</div>
-                        <div class="mt-1 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-slate-900 dark:text-white font-bold">
-                            <span x-text="catalogoSeleccionados.size"></span>
-                            <span class="text-sm font-semibold text-slate-600 dark:text-slate-300">producto(s)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[68vh] overflow-auto pr-1">
-                    <template x-for="p in catalogoFiltrados" :key="p.id">
-                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow p-3">
-                            <div class="flex items-start gap-3">
-                                <input type="checkbox" class="mt-1 rounded border-gray-300 dark:border-gray-600"
-                                       :checked="catalogoSeleccionados.has(p.id)"
-                                       @change="toggleSeleccion(p.id)">
-                                <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 flex items-center justify-center shrink-0">
-                                    <template x-if="p.imagen_url">
-                                        <img :src="p.imagen_url" class="w-full h-full object-cover" alt="">
-                                    </template>
-                                    <template x-if="!p.imagen_url">
-                                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 11h18M7 15h10M7 19h10"/>
-                                        </svg>
-                                    </template>
-                                </div>
-
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-semibold text-slate-900 dark:text-white leading-5 whitespace-normal break-words" x-text="p.nombre"></p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 whitespace-normal break-words" x-text="p.descripcion || '—'"></p>
-
-                                    <div class="mt-2 flex flex-wrap gap-2 text-xs">
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-slate-200"
-                                              x-text="p.codigo_barra ? ('CB: ' + p.codigo_barra) : 'Sin código'"></span>
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
-                                              x-text="'Stock: ' + (p.stock_total ?? 0)"></span>
-                                    </div>
-
-                                    <div class="mt-2 flex items-center justify-between">
-                                        <div class="text-xs text-slate-500 dark:text-slate-400">Precio</div>
-                                        <div class="font-bold text-slate-900 dark:text-white" x-text="money(p.precio_venta || 0)"></div>
-                                    </div>
-
-                                    <div class="mt-3 flex items-center justify-end">
-                                        <button type="button" @click="agregarProductoDesdeCatalogo(p)"
-                                                class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
-                                            Agregar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-
-                    <div class="text-sm text-slate-600 dark:text-slate-400" x-show="catalogoFiltrados.length === 0">
-                        No hay resultados. Prueba otra búsqueda.
-                    </div>
-                </div>
-            </div>
-
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <button type="button" @click="limpiarSeleccion()"
-                        class="inline-flex items-center justify-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-gray-600">
-                    Limpiar selección
-                </button>
-
-                <div class="flex items-center justify-end gap-2">
-                    <button type="button" @click="closeCatalogo()"
-                            class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
-                        Cancelar
-                    </button>
-                    <button type="button" @click="agregarSeleccionados()"
-                            class="inline-flex items-center justify-center px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            :disabled="catalogoSeleccionados.size === 0">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Agregar seleccionados
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- MODAL NUEVO CLIENTE --}}
-    <div x-show="nuevoClienteOpen" x-transition x-cloak class="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Nuevo Cliente</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Registra el cliente y selecciónalo automáticamente.</p>
-                </div>
-                <button type="button" @click="closeNuevoCliente()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="p-6 space-y-4">
-                <div x-show="clienteError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" x-text="clienteError"></div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre</label>
-                    <input type="text" x-model="nuevoCliente.nombre"
-                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400">
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo de documento</label>
-                        <select x-model="nuevoCliente.tipo_documento"
-                                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
-                            <option value="Cedula">Cédula</option>
-                            <option value="DNI">DNI</option>
-                            <option value="Pasaporte">Pasaporte</option>
-                            <option value="RUC">RUC</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Documento</label>
-                        <input type="text" x-model="nuevoCliente.documento"
-                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
-                        <input type="text" x-model="nuevoCliente.telefono"
-                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Dirección (opcional)</label>
-                    <input type="text" x-model="nuevoCliente.direccion"
-                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-400">
-                </div>
-            </div>
-
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-2">
-                <button type="button" @click="closeNuevoCliente()"
-                        class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
-                    Cancelar
-                </button>
-                <button type="button" @click="guardarNuevoCliente()"
-                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold">
-                    Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-
-
-
-{{-- MODAL RECETA (seleccionar / crear) --}}
-<div x-show="recetasOpen" x-transition x-cloak class="fixed inset-0 bg-black/50 z-[80] flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
-            <div>
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white">Receta médica</h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Selecciona una receta existente o crea una nueva y la vinculamos a la venta.
-                </p>
-            </div>
-            <button type="button" @click="closeRecetas()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-
-        <div class="p-6 space-y-4">
-            <div x-show="recetaError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" x-text="recetaError"></div>
-
-            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                <div class="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-sm">
-                    <button type="button" @click="recetasTab='seleccionar'"
-                            :class="recetasTab==='seleccionar' ? 'px-4 py-2 bg-amber-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
-                        Seleccionar
-                    </button>
-                    <button type="button" @click="recetasTab='crear'"
-                            :class="recetasTab==='crear' ? 'px-4 py-2 bg-amber-600 text-white font-semibold' : 'px-4 py-2 bg-white dark:bg-gray-700 text-slate-700 dark:text-slate-200 font-semibold'">
-                        Crear nueva
+                    <button type="button" 
+                            @click="agregarItemVacio()" 
+                            class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Agregar Fármaco</span>
                     </button>
                 </div>
 
-                <div class="flex-1" x-show="recetasTab==='seleccionar'">
-                    <label class="sr-only">Buscar receta</label>
-                    <input x-ref="recetaBuscar" type="text" x-model="recetaBuscar"
-                           @input.debounce.250ms="loadRecetas()"
-                           placeholder="Buscar por número (ej: 1234)…"
-                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
-                </div>
-            </div>
-
-            {{-- Seleccionar --}}
-            <div x-show="recetasTab==='seleccionar'" class="space-y-2">
-                <div class="text-sm text-slate-600 dark:text-slate-400" x-show="recetaLoading">Cargando recetas…</div>
-
-                <div class="max-h-[45vh] overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 dark:bg-gray-900/30">
-                            <tr class="text-left">
-                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">N°</th>
-                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">Cliente</th>
-                                <th class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">Fecha</th>
-                                <th class="px-4 py-3"></th>
+                <!-- Tabla de Venta -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
+                    <table class="w-full text-left text-xs border-collapse min-w-[850px]">
+                        <thead>
+                            <tr class="bg-slate-100/90 dark:bg-slate-700/80 text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+                                <th class="py-2 px-2 text-center w-8">#</th>
+                                <th class="py-2 px-3 min-w-[200px]">Medicamento / Fármaco</th>
+                                <th class="py-2 px-3 min-w-[170px]">Presentación</th>
+                                <th class="py-2 px-3 min-w-[190px]">Lote (FEFO) & Stock</th>
+                                <th class="py-2 px-2 text-center w-20">Cant.</th>
+                                <th class="py-2 px-2 text-right w-24">P. Venta ($)</th>
+                                <th class="py-2 px-3 text-right w-24">Subtotal</th>
+                                <th class="py-2 px-2 text-center w-8"></th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            <template x-for="r in recetasListado" :key="r.id">
-                                <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/30">
-                                    <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white" x-text="r.numero_receta || ('#' + r.id)"></td>
-                                    <td class="px-4 py-3 text-slate-700 dark:text-slate-200" x-text="r.cliente_nombre || '—'"></td>
-                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="r.fecha_fmt || r.fecha || '—'"></td>
-                                    <td class="px-4 py-3 text-right">
-                                        <button type="button" @click="addRecetaSeleccionada(r)"
-                                                class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
-                                            Seleccionar
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                            <template x-for="(item, idx) in items" :key="item.uid">
+                                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                    <!-- Indice -->
+                                    <td class="py-2 px-2 text-center text-[11px] font-bold text-slate-400" x-text="idx + 1"></td>
+
+                                    <!-- Producto -->
+                                    <td class="py-2 px-3">
+                                        <div class="flex items-center space-x-1.5">
+                                            <select x-model="item.producto_id" 
+                                                    @change="onProductoChange(idx)"
+                                                    class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                                <template x-for="p in catalogo" :key="p.id">
+                                                    <option :value="p.id" x-text="p.nombre + (p.principio_activo ? ' (' + p.principio_activo + ')' : '')"></option>
+                                                </template>
+                                            </select>
+                                            <span x-show="item.requiere_receta" 
+                                                  title="Requiere Receta Médica" 
+                                                  class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500 text-white shrink-0">
+                                                Rx
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <!-- Presentación -->
+                                    <td class="py-2 px-3">
+                                        <select x-model="item.presentacion_id" 
+                                                @change="onPresentacionChange(idx)"
+                                                class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                                            <template x-for="pres in item.presentacionesDisponibles" :key="pres.id">
+                                                <option :value="pres.id" x-text="pres.nombre + ' (x' + pres.unidades + ')'"></option>
+                                            </template>
+                                        </select>
+                                        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5" x-show="item.factor > 1">
+                                            Total Base: <span x-text="calcularUnidadesBase(item)"></span> u.
+                                        </div>
+                                    </td>
+
+                                    <!-- Lote FEFO -->
+                                    <td class="py-2 px-3">
+                                        <select x-model="item.lote_id" 
+                                                @change="onLoteChange(idx)"
+                                                class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-emerald-500">
+                                            <template x-for="l in item.lotesDisponibles" :key="l.id">
+                                                <option :value="l.id" x-text="l.numero_lote + ' (Vence: ' + (l.fecha_vencimiento ? l.fecha_vencimiento.substring(0, 10) : 'N/A') + ' | Stock: ' + l.stock_actual + ')'"></option>
+                                            </template>
+                                        </select>
+                                    </td>
+
+                                    <!-- Cantidad -->
+                                    <td class="py-2 px-2">
+                                        <input type="number" 
+                                               x-model.number="item.cantidad" 
+                                               min="1" 
+                                               class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-center focus:ring-1 focus:ring-emerald-500">
+                                    </td>
+
+                                    <!-- Precio Venta -->
+                                    <td class="py-2 px-2 text-right">
+                                        <input type="number" 
+                                               step="0.01" 
+                                               min="0" 
+                                               x-model="item.precio_unitario" 
+                                               class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-right focus:ring-1 focus:ring-emerald-500">
+                                    </td>
+
+                                    <!-- Subtotal -->
+                                    <td class="py-2 px-3 text-right font-bold text-slate-900 dark:text-white">
+                                        $<span x-text="calcularSubtotal(item)"></span>
+                                    </td>
+
+                                    <!-- Botón Eliminar Fila -->
+                                    <td class="py-2 px-2 text-center">
+                                        <button type="button" 
+                                                @click="eliminarItem(idx)" 
+                                                title="Eliminar ítem"
+                                                class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </td>
                                 </tr>
                             </template>
-
-                            <tr x-show="!recetaLoading && recetasListado.length === 0">
-                                <td colspan="4" class="px-4 py-6 text-center text-slate-600 dark:text-slate-400">
-                                    No hay recetas para mostrar.
+                            <tr x-show="items.length === 0">
+                                <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
+                                    El carrito está vacío. Escanee un código de barras o use el buscador superior [F2].
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                <div class="mt-3" x-show="recetasSeleccionadas.length">
-                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Seleccionadas</div>
-                    <div class="flex flex-wrap gap-2">
-                        <template x-for="r in recetasSeleccionadas" :key="'sel-'+r.id">
-                            <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold">
-                                <span x-text="(r.numero_receta ? ('#' + r.numero_receta) : ('Receta ' + r.id)) + (r.cliente_nombre ? (' · ' + r.cliente_nombre) : '')"></span>
-                                <button type="button" class="hover:text-rose-600 dark:hover:text-rose-400" @click="removeReceta(r.id)">✕</button>
-                            </span>
+            <!-- Footer / Toolbar Inferior -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-slate-400 text-[11px]">
+                <div class="flex items-center space-x-2">
+                    <span x-show="tieneProductosRx()" class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold">
+                        ⚠️ Contiene fármacos que requieren Receta Médica
+                    </span>
+                    <span x-show="!tieneProductosRx()">Venta lista para despacho.</span>
+                </div>
+                <button type="button" 
+                        @click="modalCobro = true"
+                        :disabled="items.length === 0"
+                        class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <span>Cobrar Venta (F4) &bull; $<span x-text="calcularTotalGeneral()"></span></span>
+                </button>
+            </div>
+        </div>
+    </template>
+
+
+    <!-- ============================================================== -->
+    <!-- MODO 2: VISTA MODERNA (GRID TOUCH + PANEL LATERAL DE CARRITO)  -->
+    <!-- ============================================================== -->
+    <template x-if="formLayout === 'modern'">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 animate-fadeIn">
+            
+            <!-- Columna Izquierda: Catálogo Interactivo (7 cols) -->
+            <div class="lg:col-span-7 space-y-4">
+                <!-- Buscador y Filtro de Categoría -->
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs space-y-3">
+                    <div class="relative">
+                        <input type="text" 
+                               x-model="busqueda" 
+                               placeholder="Buscar medicamento, principio activo o código..." 
+                               class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                    </div>
+
+                    <!-- Pills de Categorías -->
+                    <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs">
+                        <button type="button" 
+                                @click="filtroCategoriaId = ''"
+                                :class="filtroCategoriaId === '' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'"
+                                class="px-3 py-1 rounded-lg shrink-0 transition">
+                            Todos
+                        </button>
+                        <template x-for="cat in categorias" :key="cat.id">
+                            <button type="button" 
+                                    @click="filtroCategoriaId = cat.id"
+                                    :class="filtroCategoriaId == cat.id ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'"
+                                    class="px-3 py-1 rounded-lg shrink-0 transition" 
+                                    x-text="cat.nombre">
+                            </button>
                         </template>
                     </div>
                 </div>
+
+                <!-- Grid de Tarjetas de Medicamentos -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    <template x-for="prod in productosFiltrados()" :key="prod.id">
+                        <div @click="agregarAlCarrito(prod)"
+                             class="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs hover:border-emerald-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between space-y-2">
+                            <div>
+                                <div class="flex items-start justify-between gap-1">
+                                    <h4 class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-emerald-600 transition" x-text="prod.nombre"></h4>
+                                    <span x-show="prod.requiere_receta" class="text-[9px] px-1 py-0.5 rounded font-bold bg-amber-500 text-white shrink-0">Rx</span>
+                                </div>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5" x-text="prod.principio_activo || 'Fórmula general'"></p>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                <span class="text-[10px] font-semibold text-slate-500">
+                                    Lote FEFO: <span class="text-emerald-600" x-text="prod.lotes && prod.lotes[0] ? prod.lotes[0].stock_actual + ' u.' : '0'"></span>
+                                </span>
+                                <span class="text-xs font-black text-slate-900 dark:text-white" x-text="'$' + parseFloat(prod.precio_venta).toFixed(2)"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
 
-            {{-- Crear --}}
-            <div x-show="recetasTab==='crear'" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Cliente</label>
-                        <select x-model="nuevaReceta.cliente_id"
-                                class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
-                            <option value="">Seleccionar…</option>
-                            <template x-for="c in clientes" :key="c.id">
-                                <option :value="String(c.id)" x-text="c.nombre"></option>
-                            </template>
-                        </select>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tip: si ya seleccionaste cliente en la venta, se preselecciona aquí.</p>
+            <!-- Columna Derecha: Carrito & Cobro (5 cols) -->
+            <div class="lg:col-span-5 space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">Carrito de Despacho</h3>
+                        </div>
+                        <button type="button" @click="limpiarVenta()" class="text-xs text-rose-600 hover:underline">Vaciar</button>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Número de receta</label>
-                        <input type="text" x-model="nuevaReceta.numero_receta"
-                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
-                        <input type="date" x-model="nuevaReceta.fecha"
-                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Médico (opcional)</label>
-                        <input type="text" x-model="nuevaReceta.medico"
-                               class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white">
-                    </div>
-                </div>
 
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones (opcional)</label>
-                    <textarea rows="3" x-model="nuevaReceta.observaciones"
-                              class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base text-slate-900 dark:text-white"></textarea>
-                </div>
+                    <!-- Lista de Ítems en Carrito -->
+                    <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                        <template x-for="(item, idx) in items" :key="item.uid">
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <div class="font-bold text-xs text-slate-900 dark:text-white" x-text="item.nombre"></div>
+                                        <div class="text-[10px] text-slate-500" x-text="item.principio_activo"></div>
+                                    </div>
+                                    <button type="button" @click="eliminarItem(idx)" class="text-slate-400 hover:text-rose-600">&times;</button>
+                                </div>
 
-                <div class="flex items-center justify-end gap-2">
-                    <button type="button" @click="recetasTab='seleccionar'"
-                            class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
-                        Cancelar
-                    </button>
-                    <button type="button" @click="crearReceta()"
-                            class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold">
-                        Crear receta
-                    </button>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <!-- Presentación -->
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-slate-500 mb-0.5">Presentación</label>
+                                        <select x-model="item.presentacion_id" @change="onPresentacionChange(idx)" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-[11px]">
+                                            <template x-for="pres in item.presentacionesDisponibles" :key="pres.id">
+                                                <option :value="pres.id" x-text="pres.nombre + ' (x' + pres.unidades + ')'"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <!-- Lote FEFO -->
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-slate-500 mb-0.5">Lote (FEFO)</label>
+                                        <select x-model="item.lote_id" @change="onLoteChange(idx)" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-[11px] font-mono">
+                                            <template x-for="l in item.lotesDisponibles" :key="l.id">
+                                                <option :value="l.id" x-text="l.numero_lote + ' (' + l.stock_actual + 'u)'"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between pt-1">
+                                    <div class="flex items-center space-x-2">
+                                        <button type="button" @click="if(item.cantidad > 1) item.cantidad--" class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 font-bold text-xs">-</button>
+                                        <span class="font-bold text-xs text-slate-900 dark:text-white" x-text="item.cantidad"></span>
+                                        <button type="button" @click="item.cantidad++" class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 font-bold text-xs">+</button>
+                                    </div>
+                                    <div class="font-bold text-xs text-slate-900 dark:text-white" x-text="'$' + calcularSubtotal(item)"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Totales y Botón Cobro -->
+                    <div class="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Subtotal:</span>
+                            <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300">
+                            <span>Descuento:</span>
+                            <span class="font-bold text-emerald-600" x-text="'-$' + (parseFloat(formData.descuento) || 0).toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between text-base font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <span>Total a Pagar:</span>
+                            <span class="text-xl text-emerald-600 dark:text-emerald-400" x-text="'$' + calcularTotalGeneral()"></span>
+                        </div>
+
+                        <button type="button" 
+                                @click="modalCobro = true"
+                                :disabled="items.length === 0"
+                                class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-extrabold shadow-sm transition flex items-center justify-center space-x-2 cursor-pointer mt-3">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <span>Cobrar y Emitir Comprobante (F4)</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+    </template>
 
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-2">
-            <button type="button" @click="closeRecetas()"
-                    class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-slate-700 dark:text-slate-200">
-                Cerrar
-            </button>
+
+    <!-- ============================================================== -->
+    <!-- MODAL DE COBRO & CONFIRMACIÓN (CALCULADORA DE VUELTO)          -->
+    <!-- ============================================================== -->
+    <div x-show="modalCobro" 
+         x-cloak 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         aria-labelledby="modal-cobro-title" 
+         role="dialog" 
+         aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="modalCobro" 
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" 
+                 @click="modalCobro = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="modalCobro" 
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-300 dark:border-slate-800">
+                
+                <div class="p-6 space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-xs"></span>
+                            <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-200">
+                                Cobro y Liquidación de Venta
+                            </h3>
+                        </div>
+                        <button type="button" @click="modalCobro = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                    </div>
+
+                    <!-- Total Gigante en Modal -->
+                    <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-center">
+                        <span class="text-xs font-semibold text-slate-500 block">Total a Cobrar</span>
+                        <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                            $<span x-text="calcularTotalGeneral()"></span>
+                        </span>
+                    </div>
+
+                    <!-- Método de Pago -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            Método de Pago
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <button type="button" 
+                                    @click="formData.metodo_pago = 'efectivo'"
+                                    :class="formData.metodo_pago === 'efectivo' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    class="py-2 rounded-xl text-xs transition">
+                                💵 Efectivo
+                            </button>
+                            <button type="button" 
+                                    @click="formData.metodo_pago = 'tarjeta'"
+                                    :class="formData.metodo_pago === 'tarjeta' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    class="py-2 rounded-xl text-xs transition">
+                                💳 Tarjeta
+                            </button>
+                            <button type="button" 
+                                    @click="formData.metodo_pago = 'transferencia'"
+                                    :class="formData.metodo_pago === 'transferencia' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    class="py-2 rounded-xl text-xs transition">
+                                📱 Yape / Plin
+                            </button>
+                            <button type="button" 
+                                    @click="formData.metodo_pago = 'mixto'"
+                                    :class="formData.metodo_pago === 'mixto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    class="py-2 rounded-xl text-xs transition">
+                                🔄 Mixto
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Calculadora de Vuelto (Si es Efectivo) -->
+                    <div x-show="formData.metodo_pago === 'efectivo'" class="space-y-3 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-950/40 bg-emerald-50/40 dark:bg-slate-800/40">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Monto Recibido ($)
+                                </label>
+                                <input type="number" 
+                                       step="0.10"
+                                       x-model="formData.monto_recibido" 
+                                       placeholder="0.00"
+                                       class="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-black text-slate-900 dark:text-white text-right focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Cambio / Vuelto
+                                </label>
+                                <div class="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-black text-emerald-600 dark:text-emerald-400 text-right" 
+                                     x-text="'$' + calcularVuelto()"></div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Denominaciones Rápidas -->
+                        <div class="flex items-center space-x-1.5 text-xs">
+                            <span class="text-[10px] text-slate-500 font-bold">Rápido:</span>
+                            <button type="button" @click="setMontoRecibido(calcularTotalGeneral())" class="px-2 py-0.5 rounded bg-white dark:bg-slate-700 border text-[11px] font-semibold">Exacto</button>
+                            <button type="button" @click="setMontoRecibido(10)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-700 border text-[11px] font-semibold">$10</button>
+                            <button type="button" @click="setMontoRecibido(20)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-700 border text-[11px] font-semibold">$20</button>
+                            <button type="button" @click="setMontoRecibido(50)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-700 border text-[11px] font-semibold">$50</button>
+                            <button type="button" @click="setMontoRecibido(100)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-700 border text-[11px] font-semibold">$100</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
+                    <button type="button" 
+                            @click="modalCobro = false" 
+                            class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        Volver a la Venta
+                    </button>
+                    <button type="button" 
+                            @click="procesarVentaFinal()"
+                            :disabled="procesandoVenta"
+                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span x-text="procesandoVenta ? 'Procesando...' : 'Confirmar & Emitir Ticket'"></span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-
 
 </div>
 @endsection
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-<script>
-/** ================================
- *  Column resize + reorder (como compras create)
- *  ================================= */
-function initResizableColumns() {
-    const table = document.getElementById('tablaProductos');
-    if (!table) return;
-    const ths = table.querySelectorAll('th.th-resizable');
-    ths.forEach(th => {
-        const handle = th.querySelector('.col-resize-handle');
-        if (!handle || handle.__bound) return;
-        handle.__bound = true;
-
-        let startX = 0;
-        let startW = 0;
-
-        const onDown = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            startX = (e.touches ? e.touches[0].clientX : e.clientX);
-            startW = th.getBoundingClientRect().width;
-
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onUp);
-            document.addEventListener('touchmove', onMove, { passive: false });
-            document.addEventListener('touchend', onUp);
-        };
-
-        const onMove = (e) => {
-            e.preventDefault();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX);
-            const dx = x - startX;
-            const minW = parseInt(th.dataset.minw || '90', 10);
-            const newW = Math.max(minW, startW + dx);
-            th.style.width = newW + 'px';
-
-            const col = th.dataset.col;
-            if (col) {
-                table.querySelectorAll(`tbody td[data-col="${col}"]`).forEach(td => td.style.width = newW + 'px');
-            }
-        };
-
-        const onUp = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend', onUp);
-        };
-
-        handle.addEventListener('mousedown', onDown);
-        handle.addEventListener('touchstart', onDown, { passive: false });
-    });
-}
-
-function initReorderableColumns() {
-    const table = document.getElementById('tablaProductos');
-    const headerRow = document.getElementById('theadRowProductos');
-    if (!table || !headerRow) return;
-    if (typeof Sortable === 'undefined') return;
-
-    const applyColumnOrder = () => {
-        const order = Array.from(headerRow.querySelectorAll('th[data-col]')).map(th => th.dataset.col);
-
-        table.querySelectorAll('tbody tr').forEach(tr => {
-            const fixed = Array.from(tr.children).filter(td => !td.dataset.col); // ej: [drag, acciones]
-            const byCol = {};
-            tr.querySelectorAll('td[data-col]').forEach(td => { byCol[td.dataset.col] = td; });
-
-            tr.innerHTML = '';
-            if (fixed[0]) tr.appendChild(fixed[0]);
-            order.forEach(col => { if (byCol[col]) tr.appendChild(byCol[col]); });
-            if (fixed.length > 1) tr.appendChild(fixed[fixed.length - 1]);
-        });
-    };
-
-    // Si ya existe, solo aplica el orden actual (útil al agregar filas nuevas)
-    if (headerRow.__sortableCols) {
-        applyColumnOrder();
-        return;
-    }
-
-    headerRow.__sortableCols = new Sortable(headerRow, {
-        animation: 150,
-        draggable: 'th[data-col]',
-        filter: '.col-resize-handle',
-        preventOnFilter: false,
-        onEnd: () => applyColumnOrder()
-    });
-
-    applyColumnOrder();
-}
-</script>
-<script>
-
-function ventaPOS() {
-    return {
-        STORAGE_KEY: 'ventas_pos_draft_v2_fullwidth',
-
-        // Estado principal
-        vista: localStorage.getItem('ventas_pos_vista') || 'tabla',
-        barcode: '',
-        items: [],
-
-        // Datos venta
-        fecha: '',
-        cliente_id: '',
-        observaciones: '',
-
-        // Pago
-        metodo_pago: 'efectivo',
-        banco: '',
-        referencia: '',
-        monto_recibido: null,
-        cambio: 0,
-
-        // Descuentos
-        descuento_global_pct: 0,
-
-        // UI
-        accion: 'guardar',
-        mantener_en_pantalla: false,
-
-        // Validaciones UI
-        efectivoInsuficiente: false,
-        bancoRequiredError: false,
-        referenciaRequiredError: false,
-        clienteRequiredError: false,
-
-        // Barcode preview
-        barcodePreview: {
-            show: false,
-            imagen_url: null,
-            nombre: '',
-            extra: '',
-            badge: 'Esperando…',
-            badgeClass: 'bg-slate-200 text-slate-700 dark:bg-gray-700 dark:text-slate-200'
-        },
-
-        // Clientes (para que el modal agregue y aparezca al instante)
-        clientes: [],
-
-        // Catálogo
-        catalogoOpen: false,
-        catalogoProductos: [],
-        catalogoFiltrados: [],
-        catalogoBuscar: '',
-        catalogoSeleccionados: new Set(),
-
-        // Nuevo cliente
-        nuevoClienteOpen: false,
-        nuevoCliente: { nombre: '', tipo_documento: 'Cedula', documento: '', telefono: '', direccion: '' },
-        clienteError: '',
-
-        // Recetas (para productos que requieren receta)
-        recetasOpen: false,
-        recetasTab: 'seleccionar', // seleccionar | crear
-        recetasSeleccionadas: [],
-        recetasListado: [],
-        recetaBuscar: '',
-        recetaLoading: false,
-        recetaError: '',
-        nuevaReceta: { cliente_id: '', numero_receta: '', fecha: '', medico: '', observaciones: '' },
-
-
-        /* ======= Computados ======= */
-        get subtotal_bruto() {
-            return this.items.reduce((a, it) => a + Number(it.subtotal_bruto || 0), 0);
-        },
-        get descuento_productos() {
-            return this.items.reduce((a, it) => a + Number(it.descuento_monto || 0), 0);
-        },
-        get descuento_global_monto() {
-            const base = Math.max(0, this.subtotal_bruto - this.descuento_productos);
-            const pct = Math.max(0, Number(this.descuento_global_pct || 0));
-            return base * (pct / 100);
-        },
-        get total_neto() {
-            return Math.max(0, (this.subtotal_bruto - this.descuento_productos - this.descuento_global_monto));
-        },
-        get needsBanco() {
-            return ['transferencia', 'credito', 'debito'].includes(this.metodo_pago);
-        },
-        get needsReferencia() {
-            return ['transferencia', 'credito', 'debito', 'otros'].includes(this.metodo_pago);
-        },
-
-// Recetas
-get productosQueRequierenReceta() {
-    const nombres = [];
-    const seen = new Set();
-    this.items.forEach(it => {
-        const req = (it.requiere_receta === true);
-        if (req && !seen.has(it.producto_id)) {
-            seen.add(it.producto_id);
-            nombres.push(it.nombre);
-        }
-    });
-    return nombres;
-},
-get requiereReceta() {
-    return this.productosQueRequierenReceta.length > 0;
-},
-get recetasOk() {
-    return !this.requiereReceta || this.recetasSeleccionadas.length > 0;
-},
-        get submitDisabled() {
-            if (this.items.length === 0) return true;
-            if (this.metodo_pago === 'efectivo' && this.efectivoInsuficiente) return true;
-            if (this.needsBanco && !this.banco) return true;
-            if (this.needsReferencia && !String(this.referencia || '').trim()) return true;
-            if (this.metodo_pago === 'pagar_luego' && !this.cliente_id) return true;
-            return false;
-        },
-
-        /* ======= Init ======= */
-        init() {
-            this.catalogoProductos = (window.__VENTAS_CATALOGO || []);
-            this.catalogoFiltrados = this.catalogoProductos;
-
-            this.clientes = (window.__VENTAS_CLIENTES || []);
-
-
-            this.restoreFromStorage();
-
-
-            // Asegurar método de pago inicial (evita bug visual de select)
-            if (!this.metodo_pago) this.metodo_pago = 'efectivo';
-            this.onChangeMetodoPago(true);
-
-            // Botón global "Limpiar venta" desde header
-            window.addEventListener('pos-limpiar-venta', () => this.resetVenta(true));
-
-            // Abrir modal de recetas desde cualquier botón (compatibilidad openrecetar/openRecetar)
-            window.addEventListener('pos-open-recetas', () => this.openRecetas());
-
-
-            if (!this.fecha) {
-                const now = new Date();
-                this.fecha = this.toDatetimeLocal(now);
-            }
-
-            // Watchers (autosave)
-            this.$watch('items', () => this.saveToStorage(), { deep: true });
-            this.$watch('recetasSeleccionadas', () => this.saveToStorage(), { deep: true });
-            this.$watch('cliente_id', () => this.saveToStorage());
-            this.$watch('observaciones', () => this.saveToStorage());
-            this.$watch('metodo_pago', () => this.saveToStorage());
-            this.$watch('banco', () => this.saveToStorage());
-            this.$watch('referencia', () => this.saveToStorage());
-            this.$watch('monto_recibido', () => this.saveToStorage());
-            this.$watch('descuento_global_pct', () => this.saveToStorage());
-            this.$watch('accion', () => this.saveToStorage());
-            this.$watch('mantener_en_pantalla', () => this.saveToStorage());
-            this.$watch('fecha', () => this.saveToStorage());
-            this.$watch('vista', () => { localStorage.setItem('ventas_pos_vista', this.vista); this.saveToStorage(); });
-
-            // Hotkeys
-            window.addEventListener('keydown', (e) => this.handleHotkeys(e));
-
-            this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
-        },
-
-
-        /* ======= Recetas (Modal) ======= */
-        openRecetas() {
-            this.recetaError = '';
-            this.recetasOpen = true;
-            this.recetasTab = 'seleccionar';
-
-            // Preseleccionar cliente en la receta (si hay cliente en la venta)
-            if (this.cliente_id && !this.nuevaReceta.cliente_id) {
-                this.nuevaReceta.cliente_id = String(this.cliente_id);
-            }
-
-            // Fecha por defecto (hoy)
-            if (!this.nuevaReceta.fecha) {
-                const d = new Date();
-                this.nuevaReceta.fecha = d.toISOString().slice(0, 10);
-            }
-
-            // Cargar listado para el modal
-            this.loadRecetas(true);
-
-            // Focus al buscador
-            this.$nextTick(() => {
-                if (this.$refs.recetaBuscar) this.$refs.recetaBuscar.focus();
-            });
-        },
-        // Alias por compatibilidad (si algún botón llama openrecetar/openRecetar)
-        openRecetar() { this.openRecetas(); },
-
-        closeRecetas() {
-            this.recetasOpen = false;
-            this.recetaError = '';
-            this.recetaLoading = false;
-            // No borramos recetasSeleccionadas: el usuario ya las eligió para la venta
-        },
-
-        async loadRecetas(force = false) {
-            if (!this.recetasOpen && !force) return;
-
-            this.recetaLoading = true;
-            this.recetaError = '';
-
-            try {
-                const params = new URLSearchParams();
-                params.set('json', '1');
-                params.set('limit', '50');
-
-                // Si hay cliente en la venta, filtrar por ese cliente para hacerlo rápido
-                if (this.cliente_id) params.set('cliente_id', String(this.cliente_id));
-
-                const q = String(this.recetaBuscar || '').trim();
-                if (q) params.set('numero_receta', q);
-
-                const url = `{{ route('recetas.index') }}?${params.toString()}`;
-
-                const res = await fetch(url, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }
-                });
-
-                if (!res.ok) {
-                    throw new Error('No se pudo cargar el listado de recetas.');
-                }
-
-                const data = await res.json();
-                this.recetasListado = Array.isArray(data.data) ? data.data : [];
-            } catch (e) {
-                this.recetaError = e?.message || 'Error al cargar recetas.';
-                this.recetasListado = [];
-            } finally {
-                this.recetaLoading = false;
-            }
-        },
-
-        addRecetaSeleccionada(r) {
-            if (!r || !r.id) return;
-            const id = Number(r.id);
-
-            const exists = this.recetasSeleccionadas.some(x => Number(x.id) === id);
-            if (exists) return;
-
-            this.recetasSeleccionadas.push({
-                id,
-                numero_receta: r.numero_receta || null,
-                fecha: r.fecha || null,
-                fecha_fmt: r.fecha_fmt || null,
-                cliente_id: r.cliente_id || null,
-                cliente_nombre: r.cliente_nombre || null,
-            });
-
-            // Cerrar modal (flujo rápido)
-            this.closeRecetas();
-        },
-
-        removeReceta(id) {
-            const nid = Number(id);
-            this.recetasSeleccionadas = this.recetasSeleccionadas.filter(r => Number(r.id) !== nid);
-        },
-
-        async crearReceta() {
-            this.recetaError = '';
-
-            const payload = {
-                cliente_id: this.nuevaReceta.cliente_id ? Number(this.nuevaReceta.cliente_id) : null,
-                numero_receta: String(this.nuevaReceta.numero_receta || '').trim(),
-                fecha: this.nuevaReceta.fecha || null,
-                medico: String(this.nuevaReceta.medico || '').trim() || null,
-                observaciones: String(this.nuevaReceta.observaciones || '').trim() || null,
-            };
-
-            // Validación mínima (evita requests vacíos)
-            if (!payload.cliente_id) {
-                this.recetaError = 'Selecciona un cliente para la receta.';
-                return;
-            }
-            if (!payload.numero_receta) {
-                this.recetaError = 'Ingresa el número de receta.';
-                return;
-            }
-            if (!payload.fecha) {
-                this.recetaError = 'Selecciona la fecha de la receta.';
-                return;
-            }
-
-            this.recetaLoading = true;
-
-            try {
-                const res = await fetch(`{{ route('recetas.store') }}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': `{{ csrf_token() }}`,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                const data = await res.json().catch(() => ({}));
-
-                if (!res.ok || data.success === false) {
-                    throw new Error(data.message || 'No se pudo crear la receta.');
-                }
-
-                const receta = data.receta || data.data || null;
-                if (receta && receta.id) {
-                    this.addRecetaSeleccionada(receta);
-
-                    // Reset form de receta
-                    this.nuevaReceta.numero_receta = '';
-                    this.nuevaReceta.medico = '';
-                    this.nuevaReceta.observaciones = '';
-                    // mantener cliente/fecha (útil si crea varias)
-
-                    // refrescar listado (por si quiere seleccionar otra)
-                    this.loadRecetas(true);
-                } else {
-                    throw new Error('La receta fue creada, pero no se pudo leer la respuesta.');
-                }
-            } catch (e) {
-                this.recetaError = e?.message || 'Error al crear receta.';
-            } finally {
-                this.recetaLoading = false;
-                // volver al tab seleccionar (UX)
-                this.recetasTab = 'seleccionar';
-            }
-        },
-
-
-        /* ======= Hotkeys ======= */
-        handleHotkeys(e) {
-            const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-            const typing = ['input', 'textarea', 'select'].includes(tag);
-
-     // F6: Focus a Código de Barras y Scroll
-if (e.key === 'F6') { 
-    e.preventDefault(); 
-    this.$nextTick(() => {
-        this.$refs.barcode?.focus();
-        this.$refs.barcode?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }); 
-    return; 
-}
-
-// F7: Catálogo
-if (e.key === 'F7') { e.preventDefault(); this.openCatalogo(); return; }
-
-// F8: Método de Pago y Scroll
-if (e.key === 'F8') { 
-    e.preventDefault(); 
-    this.$nextTick(() => {
-        this.$refs.metodoPago?.focus();
-        this.$refs.metodoPago?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }); 
-    return; 
-}
-
-// F9: Nuevo Cliente
-if (e.key === 'F9') { e.preventDefault(); this.openNuevoCliente(); return; }
-
-// F10: Ir a "Dinero Recibido" (Scroll + Focus)
-if (e.key === 'F10') { 
-    e.preventDefault(); 
-    // Cambiamos a efectivo automáticamente para que el input sea visible
-    this.metodo_pago = 'efectivo'; 
-    this.$nextTick(() => {
-        if (this.$refs.montoRecibido) {
-            this.$refs.montoRecibido.focus();
-            this.$refs.montoRecibido.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
-    return; 
-}
-
-// F11: Finalizar Venta
-if (e.key === 'F11') { 
-    e.preventDefault(); 
-    if (!this.submitDisabled) this.submitVenta(); 
-    return; 
-}
-
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                if (!this.submitDisabled) this.submitVenta();
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                if (this.nuevoClienteOpen) { this.closeNuevoCliente(); return; }
-                if (this.catalogoOpen) { this.closeCatalogo(); return; }
-                if (!typing) { this.barcode = ''; this.updateBarcodePreview(true); this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } }); }
-            }
-        },
-
-        /* ======= UI helpers ======= */
-        money(v) {
-            const n = Number(v || 0);
-            return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        },
-        toDatetimeLocal(d) {
-            const pad = (n) => String(n).padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        },
-        prettyFecha(value) {
-            try { return new Date(value).toLocaleString(); } catch { return value; }
-        },
-        priceLabel(it) {
-            if (!it.presentacion_id) return 'Precio (por unidad)';
-            return `Precio (por ${it.tipo_presentacion || 'presentación'})`;
-        },
-
-        /* ======= Catálogo ======= */
-        openCatalogo() {
-            this.catalogoOpen = true;
-            this.catalogoBuscar = '';
-            this.catalogoFiltrados = this.catalogoProductos;
-            this.$nextTick(() => {});
-        },
-        closeCatalogo() {
-            this.catalogoOpen = false;
-        },
-        filtrarCatalogo() {
-            const q = String(this.catalogoBuscar || '').trim().toLowerCase();
-            if (!q) {
-                this.catalogoFiltrados = this.catalogoProductos;
-                return;
-            }
-            this.catalogoFiltrados = this.catalogoProductos.filter(p => {
-                const nombre = (p.nombre || '').toLowerCase();
-                const desc = (p.descripcion || '').toLowerCase();
-                const cb = (p.codigo_barra || '').toLowerCase();
-                return nombre.includes(q) || desc.includes(q) || cb.includes(q);
-            });
-        },
-        toggleSeleccion(id) {
-            if (this.catalogoSeleccionados.has(id)) this.catalogoSeleccionados.delete(id);
-            else this.catalogoSeleccionados.add(id);
-        },
-        limpiarSeleccion() {
-            this.catalogoSeleccionados = new Set();
-        },
-        agregarProductoDesdeCatalogo(p) {
-            this.addProducto(p);
-            this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
-        },
-        agregarSeleccionados() {
-            const ids = Array.from(this.catalogoSeleccionados);
-            ids.forEach(id => {
-                const p = this.catalogoProductos.find(x => x.id === id);
-                if (p) this.addProducto(p);
-            });
-            this.limpiarSeleccion();
-            this.closeCatalogo();
-            this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
-        },
-
-        /* ======= Barcode ======= */
-        updateBarcodePreview(forceHide = false) {
-            const code = String(this.barcode || '').trim();
-            if (forceHide || !code) {
-                this.barcodePreview.show = false;
-                this.barcodePreview.badge = 'Esperando…';
-                this.barcodePreview.badgeClass = 'bg-slate-200 text-slate-700 dark:bg-gray-700 dark:text-slate-200';
-                return;
-            }
-
-            const p = this.catalogoProductos.find(x => String(x.codigo_barra || '').trim() === code);
-            this.barcodePreview.show = true;
-
-            if (!p) {
-                this.barcodePreview.imagen_url = null;
-                this.barcodePreview.nombre = 'No encontrado';
-                this.barcodePreview.extra = 'Revisa el código o usa Catálogo.';
-                this.barcodePreview.badge = 'Sin match';
-                this.barcodePreview.badgeClass = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-                return;
-            }
-
-            this.barcodePreview.imagen_url = p.imagen_url || null;
-            this.barcodePreview.nombre = p.nombre || 'Producto';
-            this.barcodePreview.extra = `Stock: ${p.stock_total ?? 0} • Precio: ${this.money(p.precio_venta || 0)}`;
-            if ((p.stock_total ?? 0) <= 0) {
-                this.barcodePreview.badge = 'Sin stock';
-                this.barcodePreview.badgeClass = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-            } else {
-                this.barcodePreview.badge = 'Listo';
-                this.barcodePreview.badgeClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
-            }
-        },
-        agregarPorBarcode() {
-            const code = String(this.barcode || '').trim();
-            if (!code) return;
-
-            const p = this.catalogoProductos.find(x => String(x.codigo_barra || '').trim() === code);
-            if (!p) {
-                this.updateBarcodePreview();
-                return;
-            }
-            if ((p.stock_total ?? 0) <= 0) {
-                this.updateBarcodePreview();
-                return;
-            }
-
-            this.addProducto(p);
-            this.barcode = '';
-            this.updateBarcodePreview(true);
-            this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
-        },
-
-        /* ======= Línea / Item ======= */
-        addProducto(p) {
-            // Agrega una nueva línea al detalle (permite repetir producto)
-            const firstLote = (p.lotes && p.lotes.length) ? p.lotes[0] : null;
-            const presList = Array.isArray(p.presentaciones) ? p.presentaciones : [{
-                id: null, nombre: 'Unidad', descripcion: 'Unidad base', unidades_por_presentacion: 1, precio_sugerido: null, nombre_completo: 'Unidad', select_label: 'Unidad'
-            }];
-            const presDefault = presList[0]; // Unidad
-            const presId = presDefault.id;
-            // Permitir agregar el mismo producto varias veces (no auto-fusionar filas)
-
-            const unidades = Number(presDefault.unidades_por_presentacion || 1);
-            let precioDisplay = Number(p.precio_venta || 0);
-            if (presId) {
-                const sug = Number(presDefault.precio_sugerido || 0);
-                precioDisplay = sug > 0 ? sug : (Number(p.precio_venta || 0) * unidades);
-            }
-            const precioUnit = unidades > 0 ? (precioDisplay / unidades) : precioDisplay;
-
-            const item = {
-                key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-                producto_id: p.id,
-                nombre: p.nombre,
-                codigo_barra: p.codigo_barra || '',
-                imagen_url: p.imagen_url || null,
-
-                requiere_receta: !!(p.requiere_receta),
-
-                lotes: (p.lotes || []),
-                lote_id: firstLote ? firstLote.id : null,
-                lote: firstLote,
-
-                presentaciones: presList,
-                presentacion_id: presId,
-                tipo_presentacion: presDefault.nombre || 'Unidad',
-                unidades_por_presentacion: unidades,
-
-                cantidad_presentaciones: 1,
-                cantidad_unidades_base: unidades,
-
-                precio_display: precioDisplay,
-                precio_unitario: precioUnit,
-
-                descuento_porcentaje: 0,
-                descuento_monto: 0,
-
-                subtotal_bruto: precioUnit * unidades,
-                subtotal: precioUnit * unidades,
-            };
-
-            this.items.push(item);
-            this.recalcItem(item);
-        },
-        removeItem(key) {
-            this.items = this.items.filter(it => it.key !== key);
-        },
-        onChangePresentacion(it) {
-            const pres = it.presentaciones.find(p => String(p.id ?? '') === String(it.presentacion_id ?? ''));
-            const unidades = Number(pres?.unidades_por_presentacion || 1);
-            it.tipo_presentacion = pres?.nombre || 'Unidad';
-            it.unidades_por_presentacion = unidades;
-
-            // Ajustar precio_display al sugerido (si existe) para evitar confusión
-            if (it.presentacion_id) {
-                const sug = Number(pres?.precio_sugerido || 0);
-                it.precio_display = sug > 0 ? sug : (Number(it.precio_unitario || 0) * unidades);
-            } else {
-                it.precio_display = Number(it.precio_unitario || 0); // unidad
-            }
-            this.onChangePrecio(it);
-        },
-        onChangeLote(it) {
-            const l = it.lotes.find(x => String(x.id) === String(it.lote_id));
-            it.lote = l || null;
-            this.recalcItem(it);
-        },
-        onChangePrecio(it) {
-            const unidades = Number(it.unidades_por_presentacion || 1);
-            const display = Math.max(0, Number(it.precio_display || 0));
-            it.precio_unitario = unidades > 0 ? (display / unidades) : display;
-            this.recalcItem(it);
-        },
-        onChangeDescuento(it) {
-            const pct = Math.max(0, Number(it.descuento_porcentaje || 0));
-            it.descuento_porcentaje = pct;
-            this.recalcItem(it);
-        },
-        recalcItem(it) {
-            const cantPres = Math.max(1, parseInt(it.cantidad_presentaciones || 1, 10));
-            it.cantidad_presentaciones = cantPres;
-
-            const unidades = Math.max(1, parseInt(it.unidades_por_presentacion || 1, 10));
-            it.cantidad_unidades_base = cantPres * unidades;
-
-            // Ajuste por stock del lote
-            if (it.lote && typeof it.lote.stock_actual === 'number') {
-                const maxBase = Math.max(0, Number(it.lote.stock_actual || 0));
-                if (it.cantidad_unidades_base > maxBase) {
-                    it.cantidad_unidades_base = maxBase;
-                    it.cantidad_presentaciones = Math.max(1, Math.floor(maxBase / unidades) || 1);
-                }
-            }
-
-            const bruto = (Number(it.precio_unitario || 0) * Number(it.cantidad_unidades_base || 0));
-            it.subtotal_bruto = bruto;
-
-            const descMonto = bruto * (Math.max(0, Number(it.descuento_porcentaje || 0)) / 100);
-            it.descuento_monto = descMonto;
-
-            it.subtotal = Math.max(0, bruto - descMonto);
-
-            this.recalcTotales();
-            this.saveToStorage();
-        },
-        recalcTotales() {
-            // Solo triggers getters
-            this.recalcCambio();
-            this.saveToStorage();
-        },
-
-        /* ======= Pago ======= */
-        onChangeMetodoPago(isInit = false) {
-            this.bancoRequiredError = false;
-            this.referenciaRequiredError = false;
-            this.clienteRequiredError = false;
-
-            // Reset banco/referencia al cambiar (en init no se borra lo restaurado)
-            if (!isInit) {
-                this.banco = '';
-                this.referencia = '';
-            }
-
-            if (this.metodo_pago !== 'efectivo') {
-                this.monto_recibido = null;
-                this.cambio = 0;
-                this.efectivoInsuficiente = false;
-            } else {
-                this.recalcCambio();
-            }
-
-            if (this.metodo_pago === 'pagar_luego') {
-                this.clienteRequiredError = !this.cliente_id;
-            }
-
-            this.saveToStorage();
-        },
-        setRecibidoExacto() {
-            this.monto_recibido = Number(this.total_neto || 0);
-            this.recalcCambio();
-        },
-        clearRecibido() {
-            this.monto_recibido = null;
-            this.cambio = 0;
-            this.efectivoInsuficiente = false;
-        },
-        sumDenominacion(d) {
-            const cur = Number(this.monto_recibido || 0);
-            this.monto_recibido = cur + Number(d);
-            this.recalcCambio();
-        },
-        recalcCambio() {
-            if (this.metodo_pago !== 'efectivo') {
-                this.cambio = 0;
-                this.efectivoInsuficiente = false;
-                return;
-            }
-            const recibido = Number(this.monto_recibido || 0);
-            const total = Number(this.total_neto || 0);
-            const diff = recibido - total;
-
-            this.efectivoInsuficiente = diff < 0;
-            this.cambio = diff > 0 ? diff : 0;
-        },
-
-        /* ======= Persistencia ======= */
-        saveToStorage() {
-            try {
-                const payload = {
-                    fecha: this.fecha,
-                    cliente_id: this.cliente_id,
-                    observaciones: this.observaciones,
-                    metodo_pago: this.metodo_pago,
-                    banco: this.banco,
-                    referencia: this.referencia,
-                    monto_recibido: this.monto_recibido,
-                    descuento_global_pct: this.descuento_global_pct,
-                    accion: this.accion,
-                    mantener_en_pantalla: this.mantener_en_pantalla,
-                    vista: this.vista,
-                    recetasSeleccionadas: this.recetasSeleccionadas,
-                    items: this.items.map(it => ({
-                        key: it.key,
-                        producto_id: it.producto_id,
-                        nombre: it.nombre,
-                        codigo_barra: it.codigo_barra,
-                        imagen_url: it.imagen_url,
-                        requiere_receta: !!it.requiere_receta,
-
-                        lotes: it.lotes || [],
-                        lote_id: it.lote_id,
-                        lote: it.lote || null,
-
-                        presentaciones: it.presentaciones || [],
-                        presentacion_id: it.presentacion_id,
-                        tipo_presentacion: it.tipo_presentacion,
-                        unidades_por_presentacion: it.unidades_por_presentacion,
-
-                        cantidad_presentaciones: it.cantidad_presentaciones,
-                        cantidad_unidades_base: it.cantidad_unidades_base,
-
-                        precio_display: it.precio_display,
-                        precio_unitario: it.precio_unitario,
-
-                        descuento_porcentaje: it.descuento_porcentaje,
-                        descuento_monto: it.descuento_monto,
-
-                        subtotal_bruto: it.subtotal_bruto,
-                        subtotal: it.subtotal,
-                    }))
-                };
-                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(payload));
-            } catch (e) {}
-        },
-        restoreFromStorage() {
-            try {
-                const raw = localStorage.getItem(this.STORAGE_KEY);
-                if (!raw) return;
-                const data = JSON.parse(raw);
-
-                this.fecha = data.fecha || '';
-                this.cliente_id = data.cliente_id || '';
-                this.observaciones = data.observaciones || '';
-
-                this.metodo_pago = data.metodo_pago || 'efectivo';
-                this.banco = data.banco || '';
-                this.referencia = data.referencia || '';
-                this.monto_recibido = data.monto_recibido ?? null;
-
-                this.descuento_global_pct = data.descuento_global_pct ?? 0;
-                this.accion = data.accion || 'guardar';
-                this.mantener_en_pantalla = (data.mantener_en_pantalla === true || data.mantener_en_pantalla === 1);
-
-                this.vista = data.vista || this.vista;
-
-                if (Array.isArray(data.items)) {
-                    this.items = data.items.map(it => this.hydrateItem(it));
-                    this.items.forEach(it => this.recalcItem(it));
-                }
-
-                // Recalc pago
-                this.recalcCambio();
-            } catch (e) {}
-        },
-        hydrateItem(it) {
-            const key = it.key || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-            return {
-                key,
-                producto_id: it.producto_id,
-                nombre: it.nombre || 'Producto',
-                codigo_barra: it.codigo_barra || '',
-                imagen_url: it.imagen_url || null,
-                requiere_receta: !!it.requiere_receta,
-
-                lotes: Array.isArray(it.lotes) ? it.lotes : [],
-                lote_id: it.lote_id,
-                lote: it.lote || null,
-
-                presentaciones: Array.isArray(it.presentaciones) ? it.presentaciones : [],
-                presentacion_id: it.presentacion_id || null,
-                tipo_presentacion: it.tipo_presentacion || 'Unidad',
-                unidades_por_presentacion: Number(it.unidades_por_presentacion || 1),
-
-                cantidad_presentaciones: Number(it.cantidad_presentaciones || 1),
-                cantidad_unidades_base: Number(it.cantidad_unidades_base || 1),
-
-                precio_display: Number(it.precio_display || 0),
-                precio_unitario: Number(it.precio_unitario || 0),
-
-                descuento_porcentaje: Number(it.descuento_porcentaje || 0),
-                descuento_monto: Number(it.descuento_monto || 0),
-
-                subtotal_bruto: Number(it.subtotal_bruto || 0),
-                subtotal: Number(it.subtotal || 0),
-            };
-        },
-
-        /* ======= Acciones ======= */
-        resetVenta(clearStorage = false) {
-            this.items = [];
-            this.barcode = '';
-            this.updateBarcodePreview(true);
-
-            this.observaciones = '';
-            this.descuento_global_pct = 0;
-
-            this.metodo_pago = 'efectivo';
-            this.onChangeMetodoPago(true);
-            this.banco = '';
-            this.referencia = '';
-            this.monto_recibido = null;
-            this.cambio = 0;
-
-            this.cliente_id = '';
-            this.recetasSeleccionadas = [];
-            this.fecha = this.toDatetimeLocal(new Date());
-
-            this.efectivoInsuficiente = false;
-            this.bancoRequiredError = false;
-            this.referenciaRequiredError = false;
-            this.clienteRequiredError = false;
-
-            if (clearStorage) {
-                try { localStorage.removeItem(this.STORAGE_KEY); } catch(e) {}
-            } else {
-                this.saveToStorage();
-            }
-
-            this.$nextTick(() => { this.$refs.barcode?.focus(); if (this.vista === 'tabla') { initResizableColumns(); initReorderableColumns(); } });
-        },
-        cancelar() {
-            if (!confirm('¿Cancelar la venta y salir?')) return;
-            try { localStorage.removeItem(this.STORAGE_KEY); } catch(e) {}
-            window.location.href = `{{ route('ventas.index') }}`;
-        },
-
-        async submitVenta() {
-            // Validaciones UI obligatorias
-            this.bancoRequiredError = this.needsBanco && !this.banco;
-            this.referenciaRequiredError = this.needsReferencia && !String(this.referencia || '').trim();
-            this.clienteRequiredError = this.metodo_pago === 'pagar_luego' && !this.cliente_id;
-
-            if (this.submitDisabled) return;
-
-            // Si hay productos que requieren receta, debe seleccionar/crear una receta antes de continuar
-            if (this.requiereReceta && this.recetasSeleccionadas.length === 0) {
-                this.openRecetas();
-                alert('Hay productos que requieren receta. Selecciona o crea una receta para continuar.');
-                return;
-            }
-
-            const payload = {
-                fecha: this.fecha,
-                cliente_id: this.cliente_id || null,
-                observaciones: this.observaciones || null,
-                metodo_pago: this.metodo_pago,
-                banco: this.needsBanco ? this.banco : null,
-                referencia_pago: this.needsReferencia ? this.referencia : null,
-                monto_recibido: this.metodo_pago === 'efectivo' ? Number(this.monto_recibido || 0) : null,
-                cambio: this.metodo_pago === 'efectivo' ? Number(this.cambio || 0) : null,
-                descuento: Number(this.descuento_global_pct || 0),
-                recetas: this.recetasSeleccionadas.map(r => Number(r.id)),
-                productos: this.items.map(it => {
-                    const presentacionId = it.presentacion_id ? Number(it.presentacion_id) : null;
-
-                    const obj = {
-                        producto_id: Number(it.producto_id),
-                        lote_id: Number(it.lote_id),
-                        presentacion_id: presentacionId,
-                        precio_unitario: Number(it.precio_unitario || 0),
-                        descuento: Number(it.descuento_porcentaje || 0),
-                    };
-
-                    // ✅ Reglas del backend:
-                    // - Si hay presentación => cantidad_presentaciones
-                    // - Si NO hay presentación (unidad) => cantidad
-                    const qty = Number(it.cantidad_presentaciones || 1);
-
-                    if (presentacionId) {
-                        obj.cantidad_presentaciones = qty;
-                    } else {
-                        obj.cantidad = qty;
-                    }
-
-                    return obj;
-                }),
-            };
-
-            const res = await fetch(`{{ route('ventas.store') }}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': `{{ csrf_token() }}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) {
-                let msg = 'Error al registrar la venta.';
-                try {
-                    const data = await res.json();
-                    msg = data.message || msg;
-                } catch (e) {}
-                alert(msg);
-                return;
-            }
-
-            const data = await res.json();
-
-            // Controller devuelve { success, message, redirect } (y a veces id)
-            const redirect = data.redirect || data.redirect_url || data.url || null;
-            const id = data.id || data.venta_id || data.venta?.id || (redirect ? String(redirect).split('/').filter(Boolean).slice(-1)[0] : null);
-
-            // Limpiar storage
-            try { localStorage.removeItem(this.STORAGE_KEY); } catch(e) {}
-
-            const keepHere = (this.mantener_en_pantalla === true);
-
-            if (keepHere) {
-                // reiniciar y seguir vendiendo
-                this.resetVenta(false);
-                return;
-            }
-
-            // Preferir redirect del backend (ventas.show)
-            if (redirect) {
-                const base = String(redirect).replace(/\/+$/, '');
-                if (this.accion === 'facturar') {
-                    window.location.href = base + '/imprimir';
-                } else {
-                    window.location.href = base;
-                }
-                return;
-            }
-
-            if (!id) {
-                // Si backend no devuelve id/redirect, recargar
-                window.location.reload();
-                return;
-            }
-
-            if (this.accion === 'facturar') {
-                window.location.href = `{{ url('/ventas') }}/${id}/imprimir`;
-            } else {
-                window.location.href = `{{ url('/ventas') }}/${id}`;
-            }
-        },
-
-        setVista(tipo) {
-            this.vista = tipo;
-            this.$nextTick(() => {
-                if (this.vista === 'tabla') initResizableColumns();
-                initReorderableColumns();
-            });
-        },
-
-        /* ======= Cliente ======= */
-        openNuevoCliente() {
-            this.nuevoClienteOpen = true;
-            this.clienteError = '';
-            this.$nextTick(() => {});
-        },
-        closeNuevoCliente() {
-            this.nuevoClienteOpen = false;
-        },
-        async guardarNuevoCliente() {
-            this.clienteError = '';
-            const payload = { ...this.nuevoCliente };
-
-            const res = await fetch(`{{ route('clientes.store') }}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': `{{ csrf_token() }}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) {
-                let msg = 'Error al crear el cliente.';
-                try {
-                    const data = await res.json();
-                    msg = data.message || msg;
-                } catch (e) {}
-                this.clienteError = msg;
-                return;
-            }
-
-            const data = await res.json();
-            const id = data.id || data.cliente?.id;
-
-            if (id) {
-                // Agregar al combo inmediatamente (sin recargar)
-                const nombre = data.nombre || data.cliente?.nombre || payload.nombre || 'Cliente';
-                const existe = this.clientes.some(c => String(c.id) === String(id));
-                if (!existe) {
-                    this.clientes.push({ id, nombre });
-                    // Ordenar alfabéticamente como en compras
-                    this.clientes.sort((a,b) => String(a.nombre).localeCompare(String(b.nombre)));
-                }
-                this.cliente_id = String(id);
-                this.saveToStorage();
-            }
-
-            this.nuevoCliente = { nombre: '', tipo_documento: 'Cedula', documento: '', telefono: '', direccion: '' };
-            this.closeNuevoCliente();
-        }
-    }
-}
-
-// Compatibilidad: si existe algún onclick="openrecetar()" u "openRecetar()"
-window.openrecetar = function () {
-    window.dispatchEvent(new CustomEvent('pos-open-recetas'));
-};
-window.openRecetar = window.openrecetar;
-
-</script>
-@endpush
