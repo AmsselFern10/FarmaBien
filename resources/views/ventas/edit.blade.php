@@ -3,303 +3,309 @@
 @section('title', 'Modificar Venta #' . str_pad($venta->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 
 @section('content')
-<div x-data="{
-    formLayout: localStorage.getItem('farma_pos_layout') || 'compact',
-    setLayout(layout) {
-        this.formLayout = layout;
-        localStorage.setItem('farma_pos_layout', layout);
-    },
-    catalogo: @js($productos ?? []),
-    clientes: @js($clientes ?? []),
-    categorias: @js($categorias ?? []),
-    
-    // Datos de la Venta a Modificar
-    formData: {
-        cliente_id: '{{ old('cliente_id', $venta->cliente_id ?? '') }}',
-        tipo_comprobante: '{{ old('tipo_comprobante', $venta->tipo_comprobante ?? 'ticket') }}',
-        serie: '{{ old('serie', $venta->serie ?? '') }}',
-        numero_comprobante: '{{ old('numero_comprobante', $venta->numero_comprobante ?? '') }}',
-        metodo_pago: '{{ old('metodo_pago', $venta->metodo_pago ?? 'efectivo') }}',
-        descuento: {{ old('descuento', $venta->descuento ?? 0) }},
-        motivo_modificacion: '{{ old('motivo_modificacion', '') }}'
-    },
-    
-    // Modales
-    modalTicketPreview: false,
-    modalInfoProducto: false,
-    modalNuevoCliente: false,
-    productoInfo: null,
+<script>
+function posVentaEditData() {
+    return {
+        formLayout: localStorage.getItem('farma_pos_layout') || 'compact',
+        setLayout(layout) {
+            this.formLayout = layout;
+            localStorage.setItem('farma_pos_layout', layout);
+        },
+        catalogo: @js($productos ?? []),
+        clientes: @js($clientes ?? []),
+        categorias: @js($categorias ?? []),
+        
+        // Datos de la Venta a Modificar
+        formData: {
+            cliente_id: '{{ old('cliente_id', $venta->cliente_id ?? '') }}',
+            tipo_comprobante: '{{ old('tipo_comprobante', $venta->tipo_comprobante ?? 'ticket') }}',
+            serie: '{{ old('serie', $venta->serie ?? '') }}',
+            numero_comprobante: '{{ old('numero_comprobante', $venta->numero_comprobante ?? '') }}',
+            metodo_pago: '{{ old('metodo_pago', $venta->metodo_pago ?? 'efectivo') }}',
+            descuento: {{ old('descuento', $venta->descuento ?? 0) }},
+            motivo_modificacion: '{{ old('motivo_modificacion', '') }}'
+        },
+        
+        // Modales
+        modalTicketPreview: false,
+        modalInfoProducto: false,
+        modalNuevoCliente: false,
+        productoInfo: null,
 
-    // Nuevo Cliente Rápido
-    nuevoCliente: {
-        nombre: '',
-        documento: '',
-        telefono: '',
-        email: '',
-        direccion: ''
-    },
-    guardandoCliente: false,
-    errorClienteMsg: '',
+        // Nuevo Cliente Rápido
+        nuevoCliente: {
+            nombre: '',
+            documento: '',
+            telefono: '',
+            email: '',
+            direccion: ''
+        },
+        guardandoCliente: false,
+        errorClienteMsg: '',
 
-    // Carga inicial de ítems existentes
-    items: @js(
-        $venta->detalles->map(function($d) {
-            $p = $d->producto;
-            $presDisponibles = collect([
-                ['id' => null, 'nombre' => 'Unidad Base', 'unidades' => 1, 'precio' => (float)($p->precio_venta ?? 0)]
-            ])->concat(
-                collect($p->presentacionesActivas ?? [])->map(fn($pr) => [
-                    'id' => $pr->id,
-                    'nombre' => $pr->nombre,
-                    'unidades' => (int)$pr->unidades_por_presentacion,
-                    'precio' => (float)$pr->precio_venta ?: ((float)$p->precio_venta * (int)$pr->unidades_por_presentacion)
-                ])
-            )->values();
+        // Carga inicial de ítems existentes
+        items: @js(
+            $venta->detalles->map(function($d) {
+                $p = $d->producto;
+                $presDisponibles = collect([
+                    ['id' => null, 'nombre' => 'Unidad Base', 'unidades' => 1, 'precio' => (float)($p->precio_venta ?? 0)]
+                ])->concat(
+                    collect($p->presentacionesActivas ?? [])->map(fn($pr) => [
+                        'id' => $pr->id,
+                        'nombre' => $pr->nombre,
+                        'unidades' => (int)$pr->unidades_por_presentacion,
+                        'precio' => (float)$pr->precio_venta ?: ((float)$p->precio_venta * (int)$pr->unidades_por_presentacion)
+                    ])
+                )->values();
 
-            return [
-                'uid' => uniqid('item_'),
-                'producto_id' => $d->producto_id,
-                'nombre' => $p->nombre ?? 'Medicamento',
-                'principio_activo' => $p->principio_activo ?? '',
-                'concentracion' => $p->concentracion ?? '',
-                'laboratorio' => $p->laboratorio->nombre ?? '',
-                'ubicacion' => $p->ubicacion ?? 'Sin asignar',
-                'requiere_receta' => (bool)($p->requiere_receta ?? false),
-                'lotesDisponibles' => $p->lotes ?? [],
-                'lote_id' => $d->lote_id,
-                'lote_obj' => $d->lote,
-                'presentacionesDisponibles' => $presDisponibles,
-                'presentacion_id' => $d->presentacion_id,
-                'factor' => (int)($d->unidades_por_presentacion ?? 1),
-                'precio_unitario' => (float)$d->precio_unitario,
-                'descuento' => (float)($d->descuento_monto ?? 0),
-                'cantidad' => (int)$d->cantidad
+                return [
+                    'uid' => uniqid('item_'),
+                    'producto_id' => $d->producto_id,
+                    'nombre' => $p->nombre ?? 'Medicamento',
+                    'principio_activo' => $p->principio_activo ?? '',
+                    'concentracion' => $p->concentracion ?? '',
+                    'laboratorio' => $p->laboratorio->nombre ?? '',
+                    'ubicacion' => $p->ubicacion ?? 'Sin asignar',
+                    'requiere_receta' => (bool)($p->requiere_receta ?? false),
+                    'lotesDisponibles' => $p->lotes ?? [],
+                    'lote_id' => $d->lote_id,
+                    'lote_obj' => $d->lote,
+                    'presentacionesDisponibles' => $presDisponibles,
+                    'presentacion_id' => $d->presentacion_id,
+                    'factor' => (int)($d->unidades_por_presentacion ?? 1),
+                    'precio_unitario' => (float)$d->precio_unitario,
+                    'descuento' => (float)($d->descuento_monto ?? 0),
+                    'cantidad' => (int)$d->cantidad
+                ];
+            })
+        ),
+
+        busqueda: '',
+        filtroCategoriaId: '',
+
+        // Métodos de Carrito
+        agregarAlCarrito(producto, presentacionId = null, loteId = null) {
+            if (!producto || !producto.lotes || producto.lotes.length === 0) {
+                alert('Este medicamento no tiene lotes disponibles.');
+                return;
+            }
+            const loteDefault = loteId ? producto.lotes.find(l => l.id == loteId) : producto.lotes[0];
+            const presDisponibles = [
+                { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(producto.precio_venta) || 0 }
             ];
-        })
-    ),
-
-    busqueda: '',
-    filtroCategoriaId: '',
-
-    // Métodos de Carrito
-    agregarAlCarrito(producto, presentacionId = null, loteId = null) {
-        if (!producto || !producto.lotes || producto.lotes.length === 0) {
-            alert('Este medicamento no tiene lotes disponibles.');
-            return;
-        }
-        const loteDefault = loteId ? producto.lotes.find(l => l.id == loteId) : producto.lotes[0];
-        const presDisponibles = [
-            { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(producto.precio_venta) || 0 }
-        ];
-        if (producto.presentaciones_activas && producto.presentaciones_activas.length > 0) {
-            producto.presentaciones_activas.forEach(pr => {
-                presDisponibles.push({
-                    id: pr.id,
-                    nombre: pr.nombre,
-                    unidades: parseInt(pr.unidades_por_presentacion) || 1,
-                    precio: parseFloat(pr.precio_venta) || (parseFloat(producto.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
+            if (producto.presentaciones_activas && producto.presentaciones_activas.length > 0) {
+                producto.presentaciones_activas.forEach(pr => {
+                    presDisponibles.push({
+                        id: pr.id,
+                        nombre: pr.nombre,
+                        unidades: parseInt(pr.unidades_por_presentacion) || 1,
+                        precio: parseFloat(pr.precio_venta) || (parseFloat(producto.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
+                    });
                 });
-            });
-        }
-
-        let presSel = presDisponibles[0];
-        if (presentacionId) {
-            const encontrada = presDisponibles.find(p => p.id == presentacionId);
-            if (encontrada) presSel = encontrada;
-        }
-
-        const existeIdx = this.items.findIndex(it => it.producto_id == producto.id && it.lote_id == loteDefault.id && it.presentacion_id == presSel.id);
-        if (existeIdx !== -1) {
-            this.items[existeIdx].cantidad++;
-            return;
-        }
-
-        this.items.push({
-            uid: Date.now() + Math.random().toString(36).substr(2, 5),
-            producto_id: producto.id,
-            nombre: producto.nombre,
-            principio_activo: producto.principio_activo || '',
-            concentracion: producto.concentracion || '',
-            laboratorio: producto.laboratorio?.nombre || '',
-            ubicacion: producto.ubicacion || 'Sin asignar',
-            requiere_receta: !!producto.requiere_receta,
-            lotesDisponibles: producto.lotes,
-            lote_id: loteDefault.id,
-            lote_obj: loteDefault,
-            presentacionesDisponibles: presDisponibles,
-            presentacion_id: presSel.id,
-            factor: presSel.unidades,
-            precio_unitario: presSel.precio,
-            descuento: 0,
-            cantidad: 1
-        });
-    },
-
-    agregarItemVacio() {
-        if (this.catalogo.length === 0) return;
-        this.agregarAlCarrito(this.catalogo[0]);
-    },
-
-    onProductoChange(idx) {
-        const item = this.items[idx];
-        const prod = this.catalogo.find(p => p.id == item.producto_id);
-        if (!prod) return;
-
-        item.nombre = prod.nombre;
-        item.principio_activo = prod.principio_activo || '';
-        item.concentracion = prod.concentracion || '';
-        item.laboratorio = prod.laboratorio?.nombre || '';
-        item.ubicacion = prod.ubicacion || 'Sin asignar';
-        item.requiere_receta = !!prod.requiere_receta;
-        item.lotesDisponibles = prod.lotes || [];
-        if (prod.lotes && prod.lotes.length > 0) {
-            item.lote_id = prod.lotes[0].id;
-            item.lote_obj = prod.lotes[0];
-        }
-
-        const presDisponibles = [
-            { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(prod.precio_venta) || 0 }
-        ];
-        if (prod.presentaciones_activas && prod.presentaciones_activas.length > 0) {
-            prod.presentaciones_activas.forEach(pr => {
-                presDisponibles.push({
-                    id: pr.id,
-                    nombre: pr.nombre,
-                    unidades: parseInt(pr.unidades_por_presentacion) || 1,
-                    precio: parseFloat(pr.precio_venta) || (parseFloat(prod.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
-                });
-            });
-        }
-        item.presentacionesDisponibles = presDisponibles;
-        item.presentacion_id = null;
-        item.factor = 1;
-        item.precio_unitario = parseFloat(prod.precio_venta) || 0;
-        item.descuento = 0;
-    },
-
-    onPresentacionChange(idx) {
-        const item = this.items[idx];
-        const pres = item.presentacionesDisponibles.find(p => p.id == item.presentacion_id);
-        if (pres) {
-            item.factor = pres.unidades;
-            item.precio_unitario = pres.precio;
-        } else {
-            item.factor = 1;
-            const prod = this.catalogo.find(p => p.id == item.producto_id);
-            item.precio_unitario = prod ? parseFloat(prod.precio_venta) || 0 : 0;
-        }
-    },
-
-    onLoteChange(idx) {
-        const item = this.items[idx];
-        const lote = item.lotesDisponibles.find(l => l.id == item.lote_id);
-        if (lote) {
-            item.lote_obj = lote;
-        }
-    },
-
-    eliminarItem(idx) {
-        this.items.splice(idx, 1);
-    },
-
-    abrirInfoProducto(producto) {
-        this.productoInfo = producto;
-        this.modalInfoProducto = true;
-    },
-
-    // Cálculos
-    calcularSubtotal(item) {
-        const cant = parseInt(item.cantidad) || 0;
-        const prec = parseFloat(item.precio_unitario) || 0;
-        const desc = parseFloat(item.descuento) || 0;
-        return Math.max(0, (cant * prec) - desc).toFixed(2);
-    },
-
-    calcularUnidadesBase(item) {
-        const cant = parseInt(item.cantidad) || 0;
-        const fac = parseInt(item.factor) || 1;
-        return cant * fac;
-    },
-
-    calcularSubtotalGeneral() {
-        return this.items.reduce((acc, it) => acc + (parseFloat(this.calcularSubtotal(it)) || 0), 0).toFixed(2);
-    },
-
-    calcularTotalGeneral() {
-        const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
-        const desc = parseFloat(this.formData.descuento) || 0;
-        return Math.max(0, sub - desc).toFixed(2);
-    },
-
-    getClienteNombre() {
-        if (!this.formData.cliente_id) return 'PÚBLICO GENERAL';
-        const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
-        return cl ? cl.nombre : 'PÚBLICO GENERAL';
-    },
-
-    getClienteDocumento() {
-        if (!this.formData.cliente_id) return 'Sin Documento';
-        const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
-        return cl && cl.documento ? cl.documento : 'Sin Documento';
-    },
-
-    productosFiltrados() {
-        let prods = this.catalogo;
-        if (this.filtroCategoriaId) {
-            prods = prods.filter(p => p.categoria_id == this.filtroCategoriaId);
-        }
-        if (this.busqueda && this.busqueda.trim().length > 0) {
-            const q = this.busqueda.toLowerCase().trim();
-            prods = prods.filter(p => 
-                (p.nombre && p.nombre.toLowerCase().includes(q)) ||
-                (p.principio_activo && p.principio_activo.toLowerCase().includes(q)) ||
-                (p.codigo_barra && p.codigo_barra.includes(q))
-            );
-        }
-        return prods;
-    },
-
-    async registrarClienteRapido() {
-        if (!this.nuevoCliente.nombre || this.nuevoCliente.nombre.trim().length === 0) {
-            this.errorClienteMsg = 'El nombre del cliente es obligatorio.';
-            return;
-        }
-
-        this.guardandoCliente = true;
-        this.errorClienteMsg = '';
-
-        try {
-            const token = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || '';
-            const res = await fetch('{{ route('clientes.store') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': token
-                },
-                body: JSON.stringify(this.nuevoCliente)
-            });
-
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                throw new Error(data.message || 'Error al registrar cliente');
             }
 
-            this.clientes.unshift(data.cliente);
-            this.formData.cliente_id = data.cliente.id;
-            this.modalNuevoCliente = false;
-            this.nuevoCliente = { nombre: '', documento: '', telefono: '', email: '', direccion: '' };
-        } catch (err) {
-            this.errorClienteMsg = err.message;
-        } finally {
-            this.guardandoCliente = false;
+            let presSel = presDisponibles[0];
+            if (presentacionId) {
+                const encontrada = presDisponibles.find(p => p.id == presentacionId);
+                if (encontrada) presSel = encontrada;
+            }
+
+            const existeIdx = this.items.findIndex(it => it.producto_id == producto.id && it.lote_id == loteDefault.id && it.presentacion_id == presSel.id);
+            if (existeIdx !== -1) {
+                this.items[existeIdx].cantidad++;
+                return;
+            }
+
+            this.items.push({
+                uid: Date.now() + Math.random().toString(36).substr(2, 5),
+                producto_id: producto.id,
+                nombre: producto.nombre,
+                principio_activo: producto.principio_activo || '',
+                concentracion: producto.concentracion || '',
+                laboratorio: producto.laboratorio?.nombre || '',
+                ubicacion: producto.ubicacion || 'Sin asignar',
+                requiere_receta: !!producto.requiere_receta,
+                lotesDisponibles: producto.lotes,
+                lote_id: loteDefault.id,
+                lote_obj: loteDefault,
+                presentacionesDisponibles: presDisponibles,
+                presentacion_id: presSel.id,
+                factor: presSel.unidades,
+                precio_unitario: presSel.precio,
+                descuento: 0,
+                cantidad: 1
+            });
+        },
+
+        agregarItemVacio() {
+            if (this.catalogo.length === 0) return;
+            this.agregarAlCarrito(this.catalogo[0]);
+        },
+
+        onProductoChange(idx) {
+            const item = this.items[idx];
+            const prod = this.catalogo.find(p => p.id == item.producto_id);
+            if (!prod) return;
+
+            item.nombre = prod.nombre;
+            item.principio_activo = prod.principio_activo || '';
+            item.concentracion = prod.concentracion || '';
+            item.laboratorio = prod.laboratorio?.nombre || '';
+            item.ubicacion = prod.ubicacion || 'Sin asignar';
+            item.requiere_receta = !!prod.requiere_receta;
+            item.lotesDisponibles = prod.lotes || [];
+            if (prod.lotes && prod.lotes.length > 0) {
+                item.lote_id = prod.lotes[0].id;
+                item.lote_obj = prod.lotes[0];
+            }
+
+            const presDisponibles = [
+                { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(prod.precio_venta) || 0 }
+            ];
+            if (prod.presentaciones_activas && prod.presentaciones_activas.length > 0) {
+                prod.presentaciones_activas.forEach(pr => {
+                    presDisponibles.push({
+                        id: pr.id,
+                        nombre: pr.nombre,
+                        unidades: parseInt(pr.unidades_por_presentacion) || 1,
+                        precio: parseFloat(pr.precio_venta) || (parseFloat(prod.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
+                    });
+                });
+            }
+            item.presentacionesDisponibles = presDisponibles;
+            item.presentacion_id = null;
+            item.factor = 1;
+            item.precio_unitario = parseFloat(prod.precio_venta) || 0;
+            item.descuento = 0;
+        },
+
+        onPresentacionChange(idx) {
+            const item = this.items[idx];
+            const pres = item.presentacionesDisponibles.find(p => p.id == item.presentacion_id);
+            if (pres) {
+                item.factor = pres.unidades;
+                item.precio_unitario = pres.precio;
+            } else {
+                item.factor = 1;
+                const prod = this.catalogo.find(p => p.id == item.producto_id);
+                item.precio_unitario = prod ? parseFloat(prod.precio_venta) || 0 : 0;
+            }
+        },
+
+        onLoteChange(idx) {
+            const item = this.items[idx];
+            const lote = item.lotesDisponibles.find(l => l.id == item.lote_id);
+            if (lote) {
+                item.lote_obj = lote;
+            }
+        },
+
+        eliminarItem(idx) {
+            this.items.splice(idx, 1);
+        },
+
+        abrirInfoProducto(producto) {
+            this.productoInfo = producto;
+            this.modalInfoProducto = true;
+        },
+
+        // Cálculos
+        calcularSubtotal(item) {
+            const cant = parseInt(item.cantidad) || 0;
+            const prec = parseFloat(item.precio_unitario) || 0;
+            const desc = parseFloat(item.descuento) || 0;
+            return Math.max(0, (cant * prec) - desc).toFixed(2);
+        },
+
+        calcularUnidadesBase(item) {
+            const cant = parseInt(item.cantidad) || 0;
+            const fac = parseInt(item.factor) || 1;
+            return cant * fac;
+        },
+
+        calcularSubtotalGeneral() {
+            return this.items.reduce((acc, it) => acc + (parseFloat(this.calcularSubtotal(it)) || 0), 0).toFixed(2);
+        },
+
+        calcularTotalGeneral() {
+            const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
+            const desc = parseFloat(this.formData.descuento) || 0;
+            return Math.max(0, sub - desc).toFixed(2);
+        },
+
+        getClienteNombre() {
+            if (!this.formData.cliente_id) return 'PÚBLICO GENERAL';
+            const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
+            return cl ? cl.nombre : 'PÚBLICO GENERAL';
+        },
+
+        getClienteDocumento() {
+            if (!this.formData.cliente_id) return 'Sin Documento';
+            const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
+            return cl && cl.documento ? cl.documento : 'Sin Documento';
+        },
+
+        productosFiltrados() {
+            let prods = this.catalogo;
+            if (this.filtroCategoriaId) {
+                prods = prods.filter(p => p.categoria_id == this.filtroCategoriaId);
+            }
+            if (this.busqueda && this.busqueda.trim().length > 0) {
+                const q = this.busqueda.toLowerCase().trim();
+                prods = prods.filter(p => 
+                    (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+                    (p.principio_activo && p.principio_activo.toLowerCase().includes(q)) ||
+                    (p.codigo_barra && p.codigo_barra.includes(q))
+                );
+            }
+            return prods;
+        },
+
+        async registrarClienteRapido() {
+            if (!this.nuevoCliente.nombre || this.nuevoCliente.nombre.trim().length === 0) {
+                this.errorClienteMsg = 'El nombre del cliente es obligatorio.';
+                return;
+            }
+
+            this.guardandoCliente = true;
+            this.errorClienteMsg = '';
+
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch('{{ route('clientes.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify(this.nuevoCliente)
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Error al registrar cliente');
+                }
+
+                this.clientes.unshift(data.cliente);
+                this.formData.cliente_id = data.cliente.id;
+                this.modalNuevoCliente = false;
+                this.nuevoCliente = { nombre: '', documento: '', telefono: '', email: '', direccion: '' };
+            } catch (err) {
+                this.errorClienteMsg = err.message;
+            } finally {
+                this.guardandoCliente = false;
+            }
         }
-    }
-}"
-@keydown.window="
-    if ($event.key === 'F7' && items.length > 0) { $event.preventDefault(); modalTicketPreview = true; }
-"
-class="space-y-4">
+    };
+}
+</script>
+
+<div x-data="posVentaEditData()"
+     @keydown.window="
+         if ($event.key === 'F7' && items.length > 0) { $event.preventDefault(); modalTicketPreview = true; }
+     "
+     class="space-y-4">
 
     <!-- Header & Mode Switcher -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">

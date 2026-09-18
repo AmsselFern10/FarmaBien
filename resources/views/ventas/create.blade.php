@@ -3,404 +3,410 @@
 @section('title', 'Terminal Punto de Venta (POS) - FarmaBien')
 
 @section('content')
-<div x-data="{
-    formLayout: localStorage.getItem('farma_pos_layout') || 'compact',
-    setLayout(layout) {
-        this.formLayout = layout;
-        localStorage.setItem('farma_pos_layout', layout);
-    },
-    catalogo: @js($productos ?? []),
-    clientes: @js($clientes ?? []),
-    categorias: @js($categorias ?? []),
-    
-    // Buscador y filtros
-    busqueda: '',
-    filtroCategoriaId: '',
-    
-    // Datos de la Venta
-    formData: {
-        cliente_id: '',
-        tipo_comprobante: 'ticket',
-        serie: '',
-        numero_comprobante: '',
-        metodo_pago: 'efectivo',
-        referencia_pago: '',
-        descuento: 0,
-        monto_recibido: ''
-    },
-    
-    // Ítems del Carrito
-    items: [],
-    
-    // Modales
-    modalCobro: false,
-    modalTicketPreview: false,
-    modalInfoProducto: false,
-    modalNuevoCliente: false,
-    productoInfo: null,
-    procesandoVenta: false,
-    errorMsg: '',
-
-    // Nuevo Cliente Rápido
-    nuevoCliente: {
-        nombre: '',
-        documento: '',
-        telefono: '',
-        email: '',
-        direccion: ''
-    },
-    guardandoCliente: false,
-    errorClienteMsg: '',
-
-    // Receta médica
-    recetaInfo: {
-        medico_nombre: '',
-        medico_cmp: '',
-        paciente_nombre: '',
-        observaciones: ''
-    },
-
-    // Métodos del Carrito
-    agregarAlCarrito(producto, presentacionId = null, loteId = null) {
-        if (!producto || !producto.lotes || producto.lotes.length === 0) {
-            alert('Este medicamento no tiene lotes con stock disponible.');
-            return;
-        }
-
-        // Seleccionar lote por defecto (primer lote FEFO)
-        const loteDefault = loteId ? producto.lotes.find(l => l.id == loteId) : producto.lotes[0];
-        if (!loteDefault) {
-            alert('Lote no disponible.');
-            return;
-        }
-
-        // Presentaciones disponibles (Unidad base + presentaciones activas)
-        const presDisponibles = [
-            { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(producto.precio_venta) || 0 }
-        ];
-        if (producto.presentaciones_activas && producto.presentaciones_activas.length > 0) {
-            producto.presentaciones_activas.forEach(pr => {
-                presDisponibles.push({
-                    id: pr.id,
-                    nombre: pr.nombre,
-                    unidades: parseInt(pr.unidades_por_presentacion) || 1,
-                    precio: parseFloat(pr.precio_venta) || (parseFloat(producto.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
-                });
-            });
-        }
-
-        // Determinar presentación inicial
-        let presSel = presDisponibles[0];
-        if (presentacionId) {
-            const encontrada = presDisponibles.find(p => p.id == presentacionId);
-            if (encontrada) presSel = encontrada;
-        }
-
-        // Verificar si ya está en carrito con el mismo lote y presentación
-        const existeIdx = this.items.findIndex(it => it.producto_id == producto.id && it.lote_id == loteDefault.id && it.presentacion_id == presSel.id);
+<script>
+function posVentaData() {
+    return {
+        formLayout: localStorage.getItem('farma_pos_layout') || 'compact',
+        setLayout(layout) {
+            this.formLayout = layout;
+            localStorage.setItem('farma_pos_layout', layout);
+        },
+        catalogo: @js($productos ?? []),
+        clientes: @js($clientes ?? []),
+        categorias: @js($categorias ?? []),
         
-        if (existeIdx !== -1) {
-            this.items[existeIdx].cantidad++;
-            return;
-        }
-
-        this.items.push({
-            uid: Date.now() + Math.random().toString(36).substr(2, 5),
-            producto_id: producto.id,
-            nombre: producto.nombre,
-            principio_activo: producto.principio_activo || '',
-            concentracion: producto.concentracion || '',
-            laboratorio: producto.laboratorio?.nombre || '',
-            ubicacion: producto.ubicacion || 'Sin asignar',
-            requiere_receta: !!producto.requiere_receta,
-            lotesDisponibles: producto.lotes,
-            lote_id: loteDefault.id,
-            lote_obj: loteDefault,
-            presentacionesDisponibles: presDisponibles,
-            presentacion_id: presSel.id,
-            factor: presSel.unidades,
-            precio_unitario: presSel.precio,
+        // Buscador y filtros
+        busqueda: '',
+        filtroCategoriaId: '',
+        
+        // Datos de la Venta
+        formData: {
+            cliente_id: '',
+            tipo_comprobante: 'ticket',
+            serie: '',
+            numero_comprobante: '',
+            metodo_pago: 'efectivo',
+            referencia_pago: '',
             descuento: 0,
-            cantidad: 1
-        });
-    },
-
-    agregarItemVacio() {
-        if (this.catalogo.length === 0) return;
-        const p = this.catalogo[0];
-        this.agregarAlCarrito(p);
-    },
-
-    onProductoChange(idx) {
-        const item = this.items[idx];
-        const prod = this.catalogo.find(p => p.id == item.producto_id);
-        if (!prod) return;
-
-        item.nombre = prod.nombre;
-        item.principio_activo = prod.principio_activo || '';
-        item.concentracion = prod.concentracion || '';
-        item.laboratorio = prod.laboratorio?.nombre || '';
-        item.ubicacion = prod.ubicacion || 'Sin asignar';
-        item.requiere_receta = !!prod.requiere_receta;
-        item.lotesDisponibles = prod.lotes || [];
+            monto_recibido: ''
+        },
         
-        if (prod.lotes && prod.lotes.length > 0) {
-            item.lote_id = prod.lotes[0].id;
-            item.lote_obj = prod.lotes[0];
-        }
+        // Ítems del Carrito
+        items: [],
+        
+        // Modales
+        modalCobro: false,
+        modalTicketPreview: false,
+        modalInfoProducto: false,
+        modalNuevoCliente: false,
+        productoInfo: null,
+        procesandoVenta: false,
+        errorMsg: '',
 
-        const presDisponibles = [
-            { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(prod.precio_venta) || 0 }
-        ];
-        if (prod.presentaciones_activas && prod.presentaciones_activas.length > 0) {
-            prod.presentaciones_activas.forEach(pr => {
-                presDisponibles.push({
-                    id: pr.id,
-                    nombre: pr.nombre,
-                    unidades: parseInt(pr.unidades_por_presentacion) || 1,
-                    precio: parseFloat(pr.precio_venta) || (parseFloat(prod.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
-                });
-            });
-        }
-        item.presentacionesDisponibles = presDisponibles;
-        item.presentacion_id = null;
-        item.factor = 1;
-        item.precio_unitario = parseFloat(prod.precio_venta) || 0;
-        item.descuento = 0;
-    },
+        // Nuevo Cliente Rápido
+        nuevoCliente: {
+            nombre: '',
+            documento: '',
+            telefono: '',
+            email: '',
+            direccion: ''
+        },
+        guardandoCliente: false,
+        errorClienteMsg: '',
 
-    onPresentacionChange(idx) {
-        const item = this.items[idx];
-        const pres = item.presentacionesDisponibles.find(p => p.id == item.presentacion_id);
-        if (pres) {
-            item.factor = pres.unidades;
-            item.precio_unitario = pres.precio;
-        } else {
-            item.factor = 1;
-            const prod = this.catalogo.find(p => p.id == item.producto_id);
-            item.precio_unitario = prod ? parseFloat(prod.precio_venta) || 0 : 0;
-        }
-    },
+        // Receta médica
+        recetaInfo: {
+            medico_nombre: '',
+            medico_cmp: '',
+            paciente_nombre: '',
+            observaciones: ''
+        },
 
-    onLoteChange(idx) {
-        const item = this.items[idx];
-        const lote = item.lotesDisponibles.find(l => l.id == item.lote_id);
-        if (lote) {
-            item.lote_obj = lote;
-        }
-    },
-
-    eliminarItem(idx) {
-        this.items.splice(idx, 1);
-    },
-
-    limpiarVenta() {
-        if (this.items.length > 0 && !confirm('¿Desea vaciar el carrito actual?')) {
-            return;
-        }
-        this.items = [];
-        this.formData.descuento = 0;
-        this.formData.monto_recibido = '';
-        this.errorMsg = '';
-    },
-
-    abrirInfoProducto(producto) {
-        this.productoInfo = producto;
-        this.modalInfoProducto = true;
-    },
-
-    // Cálculos
-    calcularSubtotal(item) {
-        const cant = parseInt(item.cantidad) || 0;
-        const prec = parseFloat(item.precio_unitario) || 0;
-        const desc = parseFloat(item.descuento) || 0;
-        return Math.max(0, (cant * prec) - desc).toFixed(2);
-    },
-
-    calcularUnidadesBase(item) {
-        const cant = parseInt(item.cantidad) || 0;
-        const fac = parseInt(item.factor) || 1;
-        return cant * fac;
-    },
-
-    calcularSubtotalGeneral() {
-        return this.items.reduce((acc, it) => acc + (parseFloat(this.calcularSubtotal(it)) || 0), 0).toFixed(2);
-    },
-
-    calcularTotalGeneral() {
-        const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
-        const desc = parseFloat(this.formData.descuento) || 0;
-        return Math.max(0, sub - desc).toFixed(2);
-    },
-
-    calcularVuelto() {
-        const total = parseFloat(this.calcularTotalGeneral()) || 0;
-        const recibido = parseFloat(this.formData.monto_recibido) || 0;
-        return Math.max(0, recibido - total).toFixed(2);
-    },
-
-    setMontoRecibido(monto) {
-        this.formData.monto_recibido = monto;
-    },
-
-    tieneProductosRx() {
-        return this.items.some(it => it.requiere_receta);
-    },
-
-    getClienteNombre() {
-        if (!this.formData.cliente_id) return 'PÚBLICO GENERAL';
-        const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
-        return cl ? cl.nombre : 'PÚBLICO GENERAL';
-    },
-
-    getClienteDocumento() {
-        if (!this.formData.cliente_id) return 'Sin Documento';
-        const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
-        return cl && cl.documento ? cl.documento : 'Sin Documento';
-    },
-
-    // Filtrar catálogo interactivo para vista moderna
-    productosFiltrados() {
-        let prods = this.catalogo;
-        if (this.filtroCategoriaId) {
-            prods = prods.filter(p => p.categoria_id == this.filtroCategoriaId);
-        }
-        if (this.busqueda && this.busqueda.trim().length > 0) {
-            const q = this.busqueda.toLowerCase().trim();
-            prods = prods.filter(p => 
-                (p.nombre && p.nombre.toLowerCase().includes(q)) ||
-                (p.principio_activo && p.principio_activo.toLowerCase().includes(q)) ||
-                (p.codigo_barra && p.codigo_barra.includes(q))
-            );
-        }
-        return prods;
-    },
-
-    // Registrar Cliente Rápido vía AJAX
-    async registrarClienteRapido() {
-        if (!this.nuevoCliente.nombre || this.nuevoCliente.nombre.trim().length === 0) {
-            this.errorClienteMsg = 'El nombre del cliente es obligatorio.';
-            return;
-        }
-
-        this.guardandoCliente = true;
-        this.errorClienteMsg = '';
-
-        try {
-            const token = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || '';
-            const res = await fetch('{{ route('clientes.store') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': token
-                },
-                body: JSON.stringify(this.nuevoCliente)
-            });
-
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                throw new Error(data.message || 'Error al registrar cliente');
-            }
-
-            // Agregar al selector y auto-seleccionar
-            this.clientes.unshift(data.cliente);
-            this.formData.cliente_id = data.cliente.id;
-            this.modalNuevoCliente = false;
-            this.nuevoCliente = { nombre: '', documento: '', telefono: '', email: '', direccion: '' };
-        } catch (err) {
-            this.errorClienteMsg = err.message;
-        } finally {
-            this.guardandoCliente = false;
-        }
-    },
-
-    // Enviar venta por AJAX
-    async procesarVentaFinal() {
-        if (this.items.length === 0) {
-            alert('El carrito está vacío. Agregue al menos un medicamento.');
-            return;
-        }
-
-        // Validar stocks
-        for (let it of this.items) {
-            const uTotales = this.calcularUnidadesBase(it);
-            if (it.lote_obj && it.lote_obj.stock_actual < uTotales) {
-                alert(`Stock insuficiente en el lote ${it.lote_obj.numero_lote} de ${it.nombre}. Disponible: ${it.lote_obj.stock_actual} unid., Solicitado: ${uTotales} unid.`);
+        // Métodos del Carrito
+        agregarAlCarrito(producto, presentacionId = null, loteId = null) {
+            if (!producto || !producto.lotes || producto.lotes.length === 0) {
+                alert('Este medicamento no tiene lotes con stock disponible.');
                 return;
             }
-        }
 
-        this.procesandoVenta = true;
-        this.errorMsg = '';
+            // Seleccionar lote por defecto (primer lote FEFO)
+            const loteDefault = loteId ? producto.lotes.find(l => l.id == loteId) : producto.lotes[0];
+            if (!loteDefault) {
+                alert('Lote no disponible.');
+                return;
+            }
 
-        try {
-            const payload = {
-                cliente_id: this.formData.cliente_id || null,
-                tipo_comprobante: this.formData.tipo_comprobante,
-                serie: this.formData.serie || null,
-                numero_comprobante: this.formData.numero_comprobante || null,
-                metodo_pago: this.formData.metodo_pago,
-                referencia_pago: this.formData.referencia_pago || null,
-                descuento: parseFloat(this.formData.descuento) || 0,
-                monto_recibido: this.formData.monto_recibido ? parseFloat(this.formData.monto_recibido) : null,
-                productos: this.items.map(it => ({
-                    producto_id: it.producto_id,
-                    lote_id: it.lote_id,
-                    presentacion_id: it.presentacion_id || null,
-                    cantidad: parseInt(it.cantidad) || 1,
-                    precio_unitario: parseFloat(it.precio_unitario) || 0,
-                    descuento: parseFloat(it.descuento) || 0
-                }))
-            };
+            // Presentaciones disponibles (Unidad base + presentaciones activas)
+            const presDisponibles = [
+                { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(producto.precio_venta) || 0 }
+            ];
+            if (producto.presentaciones_activas && producto.presentaciones_activas.length > 0) {
+                producto.presentaciones_activas.forEach(pr => {
+                    presDisponibles.push({
+                        id: pr.id,
+                        nombre: pr.nombre,
+                        unidades: parseInt(pr.unidades_por_presentacion) || 1,
+                        precio: parseFloat(pr.precio_venta) || (parseFloat(producto.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
+                    });
+                });
+            }
 
-            const token = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || '';
-            const res = await fetch('{{ route('ventas.store') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': token
-                },
-                body: JSON.stringify(payload)
+            // Determinar presentación inicial
+            let presSel = presDisponibles[0];
+            if (presentacionId) {
+                const encontrada = presDisponibles.find(p => p.id == presentacionId);
+                if (encontrada) presSel = encontrada;
+            }
+
+            // Verificar si ya está en carrito con el mismo lote y presentación
+            const existeIdx = this.items.findIndex(it => it.producto_id == producto.id && it.lote_id == loteDefault.id && it.presentacion_id == presSel.id);
+            
+            if (existeIdx !== -1) {
+                this.items[existeIdx].cantidad++;
+                return;
+            }
+
+            this.items.push({
+                uid: Date.now() + Math.random().toString(36).substr(2, 5),
+                producto_id: producto.id,
+                nombre: producto.nombre,
+                principio_activo: producto.principio_activo || '',
+                concentracion: producto.concentracion || '',
+                laboratorio: producto.laboratorio?.nombre || '',
+                ubicacion: producto.ubicacion || 'Sin asignar',
+                requiere_receta: !!producto.requiere_receta,
+                lotesDisponibles: producto.lotes,
+                lote_id: loteDefault.id,
+                lote_obj: loteDefault,
+                presentacionesDisponibles: presDisponibles,
+                presentacion_id: presSel.id,
+                factor: presSel.unidades,
+                precio_unitario: presSel.precio,
+                descuento: 0,
+                cantidad: 1
             });
+        },
 
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                throw new Error(data.message || 'Error al procesar la venta');
+        agregarItemVacio() {
+            if (this.catalogo.length === 0) return;
+            const p = this.catalogo[0];
+            this.agregarAlCarrito(p);
+        },
+
+        onProductoChange(idx) {
+            const item = this.items[idx];
+            const prod = this.catalogo.find(p => p.id == item.producto_id);
+            if (!prod) return;
+
+            item.nombre = prod.nombre;
+            item.principio_activo = prod.principio_activo || '';
+            item.concentracion = prod.concentracion || '';
+            item.laboratorio = prod.laboratorio?.nombre || '';
+            item.ubicacion = prod.ubicacion || 'Sin asignar';
+            item.requiere_receta = !!prod.requiere_receta;
+            item.lotesDisponibles = prod.lotes || [];
+            
+            if (prod.lotes && prod.lotes.length > 0) {
+                item.lote_id = prod.lotes[0].id;
+                item.lote_obj = prod.lotes[0];
             }
 
-            // Éxito: abrir preview de ticket o redirigir
-            this.modalCobro = false;
-            if (data.ticket_url) {
-                window.open(data.ticket_url, '_blank', 'width=400,height=600');
+            const presDisponibles = [
+                { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(prod.precio_venta) || 0 }
+            ];
+            if (prod.presentaciones_activas && prod.presentaciones_activas.length > 0) {
+                prod.presentaciones_activas.forEach(pr => {
+                    presDisponibles.push({
+                        id: pr.id,
+                        nombre: pr.nombre,
+                        unidades: parseInt(pr.unidades_por_presentacion) || 1,
+                        precio: parseFloat(pr.precio_venta) || (parseFloat(prod.precio_venta) * (parseInt(pr.unidades_por_presentacion) || 1))
+                    });
+                });
             }
-            window.location.href = '{{ route('ventas.index') }}';
+            item.presentacionesDisponibles = presDisponibles;
+            item.presentacion_id = null;
+            item.factor = 1;
+            item.precio_unitario = parseFloat(prod.precio_venta) || 0;
+            item.descuento = 0;
+        },
 
-        } catch (err) {
-            this.errorMsg = err.message;
-        } finally {
-            this.procesandoVenta = false;
-        }
-    },
+        onPresentacionChange(idx) {
+            const item = this.items[idx];
+            const pres = item.presentacionesDisponibles.find(p => p.id == item.presentacion_id);
+            if (pres) {
+                item.factor = pres.unidades;
+                item.precio_unitario = pres.precio;
+            } else {
+                item.factor = 1;
+                const prod = this.catalogo.find(p => p.id == item.producto_id);
+                item.precio_unitario = prod ? parseFloat(prod.precio_venta) || 0 : 0;
+            }
+        },
 
-    // Escanear código de barras con Enter
-    buscarPorCodigoBarra() {
-        if (!this.busqueda) return;
-        const match = this.catalogo.find(p => p.codigo_barra && p.codigo_barra.trim() === this.busqueda.trim());
-        if (match) {
-            this.agregarAlCarrito(match);
-            this.busqueda = '';
+        onLoteChange(idx) {
+            const item = this.items[idx];
+            const lote = item.lotesDisponibles.find(l => l.id == item.lote_id);
+            if (lote) {
+                item.lote_obj = lote;
+            }
+        },
+
+        eliminarItem(idx) {
+            this.items.splice(idx, 1);
+        },
+
+        limpiarVenta() {
+            if (this.items.length > 0 && !confirm('¿Desea vaciar el carrito actual?')) {
+                return;
+            }
+            this.items = [];
+            this.formData.descuento = 0;
+            this.formData.monto_recibido = '';
+            this.errorMsg = '';
+        },
+
+        abrirInfoProducto(producto) {
+            this.productoInfo = producto;
+            this.modalInfoProducto = true;
+        },
+
+        // Cálculos
+        calcularSubtotal(item) {
+            const cant = parseInt(item.cantidad) || 0;
+            const prec = parseFloat(item.precio_unitario) || 0;
+            const desc = parseFloat(item.descuento) || 0;
+            return Math.max(0, (cant * prec) - desc).toFixed(2);
+        },
+
+        calcularUnidadesBase(item) {
+            const cant = parseInt(item.cantidad) || 0;
+            const fac = parseInt(item.factor) || 1;
+            return cant * fac;
+        },
+
+        calcularSubtotalGeneral() {
+            return this.items.reduce((acc, it) => acc + (parseFloat(this.calcularSubtotal(it)) || 0), 0).toFixed(2);
+        },
+
+        calcularTotalGeneral() {
+            const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
+            const desc = parseFloat(this.formData.descuento) || 0;
+            return Math.max(0, sub - desc).toFixed(2);
+        },
+
+        calcularVuelto() {
+            const total = parseFloat(this.calcularTotalGeneral()) || 0;
+            const recibido = parseFloat(this.formData.monto_recibido) || 0;
+            return Math.max(0, recibido - total).toFixed(2);
+        },
+
+        setMontoRecibido(monto) {
+            this.formData.monto_recibido = monto;
+        },
+
+        tieneProductosRx() {
+            return this.items.some(it => it.requiere_receta);
+        },
+
+        getClienteNombre() {
+            if (!this.formData.cliente_id) return 'PÚBLICO GENERAL';
+            const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
+            return cl ? cl.nombre : 'PÚBLICO GENERAL';
+        },
+
+        getClienteDocumento() {
+            if (!this.formData.cliente_id) return 'Sin Documento';
+            const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
+            return cl && cl.documento ? cl.documento : 'Sin Documento';
+        },
+
+        // Filtrar catálogo interactivo para vista moderna
+        productosFiltrados() {
+            let prods = this.catalogo;
+            if (this.filtroCategoriaId) {
+                prods = prods.filter(p => p.categoria_id == this.filtroCategoriaId);
+            }
+            if (this.busqueda && this.busqueda.trim().length > 0) {
+                const q = this.busqueda.toLowerCase().trim();
+                prods = prods.filter(p => 
+                    (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+                    (p.principio_activo && p.principio_activo.toLowerCase().includes(q)) ||
+                    (p.codigo_barra && p.codigo_barra.includes(q))
+                );
+            }
+            return prods;
+        },
+
+        // Registrar Cliente Rápido vía AJAX
+        async registrarClienteRapido() {
+            if (!this.nuevoCliente.nombre || this.nuevoCliente.nombre.trim().length === 0) {
+                this.errorClienteMsg = 'El nombre del cliente es obligatorio.';
+                return;
+            }
+
+            this.guardandoCliente = true;
+            this.errorClienteMsg = '';
+
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch('{{ route('clientes.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify(this.nuevoCliente)
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Error al registrar cliente');
+                }
+
+                // Agregar al selector y auto-seleccionar
+                this.clientes.unshift(data.cliente);
+                this.formData.cliente_id = data.cliente.id;
+                this.modalNuevoCliente = false;
+                this.nuevoCliente = { nombre: '', documento: '', telefono: '', email: '', direccion: '' };
+            } catch (err) {
+                this.errorClienteMsg = err.message;
+            } finally {
+                this.guardandoCliente = false;
+            }
+        },
+
+        // Enviar venta por AJAX
+        async procesarVentaFinal() {
+            if (this.items.length === 0) {
+                alert('El carrito está vacío. Agregue al menos un medicamento.');
+                return;
+            }
+
+            // Validar stocks
+            for (let it of this.items) {
+                const uTotales = this.calcularUnidadesBase(it);
+                if (it.lote_obj && it.lote_obj.stock_actual < uTotales) {
+                    alert(`Stock insuficiente en el lote ${it.lote_obj.numero_lote} de ${it.nombre}. Disponible: ${it.lote_obj.stock_actual} unid., Solicitado: ${uTotales} unid.`);
+                    return;
+                }
+            }
+
+            this.procesandoVenta = true;
+            this.errorMsg = '';
+
+            try {
+                const payload = {
+                    cliente_id: this.formData.cliente_id || null,
+                    tipo_comprobante: this.formData.tipo_comprobante,
+                    serie: this.formData.serie || null,
+                    numero_comprobante: this.formData.numero_comprobante || null,
+                    metodo_pago: this.formData.metodo_pago,
+                    referencia_pago: this.formData.referencia_pago || null,
+                    descuento: parseFloat(this.formData.descuento) || 0,
+                    monto_recibido: this.formData.monto_recibido ? parseFloat(this.formData.monto_recibido) : null,
+                    productos: this.items.map(it => ({
+                        producto_id: it.producto_id,
+                        lote_id: it.lote_id,
+                        presentacion_id: it.presentacion_id || null,
+                        cantidad: parseInt(it.cantidad) || 1,
+                        precio_unitario: parseFloat(it.precio_unitario) || 0,
+                        descuento: parseFloat(it.descuento) || 0
+                    }))
+                };
+
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch('{{ route('ventas.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Error al procesar la venta');
+                }
+
+                // Éxito: abrir preview de ticket o redirigir
+                this.modalCobro = false;
+                if (data.ticket_url) {
+                    window.open(data.ticket_url, '_blank', 'width=400,height=600');
+                }
+                window.location.href = '{{ route('ventas.index') }}';
+
+            } catch (err) {
+                this.errorMsg = err.message;
+            } finally {
+                this.procesandoVenta = false;
+            }
+        },
+
+        // Escanear código de barras con Enter
+        buscarPorCodigoBarra() {
+            if (!this.busqueda) return;
+            const match = this.catalogo.find(p => p.codigo_barra && p.codigo_barra.trim() === this.busqueda.trim());
+            if (match) {
+                this.agregarAlCarrito(match);
+                this.busqueda = '';
+            }
         }
-    }
-}"
-@keydown.window="
-    if ($event.key === 'F2') { $event.preventDefault(); document.getElementById('posBuscador')?.focus(); }
-    if ($event.key === 'F4' && items.length > 0) { $event.preventDefault(); modalCobro = true; }
-    if ($event.key === 'F7' && items.length > 0) { $event.preventDefault(); modalTicketPreview = true; }
-    if ($event.key === 'Escape' && !modalCobro && !modalTicketPreview && !modalInfoProducto && !modalNuevoCliente) { limpiarVenta(); }
-"
-class="space-y-4">
+    };
+}
+</script>
+
+<div x-data="posVentaData()"
+     @keydown.window="
+         if ($event.key === 'F2') { $event.preventDefault(); document.getElementById('posBuscador')?.focus(); }
+         if ($event.key === 'F4' && items.length > 0) { $event.preventDefault(); modalCobro = true; }
+         if ($event.key === 'F7' && items.length > 0) { $event.preventDefault(); modalTicketPreview = true; }
+         if ($event.key === 'Escape' && !modalCobro && !modalTicketPreview && !modalInfoProducto && !modalNuevoCliente) { limpiarVenta(); }
+     "
+     class="space-y-4">
 
     <!-- Header & Mode Switcher -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
