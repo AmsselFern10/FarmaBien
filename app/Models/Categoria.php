@@ -31,4 +31,9 @@ class Categoria extends Model
     {
         return $query->where('activo', true);
     }
+
+    public function scopeActivas($query)
+    {
+        return $query->where('activo', true);
+    }
 }

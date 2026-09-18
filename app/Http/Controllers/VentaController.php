@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Venta;
 use App\Models\Cliente;
 use App\Models\Producto;
+use App\Models\Categoria;
 use App\Services\VentaService;
 use App\Http\Requests\StoreVentaRequest;
 use App\Http\Requests\UpdateVentaRequest;
@@ -75,7 +76,7 @@ class VentaController extends Controller
     public function create()
     {
         $clientes = Cliente::activos()->orderBy('nombre')->get();
-        $categorias = \App\Models\Categoria::activas()->orderBy('nombre')->get();
+        $categorias = Categoria::activas()->orderBy('nombre')->get();
         $productos = Producto::with([
                 'categoria',
                 'laboratorio',
@@ -155,7 +156,7 @@ class VentaController extends Controller
         ]);
 
         $clientes = Cliente::activos()->orderBy('nombre')->get();
-        $categorias = \App\Models\Categoria::activas()->orderBy('nombre')->get();
+        $categorias = Categoria::activas()->orderBy('nombre')->get();
         $productos = Producto::with([
                 'categoria',
                 'laboratorio',
