@@ -5,7 +5,7 @@
            openMenus: {
                operaciones: {{ request()->routeIs('ventas.*') || request()->routeIs('compras.*') || request()->routeIs('recetas.*') ? 'true' : 'false' }},
                inventario: {{ request()->routeIs('inventario.*') ? 'true' : 'false' }},
-               catalogos: {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') ? 'true' : 'true' }},
+               catalogos: {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') ? 'true' : 'true' }},
                administracion: {{ request()->routeIs('reportes.*') || request()->routeIs('usuarios.*') || request()->routeIs('admin.*') ? 'true' : 'false' }}
            },
            toggleMenu(menu) {
@@ -233,6 +233,14 @@
                    class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('categorias.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('categorias.*') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Categorías</span>
+                </a>
+                @endcan
+
+                @can('ver productos')
+                <a href="{{ route('presentaciones.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('presentaciones.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('presentaciones.*') ? '!bg-emerald-400' : '' }}"></span>
+                    <span>Presentaciones</span>
                 </a>
                 @endcan
 

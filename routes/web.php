@@ -15,6 +15,7 @@ use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\Api\ProductoPresentacionController;
+use App\Http\Controllers\PresentacionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -102,6 +103,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('categorias', CategoriaController::class);
     Route::resource('clientes', ClienteController::class);
     Route::resource('proveedores', ProveedorController::class)->parameters(['proveedores' => 'proveedor']);
+    Route::resource('presentaciones', PresentacionController::class)->parameters(['presentaciones' => 'presentacion']);
 
     /*
     |--------------------------------------------------------------------------
