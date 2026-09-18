@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Modificar Venta #' . str_pad($venta->id, 5, '0', STR_PAD_LEFT))
+@section('title', 'Modificar Venta #' . str_pad($venta->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 
 @section('content')
 <div x-data="{
@@ -24,6 +24,23 @@
         motivo_modificacion: '{{ old('motivo_modificacion', '') }}'
     },
     
+    // Modales
+    modalTicketPreview: false,
+    modalInfoProducto: false,
+    modalNuevoCliente: false,
+    productoInfo: null,
+
+    // Nuevo Cliente Rápido
+    nuevoCliente: {
+        nombre: '',
+        documento: '',
+        telefono: '',
+        email: '',
+        direccion: ''
+    },
+    guardandoCliente: false,
+    errorClienteMsg: '',
+
     // Carga inicial de ítems existentes
     items: @js(
         $venta->detalles->map(function($d) {
@@ -44,6 +61,9 @@
                 'producto_id' => $d->producto_id,
                 'nombre' => $p->nombre ?? 'Medicamento',
                 'principio_activo' => $p->principio_activo ?? '',
+                'concentracion' => $p->concentracion ?? '',
+                'laboratorio' => $p->laboratorio->nombre ?? '',
+                'ubicacion' => $p->ubicacion ?? 'Sin asignar',
                 'requiere_receta' => (bool)($p->requiere_receta ?? false),
                 'lotesDisponibles' => $p->lotes ?? [],
                 'lote_id' => $d->lote_id,
@@ -52,6 +72,7 @@
                 'presentacion_id' => $d->presentacion_id,
                 'factor' => (int)($d->unidades_por_presentacion ?? 1),
                 'precio_unitario' => (float)$d->precio_unitario,
+                'descuento' => (float)($d->descuento_monto ?? 0),
                 'cantidad' => (int)$d->cantidad
             ];
         })
@@ -61,12 +82,12 @@
     filtroCategoriaId: '',
 
     // Métodos de Carrito
-    agregarAlCarrito(producto) {
+    agregarAlCarrito(producto, presentacionId = null, loteId = null) {
         if (!producto || !producto.lotes || producto.lotes.length === 0) {
             alert('Este medicamento no tiene lotes disponibles.');
             return;
         }
-        const loteDefault = producto.lotes[0];
+        const loteDefault = loteId ? producto.lotes.find(l => l.id == loteId) : producto.lotes[0];
         const presDisponibles = [
             { id: null, nombre: 'Unidad Base', unidades: 1, precio: parseFloat(producto.precio_venta) || 0 }
         ];
@@ -81,19 +102,35 @@
             });
         }
 
+        let presSel = presDisponibles[0];
+        if (presentacionId) {
+            const encontrada = presDisponibles.find(p => p.id == presentacionId);
+            if (encontrada) presSel = encontrada;
+        }
+
+        const existeIdx = this.items.findIndex(it => it.producto_id == producto.id && it.lote_id == loteDefault.id && it.presentacion_id == presSel.id);
+        if (existeIdx !== -1) {
+            this.items[existeIdx].cantidad++;
+            return;
+        }
+
         this.items.push({
             uid: Date.now() + Math.random().toString(36).substr(2, 5),
             producto_id: producto.id,
             nombre: producto.nombre,
             principio_activo: producto.principio_activo || '',
+            concentracion: producto.concentracion || '',
+            laboratorio: producto.laboratorio?.nombre || '',
+            ubicacion: producto.ubicacion || 'Sin asignar',
             requiere_receta: !!producto.requiere_receta,
             lotesDisponibles: producto.lotes,
             lote_id: loteDefault.id,
             lote_obj: loteDefault,
             presentacionesDisponibles: presDisponibles,
-            presentacion_id: null,
-            factor: 1,
-            precio_unitario: parseFloat(producto.precio_venta) || 0,
+            presentacion_id: presSel.id,
+            factor: presSel.unidades,
+            precio_unitario: presSel.precio,
+            descuento: 0,
             cantidad: 1
         });
     },
@@ -110,6 +147,9 @@
 
         item.nombre = prod.nombre;
         item.principio_activo = prod.principio_activo || '';
+        item.concentracion = prod.concentracion || '';
+        item.laboratorio = prod.laboratorio?.nombre || '';
+        item.ubicacion = prod.ubicacion || 'Sin asignar';
         item.requiere_receta = !!prod.requiere_receta;
         item.lotesDisponibles = prod.lotes || [];
         if (prod.lotes && prod.lotes.length > 0) {
@@ -134,6 +174,7 @@
         item.presentacion_id = null;
         item.factor = 1;
         item.precio_unitario = parseFloat(prod.precio_venta) || 0;
+        item.descuento = 0;
     },
 
     onPresentacionChange(idx) {
@@ -161,11 +202,17 @@
         this.items.splice(idx, 1);
     },
 
+    abrirInfoProducto(producto) {
+        this.productoInfo = producto;
+        this.modalInfoProducto = true;
+    },
+
     // Cálculos
     calcularSubtotal(item) {
         const cant = parseInt(item.cantidad) || 0;
         const prec = parseFloat(item.precio_unitario) || 0;
-        return (cant * prec).toFixed(2);
+        const desc = parseFloat(item.descuento) || 0;
+        return Math.max(0, (cant * prec) - desc).toFixed(2);
     },
 
     calcularUnidadesBase(item) {
@@ -182,8 +229,76 @@
         const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
         const desc = parseFloat(this.formData.descuento) || 0;
         return Math.max(0, sub - desc).toFixed(2);
+    },
+
+    getClienteNombre() {
+        if (!this.formData.cliente_id) return 'PÚBLICO GENERAL';
+        const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
+        return cl ? cl.nombre : 'PÚBLICO GENERAL';
+    },
+
+    getClienteDocumento() {
+        if (!this.formData.cliente_id) return 'Sin Documento';
+        const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
+        return cl && cl.documento ? cl.documento : 'Sin Documento';
+    },
+
+    productosFiltrados() {
+        let prods = this.catalogo;
+        if (this.filtroCategoriaId) {
+            prods = prods.filter(p => p.categoria_id == this.filtroCategoriaId);
+        }
+        if (this.busqueda && this.busqueda.trim().length > 0) {
+            const q = this.busqueda.toLowerCase().trim();
+            prods = prods.filter(p => 
+                (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+                (p.principio_activo && p.principio_activo.toLowerCase().includes(q)) ||
+                (p.codigo_barra && p.codigo_barra.includes(q))
+            );
+        }
+        return prods;
+    },
+
+    async registrarClienteRapido() {
+        if (!this.nuevoCliente.nombre || this.nuevoCliente.nombre.trim().length === 0) {
+            this.errorClienteMsg = 'El nombre del cliente es obligatorio.';
+            return;
+        }
+
+        this.guardandoCliente = true;
+        this.errorClienteMsg = '';
+
+        try {
+            const token = document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') || '';
+            const res = await fetch('{{ route('clientes.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token
+                },
+                body: JSON.stringify(this.nuevoCliente)
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Error al registrar cliente');
+            }
+
+            this.clientes.unshift(data.cliente);
+            this.formData.cliente_id = data.cliente.id;
+            this.modalNuevoCliente = false;
+            this.nuevoCliente = { nombre: '', documento: '', telefono: '', email: '', direccion: '' };
+        } catch (err) {
+            this.errorClienteMsg = err.message;
+        } finally {
+            this.guardandoCliente = false;
+        }
     }
 }"
+@keydown.window="
+    if ($event.key === 'F7' && items.length > 0) { $event.preventDefault(); modalTicketPreview = true; }
+"
 class="space-y-4">
 
     <!-- Header & Mode Switcher -->
@@ -201,7 +316,17 @@ class="space-y-4">
             </h1>
         </div>
 
-        <div class="flex items-center space-x-3 self-start sm:self-auto">
+        <div class="flex items-center space-x-2 self-start sm:self-auto">
+            <!-- Ticket Preview Shortcut Button -->
+            <button type="button" 
+                    @click="modalTicketPreview = true"
+                    :disabled="items.length === 0"
+                    title="Ver Vista Previa del Ticket [F7]"
+                    class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold transition flex items-center space-x-1.5 disabled:opacity-40 shadow-2xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Ticket (F7)</span>
+            </button>
+
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
@@ -272,9 +397,16 @@ class="space-y-4">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                     <!-- Panel 1: Motivo y Datos de Venta (8 cols) -->
                     <div class="lg:col-span-8 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
-                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            <span>1. Motivo de Modificación & Datos de Cabecera</span>
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+                            <div class="flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>1. Motivo de Modificación & Datos de Cabecera</span>
+                            </div>
+                            <button type="button" 
+                                    @click="modalNuevoCliente = true"
+                                    class="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 hover:bg-emerald-200 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold transition">
+                                + Nuevo Cliente
+                            </button>
                         </div>
 
                         <!-- Motivo Modificación -->
@@ -297,16 +429,22 @@ class="space-y-4">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     Cliente
                                 </label>
-                                <select name="cliente_id" 
-                                        x-model="formData.cliente_id" 
-                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
-                                    <option value="">Público General (Venta Libre)</option>
-                                    @foreach($clientes as $cl)
-                                        <option value="{{ $cl->id }}">
-                                            {{ $cl->nombre }} {{ $cl->documento ? "({$cl->documento})" : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="flex items-center space-x-1">
+                                    <select name="cliente_id" 
+                                            x-model="formData.cliente_id" 
+                                            class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                        <option value="">Público General (Venta Libre)</option>
+                                        <template x-for="cl in clientes" :key="cl.id">
+                                            <option :value="cl.id" x-text="cl.nombre + (cl.documento ? ' (' + cl.documento + ')' : '')"></option>
+                                        </template>
+                                    </select>
+                                    <button type="button" 
+                                            @click="modalNuevoCliente = true"
+                                            title="Registrar nuevo cliente"
+                                            class="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Tipo Comprobante (Col 3) -->
@@ -353,13 +491,13 @@ class="space-y-4">
                                 <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="items.length + ' líneas'"></span>
                             </div>
                             <div>
-                                <span class="text-[10px] font-semibold text-slate-500 block">Descuento ($):</span>
+                                <span class="text-[10px] font-semibold text-slate-500 block">Descuento Global ($):</span>
                                 <input type="number" 
                                        step="0.10" 
                                        min="0"
                                        name="descuento"
                                        x-model="formData.descuento" 
-                                       class="w-20 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-slate-900 dark:text-white text-right">
+                                       class="w-24 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-slate-900 dark:text-white text-right">
                             </div>
                         </div>
 
@@ -389,15 +527,16 @@ class="space-y-4">
                     </div>
 
                     <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
-                        <table class="w-full text-left text-xs border-collapse min-w-[850px]">
+                        <table class="w-full text-left text-xs border-collapse min-w-[900px]">
                             <thead>
                                 <tr class="bg-slate-100/90 dark:bg-slate-700/80 text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
                                     <th class="py-2 px-2 text-center w-8">#</th>
                                     <th class="py-2 px-3 min-w-[200px]">Medicamento / Fármaco</th>
-                                    <th class="py-2 px-3 min-w-[170px]">Presentación</th>
-                                    <th class="py-2 px-3 min-w-[190px]">Lote (FEFO) & Stock</th>
-                                    <th class="py-2 px-2 text-center w-20">Cant.</th>
-                                    <th class="py-2 px-2 text-right w-24">P. Venta ($)</th>
+                                    <th class="py-2 px-3 min-w-[160px]">Presentación</th>
+                                    <th class="py-2 px-3 min-w-[190px]">Lote (FEFO) & Ubicación</th>
+                                    <th class="py-2 px-2 text-center w-16">Cant.</th>
+                                    <th class="py-2 px-2 text-right w-20">P. Venta</th>
+                                    <th class="py-2 px-2 text-right w-20">Desc. ($)</th>
                                     <th class="py-2 px-3 text-right w-24">Subtotal</th>
                                     <th class="py-2 px-2 text-center w-8"></th>
                                 </tr>
@@ -431,7 +570,7 @@ class="space-y-4">
                                             </select>
                                         </td>
 
-                                        <!-- Lote -->
+                                        <!-- Lote & Ubicación -->
                                         <td class="py-2 px-3">
                                             <input type="hidden" :name="'productos[' + idx + '][lote_id]'" :value="item.lote_id">
                                             <select x-model="item.lote_id" 
@@ -441,6 +580,9 @@ class="space-y-4">
                                                     <option :value="l.id" x-text="l.numero_lote + ' (' + l.stock_actual + 'u)'"></option>
                                                 </template>
                                             </select>
+                                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                📍 Estante: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="item.ubicacion"></span>
+                                            </div>
                                         </td>
 
                                         <!-- Cantidad -->
@@ -460,6 +602,16 @@ class="space-y-4">
                                                    :name="'productos[' + idx + '][precio_unitario]'"
                                                    x-model="item.precio_unitario" 
                                                    class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-right focus:ring-1 focus:ring-emerald-500">
+                                        </td>
+
+                                        <!-- Descuento Ítem -->
+                                        <td class="py-2 px-2 text-right">
+                                            <input type="number" 
+                                                   step="0.10" 
+                                                   min="0" 
+                                                   x-model="item.descuento" 
+                                                   placeholder="0.00"
+                                                   class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-rose-600 font-bold text-right focus:ring-1 focus:ring-emerald-500">
                                         </td>
 
                                         <!-- Subtotal -->
@@ -496,5 +648,96 @@ class="space-y-4">
             </div>
         </template>
     </form>
+
+    <!-- MODAL VISTA PREVIA TICKET -->
+    <div x-show="modalTicketPreview" 
+         x-cloak 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         @keydown.escape.window="modalTicketPreview = false">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="modalTicketPreview = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-300 dark:border-slate-800">
+                <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Vista Previa de Ticket</h3>
+                    <button type="button" @click="modalTicketPreview = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                </div>
+                <div class="p-5 bg-slate-100 dark:bg-slate-950 flex justify-center">
+                    <div class="bg-white text-slate-900 font-mono text-xs p-4 rounded-xl shadow-md border border-slate-300 space-y-2.5 w-full max-w-xs">
+                        <div class="text-center font-extrabold text-sm uppercase">{{ config('app.name', 'FarmaBien') }}</div>
+                        <div class="border-t border-dashed border-slate-400 my-1"></div>
+                        <div class="text-[10px] space-y-0.5">
+                            <div>CLIENTE: <strong x-text="getClienteNombre()"></strong></div>
+                            <div>PAGO: <span class="uppercase font-bold" x-text="formData.metodo_pago"></span></div>
+                        </div>
+                        <div class="border-t border-dashed border-slate-400 my-1"></div>
+                        <table class="w-full text-[10px] text-left">
+                            <tbody>
+                                <template x-for="item in items" :key="item.uid">
+                                    <tr class="border-b border-slate-100">
+                                        <td class="py-1" x-text="item.nombre + ' x' + item.cantidad"></td>
+                                        <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <div class="border-t border-dashed border-slate-400 my-1"></div>
+                        <div class="flex justify-between font-black text-sm pt-1">
+                            <span>TOTAL:</span>
+                            <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                    <button type="button" @click="modalTicketPreview = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO CLIENTE RÁPIDO -->
+    <div x-show="modalNuevoCliente" 
+         x-cloak 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         @keydown.escape.window="modalNuevoCliente = false">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="modalNuevoCliente = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-300 dark:border-slate-800">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente</h3>
+                    <button type="button" @click="modalNuevoCliente = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                </div>
+                <div class="p-6 space-y-3">
+                    <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs" x-text="errorClienteMsg"></div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo <span class="text-rose-500">*</span></label>
+                        <input type="text" x-model="nuevoCliente.nombre" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cédula / RUC</label>
+                            <input type="text" x-model="nuevoCliente.documento" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
+                            <input type="text" x-model="nuevoCliente.telefono" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
+                    <button type="button" @click="modalNuevoCliente = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">Cancelar</button>
+                    <button type="button" @click="registrarClienteRapido()" :disabled="guardandoCliente" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
+                        <span x-text="guardandoCliente ? 'Guardando...' : 'Guardar y Seleccionar'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
