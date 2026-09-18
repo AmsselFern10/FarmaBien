@@ -164,21 +164,21 @@
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                        <th class="py-3 px-3.5">ID / Comprobante</th>
-                        <th class="py-3 px-3.5">Proveedor</th>
-                        <th class="py-3 px-3.5">Fecha</th>
-                        <th class="py-3 px-3.5 text-center">Ítems</th>
-                        <th class="py-3 px-3.5 text-right">Total</th>
-                        <th class="py-3 px-3.5 text-center">Estado</th>
-                        <th class="py-3 px-3.5">Registrado por</th>
-                        <th class="py-3 px-3.5 text-right">Acciones</th>
+                        <th class="py-3 px-4">ID / Comprobante</th>
+                        <th class="py-3 px-4">Proveedor</th>
+                        <th class="py-3 px-4">Fecha</th>
+                        <th class="py-3 px-4 text-center">Ítems</th>
+                        <th class="py-3 px-4 text-right">Total</th>
+                        <th class="py-3 px-4 text-center">Estado</th>
+                        <th class="py-3 px-4">Registrado por</th>
+                        <th class="py-3 px-4 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                     @forelse($compras as $compra)
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                         <!-- ID / Comprobante -->
-                        <td class="py-3 px-3.5">
+                        <td class="py-3 px-4">
                             <div class="flex items-center space-x-2">
                                 <a href="{{ route('compras.show', $compra) }}" class="font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
                                     #{{ str_pad($compra->id, 5, '0', STR_PAD_LEFT) }}
@@ -189,13 +189,13 @@
                                     </span>
                                 @endif
                             </div>
-                            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
                                 {{ $compra->numero_comprobante ? 'Doc: ' . $compra->numero_comprobante : 'Sin N° Doc' }}
                             </div>
                         </td>
 
                         <!-- Proveedor -->
-                        <td class="py-3 px-3.5">
+                        <td class="py-3 px-4">
                             <div class="font-semibold text-slate-900 dark:text-white">
                                 {{ $compra->proveedor->nombre ?? 'Proveedor no disponible' }}
                             </div>
@@ -207,74 +207,74 @@
                         </td>
 
                         <!-- Fecha -->
-                        <td class="py-3 px-3.5 text-slate-700 dark:text-slate-300">
+                        <td class="py-3 px-4 text-slate-700 dark:text-slate-300">
                             <div>{{ $compra->fecha ? $compra->fecha->format('d/m/Y') : '-' }}</div>
                             <div class="text-[10px] text-slate-400">{{ $compra->fecha ? $compra->fecha->format('H:i') : '' }}</div>
                         </td>
 
                         <!-- Ítems -->
-                        <td class="py-3 px-3.5 text-center">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        <td class="py-3 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                 {{ $compra->detalles_count }} prod.
                             </span>
                         </td>
 
                         <!-- Total -->
-                        <td class="py-3 px-3.5 text-right font-bold text-slate-900 dark:text-white">
+                        <td class="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">
                             ${{ number_format($compra->total, 2) }}
                         </td>
 
                         <!-- Estado -->
-                        <td class="py-3 px-3.5 text-center">
+                        <td class="py-3 px-4 text-center">
                             @if($compra->estado === 'recibida')
                                 @if($compra->fueModificada())
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                         Modificada
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                         Recibida
                                     </span>
                                 @endif
                             @elseif($compra->estado === 'anulada')
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                                     Anulada
                                 </span>
                             @else
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800">
                                     {{ ucfirst($compra->estado) }}
                                 </span>
                             @endif
                         </td>
 
                         <!-- Usuario Responsable -->
-                        <td class="py-3 px-3.5 text-slate-600 dark:text-slate-400">
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-400">
                             {{ $compra->usuario->name ?? 'Sistema' }}
                         </td>
 
-                        <!-- Acciones -->
-                        <td class="py-3 px-3.5 text-right">
-                            <div class="inline-flex items-center space-x-1">
+                        <!-- Acciones Cuarteto -->
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center justify-center space-x-1">
                                 <!-- Ver Detalle -->
                                 <a href="{{ route('compras.show', $compra) }}" 
-                                   title="Ver Detalle de Compra"
-                                   class="p-1.5 rounded-lg text-slate-600 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                   title="Ver Ficha Completa"
+                                   class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 inline-flex items-center justify-center transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
 
                                 <!-- Ticket -->
                                 <a href="{{ route('compras.ticket', $compra) }}" 
                                    target="_blank"
                                    title="Imprimir Ticket"
-                                   class="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                   class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 inline-flex items-center justify-center transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 </a>
 
                                 <!-- PDF -->
                                 <a href="{{ route('compras.pdf', $compra) }}" 
                                    title="Descargar PDF"
-                                   class="p-1.5 rounded-lg text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                   class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 inline-flex items-center justify-center transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                 </a>
 
                                 <!-- Editar -->
@@ -282,8 +282,8 @@
                                     @can('registrar compras')
                                     <a href="{{ route('compras.edit', $compra) }}" 
                                        title="Editar Compra"
-                                       class="p-1.5 rounded-lg text-slate-600 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                       class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 inline-flex items-center justify-center transition">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </a>
                                     @endcan
                                 @endif
@@ -294,8 +294,8 @@
                                     <button type="button" 
                                             @click="abrirModalAnular({{ $compra->id }}, '{{ $compra->numero_comprobante ?? '#' . $compra->id }}')" 
                                             title="Anular Compra"
-                                            class="p-1.5 rounded-lg text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 inline-flex items-center justify-center transition cursor-pointer">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
                                     @endcan
                                 @endif

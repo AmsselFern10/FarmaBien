@@ -180,22 +180,23 @@
         </div>
 
         <!-- Totales Financieros -->
-        <div class="bg-slate-900 text-white rounded-xl p-4 border border-slate-800 shadow-xs space-y-2 flex flex-col justify-between">
-            <div class="flex items-center space-x-2 pb-2 border-b border-slate-800 text-xs font-bold text-slate-300">
+        <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2 flex flex-col justify-between">
+            <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>Resumen de Liquidación</span>
             </div>
             <div class="space-y-1 text-xs">
-                <div class="flex justify-between text-slate-300">
+                <div class="flex justify-between text-slate-600 dark:text-slate-300">
                     <span>Lotes Ingresados:</span>
-                    <span class="font-bold text-white">{{ $compra->lotes->count() }} lotes</span>
+                    <span class="font-bold text-slate-900 dark:text-white">{{ $compra->lotes->count() }} lotes</span>
                 </div>
-                <div class="flex justify-between text-slate-300">
+                <div class="flex justify-between text-slate-600 dark:text-slate-300">
                     <span>Total Unidades Base al Kardex:</span>
-                    <span class="font-bold text-emerald-400">{{ $compra->detalles->sum('cantidad_unidades_base') }} u.</span>
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $compra->detalles->sum('cantidad_unidades_base') }} u.</span>
                 </div>
-                <div class="pt-2 border-t border-slate-800 flex justify-between items-baseline">
-                    <span class="font-semibold text-slate-300">Monto Total:</span>
-                    <span class="text-xl font-extrabold text-emerald-400">${{ number_format($compra->total, 2) }}</span>
+                <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
+                    <span class="font-semibold text-slate-600 dark:text-slate-300">Monto Total:</span>
+                    <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">${{ number_format($compra->total, 2) }}</span>
                 </div>
             </div>
         </div>
