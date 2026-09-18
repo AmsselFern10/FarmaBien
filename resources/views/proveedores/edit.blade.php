@@ -26,9 +26,23 @@
         telefono: @js(old('telefono', $proveedor->telefono)),
         email: @js(old('email', $proveedor->email)),
         activo: @js(old('activo', $proveedor->activo) ? true : false)
-    })
+    }),
+    limpiarFormulario() {
+        this.formData = {
+            nombre: '',
+            ruc: '',
+            direccion: '',
+            contacto: '',
+            telefono: '',
+            email: '',
+            activo: true
+        };
+        if (window.farmaClearDraft) {
+            window.farmaClearDraft('{{ request()->getPathInfo() }}');
+        }
+    }
 }"
-@keydown.window="if ($event.key === 'Escape' && formLayout === 'compact') { window.location.href = '{{ route('proveedores.index') }}'; }"
+@keydown.window="if ($event.key === 'Escape' && formLayout === 'compact') { limpiarFormulario(); }"
 :class="formLayout === 'compact' ? 'w-full' : 'max-w-5xl mx-auto'"
 class="space-y-4 transition-all duration-200">
     
@@ -105,14 +119,15 @@ class="space-y-4 transition-all duration-200">
                     <div class="flex items-center space-x-2">
                         <span class="w-2.5 h-2.5 rounded-full {{ $proveedor->activo ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
                         <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">EDICIÓN RÁPIDA: {{ $proveedor->nombre }}</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono">Esc = Cancelar</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono">Esc = Limpiar</span>
                     </div>
 
                     <div class="flex items-center space-x-2">
-                        <a href="{{ route('proveedores.index') }}" 
-                           class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition">
-                            Cancelar (Esc)
-                        </a>
+                        <button type="button" 
+                                @click="limpiarFormulario()"
+                                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition cursor-pointer">
+                            Limpiar (Esc)
+                        </button>
                         <button type="submit" 
                                 class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

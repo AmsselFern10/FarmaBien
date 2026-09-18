@@ -1,5 +1,5 @@
 <!-- Mobile Slide-over Drawer with Accordion Submenus -->
-<div x-show="mobileSidebarOpen" 
+<div x-show="!posFullscreen && mobileSidebarOpen" 
      x-data="{
          openMobileMenus: {
              operaciones: {{ request()->routeIs('ventas.*') || request()->routeIs('compras.*') || request()->routeIs('recetas.*') ? 'true' : 'false' }},

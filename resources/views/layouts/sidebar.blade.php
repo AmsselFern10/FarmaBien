@@ -1,5 +1,6 @@
 <!-- Desktop Collapsible Sidebar with Accordion Submenus -->
-<aside :class="sidebarCollapsed ? 'w-16' : 'w-64'"
+<aside x-show="!posFullscreen"
+       :class="sidebarCollapsed ? 'w-16' : 'w-64'"
        x-data="{
            openMenus: {
                operaciones: {{ request()->routeIs('ventas.*') || request()->routeIs('compras.*') || request()->routeIs('recetas.*') ? 'true' : 'false' }},

@@ -195,11 +195,11 @@ class FarmaDraftEngine {
             }
         });
 
-        // Re-apply when layout toggles (Modern <-> Compact)
+        // Re-apply when layout toggles (Modern <-> Compact) - No notification banner
         window.addEventListener('farma:layout-changed', () => {
             this.findForm();
             if (this.isFormPage) {
-                this.restoreDraft();
+                this.restoreDraft(false);
             }
         });
 
@@ -297,7 +297,7 @@ class FarmaDraftEngine {
         }
     }
 
-    restoreDraft() {
+    restoreDraft(showNotification = true) {
         try {
             const saved = sessionStorage.getItem(this.storageKey) || localStorage.getItem(this.storageKey);
             if (!saved) return;
@@ -349,7 +349,7 @@ class FarmaDraftEngine {
             this.isRestoring = false;
             this.hasRestored = true;
 
-            if (restoredCount > 0) {
+            if (restoredCount > 0 && showNotification) {
                 this.dirty = true;
                 this.showDraftIndicator(true);
             }

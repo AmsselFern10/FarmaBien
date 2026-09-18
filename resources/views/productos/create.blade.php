@@ -81,9 +81,36 @@
             reader.onload = (ev) => { this.imgPreview = ev.target.result; };
             reader.readAsDataURL(file);
         }
+    },
+    limpiarFormulario() {
+        this.formData = {
+            nombre: '',
+            codigo_barra: '',
+            principio_activo: '',
+            concentracion: '',
+            forma_farmaceutica: '',
+            descripcion: '',
+            categoria_id: '',
+            laboratorio_id: '',
+            tipo_control: 'receta_medica',
+            registro_sanitario: '',
+            requiere_receta: false,
+            activo: true,
+            precio_compra: '',
+            precio_venta: '',
+            stock_minimo: 10,
+            ubicacion: ''
+        };
+        this.presentaciones = [
+            { nombre: 'Unidad Base (Pastilla / Ampolla)', unidades_por_presentacion: 1, precio_compra: '', precio_venta: '', codigo_barras: '', es_unidad_base: true }
+        ];
+        this.imgPreview = null;
+        if (window.farmaClearDraft) {
+            window.farmaClearDraft('{{ request()->getPathInfo() }}');
+        }
     }
 }"
-@keydown.window="if ($event.key === 'Escape' && formLayout === 'compact') { window.location.href = '{{ route('productos.index') }}'; }"
+@keydown.window="if ($event.key === 'Escape' && formLayout === 'compact') { limpiarFormulario(); }"
 :class="formLayout === 'compact' ? 'w-full max-w-full' : 'max-w-6xl mx-auto'"
 class="space-y-4 transition-all duration-200">
     
@@ -154,14 +181,15 @@ class="space-y-4 transition-all duration-200">
                     <div class="flex items-center space-x-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
                         <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">FICHA RÁPIDA DE MEDICAMENTO</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">Esc = Salir</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">Esc = Limpiar</span>
                     </div>
 
                     <div class="flex items-center space-x-2">
-                        <a href="{{ route('productos.index') }}" 
-                           class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold transition">
-                            Cancelar (Esc)
-                        </a>
+                        <button type="button" 
+                                @click="limpiarFormulario()"
+                                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold transition cursor-pointer">
+                            Limpiar (Esc)
+                        </button>
                         <button type="submit" 
                                 class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

@@ -153,10 +153,43 @@
             this.nuevaPres.cargando = false;
         }
     },
+    limpiarFormulario() {
+        if (this.items.length > 0 && !confirm('¿Desea limpiar todos los campos del formulario de compra?')) {
+            return;
+        }
+        this.formData = { proveedor_id: '', numero_comprobante: '', fecha: '{{ date('Y-m-d') }}' };
+        this.items = [{
+            uid: Date.now(),
+            producto_id: '',
+            presentacion_id: '',
+            factor: 1,
+            tipo_presentacion: 'Unidad Base',
+            cantidad: 1,
+            precio_unitario: '',
+            numero_lote: '',
+            fecha_vencimiento: '',
+            presentacionesDisponibles: []
+        }];
+        if (window.farmaClearDraft) {
+            window.farmaClearDraft('{{ request()->getPathInfo() }}');
+        }
+    },
+    persistirBorrador() {
+        if (window.farmaSaveDraft) {
+            window.farmaSaveDraft('{{ request()->getPathInfo() }}', {
+                proveedor_id: this.formData.proveedor_id,
+                numero_comprobante: this.formData.numero_comprobante,
+                fecha: this.formData.fecha,
+                savedItems: this.items
+            });
+        }
+    },
     init() {
         if (this.formData && this.formData.savedItems && this.formData.savedItems.length > 0) {
             this.items = this.formData.savedItems;
         }
+        this.$watch('formData', () => this.persistirBorrador(), { deep: true });
+        this.$watch('items', () => this.persistirBorrador(), { deep: true });
     },
     agregarItem() {
         this.items.push({
@@ -237,7 +270,7 @@
         return this.items.reduce((acc, it) => acc + this.calcularUnidadesBase(it), 0);
     }
 }"
-@keydown.window="if ($event.key === 'Escape' && formLayout === 'compact' && !modalNuevaPres) { window.location.href = '{{ route('compras.index') }}'; }"
+@keydown.window="if ($event.key === 'Escape' && formLayout === 'compact' && !modalNuevaPres) { limpiarFormulario(); }"
 :class="formLayout === 'compact' ? 'w-full max-w-full' : 'max-w-7xl mx-auto'"
 class="space-y-4 transition-all duration-200">
 
@@ -253,6 +286,15 @@ class="space-y-4 transition-all duration-200">
 
         <!-- Mode Switcher -->
         <div class="flex items-center space-x-2 self-start sm:self-auto">
+            <!-- Modo Full Screen (Ocultar Barras) -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span class="hidden sm:inline">Modo Full</span>
+            </button>
+
             <span class="text-[11px] font-bold text-slate-700 dark:text-slate-400 hidden md:inline">Diseño:</span>
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
@@ -270,6 +312,12 @@ class="space-y-4 transition-all duration-200">
                     <span>Compacta (ERP)</span>
                 </button>
             </div>
+
+            <a href="{{ route('compras.index') }}" 
+               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
         </div>
     </div>
 
@@ -303,14 +351,15 @@ class="space-y-4 transition-all duration-200">
                     <div class="flex items-center space-x-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
                         <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">FICHA RÁPIDA DE COMPRA & INGRESO DE LOTES</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">Esc = Salir</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">Esc = Limpiar</span>
                     </div>
 
                     <div class="flex items-center space-x-2">
-                        <a href="{{ route('compras.index') }}" 
-                           class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold transition">
-                            Cancelar (Esc)
-                        </a>
+                        <button type="button" 
+                                @click="limpiarFormulario()" 
+                                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold transition cursor-pointer">
+                            Limpiar (Esc)
+                        </button>
                         <button type="submit" 
                                 class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -562,7 +611,7 @@ class="space-y-4 transition-all duration-200">
                 <!-- Tarjeta 1: Datos del Comprobante y Proveedor -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                             Datos de la Factura y Proveedor
                         </h2>
@@ -619,7 +668,7 @@ class="space-y-4 transition-all duration-200">
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                                 Medicamentos, Presentaciones y Lotes
                             </h2>

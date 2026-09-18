@@ -56,9 +56,13 @@
         sidebarCollapsed: localStorage.getItem('farma_sidebar_collapsed') === 'true',
         mobileSidebarOpen: false,
         showShortcutsModal: false,
+        posFullscreen: false,
         toggleSidebar() {
             this.sidebarCollapsed = !this.sidebarCollapsed;
             localStorage.setItem('farma_sidebar_collapsed', this.sidebarCollapsed);
+        },
+        togglePosFullscreen() {
+            this.posFullscreen = !this.posFullscreen;
         },
         initShortcuts() {
             window.addEventListener('keydown', (e) => {
@@ -86,6 +90,13 @@
                     this.showShortcutsModal = false;
                 }
             });
+
+            window.addEventListener('toggle-pos-fullscreen', () => {
+                this.posFullscreen = !this.posFullscreen;
+            });
+            window.addEventListener('exit-pos-fullscreen', () => {
+                this.posFullscreen = false;
+            });
         }
     }" 
     x-init="initShortcuts()"
@@ -106,7 +117,7 @@
                 <!-- Main Scrollable Area -->
                 <div class="flex-1 overflow-y-auto">
                     <!-- Flash Alerts -->
-                    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+                    <div x-show="!posFullscreen" class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
                         @if (session('success'))
                             <div class="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 p-4 rounded-xl shadow-sm flex items-center justify-between">
                                 <div class="flex items-center space-x-3">
@@ -131,7 +142,8 @@
                     </div>
 
                     <!-- Page View Content -->
-                    <main class="page-fade-in max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+                    <main class="page-fade-in mx-auto w-full transition-all duration-200"
+                          :class="posFullscreen ? 'max-w-none px-2 sm:px-4 py-3' : 'max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6'">
                         {{ $slot ?? '' }}
                         @yield('content')
                     </main>

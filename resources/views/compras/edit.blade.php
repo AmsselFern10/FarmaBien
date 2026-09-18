@@ -259,6 +259,15 @@ class="space-y-4 transition-all duration-200">
 
         <!-- Mode Switcher -->
         <div class="flex items-center space-x-2 self-start sm:self-auto">
+            <!-- Modo Full Screen (Ocultar Barras) -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span class="hidden sm:inline">Modo Full</span>
+            </button>
+
             <span class="text-[11px] font-bold text-slate-700 dark:text-slate-400 hidden md:inline">Diseño:</span>
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
@@ -276,6 +285,12 @@ class="space-y-4 transition-all duration-200">
                     <span>Compacta (ERP)</span>
                 </button>
             </div>
+
+            <a href="{{ route('compras.show', $compra) }}" 
+               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
         </div>
     </div>
 
@@ -598,7 +613,7 @@ class="space-y-4 transition-all duration-200">
                 <!-- Tarjeta 1: Datos del Comprobante, Proveedor y Motivo -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                             Datos de la Factura y Razón del Cambio
                         </h2>
@@ -669,7 +684,7 @@ class="space-y-4 transition-all duration-200">
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                                 Medicamentos, Presentaciones y Lotes
                             </h2>

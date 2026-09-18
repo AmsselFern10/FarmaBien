@@ -62,6 +62,31 @@ function posVentaData() {
             observaciones: ''
         },
 
+        init() {
+            try {
+                const saved = window.farmaGetDraft ? window.farmaGetDraft('{{ request()->getPathInfo() }}', null) : null;
+                if (saved) {
+                    if (saved.formData) Object.assign(this.formData, saved.formData);
+                    if (saved.items && Array.isArray(saved.items)) this.items = saved.items;
+                    if (saved.recetaInfo) Object.assign(this.recetaInfo, saved.recetaInfo);
+                }
+            } catch (e) {}
+
+            this.$watch('formData', () => this.persistirBorrador(), { deep: true });
+            this.$watch('items', () => this.persistirBorrador(), { deep: true });
+            this.$watch('recetaInfo', () => this.persistirBorrador(), { deep: true });
+        },
+
+        persistirBorrador() {
+            if (window.farmaSaveDraft) {
+                window.farmaSaveDraft('{{ request()->getPathInfo() }}', {
+                    formData: this.formData,
+                    items: this.items,
+                    recetaInfo: this.recetaInfo
+                });
+            }
+        },
+
         // Métodos del Carrito
         agregarAlCarrito(producto, presentacionId = null, loteId = null) {
             if (!producto || !producto.lotes || producto.lotes.length === 0) {
@@ -197,13 +222,19 @@ function posVentaData() {
         },
 
         limpiarVenta() {
-            if (this.items.length > 0 && !confirm('¿Desea vaciar el carrito actual?')) {
+            if (this.items.length > 0 && !confirm('¿Desea vaciar el carrito y reiniciar la venta actual?')) {
                 return;
             }
             this.items = [];
+            this.formData.cliente_id = '';
             this.formData.descuento = 0;
             this.formData.monto_recibido = '';
+            this.formData.referencia_pago = '';
+            this.recetaInfo = { medico_nombre: '', medico_cmp: '', paciente_nombre: '', observaciones: '' };
             this.errorMsg = '';
+            if (window.farmaClearDraft) {
+                window.farmaClearDraft('{{ request()->getPathInfo() }}');
+            }
         },
 
         abrirInfoProducto(producto) {
@@ -372,7 +403,10 @@ function posVentaData() {
                     throw new Error(data.message || 'Error al procesar la venta');
                 }
 
-                // Éxito: abrir preview de ticket o redirigir
+                // Éxito: limpiar borrador, abrir preview de ticket o redirigir
+                if (window.farmaClearDraft) {
+                    window.farmaClearDraft('{{ request()->getPathInfo() }}');
+                }
                 this.modalCobro = false;
                 if (data.ticket_url) {
                     window.open(data.ticket_url, '_blank', 'width=400,height=600');
@@ -424,6 +458,15 @@ function posVentaData() {
         </div>
 
         <div class="flex items-center space-x-2 self-start sm:self-auto">
+            <!-- Modo Full Screen (Ocultar Barras) -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span class="hidden sm:inline">Modo Full</span>
+            </button>
+
             <!-- Ticket Preview Shortcut Button -->
             <button type="button" 
                     @click="modalTicketPreview = true"
@@ -501,12 +544,12 @@ function posVentaData() {
             <!-- Grid de Paneles Superiores (Cliente + Resumen Liquidación) -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 
-                <!-- Panel 1: Datos del Cliente y Comprobante (8 cols) -->
+                <!-- Panel 1: Datos del Cliente (8 cols) -->
                 <div class="lg:col-span-8 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
                         <div class="flex items-center space-x-1.5">
                             <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            <span>1. Identificación del Cliente & Comprobante</span>
+                            <span>1. Identificación del Cliente & Búsqueda</span>
                         </div>
                         <!-- Atajo Agregar Cliente -->
                         <button type="button" 
@@ -516,54 +559,25 @@ function posVentaData() {
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-                        <!-- Cliente (Col 6) -->
-                        <div class="sm:col-span-6">
-                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Cliente
-                            </label>
-                            <div class="flex items-center space-x-1">
-                                <select x-model="formData.cliente_id" 
-                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
-                                    <option value="">Público General (Venta Libre)</option>
-                                    <template x-for="cl in clientes" :key="cl.id">
-                                        <option :value="cl.id" x-text="cl.nombre + (cl.documento ? ' (' + cl.documento + ')' : '')"></option>
-                                    </template>
-                                </select>
-                                <button type="button" 
-                                        @click="modalNuevoCliente = true"
-                                        title="Registrar nuevo cliente rápido"
-                                        class="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition shrink-0">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Tipo Comprobante (Col 3) -->
-                        <div class="sm:col-span-3">
-                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Comprobante
-                            </label>
-                            <select x-model="formData.tipo_comprobante" 
+                    <!-- Cliente (Ancho Completo) -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            Cliente
+                        </label>
+                        <div class="flex items-center space-x-1">
+                            <select x-model="formData.cliente_id" 
                                     class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
-                                <option value="ticket">Ticket</option>
-                                <option value="boleta">Boleta</option>
-                                <option value="factura">Factura</option>
+                                <option value="">Público General (Venta Libre)</option>
+                                <template x-for="cl in clientes" :key="cl.id">
+                                    <option :value="cl.id" x-text="cl.nombre + (cl.documento ? ' (' + cl.documento + ')' : '')"></option>
+                                </template>
                             </select>
-                        </div>
-
-                        <!-- Método Pago (Col 3) -->
-                        <div class="sm:col-span-3">
-                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Método Pago
-                            </label>
-                            <select x-model="formData.metodo_pago" 
-                                    class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
-                                <option value="efectivo">Efectivo</option>
-                                <option value="tarjeta">Tarjeta (POS)</option>
-                                <option value="transferencia">Yape / Plin / Transferencia</option>
-                                <option value="mixto">Pago Mixto</option>
-                            </select>
+                            <button type="button" 
+                                    @click="modalNuevoCliente = true"
+                                    title="Registrar nuevo cliente rápido"
+                                    class="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            </button>
                         </div>
                     </div>
 
@@ -824,12 +838,12 @@ function posVentaData() {
             <!-- Columna Izquierda: Cliente + Buscador & Catálogo de Medicamentos (5 cols) -->
             <div class="lg:col-span-5 space-y-3.5">
                 
-                <!-- Card 1: Identificación del Cliente & Comprobante (Solo en el lado de productos) -->
+                <!-- Card 1: Identificación del Cliente (Solo en el lado de productos) -->
                 <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs space-y-2.5">
                     <div class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-1.5">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <span>Cliente & Comprobante</span>
+                            <span>Cliente Registrado</span>
                         </span>
                         <button type="button" 
                                 @click="modalNuevoCliente = true"
@@ -854,29 +868,6 @@ function posVentaData() {
                                     class="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shrink-0 cursor-pointer">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                             </button>
-                        </div>
-                    </div>
-
-                    <!-- Comprobante y Método Pago en 2 columnas compactas -->
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">Comprobante</label>
-                            <select x-model="formData.tipo_comprobante" 
-                                    class="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium">
-                                <option value="ticket">Ticket ESC/POS</option>
-                                <option value="boleta">Boleta</option>
-                                <option value="factura">Factura</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">Pago</label>
-                            <select x-model="formData.metodo_pago" 
-                                    class="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium">
-                                <option value="efectivo">💵 Efectivo</option>
-                                <option value="tarjeta">💳 Tarjeta POS</option>
-                                <option value="transferencia">📱 Yape / Transfer</option>
-                                <option value="mixto">🔄 Mixto</option>
-                            </select>
                         </div>
                     </div>
                 </div>
