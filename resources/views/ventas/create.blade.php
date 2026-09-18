@@ -66,9 +66,21 @@ function posVentaData() {
             try {
                 const saved = window.farmaGetDraft ? window.farmaGetDraft('{{ request()->getPathInfo() }}', null) : null;
                 if (saved) {
+                    const hadItems = saved.items && Array.isArray(saved.items) && saved.items.length > 0;
+                    const hadFormData = saved.formData && Object.values(saved.formData).some(v => v !== '' && v !== null && v !== undefined && v !== 0 && v !== false);
+
                     if (saved.formData) Object.assign(this.formData, saved.formData);
                     if (saved.items && Array.isArray(saved.items)) this.items = saved.items;
                     if (saved.recetaInfo) Object.assign(this.recetaInfo, saved.recetaInfo);
+
+                    // Mostrar banner de borrador recuperado (solo en carga de página, no en cambio de layout)
+                    if (hadItems || hadFormData) {
+                        this.$nextTick(() => {
+                            if (window.farmaDraftEngine) {
+                                window.farmaDraftEngine.showDraftIndicator(true);
+                            }
+                        });
+                    }
                 }
             } catch (e) {}
 
@@ -1008,7 +1020,7 @@ function posVentaData() {
                                         <input type="number" 
                                                min="1" 
                                                x-model.number="item.cantidad" 
-                                               class="w-10 py-0.5 text-center font-black text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white">
+                                               class="w-16 py-0.5 text-center font-black text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-white">
                                         <button type="button" @click="item.cantidad++" class="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition">+</button>
                                     </div>
 
@@ -1095,7 +1107,7 @@ function posVentaData() {
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
-             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-4xl border border-slate-300 dark:border-slate-800 my-auto">
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left shadow-2xl transform transition-all w-full max-w-4xl border border-slate-300 dark:border-slate-800 my-auto flex flex-col max-h-[92vh]">
             
             <!-- Modal Header -->
                 <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -1109,7 +1121,7 @@ function posVentaData() {
                 </div>
 
                 <!-- Modal Body: 2 Columnas (Izquierda: Formulario de Pago / Derecha: Vista Previa Ticket en Vivo) -->
-                <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto flex-1">
                     
                     <!-- Columna Izquierda: Opciones de Cobro & Calculadora (7 cols) -->
                     <div class="lg:col-span-7 space-y-4">
