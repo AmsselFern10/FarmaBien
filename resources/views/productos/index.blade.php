@@ -536,7 +536,7 @@
 <!-- ======================================================== -->
 <!-- MODAL: LUPA INTELIGENTE CON IA (Búsqueda Semántica)      -->
 <!-- ======================================================== -->
-<div id="modalLupaIA" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true" style="display: none;">
+<div id="modalLupaIA" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalLupaIA()">
     <!-- Modal Panel -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
         <!-- Header -->
@@ -550,7 +550,7 @@
                     <p class="text-xs text-slate-500 dark:text-slate-400">Búsqueda semántica por síntomas, indicaciones y lenguaje natural.</p>
                 </div>
             </div>
-            <button type="button" onclick="cerrarModalLupaIA()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            <button type="button" onclick="cerrarModalLupaIA()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                 ✕
             </button>
         </div>
@@ -558,28 +558,30 @@
         <!-- Body -->
         <div class="p-6 space-y-4">
             <div>
-                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label for="lupa_q" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     Describe el síntoma o consulta clínica:
                 </label>
                 <div class="flex gap-2">
                     <input type="text" 
                            id="lupa_q" 
+                           name="lupa_q"
                            placeholder="Ej: algo para dolor de cabeza y fiebre, jarabe para tos seca..." 
                            class="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition">
                     
                     <button type="button" 
+                            id="btn-consultar-lupa-ia"
                             onclick="buscarConLupaIA()" 
-                            class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-semibold text-xs shadow-xs transition flex items-center space-x-1.5 shrink-0">
+                            class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-semibold text-xs shadow-xs transition flex items-center space-x-1.5 shrink-0 cursor-pointer">
                         <span>Consultar IA</span>
                     </button>
                 </div>
                 <!-- Ejemplos rápidos -->
                 <div class="flex flex-wrap gap-1.5 mt-2">
                     <span class="text-[11px] text-slate-400 font-medium">Sugerencias:</span>
-                    <button type="button" onclick="probarSintoma('dolor de cabeza y fiebre')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Dolor de cabeza</button>
-                    <button type="button" onclick="probarSintoma('tos seca y garganta irritada')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Tos y garganta</button>
-                    <button type="button" onclick="probarSintoma('acidez estomacal y gastritis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Acidez / Gastritis</button>
-                    <button type="button" onclick="probarSintoma('alergia y rinitis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition">Alergia</button>
+                    <button type="button" onclick="probarSintoma('dolor de cabeza y fiebre')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Dolor de cabeza</button>
+                    <button type="button" onclick="probarSintoma('tos seca y garganta irritada')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Tos y garganta</button>
+                    <button type="button" onclick="probarSintoma('acidez estomacal y gastritis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Acidez / Gastritis</button>
+                    <button type="button" onclick="probarSintoma('alergia y rinitis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Alergia</button>
                 </div>
             </div>
 
@@ -598,11 +600,11 @@
 
         <!-- Footer -->
         <div class="px-6 py-3.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <button type="button" onclick="usarTextoLupaEnFiltro()" class="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline">
+            <button type="button" onclick="usarTextoLupaEnFiltro()" class="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer">
                 🔍 Filtrar con este texto en la página principal
             </button>
 
-            <button type="button" onclick="cerrarModalLupaIA()" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            <button type="button" onclick="cerrarModalLupaIA()" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                 Cerrar
             </button>
         </div>
@@ -612,7 +614,7 @@
 <!-- ======================================================== -->
 <!-- MODAL: FICHA CLÍNICA IA DEL MEDICAMENTO                  -->
 <!-- ======================================================== -->
-<div id="modalProductoIA" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true" style="display: none;">
+<div id="modalProductoIA" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalProductoIA()">
     <!-- Modal Panel -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
         <!-- Header -->
@@ -735,7 +737,9 @@ function csrfToken() {
 /* ================= LUPA INTELIGENTE ================= */
 function abrirModalLupaIA() {
     const modal = document.getElementById('modalLupaIA');
+    if (!modal) return;
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
 
     const normal = document.querySelector('input[name="buscar"]');
     const input = document.getElementById('lupa_q');
@@ -746,7 +750,10 @@ function abrirModalLupaIA() {
 }
 
 function cerrarModalLupaIA() {
-    document.getElementById('modalLupaIA').classList.add('hidden');
+    const modal = document.getElementById('modalLupaIA');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
 }
 
 function probarSintoma(texto) {
@@ -846,7 +853,7 @@ function renderResultadosLupa(items) {
                         data-id="${p.id}" 
                         data-name="${escapeHtml(p.nombre)}" 
                         onclick="abrirModalProductoIA(this.dataset.id, this.dataset.name)" 
-                        class="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[11px] font-semibold hover:bg-violet-100 transition">
+                        class="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[11px] font-semibold hover:bg-violet-100 transition cursor-pointer">
                     Ficha IA
                 </button>
             </div>
@@ -857,18 +864,20 @@ function renderResultadosLupa(items) {
 /* ================= FICHA CLÍNICA IA ================= */
 function abrirModalProductoIA(id, nombre) {
     const modal = document.getElementById('modalProductoIA');
+    if (!modal) return;
     const title = document.getElementById('modalProductoIA_title');
     const subtitle = document.getElementById('modalProductoIA_subtitle');
     const loading = document.getElementById('modalProductoIA_loading');
     const content = document.getElementById('modalProductoIA_content');
     const errorBox = document.getElementById('modalProductoIA_error');
 
-    title.textContent = `Ficha IA: ${nombre}`;
-    loading.classList.remove('hidden');
-    content.classList.add('hidden');
-    errorBox.classList.add('hidden');
+    if (title) title.textContent = `Ficha IA: ${nombre || ''}`;
+    if (loading) loading.classList.remove('hidden');
+    if (content) content.classList.add('hidden');
+    if (errorBox) errorBox.classList.add('hidden');
 
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
 
     const url = __productoIaUrlTpl.replace('__ID__', id);
     fetch(url, {
@@ -883,8 +892,8 @@ function abrirModalProductoIA(id, nombre) {
         const data = await r.json().catch(() => ({}));
         if (!r.ok || !data.ok) throw new Error(data.message || 'Error obteniendo ficha IA');
 
-        loading.classList.add('hidden');
-        content.classList.remove('hidden');
+        if (loading) loading.classList.add('hidden');
+        if (content) content.classList.remove('hidden');
 
         // Status badge
         const badge = document.getElementById('ia_status_badge');
@@ -894,38 +903,50 @@ function abrirModalProductoIA(id, nombre) {
                 badge.textContent = '✨ ' + (data.generado_por || 'IA Externa');
             } else {
                 badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
-                badge.textContent = '🧪 Motor Local (Configura AI_API_KEY en .env)';
+                badge.textContent = '🧪 Motor Local';
             }
         }
 
-        document.getElementById('ia_uso_clinico').textContent = data.uso_clinico || 'Consulte al profesional de la salud.';
-        document.getElementById('ia_posologia').textContent = data.posologia || 'Consulte al farmacéutico.';
-        document.getElementById('ia_recomendaciones').textContent = data.recomendaciones || 'Seguir las pautas indicadas en el empaque del fabricante.';
-        document.getElementById('ia_advertencias').textContent = data.advertencias || 'Mantener fuera del alcance de niños.';
-        document.getElementById('ia_contraindicaciones').textContent = data.contraindicaciones || 'Ninguna descrita.';
+        const usoEl = document.getElementById('ia_uso_clinico');
+        if (usoEl) usoEl.textContent = data.uso_clinico || 'Consulte al profesional de la salud.';
+        const posEl = document.getElementById('ia_posologia');
+        if (posEl) posEl.textContent = data.posologia || 'Consulte al farmacéutico.';
+        const recEl = document.getElementById('ia_recomendaciones');
+        if (recEl) recEl.textContent = data.recomendaciones || 'Seguir las pautas indicadas en el empaque del fabricante.';
+        const advEl = document.getElementById('ia_advertencias');
+        if (advEl) advEl.textContent = data.advertencias || 'Mantener fuera del alcance de niños.';
+        const conEl = document.getElementById('ia_contraindicaciones');
+        if (conEl) conEl.textContent = data.contraindicaciones || 'Ninguna descrita.';
 
         const sustBox = document.getElementById('ia_sustitutos');
-        if (data.sustitutos && data.sustitutos.length > 0) {
-            sustBox.innerHTML = data.sustitutos.map(s => `
-                <a href="${escapeHtml(s.url)}" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition block">
-                    <div class="font-bold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(s.nombre)}</div>
-                    <div class="text-[11px] text-slate-500 truncate">${escapeHtml(s.principio || 'Equivalente')}</div>
-                    <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">S/ ${escapeHtml(s.precio)}</div>
-                </a>
-            `).join('');
-        } else {
-            sustBox.innerHTML = `<div class="col-span-2 text-xs text-slate-400">No hay otros productos sustitutos en inventario actualmente.</div>`;
+        if (sustBox) {
+            if (data.sustitutos && data.sustitutos.length > 0) {
+                sustBox.innerHTML = data.sustitutos.map(s => `
+                    <a href="${escapeHtml(s.url)}" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition block">
+                        <div class="font-bold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(s.nombre)}</div>
+                        <div class="text-[11px] text-slate-500 truncate">${escapeHtml(s.principio || 'Equivalente')}</div>
+                        <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">S/ ${escapeHtml(s.precio)}</div>
+                    </a>
+                `).join('');
+            } else {
+                sustBox.innerHTML = `<div class="col-span-2 text-xs text-slate-400">No hay otros productos sustitutos en inventario actualmente.</div>`;
+            }
         }
     })
     .catch((err) => {
-        loading.classList.add('hidden');
-        errorBox.classList.remove('hidden');
-        errorBox.textContent = err.message || 'No se pudo generar la ficha clínica.';
+        if (loading) loading.classList.add('hidden');
+        if (errorBox) {
+            errorBox.classList.remove('hidden');
+            errorBox.textContent = err.message || 'No se pudo generar la ficha clínica.';
+        }
     });
 }
 
 function cerrarModalProductoIA() {
-    document.getElementById('modalProductoIA').classList.add('hidden');
+    const modal = document.getElementById('modalProductoIA');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
 }
 
 document.addEventListener('keydown', (e) => {

@@ -73,12 +73,16 @@ window.farmaHasDirtyDraft = function(url) {
 };
 
 // ==========================================
-// 1. TOP PROGRESS BAR (Instant Navigation)
+// 1. TOP PROGRESS BAR & NAVIGATION GUARD (Anti-Bounce & Instant Feedback)
 // ==========================================
 class FarmaProgressBar {
     constructor() {
         this.bar = null;
         this.timer = null;
+        this.isNavigating = false;
+        this.navTimeout = null;
+        this.lastClickedUrl = null;
+        this.lastClickedTime = 0;
         this.init();
     }
 
@@ -90,12 +94,12 @@ class FarmaProgressBar {
 
         const bar = document.createElement('div');
         bar.id = 'farma-progress-bar';
-        bar.className = 'fixed top-0 left-0 h-[2.5px] z-[9999] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] transition-all duration-200 pointer-events-none opacity-0';
+        bar.className = 'fixed top-0 left-0 h-[3px] z-[9999] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.9)] transition-all duration-200 pointer-events-none opacity-0';
         bar.style.width = '0%';
         document.body.appendChild(bar);
         this.bar = bar;
 
-        // Listen to genuine link navigation
+        // Global delegated link navigation with anti-bounce protection
         document.addEventListener('click', (e) => {
             if (e.defaultPrevented) return;
             const link = e.target.closest('a');
@@ -108,11 +112,21 @@ class FarmaProgressBar {
             if (rawHref === '#' || rawHref.startsWith('#') || rawHref.startsWith('javascript:')) return;
             if (link.pathname === window.location.pathname && link.search === window.location.search && link.hash) return;
 
+            const now = Date.now();
             const currentOrigin = window.location.origin;
+
             if (link.href.startsWith(currentOrigin)) {
+                // Anti-bounce debounce: prevent rapid duplicate clicks to identical URL within 400ms
+                if (this.isNavigating && this.lastClickedUrl === link.href && (now - this.lastClickedTime < 400)) {
+                    e.preventDefault();
+                    return;
+                }
+
+                this.lastClickedUrl = link.href;
+                this.lastClickedTime = now;
                 this.start();
             }
-        });
+        }, true);
 
         window.addEventListener('beforeunload', () => {
             this.progressTo(95, 100);
@@ -121,18 +135,31 @@ class FarmaProgressBar {
         window.addEventListener('load', () => {
             this.finish();
         });
+
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                this.finish();
+            }
+        });
     }
 
     start() {
         if (!this.bar) return;
+        this.isNavigating = true;
+
+        clearTimeout(this.navTimeout);
+        this.navTimeout = setTimeout(() => {
+            this.isNavigating = false;
+        }, 3000);
+
         this.bar.style.transition = 'width 250ms ease-out, opacity 100ms ease-in';
         this.bar.style.opacity = '1';
-        this.bar.style.width = '30%';
+        this.bar.style.width = '35%';
 
         clearTimeout(this.timer);
         this.timer = setTimeout(() => {
-            if (this.bar) this.bar.style.width = '75%';
-        }, 150);
+            if (this.bar && this.isNavigating) this.bar.style.width = '75%';
+        }, 120);
     }
 
     progressTo(percent, duration = 200) {
@@ -142,6 +169,8 @@ class FarmaProgressBar {
     }
 
     finish() {
+        this.isNavigating = false;
+        clearTimeout(this.navTimeout);
         if (!this.bar) return;
         this.bar.style.transition = 'width 100ms ease-out, opacity 150ms ease-in 100ms';
         this.bar.style.width = '100%';
@@ -155,6 +184,51 @@ class FarmaProgressBar {
         }, 120);
     }
 }
+
+// ==========================================
+// STRICT LOGOUT CLEANUP SYSTEM
+// ==========================================
+window.farmaPerformStrictLogoutCleanup = function() {
+    try {
+        console.log('[FarmaCore] Realizando purga estricta de almacenamiento por cierre de sesión...');
+        const savedTheme = localStorage.getItem('farma_theme');
+
+        // 1. Borrar todos los borradores y estados volátiles
+        sessionStorage.clear();
+
+        // 2. Borrar pestañas abiertas, caches y registros locales
+        localStorage.clear();
+
+        // 3. Restaurar preferencia de tema si existía
+        if (savedTheme) {
+            localStorage.setItem('farma_theme', savedTheme);
+        }
+    } catch (e) {
+        console.error('[FarmaCore] Error limpiando almacenamiento en logout:', e);
+    }
+};
+
+// Global interceptors for logout forms & links
+document.addEventListener('submit', (e) => {
+    const f = e.target;
+    const action = (f.getAttribute('action') || '').toLowerCase();
+    if (action.includes('/logout')) {
+        window.farmaPerformStrictLogoutCleanup();
+    }
+}, true);
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button, a');
+    if (!btn) return;
+    const form = btn.closest('form');
+    if (form && (form.getAttribute('action') || '').toLowerCase().includes('/logout')) {
+        window.farmaPerformStrictLogoutCleanup();
+    }
+    const href = (btn.getAttribute('href') || '').toLowerCase();
+    if (href.includes('/logout')) {
+        window.farmaPerformStrictLogoutCleanup();
+    }
+}, true);
 
 // ==========================================
 // 2. FORM DRAFT PERSISTENCE ENGINE (DEBOUNCED)

@@ -16,7 +16,7 @@
                          :class="isTabActive(tab)
                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-300 dark:border-slate-700 shadow-xs font-semibold'
                              : 'bg-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
-                         @click="if (!isTabActive(tab)) window.location.href = tab.url">
+                         @click="navigateToTab(tab)">
                         
                         <!-- Dot Indicator: Amber if dirty draft, Emerald if active, Slate otherwise -->
                         <span class="w-1.5 h-1.5 rounded-full shrink-0"
@@ -80,9 +80,19 @@
 function farmaNavbarTabs() {
     return {
         tabs: [],
+        navigating: false,
         currentUrl: window.location.pathname + window.location.search,
         currentPath: window.location.pathname,
         currentTitle: '{{ trim($__env->yieldContent('title', 'FarmaBien')) }}'.replace(' - FarmaBien', '').trim() || 'Dashboard',
+
+        navigateToTab(tab) {
+            if (this.isTabActive(tab) || this.navigating) return;
+            this.navigating = true;
+            if (window.FarmaProgressBar) {
+                window.FarmaProgressBar.start();
+            }
+            window.location.href = tab.url;
+        },
 
         init() {
             try {

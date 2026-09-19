@@ -74,15 +74,17 @@
     <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
         <form method="GET" action="{{ route('presentaciones.index') }}" class="flex flex-col md:flex-row items-center gap-3">
             <div class="relative flex-1 w-full">
+                <label for="filtro_buscar_presentacion" class="sr-only">Buscar presentaciones</label>
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <input type="text" name="buscar" value="{{ request('buscar') }}"
+                <input type="text" id="filtro_buscar_presentacion" name="buscar" value="{{ request('buscar') }}"
                        placeholder="Buscar por nombre, código de barras o medicamento..."
                        class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
             </div>
             <div class="w-full md:w-56 shrink-0">
-                <select name="producto_id" onchange="this.form.submit()"
+                <label for="filtro_producto_presentacion" class="sr-only">Filtrar por medicamento</label>
+                <select id="filtro_producto_presentacion" name="producto_id" onchange="this.form.submit()"
                         class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
                     <option value="">Medicamento: Todos</option>
                     @foreach($productos as $prod)
@@ -91,7 +93,8 @@
                 </select>
             </div>
             <div class="w-full md:w-40 shrink-0">
-                <select name="estado" onchange="this.form.submit()"
+                <label for="filtro_estado_presentacion" class="sr-only">Filtrar por estado</label>
+                <select id="filtro_estado_presentacion" name="estado" onchange="this.form.submit()"
                         class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
                     <option value="">Estado: Todos</option>
                     <option value="activos" {{ request('estado') === 'activos' ? 'selected' : '' }}>Solo Activas</option>
@@ -99,7 +102,7 @@
                 </select>
             </div>
             <div class="flex items-center space-x-2 w-full md:w-auto shrink-0">
-                <button type="submit" class="w-full md:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl transition">Filtrar</button>
+                <button type="submit" id="btn-filtrar-presentaciones" aria-label="Aplicar filtros" class="w-full md:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl transition cursor-pointer">Filtrar</button>
                 @if(request('buscar') || request('producto_id') || request('estado'))
                 <a href="{{ route('presentaciones.index') }}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition">Limpiar</a>
                 @endif

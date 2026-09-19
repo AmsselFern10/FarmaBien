@@ -106,11 +106,11 @@ function presForm() {
                 <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 <span>Medicamento y Datos Principales</span>
             </div>
-            <input type="hidden" name="producto_id" :value="productoId">
+            <input type="hidden" id="pres_compact_producto_id" name="producto_id" :value="productoId">
             <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Medicamento <span class="text-rose-500">*</span></label>
+                <label for="pres_compact_producto_query" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Medicamento <span class="text-rose-500">*</span></label>
                 <div class="relative">
-                    <input type="text" x-model="productoQuery" @focus="filtrar()" @input="filtrar()" @keydown.escape="showDropdown=false" placeholder="Buscar medicamento..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-emerald-500">
+                    <input type="text" id="pres_compact_producto_query" name="producto_busqueda" x-model="productoQuery" @focus="filtrar()" @input="filtrar()" @keydown.escape="showDropdown=false" placeholder="Buscar medicamento..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-emerald-500">
                     <div x-show="showDropdown" @click.outside="showDropdown=false" class="absolute z-50 w-full mt-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                         <template x-for="p in productosFiltrados" :key="p.id">
                             <button type="button" @click="seleccionar(p)" :class="productoId==p.id?'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 font-semibold':'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'" class="w-full text-left px-3 py-2 text-xs transition" x-text="p.nombre"></button>
@@ -121,22 +121,22 @@ function presForm() {
                 <p x-show="productoId" class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">Sel.: <span x-text="productoQuery"></span></p>
             </div>
             <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre <span class="text-rose-500">*</span></label>
-                <input type="text" name="nombre" x-model="nombre" required placeholder="Caja x 30 tabs..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                <label for="pres_compact_nombre" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre <span class="text-rose-500">*</span></label>
+                <input type="text" id="pres_compact_nombre" name="nombre" x-model="nombre" required placeholder="Caja x 30 tabs..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Unidades <span class="text-rose-500">*</span></label>
-                    <input type="number" name="unidades_por_presentacion" x-model="unidades" min="1" required class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <label for="pres_compact_unidades" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Unidades <span class="text-rose-500">*</span></label>
+                    <input type="number" id="pres_compact_unidades" name="unidades_por_presentacion" x-model="unidades" min="1" required class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Cod. Barras</label>
-                    <input type="text" name="codigo_barras" x-model="codigoBarras" placeholder="EAN-13..." class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <label for="pres_compact_codigo_barras" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Cod. Barras</label>
+                    <input type="text" id="pres_compact_codigo_barras" name="codigo_barras" x-model="codigoBarras" placeholder="EAN-13..." class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                 </div>
             </div>
             <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Descripcion</label>
-                <textarea name="descripcion" x-model="descripcion" rows="2" placeholder="Descripcion adicional..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"></textarea>
+                <label for="pres_compact_descripcion" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Descripcion</label>
+                <textarea id="pres_compact_descripcion" name="descripcion" x-model="descripcion" rows="2" placeholder="Descripcion adicional..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"></textarea>
             </div>
         </div>
         {{-- Panel 2: Precios + Estado --}}
@@ -146,30 +146,30 @@ function presForm() {
                 <span>Precios y Configuracion</span>
             </div>
             <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Precio de Compra ($)</label>
-                <input type="number" name="precio_compra" x-model="precioCompra" step="0.01" min="0" placeholder="0.00" class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                <label for="pres_compact_precio_compra" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Precio de Compra ($)</label>
+                <input type="number" id="pres_compact_precio_compra" name="precio_compra" x-model="precioCompra" step="0.01" min="0" placeholder="0.00" class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
             </div>
             <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Precio de Venta ($)</label>
-                <input type="number" name="precio_venta" x-model="precioVenta" step="0.01" min="0" placeholder="0.00" class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                <label for="pres_compact_precio_venta" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Precio de Venta ($)</label>
+                <input type="number" id="pres_compact_precio_venta" name="precio_venta" x-model="precioVenta" step="0.01" min="0" placeholder="0.00" class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
             </div>
             <div x-show="margen" class="px-2.5 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                 Margen: $<span x-text="margen&&margen.valor"></span> (<span x-text="margen&&margen.pct"></span>%)
             </div>
             <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Orden de Visualizacion</label>
-                <input type="number" name="orden" x-model="orden" min="0" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                <label for="pres_compact_orden" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Orden de Visualizacion</label>
+                <input type="number" id="pres_compact_orden" name="orden" x-model="orden" min="0" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
             </div>
             <div class="pt-2 space-y-2">
                 <input type="hidden" name="es_unidad_base" value="0">
-                <label class="inline-flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" name="es_unidad_base" value="1" x-model="esUnidadBase" class="rounded border-slate-300 text-indigo-600 w-3.5 h-3.5">
+                <label for="pres_compact_es_unidad_base" class="inline-flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="pres_compact_es_unidad_base" name="es_unidad_base" value="1" x-model="esUnidadBase" class="rounded border-slate-300 text-indigo-600 w-3.5 h-3.5">
                     <span class="text-[11px] font-semibold text-indigo-700 dark:text-indigo-400">Es Unidad Base</span>
                 </label>
                 <br>
                 <input type="hidden" name="activo" value="0">
-                <label class="inline-flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" name="activo" value="1" x-model="activo" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
+                <label for="pres_compact_activo" class="inline-flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="pres_compact_activo" name="activo" value="1" x-model="activo" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
                     <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Presentacion Activa para POS</span>
                 </label>
             </div>
@@ -192,11 +192,11 @@ function presForm() {
     <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div class="border-b border-slate-100 dark:border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Medicamento Asociado</span></h3></div>
         <div>
-            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Medicamento <span class="text-rose-500">*</span></label>
-            <input type="hidden" name="producto_id" :value="productoId">
+            <label for="pres_modern_producto_query" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Medicamento <span class="text-rose-500">*</span></label>
+            <input type="hidden" id="pres_modern_producto_id" name="producto_id" :value="productoId">
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
-                <input type="text" x-model="productoQuery" @focus="filtrar()" @input="filtrar()" @keydown.escape="showDropdown=false" placeholder="Buscar medicamento por nombre..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <input type="text" id="pres_modern_producto_query" name="producto_busqueda" x-model="productoQuery" @focus="filtrar()" @input="filtrar()" @keydown.escape="showDropdown=false" placeholder="Buscar medicamento por nombre..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
                 <div x-show="showDropdown" @click.outside="showDropdown=false" class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-52 overflow-y-auto">
                     <template x-for="p in productosFiltrados" :key="p.id">
                         <button type="button" @click="seleccionar(p)" :class="productoId==p.id?'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 font-semibold':'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'" class="w-full text-left px-4 py-2.5 text-sm transition flex items-center justify-between">
@@ -215,25 +215,25 @@ function presForm() {
         <div class="border-b border-slate-100 dark:border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-indigo-500"></span><span>Datos de la Presentacion</span></h3></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nombre <span class="text-rose-500">*</span></label>
-                <input type="text" name="nombre" x-model="nombre" required placeholder="Caja x 30 Comprimidos, Frasco 500mL..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('nombre') border-rose-500 @enderror">
+                <label for="pres_modern_nombre" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nombre <span class="text-rose-500">*</span></label>
+                <input type="text" id="pres_modern_nombre" name="nombre" x-model="nombre" required placeholder="Caja x 30 Comprimidos, Frasco 500mL..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('nombre') border-rose-500 @enderror">
                 @error('nombre')<p class="text-rose-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Unidades por Presentacion <span class="text-rose-500">*</span></label>
-                <input type="number" name="unidades_por_presentacion" x-model="unidades" min="1" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <label for="pres_modern_unidades" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Unidades por Presentacion <span class="text-rose-500">*</span></label>
+                <input type="number" id="pres_modern_unidades" name="unidades_por_presentacion" x-model="unidades" min="1" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
             <div class="md:col-span-2">
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Descripcion</label>
-                <textarea name="descripcion" x-model="descripcion" rows="2" placeholder="Descripcion adicional..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition"></textarea>
+                <label for="pres_modern_descripcion" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Descripcion</label>
+                <textarea id="pres_modern_descripcion" name="descripcion" x-model="descripcion" rows="2" placeholder="Descripcion adicional..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition"></textarea>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Codigo de Barras</label>
-                <input type="text" name="codigo_barras" x-model="codigoBarras" placeholder="EAN-13, UPC..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <label for="pres_modern_codigo_barras" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Codigo de Barras</label>
+                <input type="text" id="pres_modern_codigo_barras" name="codigo_barras" x-model="codigoBarras" placeholder="EAN-13, UPC..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Orden de Visualizacion</label>
-                <input type="number" name="orden" x-model="orden" min="0" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <label for="pres_modern_orden" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Orden de Visualizacion</label>
+                <input type="number" id="pres_modern_orden" name="orden" x-model="orden" min="0" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
         </div>
     </div>
@@ -242,12 +242,12 @@ function presForm() {
         <div class="border-b border-slate-100 dark:border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Precios</span></h3></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Precio de Compra ($)</label>
-                <input type="number" name="precio_compra" x-model="precioCompra" step="0.01" min="0" placeholder="0.00" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <label for="pres_modern_precio_compra" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Precio de Compra ($)</label>
+                <input type="number" id="pres_modern_precio_compra" name="precio_compra" x-model="precioCompra" step="0.01" min="0" placeholder="0.00" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Precio de Venta ($)</label>
-                <input type="number" name="precio_venta" x-model="precioVenta" step="0.01" min="0" placeholder="0.00" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <label for="pres_modern_precio_venta" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Precio de Venta ($)</label>
+                <input type="number" id="pres_modern_precio_venta" name="precio_venta" x-model="precioVenta" step="0.01" min="0" placeholder="0.00" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
             <div x-show="margen" class="md:col-span-2 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-sm font-semibold text-emerald-700 dark:text-emerald-300 flex items-center space-x-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
@@ -259,9 +259,21 @@ function presForm() {
     <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div class="border-b border-slate-100 dark:border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-slate-500"></span><span>Configuracion</span></h3></div>
         <input type="hidden" name="es_unidad_base" value="0">
-        <label class="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="es_unidad_base" value="1" x-model="esUnidadBase" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"><div><span class="text-sm font-semibold text-slate-800 dark:text-slate-200 block">Es Unidad Base</span><span class="text-xs text-slate-400">Unidad minima de venta del medicamento.</span></div></label>
+        <label for="pres_modern_es_unidad_base" class="flex items-center space-x-3 cursor-pointer">
+            <input type="checkbox" id="pres_modern_es_unidad_base" name="es_unidad_base" value="1" x-model="esUnidadBase" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+            <div>
+                <span class="text-sm font-semibold text-slate-800 dark:text-slate-200 block">Es Unidad Base</span>
+                <span class="text-xs text-slate-400">Unidad minima de venta del medicamento.</span>
+            </div>
+        </label>
         <input type="hidden" name="activo" value="0">
-        <label class="flex items-center space-x-3 cursor-pointer"><input type="checkbox" name="activo" value="1" x-model="activo" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"><div><span class="text-sm font-semibold text-slate-800 dark:text-slate-200 block">Presentacion Activa</span><span class="text-xs text-slate-400">Disponible para ventas y compras.</span></div></label>
+        <label for="pres_modern_activo" class="flex items-center space-x-3 cursor-pointer">
+            <input type="checkbox" id="pres_modern_activo" name="activo" value="1" x-model="activo" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+            <div>
+                <span class="text-sm font-semibold text-slate-800 dark:text-slate-200 block">Presentacion Activa</span>
+                <span class="text-xs text-slate-400">Disponible para ventas y compras.</span>
+            </div>
+        </label>
     </div>
     {{-- Sticky Footer --}}
     <div class="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-lg z-20 flex items-center justify-between rounded-b-2xl">
