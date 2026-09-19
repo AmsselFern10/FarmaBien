@@ -182,26 +182,39 @@
                 </div>
             </div>
 
-            <!-- Reporte 4: Proveedores y Compras -->
-            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs opacity-80">
+            <!-- Reporte 4: Proveedores y Compras (DISPONIBLE) -->
+            @can('ver reportes compras')
+            <a href="{{ route('reportes.compras') }}"
+               class="group relative bg-white dark:bg-slate-900 rounded-xl p-5 border border-amber-300 dark:border-amber-800/80 shadow-sm hover:shadow-md hover:border-amber-500 dark:hover:border-amber-500 transition-all block">
                 <div class="flex items-start justify-between">
-                    <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-lg">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg">
                         🚚
                     </div>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        Próxima fase
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        Disponible
                     </span>
                 </div>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-3">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">
                     Proveedores y Recepción de Lotes
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Volúmenes comprados por laboratorio droguería, cumplimiento de facturas y costos comparativos.
+                    Volúmenes comprados por proveedor, órdenes recibidas, ticket promedio y análisis de abastecimiento por período.
                 </p>
-                <div class="mt-4 text-xs text-slate-400">
-                    <a href="{{ route('compras.index') }}" class="text-emerald-600 hover:underline">Ver Registro de Compras &rarr;</a>
+                <div class="mt-4 flex items-center text-xs font-semibold text-amber-600 dark:text-amber-400">
+                    <span>Acceder al reporte</span>
+                    <span class="ml-1 group-hover:translate-x-1 transition-transform">&rarr;</span>
                 </div>
+            </a>
+            @else
+            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs opacity-60 cursor-not-allowed">
+                <div class="flex items-start justify-between">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center text-lg">🚚</div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800">Sin permiso</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-500 dark:text-slate-500 mt-3">Proveedores y Recepción de Lotes</h3>
+                <p class="text-xs text-slate-400 mt-1">Requiere permiso de reportes de compras.</p>
             </div>
+            @endcan
 
             <!-- Reporte 5: Auditoría IA y Lupa Inteligente -->
             <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs opacity-80">
@@ -235,7 +248,7 @@
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">Top 5 Medicamentos más Vendidos</h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">Mes en curso ({{ now()->translatedFormat('F Y') }})</p>
                 </div>
-                <a href="{{ route('reportes.ventas') }}" class="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
+                <a href="{{ route('reportes.productos-mas-vendidos') }}" class="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
                     Ver ranking completo &rarr;
                 </a>
             </div>

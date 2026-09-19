@@ -22,7 +22,13 @@ class ReporteController extends Controller
     public function __construct(InventarioService $inventarioService)
     {
         $this->inventarioService = $inventarioService;
-        $this$this->middleware('permission:ver reportes ventas|ver reportes inventario|ver reportes compras')->only(['index']);
+        $this->middleware(function ($request, $next) {
+            $user = $request->user();
+            if ($user && $user->canAny(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras'])) {
+                return $next($request);
+            }
+            abort(403, 'No tienes permisos para ver los reportes gerenciales.');
+        })->only(['index']);
         $this->middleware('permission:ver reportes ventas')->only(['ventas', 'productosMasVendidos']);
         $this->middleware('permission:ver reportes compras')->only(['compras']);
         $this->middleware('permission:ver reportes inventario')->only(['inventario', 'productosBajoStock']);
@@ -420,18 +426,70 @@ class ReporteController extends Controller
         $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
         $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
 
-        $compras = Compra::with(['proveedor', 'usuario'])
+        $query = Compra::with(['proveedor', 'usuario'])
             ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta])
             ->recibidas()
-            ->orderBy('fecha', 'desc')
-            ->paginate(20)
-            ->withQueryString();
+            ->orderBy('fecha', 'desc');
 
         $totalComprado = Compra::whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta])
             ->recibidas()
             ->sum('total');
 
+        // Exportación CSV
+        if ($request->input('export') === 'csv') {
+            return $this->exportarComprasCSV($query->get(), $fechaDesde, $fechaHasta);
+        }
+
+        $compras = $query->paginate(20)->withQueryString();
+
         return view('reportes.compras', compact('compras', 'totalComprado', 'fechaDesde', 'fechaHasta'));
+    }
+
+    /**
+     * Exportación de Compras a CSV con codificación UTF-8 BOM
+     */
+    protected function exportarComprasCSV($compras, $desde, $hasta): StreamedResponse
+    {
+        $filename = "reporte_compras_{$desde}_al_{$hasta}.csv";
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($compras) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($handle, [
+                'N° Orden',
+                'Proveedor',
+                'RIF/NIT Proveedor',
+                'N° Factura',
+                'Fecha',
+                'Responsable',
+                'Estado',
+                'Total ($)'
+            ], ';');
+
+            foreach ($compras as $c) {
+                fputcsv($handle, [
+                    str_pad($c->id, 4, '0', STR_PAD_LEFT),
+                    $c->proveedor?->nombre ?? 'N/A',
+                    $c->proveedor?->rif ?? '',
+                    $c->numero_factura ?? '',
+                    $c->fecha ? \Carbon\Carbon::parse($c->fecha)->format('d/m/Y') : '',
+                    $c->usuario?->name ?? 'Sistema',
+                    ucfirst($c->estado ?? 'N/A'),
+                    number_format($c->total, 2, '.', '')
+                ], ';');
+            }
+
+            fclose($handle);
+        }, 200, $headers);
     }
 
     public function productosMasVendidos(Request $request)
