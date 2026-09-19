@@ -385,11 +385,8 @@ function posVentaEditData() {
         @csrf
         @method('PUT')
 
-        <!-- ============================================================== -->
-        <!-- MODO COMPACTO (ERP UNIFIED CONTAINER)                          -->
-        <!-- ============================================================== -->
-        <template x-if="formLayout === 'compact'">
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 space-y-4 animate-fadeIn">
+        {{-- Contenido del formulario --}}
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 space-y-4 animate-fadeIn">
                 
                 <!-- Toolbar Superior -->
                 <div class="flex items-center justify-between pb-3 border-b border-slate-300 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/60 -mx-4 -mt-4 p-3 rounded-t-2xl">
@@ -666,7 +663,6 @@ function posVentaEditData() {
                     </button>
                 </div>
             </div>
-        </template>
     </form>
 
     <!-- MODAL VISTA PREVIA TICKET -->

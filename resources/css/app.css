@@ -76,3 +76,6 @@ html:not(.dark) textarea:focus {
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
 }
 
+
+[x-cloak] { display: none !important; }
+
