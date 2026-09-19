@@ -1101,9 +1101,9 @@ function posVentaData() {
          aria-labelledby="modal-cobro-title" 
          role="dialog" 
          aria-modal="true"
-         style="display: none;">
-        <div x-show="modalCobro" 
-             @click.away="modalCobro = false"
+         @keydown.escape.window="modalCobro = false"
+         @click.self="modalCobro = false">
+        <div @click.stop
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
@@ -1351,9 +1351,8 @@ function posVentaData() {
          x-cloak 
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
          @keydown.escape.window="modalTicketPreview = false"
-         style="display: none;">
-        <div @click.away="modalTicketPreview = false"
-             x-show="modalTicketPreview" 
+         @click.self="modalTicketPreview = false">
+        <div @click.stop
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
@@ -1459,9 +1458,8 @@ function posVentaData() {
          x-cloak 
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
          @keydown.escape.window="modalInfoProducto = false"
-         style="display: none;">
-        <div @click.away="modalInfoProducto = false"
-             x-show="modalInfoProducto" 
+         @click.self="modalInfoProducto = false">
+        <div @click.stop
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
@@ -1570,9 +1568,8 @@ function posVentaData() {
          x-cloak 
          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
          @keydown.escape.window="modalNuevoCliente = false"
-         style="display: none;">
-        <div @click.away="modalNuevoCliente = false"
-             x-show="modalNuevoCliente" 
+         @click.self="modalNuevoCliente = false">
+        <div @click.stop
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"

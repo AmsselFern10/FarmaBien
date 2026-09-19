@@ -364,9 +364,9 @@
          aria-labelledby="modal-title" 
          role="dialog" 
          aria-modal="true"
-         style="display: none;">
-        <div x-show="modalAnular" 
-             @click.away="modalAnular = false"
+         @keydown.escape.window="modalAnular = false"
+         @click.self="modalAnular = false">
+        <div @click.stop
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"

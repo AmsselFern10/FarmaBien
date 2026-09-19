@@ -4,9 +4,8 @@
 @php
 $estadoMap = [
     'pendiente'          => ['label'=>'Pendiente',              'badge'=>'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
-    'validada'           => ['label'=>'Validada',               'badge'=>'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'],
-    'dispensada'         => ['label'=>'Dispensada',             'badge'=>'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'],
-    'dispensada_parcial' => ['label'=>'Parcialmente Dispensada','badge'=>'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800'],
+    'dispensada_parcial' => ['label'=>'Parcialmente Dispensada','badge'=>'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'],
+    'dispensada_total'   => ['label'=>'Dispensada Total',       'badge'=>'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'],
     'anulada'            => ['label'=>'Anulada',                'badge'=>'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'],
 ];
 $st      = $estadoMap[$receta->estado ?? 'pendiente'] ?? ['label'=>$receta->estado,'badge'=>'bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200'];
@@ -235,9 +234,8 @@ $vencida = $receta->estaVencida();
                 @php
                 $estadoOps = [
                     'pendiente'          => ['Pendiente',           'border-amber-200  dark:border-amber-800  hover:bg-amber-50  dark:hover:bg-amber-950/30  text-amber-700  dark:text-amber-300'],
-                    'validada'           => ['Validada',            'border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300'],
-                    'dispensada'         => ['Dispensada',          'border-indigo-200  dark:border-indigo-800  hover:bg-indigo-50  dark:hover:bg-indigo-950/30  text-indigo-700  dark:text-indigo-300'],
-                    'dispensada_parcial' => ['Dispensada Parcial',  'border-cyan-200    dark:border-cyan-800    hover:bg-cyan-50    dark:hover:bg-cyan-950/30    text-cyan-700    dark:text-cyan-300'],
+                    'dispensada_parcial' => ['Dispensada Parcial',  'border-blue-200   dark:border-blue-800   hover:bg-blue-50   dark:hover:bg-blue-950/30   text-blue-700   dark:text-blue-300'],
+                    'dispensada_total'   => ['Dispensada Total',    'border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300'],
                     'anulada'            => ['Anular Receta',       'border-rose-200    dark:border-rose-800    hover:bg-rose-50    dark:hover:bg-rose-950/30    text-rose-700    dark:text-rose-300'],
                 ];
                 @endphp

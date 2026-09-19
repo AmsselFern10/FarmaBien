@@ -169,7 +169,7 @@ class RecetaController extends Controller
     public function cambiarEstado(Request $request, Receta $receta)
     {
         $request->validate([
-            'estado' => ['required', 'in:pendiente,validada,dispensada,dispensada_parcial,anulada'],
+            'estado' => ['required', 'in:pendiente,dispensada_parcial,dispensada_total,anulada'],
         ]);
 
         $receta->update(['estado' => $request->estado]);

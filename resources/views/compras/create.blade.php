@@ -851,10 +851,11 @@ class="space-y-4 transition-all duration-200">
     <div x-show="modalNuevaPres" 
          x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity"
-         @keydown.escape.window="modalNuevaPres = false">
+         @keydown.escape.window="modalNuevaPres = false"
+         @click.self="modalNuevaPres = false">
         
         <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-xl space-y-4"
-             @click.outside="modalNuevaPres = false">
+             @click.stop>
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2">
