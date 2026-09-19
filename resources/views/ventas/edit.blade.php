@@ -3,6 +3,45 @@
 @section('title', 'Modificar Venta #' . str_pad($venta->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 
 @section('content')
+@php
+$_catalogo = $productos ?? collect();
+$_clientes = $clientes ?? collect();
+$_categorias = $categorias ?? collect();
+$_ventaItems = $venta->detalles->map(function($d) {
+    $p = $d->producto;
+    $presDisponibles = collect([
+        ['id' => null, 'nombre' => 'Unidad Base', 'unidades' => 1, 'precio' => (float)($p->precio_venta ?? 0)]
+    ])->concat(
+        collect($p->presentacionesActivas ?? [])->map(function($pr) use ($p) {
+            return [
+                'id'      => $pr->id,
+                'nombre'  => $pr->nombre,
+                'unidades'=> (int)$pr->unidades_por_presentacion,
+                'precio'  => (float)$pr->precio_venta ?: ((float)$p->precio_venta * (int)$pr->unidades_por_presentacion),
+            ];
+        })
+    )->values();
+    return [
+        'uid'                    => uniqid('item_'),
+        'producto_id'            => $d->producto_id,
+        'nombre'                 => $p->nombre ?? 'Medicamento',
+        'principio_activo'       => $p->principio_activo ?? '',
+        'concentracion'          => $p->concentracion ?? '',
+        'laboratorio'            => $p->laboratorio->nombre ?? '',
+        'ubicacion'              => $p->ubicacion ?? 'Sin asignar',
+        'requiere_receta'        => (bool)($p->requiere_receta ?? false),
+        'lotesDisponibles'       => $p->lotes ?? [],
+        'lote_id'                => $d->lote_id,
+        'lote_obj'               => $d->lote,
+        'presentacionesDisponibles' => $presDisponibles,
+        'presentacion_id'        => $d->presentacion_id,
+        'factor'                 => (int)($d->unidades_por_presentacion ?? 1),
+        'precio_unitario'        => (float)$d->precio_unitario,
+        'descuento'              => (float)($d->descuento_monto ?? 0),
+        'cantidad'               => (int)$d->cantidad,
+    ];
+});
+@endphp
 <script>
 function posVentaEditData() {
     return {
@@ -11,10 +50,10 @@ function posVentaEditData() {
             this.formLayout = layout;
             localStorage.setItem('farma_pos_layout', layout);
         },
-        catalogo: @js($productos ?? []),
-        clientes: @js($clientes ?? []),
-        categorias: @js($categorias ?? []),
-        
+        catalogo: @json($_catalogo),
+        clientes: @json($_clientes),
+        categorias: @json($_categorias),
+
         // Datos de la Venta a Modificar
         formData: {
             cliente_id: '{{ old('cliente_id', $venta->cliente_id ?? '') }}',
@@ -25,7 +64,7 @@ function posVentaEditData() {
             descuento: {{ old('descuento', $venta->descuento ?? 0) }},
             motivo_modificacion: '{{ old('motivo_modificacion', '') }}'
         },
-        
+
         // Modales
         modalTicketPreview: false,
         modalInfoProducto: false,
@@ -44,41 +83,7 @@ function posVentaEditData() {
         errorClienteMsg: '',
 
         // Carga inicial de ítems existentes
-        items: @js(
-            $venta->detalles->map(function($d) {
-                $p = $d->producto;
-                $presDisponibles = collect([
-                    ['id' => null, 'nombre' => 'Unidad Base', 'unidades' => 1, 'precio' => (float)($p->precio_venta ?? 0)]
-                ])->concat(
-                    collect($p->presentacionesActivas ?? [])->map(fn($pr) => [
-                        'id' => $pr->id,
-                        'nombre' => $pr->nombre,
-                        'unidades' => (int)$pr->unidades_por_presentacion,
-                        'precio' => (float)$pr->precio_venta ?: ((float)$p->precio_venta * (int)$pr->unidades_por_presentacion)
-                    ])
-                )->values();
-
-                return [
-                    'uid' => uniqid('item_'),
-                    'producto_id' => $d->producto_id,
-                    'nombre' => $p->nombre ?? 'Medicamento',
-                    'principio_activo' => $p->principio_activo ?? '',
-                    'concentracion' => $p->concentracion ?? '',
-                    'laboratorio' => $p->laboratorio->nombre ?? '',
-                    'ubicacion' => $p->ubicacion ?? 'Sin asignar',
-                    'requiere_receta' => (bool)($p->requiere_receta ?? false),
-                    'lotesDisponibles' => $p->lotes ?? [],
-                    'lote_id' => $d->lote_id,
-                    'lote_obj' => $d->lote,
-                    'presentacionesDisponibles' => $presDisponibles,
-                    'presentacion_id' => $d->presentacion_id,
-                    'factor' => (int)($d->unidades_por_presentacion ?? 1),
-                    'precio_unitario' => (float)$d->precio_unitario,
-                    'descuento' => (float)($d->descuento_monto ?? 0),
-                    'cantidad' => (int)$d->cantidad
-                ];
-            })
-        ),
+        items: @json($_ventaItems),
 
         busqueda: '',
         filtroCategoriaId: '',

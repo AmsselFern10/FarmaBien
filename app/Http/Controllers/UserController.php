@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\LoginLog;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -22,7 +23,7 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::with('roles');
+        $query = User::with(['roles', 'loginLogs' => function($q){ $q->where('tipo','login')->orderByDesc('created_at')->limit(1); }]);
 
         if ($request->filled('buscar')) {
             $buscar = trim($request->input('buscar'));
@@ -32,9 +33,11 @@ class UserController extends Controller
             });
         }
 
-        $usuarios = $query->orderBy('name', 'asc')->paginate(15)->withQueryString();
+        $usuarios    = $query->orderBy('name', 'asc')->paginate(15)->withQueryString();
+        $totalActivos = User::where('active', true)->count();
+        $totalRoles   = Role::count();
 
-        return view('usuarios.index', compact('usuarios'));
+        return view('usuarios.index', compact('usuarios', 'totalActivos', 'totalRoles'));
     }
 
     public function create()
@@ -58,10 +61,22 @@ class UserController extends Controller
             ->with('success', "Usuario '{$user->name}' creado exitosamente.");
     }
 
-    public function show(User $usuario)
+    public function show(Request $request, User $usuario)
     {
         $usuario->load('roles');
-        return view('usuarios.show', compact('usuario'));
+
+        $logsQuery = LoginLog::where('user_id', $usuario->id)->orderByDesc('created_at');
+
+        if ($request->filled('desde')) {
+            $logsQuery->whereDate('created_at', '>=', $request->input('desde'));
+        }
+        if ($request->filled('hasta')) {
+            $logsQuery->whereDate('created_at', '<=', $request->input('hasta'));
+        }
+
+        $loginLogs = $logsQuery->paginate(25)->withQueryString();
+
+        return view('usuarios.show', compact('usuario', 'loginLogs'));
     }
 
     public function edit(User $usuario)

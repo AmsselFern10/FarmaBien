@@ -45,8 +45,14 @@ class User extends Authenticatable
         return $this->hasMany(MovimientoInventario::class);
     }
 
-    public function scopeActivos($query)
+    
+    public function loginLogs(): HasMany
+    {
+        return $this->hasMany(LoginLog::class)->orderByDesc('created_at');
+    }
+public function scopeActivos($query)
     {
         return $query->where('active', true);
     }
 }
+
