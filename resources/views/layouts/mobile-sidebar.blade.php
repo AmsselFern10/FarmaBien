@@ -119,7 +119,7 @@
             @endcanany
 
             <!-- Administración -->
-            @canany(['ver reportes ventas', 'ver usuarios'])
+            @canany(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras', 'ver usuarios'])
             <div class="space-y-1">
                 <button @click="openMobileMenus.administracion = !openMobileMenus.administracion"
                         class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800">
@@ -127,7 +127,7 @@
                     <svg class="w-3.5 h-3.5 transition-transform" :class="openMobileMenus.administracion ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <div x-show="openMobileMenus.administracion" class="pl-4 space-y-1 border-l border-slate-800 ml-3">
-                    @can('ver reportes ventas')<a href="{{ route('reportes.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Reportes</a>@endcan
+                    @canany(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras'])<a href="{{ route('reportes.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Reportes</a>@endcan
                     @role('Admin')<a href="{{ route('usuarios.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Usuarios & Roles</a>@endrole
                 </div>
             </div>
@@ -149,4 +149,5 @@
         </div>
     </div>
 </div>
+
 

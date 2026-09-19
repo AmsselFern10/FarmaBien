@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Venta;
 use App\Models\Compra;
 use App\Models\Producto;
+use App\Models\Lote;
+use App\Models\Categoria;
+use App\Models\Laboratorio;
 use App\Models\DetalleVenta;
 use App\Models\User;
 use App\Services\InventarioService;
@@ -19,7 +22,8 @@ class ReporteController extends Controller
     public function __construct(InventarioService $inventarioService)
     {
         $this->inventarioService = $inventarioService;
-        $this->middleware('permission:ver reportes ventas')->only(['index', 'ventas', 'productosMasVendidos']);
+        $this$this->middleware('permission:ver reportes ventas|ver reportes inventario|ver reportes compras')->only(['index']);
+        $this->middleware('permission:ver reportes ventas')->only(['ventas', 'productosMasVendidos']);
         $this->middleware('permission:ver reportes compras')->only(['compras']);
         $this->middleware('permission:ver reportes inventario')->only(['inventario', 'productosBajoStock']);
     }
@@ -76,6 +80,11 @@ class ReporteController extends Controller
             ->groupBy('metodo_pago')
             ->get();
 
+        // 4. Métricas de caducidad e inventario para tarjeta de resumen
+        $lotesVencidosCount = Lote::activos()->vencidos()->where('stock_actual', '>', 0)->count();
+        $lotesCriticosCount = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->toDateString(), now()->addDays(30)->toDateString()])->count();
+        $productosBajoStockCount = Producto::activos()->bajoStock()->count();
+
         return view('reportes.index', compact(
             'ventasMes',
             'cantidadVentasMes',
@@ -83,7 +92,10 @@ class ReporteController extends Controller
             'comprasMes',
             'valorizacion',
             'topProductosMes',
-            'metodosMes'
+            'metodosMes',
+            'lotesVencidosCount',
+            'lotesCriticosCount',
+            'productosBajoStockCount'
         ));
     }
 
@@ -183,10 +195,8 @@ class ReporteController extends Controller
 
         return response()->stream(function () use ($ventas) {
             $handle = fopen('php://output', 'w');
-            // Agregar BOM UTF-8 para visualización correcta en Excel
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // Encabezados
             fputcsv($handle, [
                 'N° Ticket',
                 'Fecha y Hora',
@@ -215,6 +225,196 @@ class ReporteController extends Controller
         }, 200, $headers);
     }
 
+    /**
+     * Reporte Gerencial de Control de Inventario, Valorización y Caducidad
+     */
+    public function inventario(Request $request)
+    {
+        $buscar = trim($request->input('buscar', ''));
+        $categoriaId = $request->input('categoria_id');
+        $laboratorioId = $request->input('laboratorio_id');
+        $estadoVencimiento = $request->input('estado_vencimiento', 'todos');
+        $estadoStock = $request->input('estado_stock', 'todos');
+
+        // 1. Semáforo Global de Caducidad (para todos los lotes activos con stock)
+        $today = now()->toDateString();
+        $semVencidos = Lote::activos()->where('stock_actual', '>', 0)->where('fecha_vencimiento', '<=', $today)->count();
+        $semCritico30 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDay()->toDateString(), now()->addDays(30)->toDateString()])->count();
+        $semAlerta60 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDays(31)->toDateString(), now()->addDays(60)->toDateString()])->count();
+        $semPreventivo90 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDays(61)->toDateString(), now()->addDays(90)->toDateString()])->count();
+        $semVigentes = Lote::activos()->where('stock_actual', '>', 0)->where('fecha_vencimiento', '>', now()->addDays(90)->toDateString())->count();
+
+        // 2. Consulta de Lotes filtrada
+        $query = Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
+            ->where('activo', true);
+
+        if (!empty($buscar)) {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('numero_lote', 'like', "%{$buscar}%")
+                  ->orWhereHas('producto', function ($pq) use ($buscar) {
+                      $pq->where('nombre', 'like', "%{$buscar}%")
+                         ->orWhere('codigo_barra', 'like', "%{$buscar}%")
+                         ->orWhere('principio_activo', 'like', "%{$buscar}%");
+                  });
+            });
+        }
+
+        if (!empty($categoriaId)) {
+            $query->whereHas('producto', fn($q) => $q->where('categoria_id', $categoriaId));
+        }
+
+        if (!empty($laboratorioId)) {
+            $query->whereHas('producto', fn($q) => $q->where('laboratorio_id', $laboratorioId));
+        }
+
+        // Filtro por Estado de Vencimiento
+        if ($estadoVencimiento === 'vencidos') {
+            $query->where('fecha_vencimiento', '<=', $today);
+        } elseif ($estadoVencimiento === 'critico_30') {
+            $query->whereBetween('fecha_vencimiento', [now()->toDateString(), now()->addDays(30)->toDateString()]);
+        } elseif ($estadoVencimiento === 'alerta_60') {
+            $query->whereBetween('fecha_vencimiento', [now()->addDays(31)->toDateString(), now()->addDays(60)->toDateString()]);
+        } elseif ($estadoVencimiento === 'preventivo_90') {
+            $query->whereBetween('fecha_vencimiento', [now()->addDays(61)->toDateString(), now()->addDays(90)->toDateString()]);
+        } elseif ($estadoVencimiento === 'vigentes') {
+            $query->where('fecha_vencimiento', '>', now()->addDays(90)->toDateString());
+        }
+
+        // Filtro por Estado de Stock
+        if ($estadoStock === 'agotado') {
+            $query->where('stock_actual', 0);
+        } elseif ($estadoStock === 'disponible') {
+            $query->where('stock_actual', '>', 0);
+        } elseif ($estadoStock === 'bajo_stock') {
+            $query->whereHas('producto', function ($q) {
+                $q->bajoStock();
+            });
+        }
+
+        // Exportación a CSV
+        if ($request->input('export') === 'csv') {
+            return $this->exportarInventarioCSV($query->orderBy('fecha_vencimiento', 'asc')->get());
+        }
+
+        // 3. Cálculos de Valorización de la Consulta Filtrada
+        $lotesColeccion = (clone $query)->get();
+        $totalValorCosto = 0;
+        $totalValorVenta = 0;
+        $totalUnidadesStock = 0;
+
+        foreach ($lotesColeccion as $l) {
+            $costo = round($l->stock_actual * (float)$l->precio_compra, 2);
+            $venta = round($l->stock_actual * (float)($l->producto->precio_venta ?? 0), 2);
+            $totalValorCosto += $costo;
+            $totalValorVenta += $venta;
+            $totalUnidadesStock += $l->stock_actual;
+        }
+
+        $margenProyectado = $totalValorCosto > 0 
+            ? round((($totalValorVenta - $totalValorCosto) / $totalValorCosto) * 100, 1) 
+            : 0;
+
+        $totalProductosBajoStock = Producto::activos()->bajoStock()->count();
+
+        // 4. Paginación
+        $lotes = $query->orderBy('fecha_vencimiento', 'asc')->paginate(25)->withQueryString();
+
+        // 5. Catálogos para los selectores
+        $categorias = Categoria::activos()->orderBy('nombre')->get(['id', 'nombre']);
+        $laboratorios = Laboratorio::activos()->orderBy('nombre')->get(['id', 'nombre']);
+
+        return view('reportes.inventario', compact(
+            'lotes',
+            'totalValorCosto',
+            'totalValorVenta',
+            'totalUnidadesStock',
+            'margenProyectado',
+            'totalProductosBajoStock',
+            'semVencidos',
+            'semCritico30',
+            'semAlerta60',
+            'semPreventivo90',
+            'semVigentes',
+            'categorias',
+            'laboratorios',
+            'buscar',
+            'categoriaId',
+            'laboratorioId',
+            'estadoVencimiento',
+            'estadoStock'
+        ));
+    }
+
+    /**
+     * Exportación de Inventario a CSV con codificación UTF-8 BOM
+     */
+    protected function exportarInventarioCSV($lotes): StreamedResponse
+    {
+        $fecha = now()->format('Y-m-d_H-i');
+        $filename = "reporte_inventario_valorizado_{$fecha}.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () use ($lotes) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($handle, [
+                'N° Lote',
+                'Medicamento',
+                'Principio Activo',
+                'Categoría',
+                'Laboratorio',
+                'Fecha Vencimiento',
+                'Días para Vencer',
+                'Estado Caducidad',
+                'Stock Actual',
+                'Precio Compra ($)',
+                'Valor Costo Total ($)',
+                'Precio Venta ($)',
+                'Valor Venta Proyectado ($)'
+            ], ';');
+
+            $today = now();
+
+            foreach ($lotes as $l) {
+                $dias = (int) $today->diffInDays($l->fecha_vencimiento, false);
+                $estado = 'Vigente (>90d)';
+                if ($dias < 0) $estado = 'VENCIDO';
+                elseif ($dias <= 30) $estado = 'Crítico (≤30d)';
+                elseif ($dias <= 60) $estado = 'Alerta (31-60d)';
+                elseif ($dias <= 90) $estado = 'Preventivo (61-90d)';
+
+                $valorCosto = round($l->stock_actual * (float)$l->precio_compra, 2);
+                $valorVenta = round($l->stock_actual * (float)($l->producto->precio_venta ?? 0), 2);
+
+                fputcsv($handle, [
+                    $l->numero_lote,
+                    $l->producto->nombre ?? 'N/A',
+                    $l->producto->principio_activo ?? '',
+                    $l->producto->categoria->nombre ?? 'Sin categoría',
+                    $l->producto->laboratorio->nombre ?? 'Sin laboratorio',
+                    $l->fecha_vencimiento ? $l->fecha_vencimiento->format('d/m/Y') : 'N/A',
+                    $dias,
+                    $estado,
+                    $l->stock_actual,
+                    number_format($l->precio_compra, 2, '.', ''),
+                    number_format($valorCosto, 2, '.', ''),
+                    number_format($l->producto->precio_venta ?? 0, 2, '.', ''),
+                    number_format($valorVenta, 2, '.', '')
+                ], ';');
+            }
+
+            fclose($handle);
+        }, 200, $headers);
+    }
+
     public function compras(Request $request)
     {
         $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
@@ -232,12 +432,6 @@ class ReporteController extends Controller
             ->sum('total');
 
         return view('reportes.compras', compact('compras', 'totalComprado', 'fechaDesde', 'fechaHasta'));
-    }
-
-    public function inventario()
-    {
-        $valorizacion = $this->inventarioService->valorizacionInventario();
-        return view('reportes.inventario', compact('valorizacion'));
     }
 
     public function productosMasVendidos(Request $request)
@@ -270,3 +464,4 @@ class ReporteController extends Controller
         return view('reportes.productos-bajo-stock', compact('productos'));
     }
 }
+

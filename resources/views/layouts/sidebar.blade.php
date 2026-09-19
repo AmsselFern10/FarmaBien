@@ -272,7 +272,7 @@
         @endcanany
 
         <!-- Accordion 4: Administración y Reportes -->
-        @canany(['ver reportes ventas', 'ver usuarios'])
+        @canany(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras', 'ver usuarios'])
         <div class="space-y-1">
             <button @click="toggleMenu('administracion')" 
                     type="button" 
@@ -297,7 +297,7 @@
             <div x-show="openMenus.administracion && !sidebarCollapsed" 
                  x-collapse
                  class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-3.5">
-                @can('ver reportes ventas')
+                @canany(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras'])
                 <a href="{{ route('reportes.index') }}" 
                    class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('reportes.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('reportes.*') ? '!bg-emerald-400' : '' }}"></span>
@@ -339,4 +339,5 @@
         </div>
     </div>
 </aside>
+
 

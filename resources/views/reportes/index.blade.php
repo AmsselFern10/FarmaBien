@@ -138,28 +138,28 @@
                 </div>
             </a>
 
-            <!-- Reporte 2: Control de Inventario y Caducidad -->
-            <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs opacity-80">
+            <!-- Reporte 2: Control de Inventario y Caducidad (DISPONIBLE) -->
+            <a href="{{ route('reportes.inventario') }}" 
+               class="group relative bg-white dark:bg-slate-900 rounded-xl p-5 border border-indigo-300 dark:border-indigo-800/80 shadow-sm hover:shadow-md hover:border-indigo-500 dark:hover:border-indigo-500 transition-all block">
                 <div class="flex items-start justify-between">
-                    <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-lg">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg">
                         💊
                     </div>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        Próxima fase
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                        Disponible
                     </span>
                 </div>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-3">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-3 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                     Control de Inventario y Caducidad
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Semáforo de vencimiento a 30, 60 y 90 días, rotación de productos (stock muerto) y valorización total del catálogo.
+                    Semáforo PEPS a 30, 60 y 90 días, valorización total a costo y venta, alertas de stock mínimo y exportación CSV.
                 </p>
-                <div class="mt-4 flex items-center space-x-2 text-xs text-slate-400">
-                    <a href="{{ route('inventario.lotes') }}" class="text-emerald-600 hover:underline">Ver Lotes actuales</a>
-                    <span>&bull;</span>
-                    <a href="{{ route('inventario.alertas') }}" class="text-amber-600 hover:underline">Ver Alertas</a>
+                <div class="mt-4 flex items-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                    <span>Acceder al reporte</span>
+                    <span class="ml-1 group-hover:translate-x-1 transition-transform">&rarr;</span>
                 </div>
-            </div>
+            </a>
 
             <!-- Reporte 3: Clientes y Frecuencia -->
             <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs opacity-80">
@@ -310,3 +310,4 @@
     </div>
 </div>
 @endsection
+
