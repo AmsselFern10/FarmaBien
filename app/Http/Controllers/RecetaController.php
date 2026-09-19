@@ -166,6 +166,18 @@ class RecetaController extends Controller
         ]);
     }
 
+    public function cambiarEstado(Request $request, Receta $receta)
+    {
+        $request->validate([
+            'estado' => ['required', 'in:pendiente,validada,dispensada,dispensada_parcial,anulada'],
+        ]);
+
+        $receta->update(['estado' => $request->estado]);
+
+        return redirect()->route('recetas.show', $receta)
+            ->with('success', 'Estado de la receta actualizado correctamente.');
+    }
+
     public function buscarRecetas(Request $request)
     {
         $termino = trim($request->input('q', ''));
@@ -178,3 +190,4 @@ class RecetaController extends Controller
         return response()->json($recetas);
     }
 }
+

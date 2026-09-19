@@ -42,9 +42,10 @@ function recetaFormData() {
      :class="formLayout==='compact'?'w-full':'max-w-5xl mx-auto'"
      class="space-y-4 transition-all duration-200">
 
-    <div x-data="">
-        <script>window._recetaProductos = @json($productos->map(fn($p)=>['id'=>$p->id,'nombre'=>$p->nombre])->values());</script>
-    </div>
+@php
+$recetaProductosJson = $productos->map(function($p){ return ['id'=>$p->id,'nombre'=>$p->nombre]; })->values();
+@endphp
+<script>window._recetaProductos = @json($recetaProductosJson);</script>
 
     {{-- Breadcrumb & Toggle --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">

@@ -14,7 +14,7 @@ class PresentacionController extends Controller
     {
         $this->middleware('permission:ver productos')->only(['index', 'show']);
         $this->middleware('permission:crear productos')->only(['create', 'store']);
-        $this->middleware('permission:editar productos')->only(['edit', 'update']);
+        $this->middleware('permission:editar productos')->only(['edit', 'update', 'toggleActivo']);
         $this->middleware('permission:eliminar productos')->only(['destroy']);
     }
 
@@ -102,4 +102,13 @@ class PresentacionController extends Controller
         return redirect()->route('presentaciones.index')
             ->with('success', "Presentación '{$nombre}' eliminada correctamente.");
     }
+
+    public function toggleActivo(PresentacionProducto $presentacion)
+    {
+        $presentacion->update(['activo' => !$presentacion->activo]);
+        $estado = $presentacion->activo ? 'activada' : 'desactivada';
+
+        return back()->with('success', "Presentación '{$presentacion->nombre}' {$estado} correctamente.");
+    }
 }
+

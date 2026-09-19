@@ -103,6 +103,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('categorias', CategoriaController::class);
     Route::resource('clientes', ClienteController::class);
     Route::resource('proveedores', ProveedorController::class)->parameters(['proveedores' => 'proveedor']);
+    Route::post('presentaciones/{presentacion}/toggle-activo', [PresentacionController::class, 'toggleActivo'])->name('presentaciones.toggle-activo');
     Route::resource('presentaciones', PresentacionController::class)->parameters(['presentaciones' => 'presentacion']);
 
     /*
@@ -126,6 +127,7 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::post('recetas/{receta}/validar', [RecetaController::class, 'validar'])->name('recetas.validar');
+    Route::post('recetas/{receta}/estado', [RecetaController::class, 'cambiarEstado'])->name('recetas.estado');
     Route::resource('recetas', RecetaController::class);
 
     /*
