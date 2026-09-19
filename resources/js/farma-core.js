@@ -519,3 +519,4 @@ window.addEventListener('farma:layout-changed', () => window.farmaTriggerAutoFoc
 // Instantiate systems
 window.farmaProgressBar = new FarmaProgressBar();
 window.farmaDraftEngine = new FarmaDraftEngine();
+

@@ -9,7 +9,7 @@
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">Panel Principal</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Resumen operativo en tiempo real &bull; {{ now()->translatedFormat('l, d \d\e F \d\e Y') }}
+                Resumen operativo &bull; {{ now()->translatedFormat('l, d \d\e F \d\e Y') }}
             </p>
         </div>
 
@@ -23,23 +23,30 @@
             </a>
             @endcan
 
-            @can('crear compras')
+            @canany(['registrar compras', 'crear compras'])
             <a href="{{ route('compras.create') }}" 
                class="inline-flex items-center space-x-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 <span>Recepción Compra</span>
                 <kbd class="ml-1 px-1 py-0.2 bg-slate-900 text-slate-300 rounded text-[10px] font-mono">F4</kbd>
             </a>
-            @endcan
+            @endcanany
         </div>
     </div>
 
-    <!-- 4 KPI Cards: Cohesivas, limpias y profesionales -->
+    <!-- KPI Cards: Filtradas estrictamente por RBAC -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Ventas Hoy -->
+        @canany(['ver ventas', 'ver ventas propias', 'ver reportes ventas'])
         <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Ventas Hoy</span>
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    @if(!auth()->user()->can('ver ventas') && auth()->user()->can('ver ventas propias'))
+                        Mis Ventas Hoy
+                    @else
+                        Ventas Hoy
+                    @endif
+                </span>
                 <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
@@ -50,12 +57,18 @@
                 </div>
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">{{ $cantidadVentasHoy }} {{ Str::plural('ticket', $cantidadVentasHoy) }}</span>
+                    @can('ver ventas')
                     <a href="{{ route('ventas.index') }}" class="font-medium text-emerald-600 dark:text-emerald-400 hover:underline">Ver todas &rarr;</a>
+                    @else
+                    <span class="text-slate-400 dark:text-slate-500">Turno en curso</span>
+                    @endcan
                 </div>
             </div>
         </div>
+        @endcanany
 
         <!-- Compras del Mes -->
+        @canany(['ver compras', 'ver reportes compras'])
         <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Compras del Mes</span>
@@ -69,12 +82,18 @@
                 </div>
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">Inversión acumulada</span>
+                    @can('ver compras')
                     <a href="{{ route('compras.index') }}" class="font-medium text-slate-700 dark:text-slate-300 hover:underline">Ver compras &rarr;</a>
+                    @else
+                    <span class="text-slate-400 dark:text-slate-500">Acumulado</span>
+                    @endcan
                 </div>
             </div>
         </div>
+        @endcanany
 
         <!-- Stock Crítico -->
+        @canany(['ver alertas stock bajo', 'ver productos'])
         <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Stock Crítico</span>
@@ -91,12 +110,18 @@
                 </div>
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">Bajo el mínimo</span>
+                    @can('ver alertas stock bajo')
                     <a href="{{ route('inventario.alertas') }}" class="font-medium text-amber-600 dark:text-amber-400 hover:underline">Ver alertas &rarr;</a>
+                    @else
+                    <a href="{{ route('productos.index') }}" class="font-medium text-amber-600 dark:text-amber-400 hover:underline">Catálogo &rarr;</a>
+                    @endcan
                 </div>
             </div>
         </div>
+        @endcanany
 
         <!-- Lotes por Vencer -->
+        @canany(['ver alertas vencimientos', 'ver lotes'])
         <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Lotes &lt; 30 días</span>
@@ -113,14 +138,19 @@
                 </div>
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">Por expirar</span>
+                    @can('ver lotes')
                     <a href="{{ route('inventario.lotes') }}" class="font-medium text-rose-600 dark:text-rose-400 hover:underline">Auditar &rarr;</a>
+                    @else
+                    <span class="text-slate-400 dark:text-slate-500">En monitoreo</span>
+                    @endcan
                 </div>
             </div>
         </div>
+        @endcanany
     </div>
 
     <!-- Barra de Alerta Clínica Si Hay Recetas Pendientes -->
-    @if($recetasPendientesCount > 0)
+    @if($recetasPendientesCount > 0 && (auth()->user()->can('ver recetas') || auth()->user()->can('validar recetas') || auth()->user()->can('dispensar recetas')))
     <div class="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center space-x-3">
             <span class="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
@@ -129,7 +159,7 @@
                     Hay {{ $recetasPendientesCount }} {{ Str::plural('receta médica', $recetasPendientesCount) }} pendiente(s) de validación
                 </h4>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Requiere confirmación médica antes del despacho en caja.
+                    Requiere confirmación farmacéutica antes del despacho en caja.
                 </p>
             </div>
         </div>
@@ -140,15 +170,30 @@
     </div>
     @endif
 
-    <!-- Tablas de Actividad Reciente (Diseño limpio y equilibrado) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Tablas de Actividad Reciente (Condicionadas por Rol) -->
+    @php
+        $canSeeVentas = auth()->user()->canAny(['ver ventas', 'ver ventas propias']);
+        $canSeeCompras = auth()->user()->can('ver compras');
+    @endphp
+
+    @if($canSeeVentas || $canSeeCompras)
+    <div class="grid grid-cols-1 {{ $canSeeVentas && $canSeeCompras ? 'lg:grid-cols-2' : '' }} gap-6">
         <!-- Últimas Ventas -->
+        @if($canSeeVentas)
         <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Últimas Ventas</h3>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
+                    @if(!auth()->user()->can('ver ventas') && auth()->user()->can('ver ventas propias'))
+                        Mis Ventas Recientes
+                    @else
+                        Últimas Ventas
+                    @endif
+                </h3>
+                @can('ver ventas')
                 <a href="{{ route('ventas.index') }}" class="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
                     Ver historial &rarr;
                 </a>
+                @endcan
             </div>
             <div class="divide-y divide-slate-100 dark:divide-slate-800/60 overflow-x-auto">
                 @forelse($ultimasVentas as $venta)
@@ -174,9 +219,11 @@
                             <span class="text-[11px] text-slate-500 dark:text-slate-400">
                                 {{ ucfirst($venta->metodo_pago) }}
                             </span>
+                            @canany(['ver ventas', 'ver detalle ventas'])
                             <a href="{{ route('ventas.show', $venta) }}" class="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs pl-1">
                                 &rarr;
                             </a>
+                            @endcanany
                         </div>
                     </div>
                 </div>
@@ -187,8 +234,10 @@
                 @endforelse
             </div>
         </div>
+        @endif
 
         <!-- Últimas Compras -->
+        @if($canSeeCompras)
         <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Últimas Recepciones de Compra</h3>
@@ -220,9 +269,11 @@
                             <span class="text-[11px] text-slate-500 dark:text-slate-400">
                                 {{ ucfirst($compra->estado) }}
                             </span>
+                            @can('ver detalle compras')
                             <a href="{{ route('compras.show', $compra) }}" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs pl-1">
                                 &rarr;
                             </a>
+                            @endcan
                         </div>
                     </div>
                 </div>
@@ -233,6 +284,8 @@
                 @endforelse
             </div>
         </div>
+        @endif
     </div>
+    @endif
 </div>
 @endsection

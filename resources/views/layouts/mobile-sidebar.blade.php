@@ -4,7 +4,7 @@
          openMobileMenus: {
              operaciones: {{ request()->routeIs('ventas.*') || request()->routeIs('compras.*') || request()->routeIs('recetas.*') ? 'true' : 'false' }},
              inventario: {{ request()->routeIs('inventario.*') ? 'true' : 'false' }},
-             catalogos: {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') ? 'true' : 'true' }},
+             catalogos: {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') ? 'true' : 'false' }},
              administracion: {{ request()->routeIs('reportes.*') || request()->routeIs('usuarios.*') || request()->routeIs('admin.*') ? 'true' : 'false' }}
          }
      }"
@@ -149,3 +149,4 @@
         </div>
     </div>
 </div>
+

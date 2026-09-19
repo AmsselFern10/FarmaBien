@@ -88,10 +88,7 @@ function farmaNavbarTabs() {
         navigateToTab(tab) {
             if (this.isTabActive(tab) || this.navigating) return;
             this.navigating = true;
-            if (window.FarmaProgressBar) {
-                window.FarmaProgressBar.start();
-            }
-            window.location.href = tab.url;
+            if (window.farmaNavigate) { window.farmaNavigate(tab.url); } else { window.location.href = tab.url; }
         },
 
         init() {
@@ -218,9 +215,10 @@ function farmaNavbarTabs() {
 
             if (isActive) {
                 const nextTab = this.tabs[Math.max(0, index - 1)] || this.tabs[0];
-                window.location.href = nextTab.url;
+                if (window.farmaNavigate) { window.farmaNavigate(nextTab.url); } else { window.location.href = nextTab.url; }
             }
         }
     };
 }
 </script>
+
