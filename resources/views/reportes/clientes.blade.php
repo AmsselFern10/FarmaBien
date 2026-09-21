@@ -28,9 +28,14 @@
             </a>
             <button type="button" onclick="window.print()"
                     class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Imprimir</span>
+                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Exportar PDF / Imprimir</span>
             </button>
+            <a href="{{ route('reportes.clientes', array_merge(request()->query(), ['export' => 'csv'])) }}"
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Exportar CSV</span>
+            </a>
         </div>
     </div>
 
@@ -40,12 +45,12 @@
             <div>
                 <label for="rcl_desde" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Desde</label>
                 <input type="date" id="rcl_desde" name="fecha_desde" value="{{ $fechaDesde }}"
-                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400">
+                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
             </div>
             <div>
                 <label for="rcl_hasta" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Hasta</label>
                 <input type="date" id="rcl_hasta" name="fecha_hasta" value="{{ $fechaHasta }}"
-                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400">
+                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
             </div>
             @php
                 $presetsC = [
@@ -58,9 +63,12 @@
             @endphp
             @foreach($presetsC as [$lbl, $d1, $d2])
             <a href="{{ route('reportes.clientes', ['fecha_desde'=>$d1,'fecha_hasta'=>$d2]) }}"
-               class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition {{ ($fechaDesde===$d1 && $fechaHasta===$d2) ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-violet-400 hover:text-violet-700 dark:hover:text-violet-400' }}">{{ $lbl }}</a>
+               class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition {{ ($fechaDesde===$d1 && $fechaHasta===$d2) ? 'bg-violet-600 text-white border-violet-600 dark:bg-violet-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-violet-400 hover:text-violet-700 dark:hover:text-violet-400' }}">{{ $lbl }}</a>
             @endforeach
-            <button type="submit" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition">Filtrar</button>
+            <button type="submit" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">Filtrar</button>
+            @if(request()->hasAny(['fecha_desde','fecha_hasta']))
+            <a href="{{ route('reportes.clientes') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Limpiar</a>
+            @endif
         </form>
     </div>
 
@@ -159,7 +167,7 @@
                         <td class="px-4 py-2.5 text-center">
                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-400 font-bold">{{ number_format($c->total_ventas) }}</span>
                         </td>
-                        <td class="px-4 py-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400">${{ number_format($c->monto_total, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400">${{ number_format($c->monto_total, 2) }}</td>
                         <td class="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300">${{ number_format($ticketC, 2) }}</td>
                         <td class="px-4 py-2.5 min-w-[130px]">
                             <div class="flex items-center gap-2">
@@ -178,12 +186,12 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr class="bg-violet-50 dark:bg-violet-950/20 border-t-2 border-violet-200 dark:border-violet-800">
-                        <td colspan="4" class="px-4 py-2.5 text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider">
+                    <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
+                        <td colspan="4" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                             Total ({{ number_format($clientesConCompras) }} clientes identificados)
                         </td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-violet-700 dark:text-violet-400">${{ number_format($totalFacturadoClientes, 2) }}</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-violet-700 dark:text-violet-400">${{ number_format($ticketPromedio, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-600 dark:text-emerald-400">${{ number_format($totalFacturadoClientes, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-slate-800 dark:text-slate-200">${{ number_format($ticketPromedio, 2) }}</td>
                         <td colspan="2"></td>
                     </tr>
                 </tfoot>

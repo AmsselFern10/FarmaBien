@@ -44,11 +44,11 @@
             </a>
             <button type="button" onclick="window.print()"
                     class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Imprimir</span>
+                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Exportar PDF / Imprimir</span>
             </button>
             <a href="{{ route('reportes.ventas', array_merge(request()->query(), ['export' => 'csv'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Exportar CSV</span>
             </a>
@@ -264,11 +264,11 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr class="bg-emerald-50 dark:bg-emerald-950/20 border-t-2 border-emerald-200 dark:border-emerald-800">
-                        <td colspan="5" class="px-4 py-2.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                    <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
+                        <td colspan="5" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                             Total período ({{ number_format($ventas->total()) }} ventas)
                         </td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-700 dark:text-emerald-400">${{ number_format($totalVendido, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-600 dark:text-emerald-400">${{ number_format($totalVendido, 2) }}</td>
                         <td class="print:hidden"></td>
                     </tr>
                 </tfoot>

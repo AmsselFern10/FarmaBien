@@ -16,15 +16,20 @@
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">Alertas de Stock Mínimo</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Productos con stock actual por debajo del nivel mínimo configurado.</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
             <a href="{{ route('reportes.index') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Volver</span>
             </a>
             <button type="button" onclick="window.print()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Imprimir</span>
+                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Exportar PDF / Imprimir</span>
             </button>
+            <a href="{{ route('reportes.productos-bajo-stock', ['export' => 'csv']) }}"
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Exportar CSV</span>
+            </a>
             @can('gestionar compras')
             <a href="{{ route('compras.create') }}" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -73,7 +78,7 @@
                 <p class="text-xs text-slate-400">{{ $total }} {{ $total===1?'producto requiere':'productos requieren' }} atención</p>
             </div>
         </div>
-        @if(empty($productos))
+        @if(empty($productos) || count($productos) === 0)
         <div class="flex flex-col items-center justify-center py-14">
             <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center mb-3"><svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
             <p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">¡Inventario saludable!</p>
@@ -96,7 +101,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @foreach($productos as $p)
                     @php $sa=$p->stock_disponible??0; $sm=$p->stock_minimo??0; $def=max(0,$sm-$sa); $agotado=$sa===0; @endphp
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors {{ $agotado ? 'bg-rose-50/30 dark:bg-rose-950/10' : '' }}">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors {{ $agotado ? 'bg-rose-50/30 dark:bg-rose-950/20' : '' }}">
                         <td class="px-4 py-2.5">
                             @if($agotado)
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>Agotado</span>
@@ -123,14 +128,18 @@
                     </tr>
                     @endforeach
                 </tbody>
+                <tfoot>
+                    <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
+                        <td colspan="3" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                            Resumen ({{ $criticos->count() }} agotados · {{ $bajos->count() }} bajo mínimo)
+                        </td>
+                        <td class="px-4 py-2.5 text-center text-xs font-extrabold text-slate-800 dark:text-slate-200">{{ number_format(collect($productos)->sum('stock_disponible')) }}</td>
+                        <td class="px-4 py-2.5 text-center text-xs font-extrabold text-slate-600 dark:text-slate-300">{{ number_format(collect($productos)->sum('stock_minimo')) }}</td>
+                        <td class="px-4 py-2.5 text-center text-xs font-extrabold text-rose-600 dark:text-rose-400">−{{ number_format(collect($productos)->sum(fn($p)=>max(0,($p->stock_minimo??0)-($p->stock_disponible??0)))) }}</td>
+                        <td class="print:hidden"></td>
+                    </tr>
+                </tfoot>
             </table>
-        </div>
-        <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-            <p class="text-xs text-slate-500 dark:text-slate-400">
-                <span class="font-bold text-rose-600 dark:text-rose-400">{{ $criticos->count() }}</span> agotados &bull;
-                <span class="font-bold text-amber-600 dark:text-amber-400">{{ $bajos->count() }}</span> bajo mínimo &bull;
-                Déficit total: <span class="font-bold text-slate-700 dark:text-slate-300">{{ number_format(collect($productos)->sum(fn($p)=>max(0,($p->stock_minimo??0)-($p->stock_disponible??0)))) }}</span> unidades
-            </p>
         </div>
         @endif
     </div>

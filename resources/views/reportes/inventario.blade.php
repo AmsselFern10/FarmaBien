@@ -24,11 +24,11 @@
                 <span>Volver</span>
             </a>
             <button type="button" onclick="window.print()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Imprimir</span>
+                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Exportar PDF / Imprimir</span>
             </button>
             <a href="{{ route('reportes.inventario', array_merge(request()->query(), ['export' => 'csv'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Exportar CSV</span>
             </a>
@@ -39,16 +39,16 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         @php
             $semaforos = [
-                ['vencidos',    $semVencidos,    'Vencidos',        'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-400', 'rose'],
-                ['critico_30',  $semCritico30,   '≤ 30 días',       'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400', 'amber'],
-                ['alerta_60',   $semAlerta60,    '31–60 días',      'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400', 'yellow'],
-                ['preventivo_90',$semPreventivo90,'61–90 días',     'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400', 'blue'],
-                ['vigentes',    $semVigentes,    '> 90 días',       'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400', 'emerald'],
+                ['vencidos',    $semVencidos,    'Vencidos',        'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400', 'rose'],
+                ['critico_30',  $semCritico30,   '≤ 30 días',       'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400', 'amber'],
+                ['alerta_60',   $semAlerta60,    '31–60 días',      'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-300 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400', 'yellow'],
+                ['preventivo_90',$semPreventivo90,'61–90 días',     'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-400', 'blue'],
+                ['vigentes',    $semVigentes,    '> 90 días',       'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400', 'emerald'],
             ];
         @endphp
         @foreach($semaforos as [$val, $count, $label, $classes, $color])
         <a href="{{ route('reportes.inventario', array_merge(request()->except('estado_vencimiento', 'page'), ['estado_vencimiento' => $estadoVencimiento === $val ? 'todos' : $val])) }}"
-           class="rounded-xl p-3 border text-center transition hover:shadow-sm {{ $classes }} {{ $estadoVencimiento === $val ? 'ring-2 ring-offset-1 ring-current' : '' }}">
+           class="rounded-xl p-3 border text-center transition hover:shadow-sm {{ $classes }} {{ $estadoVencimiento === $val ? 'ring-2 ring-offset-1 ring-current dark:ring-offset-slate-900' : '' }}">
             <div class="text-2xl font-extrabold">{{ $count }}</div>
             <div class="text-[10px] font-bold uppercase tracking-wider mt-0.5">{{ $label }}</div>
         </a>
@@ -105,11 +105,11 @@
             <div>
                 <label for="ri_buscar" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Buscar</label>
                 <input type="text" id="ri_buscar" name="buscar" value="{{ $buscar }}" placeholder="Medicamento, lote, principio..."
-                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-52">
+                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 w-52">
             </div>
             <div>
                 <label for="ri_cat" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Categoría</label>
-                <select id="ri_cat" name="categoria_id" class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <select id="ri_cat" name="categoria_id" class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                     <option value="">Todas</option>
                     @foreach($categorias as $cat)
                     <option value="{{ $cat->id }}" {{ $categoriaId == $cat->id ? 'selected' : '' }}>{{ $cat->nombre }}</option>
@@ -118,7 +118,7 @@
             </div>
             <div>
                 <label for="ri_lab" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Laboratorio</label>
-                <select id="ri_lab" name="laboratorio_id" class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <select id="ri_lab" name="laboratorio_id" class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                     <option value="">Todos</option>
                     @foreach($laboratorios as $lab)
                     <option value="{{ $lab->id }}" {{ $laboratorioId == $lab->id ? 'selected' : '' }}>{{ $lab->nombre }}</option>
@@ -127,14 +127,14 @@
             </div>
             <div>
                 <label for="ri_stock" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Stock</label>
-                <select id="ri_stock" name="estado_stock" class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <select id="ri_stock" name="estado_stock" class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                     <option value="todos" {{ $estadoStock === 'todos' ? 'selected' : '' }}>Todos</option>
                     <option value="disponible" {{ $estadoStock === 'disponible' ? 'selected' : '' }}>Con stock</option>
                     <option value="agotado" {{ $estadoStock === 'agotado' ? 'selected' : '' }}>Agotados</option>
                     <option value="bajo_stock" {{ $estadoStock === 'bajo_stock' ? 'selected' : '' }}>Bajo mínimo</option>
                 </select>
             </div>
-            <button type="submit" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">Filtrar</button>
+            <button type="submit" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">Filtrar</button>
             @if(request()->hasAny(['buscar','categoria_id','laboratorio_id','estado_stock','estado_vencimiento']))
             <a href="{{ route('reportes.inventario') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Limpiar</a>
             @endif
@@ -184,7 +184,7 @@
                         $valCosto = round($l->stock_actual * (float)$l->precio_compra, 2);
                         $valVenta = round($l->stock_actual * (float)($l->producto->precio_venta ?? 0), 2);
                     @endphp
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors {{ $dias < 0 ? 'bg-rose-50/30 dark:bg-rose-950/10' : '' }}">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors {{ $dias < 0 ? 'bg-rose-50/30 dark:bg-rose-950/20' : '' }}">
                         <td class="px-4 py-2.5"><span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ $l->numero_lote }}</span></td>
                         <td class="px-4 py-2.5">
                             <p class="font-semibold text-slate-800 dark:text-slate-200">{{ $l->producto->nombre ?? 'N/A' }}</p>
@@ -199,15 +199,15 @@
                         </td>
                         <td class="px-4 py-2.5 text-right font-bold text-slate-800 dark:text-slate-200">{{ number_format($l->stock_actual) }}</td>
                         <td class="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300">${{ number_format($valCosto, 2) }}</td>
-                        <td class="px-4 py-2.5 text-right font-semibold text-emerald-700 dark:text-emerald-400">${{ number_format($valVenta, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right font-semibold text-emerald-600 dark:text-emerald-400">${{ number_format($valVenta, 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr class="bg-indigo-50 dark:bg-indigo-950/20 border-t-2 border-indigo-200 dark:border-indigo-800">
-                        <td colspan="5" class="px-4 py-2.5 text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">Total ({{ number_format($lotes->total()) }} lotes)</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-indigo-700 dark:text-indigo-400">${{ number_format($totalValorCosto, 2) }}</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-700 dark:text-emerald-400">${{ number_format($totalValorVenta, 2) }}</td>
+                    <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
+                        <td colspan="5" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Total ({{ number_format($lotes->total()) }} lotes)</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-indigo-600 dark:text-indigo-400">${{ number_format($totalValorCosto, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-600 dark:text-emerald-400">${{ number_format($totalValorVenta, 2) }}</td>
                     </tr>
                 </tfoot>
             </table>

@@ -515,13 +515,89 @@ class ReporteController extends Controller
             ->take(20)
             ->get();
 
+        if ($request->input('export') === 'csv') {
+            return $this->exportarTopProductosCSV($ranking, $fechaDesde, $fechaHasta);
+        }
+
         return view('reportes.productos-mas-vendidos', compact('ranking', 'fechaDesde', 'fechaHasta'));
     }
 
-    public function productosBajoStock()
+    protected function exportarTopProductosCSV($ranking, $desde, $hasta): StreamedResponse
+    {
+        $filename = "reporte_top_medicamentos_{$desde}_al_{$hasta}.csv";
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($ranking) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['Posición', 'Medicamento', 'Principio Activo', 'Unidades Vendidas', 'Total Ingresos ($)'], ';');
+
+            foreach ($ranking as $i => $item) {
+                fputcsv($handle, [
+                    $i + 1,
+                    $item->nombre,
+                    $item->principio_activo ?? 'N/A',
+                    $item->total_unidades_vendidas,
+                    number_format($item->total_ingresos, 2, '.', '')
+                ], ';');
+            }
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    public function productosBajoStock(Request $request)
     {
         $productos = $this->inventarioService->productosConStockBajo();
+
+        if ($request->input('export') === 'csv') {
+            return $this->exportarBajoStockCSV($productos);
+        }
+
         return view('reportes.productos-bajo-stock', compact('productos'));
+    }
+
+    protected function exportarBajoStockCSV($productos): StreamedResponse
+    {
+        $fecha = now()->format('Y-m-d_H-i');
+        $filename = "reporte_stock_minimo_{$fecha}.csv";
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($productos) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['Medicamento', 'Principio Activo', 'Categoría', 'Laboratorio', 'Stock Actual', 'Stock Mínimo', 'Déficit', 'Estado'], ';');
+
+            foreach ($productos as $p) {
+                $sa = $p->stock_disponible ?? 0;
+                $sm = $p->stock_minimo ?? 0;
+                $def = max(0, $sm - $sa);
+                $estado = $sa === 0 ? 'AGOTADO' : 'BAJO MÍNIMO';
+
+                fputcsv($handle, [
+                    $p->nombre,
+                    $p->principio_activo ?? 'N/A',
+                    $p->categoria->nombre ?? 'Sin categoría',
+                    $p->laboratorio->nombre ?? 'Sin laboratorio',
+                    $sa,
+                    $sm,
+                    $def,
+                    $estado
+                ], ';');
+            }
+            fclose($handle);
+        }, 200, $headers);
     }
 
     /**
@@ -532,8 +608,12 @@ class ReporteController extends Controller
         $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
         $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
 
-        // Top clientes por monto gastado en el período
-        $topClientes = Cliente::withCount([
+        // Top clientes por monto gastado en el período (compatible con SQLite y MySQL)
+        $topClientes = Cliente::whereHas('ventas', function ($q) use ($fechaDesde, $fechaHasta) {
+                $q->where('estado', 'completada')
+                  ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+            })
+            ->withCount([
                 'ventas as total_ventas' => function ($q) use ($fechaDesde, $fechaHasta) {
                     $q->where('estado', 'completada')
                       ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
@@ -545,18 +625,21 @@ class ReporteController extends Controller
                       ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
                 }
             ], 'total')
-            ->having('total_ventas', '>', 0)
             ->orderByDesc('monto_total')
             ->take(20)
             ->get();
+
+        if ($request->input('export') === 'csv') {
+            return $this->exportarClientesCSV($topClientes, $fechaDesde, $fechaHasta);
+        }
 
         $totalClientes = Cliente::where('activo', true)->count();
         $clientesConCompras = $topClientes->count();
         $totalFacturadoClientes = $topClientes->sum('monto_total');
         $ticketPromedio = $clientesConCompras > 0
-            ? $topClientes->sum('total_ventas') > 0
+            ? ($topClientes->sum('total_ventas') > 0
                 ? $totalFacturadoClientes / $topClientes->sum('total_ventas')
-                : 0
+                : 0)
             : 0;
 
         return view('reportes.clientes', compact(
@@ -568,6 +651,39 @@ class ReporteController extends Controller
             'fechaDesde',
             'fechaHasta'
         ));
+    }
+
+    protected function exportarClientesCSV($topClientes, $desde, $hasta): StreamedResponse
+    {
+        $filename = "reporte_clientes_top_{$desde}_al_{$hasta}.csv";
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($topClientes) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['Posición', 'Cliente / Paciente', 'Documento', 'Teléfono', 'Email', 'Cantidad Compras', 'Total Gastado ($)', 'Ticket Promedio ($)'], ';');
+
+            foreach ($topClientes as $i => $c) {
+                $ticket = $c->total_ventas > 0 ? $c->monto_total / $c->total_ventas : 0;
+                fputcsv($handle, [
+                    $i + 1,
+                    $c->nombre,
+                    $c->documento ?? 'N/A',
+                    $c->telefono ?? 'N/A',
+                    $c->email ?? 'N/A',
+                    $c->total_ventas,
+                    number_format($c->monto_total, 2, '.', ''),
+                    number_format($ticket, 2, '.', '')
+                ], ';');
+            }
+            fclose($handle);
+        }, 200, $headers);
     }
 
     /**
@@ -584,6 +700,10 @@ class ReporteController extends Controller
 
         if (!empty($estadoFiltro)) {
             $query->where('estado', $estadoFiltro);
+        }
+
+        if ($request->input('export') === 'csv') {
+            return $this->exportarRecetasCSV($query->orderBy('created_at', 'desc')->get(), $fechaDesde, $fechaHasta);
         }
 
         // KPIs globales (sin filtro de estado, solo por fecha)
@@ -607,6 +727,40 @@ class ReporteController extends Controller
             'fechaHasta',
             'estadoFiltro'
         ));
+    }
+
+    protected function exportarRecetasCSV($recetas, $desde, $hasta): StreamedResponse
+    {
+        $filename = "reporte_recetas_medicas_{$desde}_al_{$hasta}.csv";
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($recetas) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['N° Receta', 'Paciente', 'Documento Paciente', 'Médico', 'Especialidad', 'Institución', 'Tipo Receta', 'Fecha Emisión', 'Fecha Vencimiento', 'Estado'], ';');
+
+            foreach ($recetas as $r) {
+                fputcsv($handle, [
+                    $r->numero_receta ?? ('#' . str_pad($r->id, 5, '0', STR_PAD_LEFT)),
+                    $r->paciente_nombre ?? ($r->cliente->nombre ?? 'N/A'),
+                    $r->paciente_documento ?? ($r->cliente->documento ?? 'N/A'),
+                    $r->medico_nombre ?? 'N/A',
+                    $r->medico_especialidad ?? 'N/A',
+                    $r->institucion_salud ?? 'N/A',
+                    ucfirst($r->tipo_receta ?? 'N/A'),
+                    $r->fecha_emision ? \Carbon\Carbon::parse($r->fecha_emision)->format('d/m/Y') : '',
+                    $r->fecha_vencimiento ? \Carbon\Carbon::parse($r->fecha_vencimiento)->format('d/m/Y') : '',
+                    ucfirst($r->estado ?? 'N/A')
+                ], ';');
+            }
+            fclose($handle);
+        }, 200, $headers);
     }
 }
 

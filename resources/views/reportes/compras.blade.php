@@ -24,11 +24,11 @@
                 <span>Volver</span>
             </a>
             <button type="button" onclick="window.print()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Imprimir</span>
+                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Exportar PDF / Imprimir</span>
             </button>
             <a href="{{ route('reportes.compras', array_merge(request()->query(), ['export' => 'csv'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Exportar CSV</span>
             </a>
@@ -41,21 +41,29 @@
             <div>
                 <label for="rc_desde" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Desde</label>
                 <input type="date" id="rc_desde" name="fecha_desde" value="{{ $fechaDesde }}"
-                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
             </div>
             <div>
                 <label for="rc_hasta" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Hasta</label>
                 <input type="date" id="rc_hasta" name="fecha_hasta" value="{{ $fechaHasta }}"
-                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                       class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
             </div>
             @php
-                $presets2 = [['Hoy', now()->toDateString(), now()->toDateString()], ['7 días', now()->subDays(6)->toDateString(), now()->toDateString()], ['Este mes', now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()], ['Mes ant.', now()->subMonth()->startOfMonth()->toDateString(), now()->subMonth()->endOfMonth()->toDateString()]];
+                $presets2 = [
+                    ['Hoy', now()->toDateString(), now()->toDateString()],
+                    ['7 días', now()->subDays(6)->toDateString(), now()->toDateString()],
+                    ['Este mes', now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()],
+                    ['Mes ant.', now()->subMonth()->startOfMonth()->toDateString(), now()->subMonth()->endOfMonth()->toDateString()]
+                ];
             @endphp
             @foreach($presets2 as [$lbl2,$d1,$d2])
             <a href="{{ route('reportes.compras', ['fecha_desde'=>$d1,'fecha_hasta'=>$d2]) }}"
-               class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition {{ ($fechaDesde===$d1 && $fechaHasta===$d2) ? 'bg-amber-500 text-white border-amber-500' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-amber-400' }}">{{ $lbl2 }}</a>
+               class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition {{ ($fechaDesde===$d1 && $fechaHasta===$d2) ? 'bg-amber-600 text-white border-amber-600 dark:bg-amber-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400' }}">{{ $lbl2 }}</a>
             @endforeach
-            <button type="submit" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition">Filtrar</button>
+            <button type="submit" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">Filtrar</button>
+            @if(request()->hasAny(['fecha_desde','fecha_hasta']))
+            <a href="{{ route('reportes.compras') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Limpiar</a>
+            @endif
         </form>
     </div>
 
@@ -94,6 +102,7 @@
         </div>
         @if($compras->isEmpty())
         <div class="flex flex-col items-center justify-center py-14">
+            <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">Sin compras en este período</p>
         </div>
         @else
@@ -114,7 +123,13 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @foreach($compras as $c)
                     @php
-                        $stClass = match($c->estado ?? '') { 'recibida'=>'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300','pendiente'=>'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300','parcial'=>'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300','cancelada'=>'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',default=>'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
+                        $stClass = match($c->estado ?? '') {
+                            'recibida'  => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+                            'pendiente' => 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+                            'parcial'   => 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+                            'cancelada' => 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+                            default     => 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                        };
                     @endphp
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         <td class="px-4 py-2.5 font-bold text-slate-800 dark:text-slate-200">#{{ str_pad($c->id,4,'0',STR_PAD_LEFT) }}</td>
@@ -133,9 +148,9 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr class="bg-amber-50 dark:bg-amber-950/20 border-t-2 border-amber-200 dark:border-amber-800">
-                        <td colspan="6" class="px-4 py-2.5 text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Total ({{ number_format($compras->total()) }} órdenes)</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-amber-700 dark:text-amber-400">${{ number_format($totalComprado, 2) }}</td>
+                    <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
+                        <td colspan="6" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Total ({{ number_format($compras->total()) }} órdenes)</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-amber-600 dark:text-amber-400">${{ number_format($totalComprado, 2) }}</td>
                         <td class="print:hidden"></td>
                     </tr>
                 </tfoot>
