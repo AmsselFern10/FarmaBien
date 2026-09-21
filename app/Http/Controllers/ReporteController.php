@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\InventarioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReporteController extends Controller
@@ -41,7 +42,6 @@ class ReporteController extends Controller
      */
     public function index()
     {
-        // 1. Resumen mensual y diario
         $ventasMes = Venta::whereMonth('fecha', now()->month)
             ->whereYear('fecha', now()->year)
             ->completadas()
@@ -63,7 +63,6 @@ class ReporteController extends Controller
 
         $valorizacion = $this->inventarioService->valorizacionInventario();
 
-        // 2. Top 5 productos del mes en curso
         $topProductosMes = DetalleVenta::join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
             ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
             ->where('ventas.estado', 'completada')
@@ -80,7 +79,6 @@ class ReporteController extends Controller
             ->take(5)
             ->get();
 
-        // 3. Distribución por método de pago del mes
         $metodosMes = Venta::whereMonth('fecha', now()->month)
             ->whereYear('fecha', now()->year)
             ->completadas()
@@ -88,7 +86,6 @@ class ReporteController extends Controller
             ->groupBy('metodo_pago')
             ->get();
 
-        // 4. Métricas de caducidad e inventario para tarjeta de resumen
         $lotesVencidosCount = Lote::activos()->vencidos()->where('stock_actual', '>', 0)->count();
         $lotesCriticosCount = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->toDateString(), now()->addDays(30)->toDateString()])->count();
         $productosBajoStockCount = Producto::activos()->bajoStock()->count();
@@ -117,7 +114,6 @@ class ReporteController extends Controller
         $metodoPago = $request->input('metodo_pago');
         $cajeroId = $request->input('cajero_id');
 
-        // Construir consulta base
         $query = Venta::with(['cliente', 'usuario'])
             ->completadas()
             ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
@@ -130,23 +126,31 @@ class ReporteController extends Controller
             $query->where('usuario_id', $cajeroId);
         }
 
-        // Si se solicita exportación en CSV
+        // Exportación CSV
         if ($request->input('export') === 'csv') {
             return $this->exportarVentasCSV($query->get(), $fechaDesde, $fechaHasta);
         }
 
-        // Métricas del período filtrado
         $totalVendido = (clone $query)->sum('total');
         $cantidadVentas = (clone $query)->count();
         $ticketPromedio = $cantidadVentas > 0 ? ($totalVendido / $cantidadVentas) : 0;
 
-        // Desglose por método de pago en el período
         $ventasPorMetodo = (clone $query)
             ->select('metodo_pago', DB::raw('SUM(total) as total'), DB::raw('COUNT(id) as cantidad'))
             ->groupBy('metodo_pago')
             ->get();
 
-        // Top 10 medicamentos más vendidos en el período
+        // Exportación PDF
+        if ($request->input('export') === 'pdf') {
+            $ventas = $query->orderBy('fecha', 'desc')->get();
+            $pdf = Pdf::loadView('reportes.pdf.ventas', compact(
+                'ventas', 'totalVendido', 'cantidadVentas', 'ticketPromedio',
+                'ventasPorMetodo', 'fechaDesde', 'fechaHasta', 'metodoPago', 'cajeroId'
+            ))->setPaper('letter', 'portrait');
+
+            return $pdf->stream("reporte_ventas_{$fechaDesde}_al_{$fechaHasta}.pdf");
+        }
+
         $topProductos = DetalleVenta::join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
             ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
             ->where('ventas.estado', 'completada')
@@ -165,10 +169,7 @@ class ReporteController extends Controller
             ->take(10)
             ->get();
 
-        // Lista paginada para la tabla
         $ventas = $query->orderBy('fecha', 'desc')->paginate(25)->withQueryString();
-
-        // Lista de cajeros/usuarios para el filtro
         $cajeros = User::whereHas('ventas')->orderBy('name')->get(['id', 'name']);
 
         return view('reportes.ventas', compact(
@@ -186,13 +187,9 @@ class ReporteController extends Controller
         ));
     }
 
-    /**
-     * Exportación de Ventas a formato CSV con codificación UTF-8 BOM
-     */
     protected function exportarVentasCSV($ventas, $desde, $hasta): StreamedResponse
     {
         $filename = "reporte_ventas_{$desde}_al_{$hasta}.csv";
-
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -204,17 +201,7 @@ class ReporteController extends Controller
         return response()->stream(function () use ($ventas) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($handle, [
-                'N° Ticket',
-                'Fecha y Hora',
-                'Cliente',
-                'Documento Cliente',
-                'Cajero / Usuario',
-                'Método de Pago',
-                'Estado',
-                'Total ($)'
-            ], ';');
+            fputcsv($handle, ['N° Ticket', 'Fecha y Hora', 'Cliente', 'Documento Cliente', 'Cajero / Usuario', 'Método de Pago', 'Estado', 'Total ($)'], ';');
 
             foreach ($ventas as $v) {
                 fputcsv($handle, [
@@ -228,7 +215,6 @@ class ReporteController extends Controller
                     number_format($v->total, 2, '.', '')
                 ], ';');
             }
-
             fclose($handle);
         }, 200, $headers);
     }
@@ -244,7 +230,6 @@ class ReporteController extends Controller
         $estadoVencimiento = $request->input('estado_vencimiento', 'todos');
         $estadoStock = $request->input('estado_stock', 'todos');
 
-        // 1. Semáforo Global de Caducidad (para todos los lotes activos con stock)
         $today = now()->toDateString();
         $semVencidos = Lote::activos()->where('stock_actual', '>', 0)->where('fecha_vencimiento', '<=', $today)->count();
         $semCritico30 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDay()->toDateString(), now()->addDays(30)->toDateString()])->count();
@@ -252,7 +237,6 @@ class ReporteController extends Controller
         $semPreventivo90 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDays(61)->toDateString(), now()->addDays(90)->toDateString()])->count();
         $semVigentes = Lote::activos()->where('stock_actual', '>', 0)->where('fecha_vencimiento', '>', now()->addDays(90)->toDateString())->count();
 
-        // 2. Consulta de Lotes filtrada
         $query = Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
             ->where('activo', true);
 
@@ -275,7 +259,6 @@ class ReporteController extends Controller
             $query->whereHas('producto', fn($q) => $q->where('laboratorio_id', $laboratorioId));
         }
 
-        // Filtro por Estado de Vencimiento
         if ($estadoVencimiento === 'vencidos') {
             $query->where('fecha_vencimiento', '<=', $today);
         } elseif ($estadoVencimiento === 'critico_30') {
@@ -288,7 +271,6 @@ class ReporteController extends Controller
             $query->where('fecha_vencimiento', '>', now()->addDays(90)->toDateString());
         }
 
-        // Filtro por Estado de Stock
         if ($estadoStock === 'agotado') {
             $query->where('stock_actual', 0);
         } elseif ($estadoStock === 'disponible') {
@@ -299,12 +281,10 @@ class ReporteController extends Controller
             });
         }
 
-        // Exportación a CSV
         if ($request->input('export') === 'csv') {
             return $this->exportarInventarioCSV($query->orderBy('fecha_vencimiento', 'asc')->get());
         }
 
-        // 3. Cálculos de Valorización de la Consulta Filtrada
         $lotesColeccion = (clone $query)->get();
         $totalValorCosto = 0;
         $totalValorVenta = 0;
@@ -322,12 +302,21 @@ class ReporteController extends Controller
             ? round((($totalValorVenta - $totalValorCosto) / $totalValorCosto) * 100, 1) 
             : 0;
 
+        // Exportación PDF
+        if ($request->input('export') === 'pdf') {
+            $lotes = $query->orderBy('fecha_vencimiento', 'asc')->get();
+            $pdf = Pdf::loadView('reportes.pdf.inventario', compact(
+                'lotes', 'totalValorCosto', 'totalValorVenta', 'totalUnidadesStock',
+                'margenProyectado', 'semVencidos', 'semCritico30', 'buscar',
+                'categoriaId', 'laboratorioId', 'estadoVencimiento', 'estadoStock'
+            ))->setPaper('letter', 'landscape');
+
+            $fechaHoy = now()->format('Y-m-d');
+            return $pdf->stream("reporte_inventario_caducidad_{$fechaHoy}.pdf");
+        }
+
         $totalProductosBajoStock = Producto::activos()->bajoStock()->count();
-
-        // 4. Paginación
         $lotes = $query->orderBy('fecha_vencimiento', 'asc')->paginate(25)->withQueryString();
-
-        // 5. Catálogos para los selectores
         $categorias = Categoria::activos()->orderBy('nombre')->get(['id', 'nombre']);
         $laboratorios = Laboratorio::activos()->orderBy('nombre')->get(['id', 'nombre']);
 
@@ -353,14 +342,10 @@ class ReporteController extends Controller
         ));
     }
 
-    /**
-     * Exportación de Inventario a CSV con codificación UTF-8 BOM
-     */
     protected function exportarInventarioCSV($lotes): StreamedResponse
     {
         $fecha = now()->format('Y-m-d_H-i');
         $filename = "reporte_inventario_valorizado_{$fecha}.csv";
-
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -372,40 +357,24 @@ class ReporteController extends Controller
         return response()->stream(function () use ($lotes) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-
             fputcsv($handle, [
-                'N° Lote',
-                'Medicamento',
-                'Principio Activo',
-                'Categoría',
-                'Laboratorio',
-                'Fecha Vencimiento',
-                'Días para Vencer',
-                'Estado Caducidad',
-                'Stock Actual',
-                'Precio Compra ($)',
-                'Valor Costo Total ($)',
-                'Precio Venta ($)',
-                'Valor Venta Proyectado ($)'
+                'N° Lote', 'Medicamento', 'Principio Activo', 'Categoría', 'Laboratorio',
+                'Fecha Vencimiento', 'Días para Vencer', 'Estado Caducidad',
+                'Stock Actual', 'Precio Compra ($)', 'Valor Costo Total ($)',
+                'Precio Venta ($)', 'Valor Venta Proyectado ($)'
             ], ';');
 
             $today = now();
-
             foreach ($lotes as $l) {
                 $dias = (int) $today->diffInDays($l->fecha_vencimiento, false);
-                $estado = 'Vigente (>90d)';
-                if ($dias < 0) $estado = 'VENCIDO';
-                elseif ($dias <= 30) $estado = 'Crítico (≤30d)';
-                elseif ($dias <= 60) $estado = 'Alerta (31-60d)';
-                elseif ($dias <= 90) $estado = 'Preventivo (61-90d)';
-
-                $valorCosto = round($l->stock_actual * (float)$l->precio_compra, 2);
-                $valorVenta = round($l->stock_actual * (float)($l->producto->precio_venta ?? 0), 2);
+                $estado = $dias < 0 ? 'VENCIDO' : ($dias <= 30 ? 'CRÍTICO' : ($dias <= 60 ? 'ALERTA' : ($dias <= 90 ? 'PREVENTIVO' : 'VIGENTE')));
+                $valCosto = round($l->stock_actual * (float)$l->precio_compra, 2);
+                $valVenta = round($l->stock_actual * (float)($l->producto->precio_venta ?? 0), 2);
 
                 fputcsv($handle, [
                     $l->numero_lote,
                     $l->producto->nombre ?? 'N/A',
-                    $l->producto->principio_activo ?? '',
+                    $l->producto->principio_activo ?? 'N/A',
                     $l->producto->categoria->nombre ?? 'Sin categoría',
                     $l->producto->laboratorio->nombre ?? 'Sin laboratorio',
                     $l->fecha_vencimiento ? $l->fecha_vencimiento->format('d/m/Y') : 'N/A',
@@ -413,47 +382,50 @@ class ReporteController extends Controller
                     $estado,
                     $l->stock_actual,
                     number_format($l->precio_compra, 2, '.', ''),
-                    number_format($valorCosto, 2, '.', ''),
+                    number_format($valCosto, 2, '.', ''),
                     number_format($l->producto->precio_venta ?? 0, 2, '.', ''),
-                    number_format($valorVenta, 2, '.', '')
+                    number_format($valVenta, 2, '.', '')
                 ], ';');
             }
-
             fclose($handle);
         }, 200, $headers);
     }
 
+    /**
+     * Reporte de compras y adquisiciones
+     */
     public function compras(Request $request)
     {
         $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
         $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
 
         $query = Compra::with(['proveedor', 'usuario'])
-            ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta])
             ->recibidas()
-            ->orderBy('fecha', 'desc');
+            ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
 
-        $totalComprado = Compra::whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta])
-            ->recibidas()
-            ->sum('total');
-
-        // Exportación CSV
         if ($request->input('export') === 'csv') {
-            return $this->exportarComprasCSV($query->get(), $fechaDesde, $fechaHasta);
+            return $this->exportarComprasCSV($query->orderBy('fecha', 'desc')->get(), $fechaDesde, $fechaHasta);
         }
 
-        $compras = $query->paginate(20)->withQueryString();
+        $totalComprado = (clone $query)->sum('total');
+
+        if ($request->input('export') === 'pdf') {
+            $compras = $query->orderBy('fecha', 'desc')->get();
+            $pdf = Pdf::loadView('reportes.pdf.compras', compact(
+                'compras', 'totalComprado', 'fechaDesde', 'fechaHasta'
+            ))->setPaper('letter', 'portrait');
+
+            return $pdf->stream("reporte_compras_{$fechaDesde}_al_{$fechaHasta}.pdf");
+        }
+
+        $compras = $query->orderBy('fecha', 'desc')->paginate(20)->withQueryString();
 
         return view('reportes.compras', compact('compras', 'totalComprado', 'fechaDesde', 'fechaHasta'));
     }
 
-    /**
-     * Exportación de Compras a CSV con codificación UTF-8 BOM
-     */
     protected function exportarComprasCSV($compras, $desde, $hasta): StreamedResponse
     {
         $filename = "reporte_compras_{$desde}_al_{$hasta}.csv";
-
         $headers = [
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -465,17 +437,7 @@ class ReporteController extends Controller
         return response()->stream(function () use ($compras) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($handle, [
-                'N° Orden',
-                'Proveedor',
-                'RIF/NIT Proveedor',
-                'N° Factura',
-                'Fecha',
-                'Responsable',
-                'Estado',
-                'Total ($)'
-            ], ';');
+            fputcsv($handle, ['N° Orden', 'Proveedor', 'RIF/NIT Proveedor', 'N° Factura', 'Fecha', 'Responsable', 'Estado', 'Total ($)'], ';');
 
             foreach ($compras as $c) {
                 fputcsv($handle, [
@@ -489,11 +451,13 @@ class ReporteController extends Controller
                     number_format($c->total, 2, '.', '')
                 ], ';');
             }
-
             fclose($handle);
         }, 200, $headers);
     }
 
+    /**
+     * Reporte de Productos Más Vendidos
+     */
     public function productosMasVendidos(Request $request)
     {
         $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
@@ -517,6 +481,12 @@ class ReporteController extends Controller
 
         if ($request->input('export') === 'csv') {
             return $this->exportarTopProductosCSV($ranking, $fechaDesde, $fechaHasta);
+        }
+
+        if ($request->input('export') === 'pdf') {
+            $pdf = Pdf::loadView('reportes.pdf.productos-mas-vendidos', compact('ranking', 'fechaDesde', 'fechaHasta'))
+                ->setPaper('letter', 'portrait');
+            return $pdf->stream("reporte_top_medicamentos_{$fechaDesde}_al_{$fechaHasta}.pdf");
         }
 
         return view('reportes.productos-mas-vendidos', compact('ranking', 'fechaDesde', 'fechaHasta'));
@@ -551,12 +521,22 @@ class ReporteController extends Controller
         }, 200, $headers);
     }
 
+    /**
+     * Reporte de Alertas de Stock Mínimo
+     */
     public function productosBajoStock(Request $request)
     {
         $productos = $this->inventarioService->productosConStockBajo();
 
         if ($request->input('export') === 'csv') {
             return $this->exportarBajoStockCSV($productos);
+        }
+
+        if ($request->input('export') === 'pdf') {
+            $pdf = Pdf::loadView('reportes.pdf.productos-bajo-stock', compact('productos'))
+                ->setPaper('letter', 'portrait');
+            $fechaHoy = now()->format('Y-m-d');
+            return $pdf->stream("reporte_stock_minimo_{$fechaHoy}.pdf");
         }
 
         return view('reportes.productos-bajo-stock', compact('productos'));
@@ -608,7 +588,6 @@ class ReporteController extends Controller
         $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
         $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
 
-        // Top clientes por monto gastado en el período (compatible con SQLite y MySQL)
         $topClientes = Cliente::whereHas('ventas', function ($q) use ($fechaDesde, $fechaHasta) {
                 $q->where('estado', 'completada')
                   ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
@@ -641,6 +620,15 @@ class ReporteController extends Controller
                 ? $totalFacturadoClientes / $topClientes->sum('total_ventas')
                 : 0)
             : 0;
+
+        if ($request->input('export') === 'pdf') {
+            $pdf = Pdf::loadView('reportes.pdf.clientes', compact(
+                'topClientes', 'totalClientes', 'clientesConCompras',
+                'totalFacturadoClientes', 'ticketPromedio', 'fechaDesde', 'fechaHasta'
+            ))->setPaper('letter', 'portrait');
+
+            return $pdf->stream("reporte_top_clientes_{$fechaDesde}_al_{$fechaHasta}.pdf");
+        }
 
         return view('reportes.clientes', compact(
             'topClientes',
@@ -706,13 +694,22 @@ class ReporteController extends Controller
             return $this->exportarRecetasCSV($query->orderBy('created_at', 'desc')->get(), $fechaDesde, $fechaHasta);
         }
 
-        // KPIs globales (sin filtro de estado, solo por fecha)
         $baseQuery = Receta::whereBetween(DB::raw('DATE(created_at)'), [$fechaDesde, $fechaHasta]);
         $totalRecetas    = (clone $baseQuery)->count();
         $procesadas      = (clone $baseQuery)->where('estado', 'procesada')->count();
         $pendientes      = (clone $baseQuery)->where('estado', 'pendiente')->count();
         $vencidas        = (clone $baseQuery)->where('estado', 'vencida')->count();
         $rechazadas      = (clone $baseQuery)->where('estado', 'rechazada')->count();
+
+        if ($request->input('export') === 'pdf') {
+            $recetas = $query->orderBy('created_at', 'desc')->get();
+            $pdf = Pdf::loadView('reportes.pdf.recetas', compact(
+                'recetas', 'totalRecetas', 'procesadas', 'pendientes',
+                'vencidas', 'rechazadas', 'fechaDesde', 'fechaHasta', 'estadoFiltro'
+            ))->setPaper('letter', 'portrait');
+
+            return $pdf->stream("reporte_recetas_{$fechaDesde}_al_{$fechaHasta}.pdf");
+        }
 
         $recetas = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
@@ -763,5 +760,3 @@ class ReporteController extends Controller
         }, 200, $headers);
     }
 }
-
-

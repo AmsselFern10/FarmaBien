@@ -28,14 +28,43 @@
             </a>
             <button type="button" onclick="window.print()"
                     class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
-                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                <span>Exportar PDF / Imprimir</span>
+                <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Imprimir</span>
             </button>
+            <a href="{{ route('reportes.clientes', array_merge(request()->query(), ['export' => 'pdf'])) }}" target="_blank"
+               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <span>Exportar PDF</span>
+            </a>
             <a href="{{ route('reportes.clientes', array_merge(request()->query(), ['export' => 'csv'])) }}"
                class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Exportar CSV</span>
             </a>
+        </div>
+    </div>
+
+    {{-- Print header institucional --}}
+    <div class="hidden print:block border-b-2 border-violet-600 pb-3 mb-4">
+        <div class="flex items-start justify-between">
+            <div>
+                <h1 class="text-xl font-bold text-emerald-700 uppercase tracking-wide">FARMABIEN</h1>
+                <p class="text-xs text-slate-600">Farmacia & Droguería FarmaBien C.A. · Sistema de Gestión Farmacéutica</p>
+                <p class="text-[10px] text-slate-500 mt-0.5"><strong>RIF / RUC:</strong> J-40892154-0 &bull; <strong>Teléfono:</strong> (0212) 555-0199 / +58 412-1234567</p>
+                <p class="text-[10px] text-slate-500"><strong>Dirección:</strong> Av. Principal Los Próceres, Edif. FarmaBien, Caracas - Venezuela</p>
+            </div>
+            <div class="text-right">
+                <div class="inline-block border border-violet-600 bg-violet-50 px-3 py-1.5 rounded text-center">
+                    <p class="text-xs font-bold text-violet-800">REPORTE DE CLIENTES Y FRECUENCIA</p>
+                    <p class="text-[9px] text-violet-700 mt-0.5">Emisión: {{ now()->format('d/m/Y H:i') }}</p>
+                    <p class="text-[9px] text-violet-700">Por: {{ Auth::user()->name ?? 'Sistema' }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-2 text-xs bg-slate-100 p-2 rounded flex items-center justify-between">
+            <span><strong>Período:</strong> {{ \Carbon\Carbon::parse($fechaDesde)->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($fechaHasta)->format('d/m/Y') }}</span>
+            <span><strong>Clientes con compras:</strong> {{ number_format($clientesConCompras) }}</span>
+            <span><strong>Total facturado:</strong> ${{ number_format($totalFacturadoClientes, 2) }}</span>
         </div>
     </div>
 
