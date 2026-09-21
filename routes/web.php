@@ -142,6 +142,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/inventario', [ReporteController::class, 'inventario'])->name('inventario');
         Route::get('/productos-mas-vendidos', [ReporteController::class, 'productosMasVendidos'])->name('productos-mas-vendidos');
         Route::get('/productos-bajo-stock', [ReporteController::class, 'productosBajoStock'])->name('productos-bajo-stock');
+        Route::get('/clientes', [ReporteController::class, 'clientes'])->name('clientes');
+        Route::get('/recetas', [ReporteController::class, 'recetas'])->name('recetas');
     });
 });
 

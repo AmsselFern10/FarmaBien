@@ -9,6 +9,8 @@ use App\Models\Lote;
 use App\Models\Categoria;
 use App\Models\Laboratorio;
 use App\Models\DetalleVenta;
+use App\Models\Cliente;
+use App\Models\Receta;
 use App\Models\User;
 use App\Services\InventarioService;
 use Illuminate\Http\Request;
@@ -29,8 +31,8 @@ class ReporteController extends Controller
             }
             abort(403, 'No tienes permisos para ver los reportes gerenciales.');
         })->only(['index']);
-        $this->middleware('permission:ver reportes ventas')->only(['ventas', 'productosMasVendidos']);
-        $this->middleware('permission:ver reportes compras')->only(['compras']);
+        $this->middleware('permission:ver reportes ventas')->only(['ventas', 'productosMasVendidos', 'clientes']);
+        $this->middleware('permission:ver reportes compras')->only(['compras', 'recetas']);
         $this->middleware('permission:ver reportes inventario')->only(['inventario', 'productosBajoStock']);
     }
 
@@ -521,5 +523,91 @@ class ReporteController extends Controller
         $productos = $this->inventarioService->productosConStockBajo();
         return view('reportes.productos-bajo-stock', compact('productos'));
     }
+
+    /**
+     * Reporte de Clientes con mayor frecuencia y volumen de compras
+     */
+    public function clientes(Request $request)
+    {
+        $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
+        $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
+
+        // Top clientes por monto gastado en el período
+        $topClientes = Cliente::withCount([
+                'ventas as total_ventas' => function ($q) use ($fechaDesde, $fechaHasta) {
+                    $q->where('estado', 'completada')
+                      ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+                }
+            ])
+            ->withSum([
+                'ventas as monto_total' => function ($q) use ($fechaDesde, $fechaHasta) {
+                    $q->where('estado', 'completada')
+                      ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+                }
+            ], 'total')
+            ->having('total_ventas', '>', 0)
+            ->orderByDesc('monto_total')
+            ->take(20)
+            ->get();
+
+        $totalClientes = Cliente::where('activo', true)->count();
+        $clientesConCompras = $topClientes->count();
+        $totalFacturadoClientes = $topClientes->sum('monto_total');
+        $ticketPromedio = $clientesConCompras > 0
+            ? $topClientes->sum('total_ventas') > 0
+                ? $totalFacturadoClientes / $topClientes->sum('total_ventas')
+                : 0
+            : 0;
+
+        return view('reportes.clientes', compact(
+            'topClientes',
+            'totalClientes',
+            'clientesConCompras',
+            'totalFacturadoClientes',
+            'ticketPromedio',
+            'fechaDesde',
+            'fechaHasta'
+        ));
+    }
+
+    /**
+     * Reporte de Recetas Médicas: procesadas, pendientes, vencidas
+     */
+    public function recetas(Request $request)
+    {
+        $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
+        $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
+        $estadoFiltro = $request->input('estado');
+
+        $query = Receta::with(['cliente'])
+            ->whereBetween(DB::raw('DATE(created_at)'), [$fechaDesde, $fechaHasta]);
+
+        if (!empty($estadoFiltro)) {
+            $query->where('estado', $estadoFiltro);
+        }
+
+        // KPIs globales (sin filtro de estado, solo por fecha)
+        $baseQuery = Receta::whereBetween(DB::raw('DATE(created_at)'), [$fechaDesde, $fechaHasta]);
+        $totalRecetas    = (clone $baseQuery)->count();
+        $procesadas      = (clone $baseQuery)->where('estado', 'procesada')->count();
+        $pendientes      = (clone $baseQuery)->where('estado', 'pendiente')->count();
+        $vencidas        = (clone $baseQuery)->where('estado', 'vencida')->count();
+        $rechazadas      = (clone $baseQuery)->where('estado', 'rechazada')->count();
+
+        $recetas = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+
+        return view('reportes.recetas', compact(
+            'recetas',
+            'totalRecetas',
+            'procesadas',
+            'pendientes',
+            'vencidas',
+            'rechazadas',
+            'fechaDesde',
+            'fechaHasta',
+            'estadoFiltro'
+        ));
+    }
 }
+
 
