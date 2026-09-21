@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\Response;
 
 class ReporteController extends Controller
 {
@@ -35,6 +36,21 @@ class ReporteController extends Controller
         $this->middleware('permission:ver reportes ventas')->only(['ventas', 'productosMasVendidos', 'clientes']);
         $this->middleware('permission:ver reportes compras')->only(['compras', 'recetas']);
         $this->middleware('permission:ver reportes inventario')->only(['inventario', 'productosBajoStock']);
+    }
+
+    /**
+     * Generar respuesta HTTP para descarga de hoja de cálculo Excel (.xls) con estilos completos
+     */
+    protected function responseExcel(string $view, array $data, string $filename): Response
+    {
+        $content = view($view, $data)->render();
+        return response($content, 200, [
+            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ]);
     }
 
     /**
@@ -114,7 +130,7 @@ class ReporteController extends Controller
         $metodoPago = $request->input('metodo_pago');
         $cajeroId = $request->input('cajero_id');
 
-        $query = Venta::with(['cliente', 'usuario'])
+        $query = Venta::with(['cliente', 'usuario', 'detalles'])
             ->completadas()
             ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
 
@@ -126,11 +142,6 @@ class ReporteController extends Controller
             $query->where('usuario_id', $cajeroId);
         }
 
-        // Exportación CSV
-        if ($request->input('export') === 'csv') {
-            return $this->exportarVentasCSV($query->get(), $fechaDesde, $fechaHasta);
-        }
-
         $totalVendido = (clone $query)->sum('total');
         $cantidadVentas = (clone $query)->count();
         $ticketPromedio = $cantidadVentas > 0 ? ($totalVendido / $cantidadVentas) : 0;
@@ -139,6 +150,20 @@ class ReporteController extends Controller
             ->select('metodo_pago', DB::raw('SUM(total) as total'), DB::raw('COUNT(id) as cantidad'))
             ->groupBy('metodo_pago')
             ->get();
+
+        // Exportación Excel con estilos y anchos de columna
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            $ventas = $query->orderBy('fecha', 'desc')->get();
+            return $this->responseExcel('reportes.excel.ventas', compact(
+                'ventas', 'totalVendido', 'cantidadVentas', 'ticketPromedio',
+                'ventasPorMetodo', 'fechaDesde', 'fechaHasta', 'metodoPago', 'cajeroId'
+            ), "reporte_ventas_{$fechaDesde}_al_{$fechaHasta}.xls");
+        }
+
+        // Exportación CSV
+        if ($request->input('export') === 'csv') {
+            return $this->exportarVentasCSV($query->get(), $fechaDesde, $fechaHasta);
+        }
 
         // Exportación PDF
         if ($request->input('export') === 'pdf') {
@@ -205,12 +230,12 @@ class ReporteController extends Controller
 
             foreach ($ventas as $v) {
                 fputcsv($handle, [
-                    $v->id,
+                    $v->numero_factura ?? ('FAC-' . str_pad($v->id, 6, '0', STR_PAD_LEFT)),
                     $v->fecha ? \Carbon\Carbon::parse($v->fecha)->format('d/m/Y H:i') : $v->created_at->format('d/m/Y H:i'),
                     $v->cliente ? $v->cliente->nombre : 'Público General',
-                    $v->cliente ? ($v->cliente->identificacion ?? 'S/N') : 'N/A',
+                    $v->cliente ? ($v->cliente->identificacion ?? $v->cliente->documento ?? 'S/N') : 'N/A',
                     $v->usuario->name ?? 'Sistema',
-                    ucfirst($v->metodo_pago),
+                    ucfirst(str_replace('_', ' ', $v->metodo_pago)),
                     ucfirst($v->estado),
                     number_format($v->total, 2, '.', '')
                 ], ';');
@@ -279,6 +304,19 @@ class ReporteController extends Controller
             $query->whereHas('producto', function ($q) {
                 $q->bajoStock();
             });
+        }
+
+        $valorizacion = $this->inventarioService->valorizacionInventario();
+
+        // Exportación Excel con estilos y anchos
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            $lotes = $query->orderBy('fecha_vencimiento', 'asc')->get();
+            $lotesVencidosCount = $semVencidos;
+            $lotesCriticosCount = $semCritico30;
+            $lotesAlertaCount = $semAlerta60;
+            return $this->responseExcel('reportes.excel.inventario', compact(
+                'lotes', 'valorizacion', 'lotesVencidosCount', 'lotesCriticosCount', 'lotesAlertaCount'
+            ), "reporte_inventario_vencimientos_" . now()->format('Y-m-d') . ".xls");
         }
 
         if ($request->input('export') === 'csv') {
@@ -398,21 +436,50 @@ class ReporteController extends Controller
     {
         $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
         $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
+        $proveedorId = $request->input('proveedor_id');
+        $condicionPago = $request->input('condicion_pago');
 
         $query = Compra::with(['proveedor', 'usuario'])
             ->recibidas()
             ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
 
+        if (!empty($proveedorId)) {
+            $query->where('proveedor_id', $proveedorId);
+        }
+
+        if (!empty($condicionPago)) {
+            $query->where('condicion_pago', $condicionPago);
+        }
+
+        $totalComprado = (clone $query)->sum('total');
+        $cantidadCompras = (clone $query)->count();
+        $promedioCompra = $cantidadCompras > 0 ? ($totalComprado / $cantidadCompras) : 0;
+
+        $comprasPorProveedor = (clone $query)
+            ->join('proveedores', 'compras.proveedor_id', '=', 'proveedores.id')
+            ->select('proveedores.razon_social', DB::raw('SUM(compras.total) as total'), DB::raw('COUNT(compras.id) as cantidad'))
+            ->groupBy('proveedores.razon_social')
+            ->orderByDesc('total')
+            ->get();
+
+        // Exportación Excel con estilos
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            $compras = $query->orderBy('fecha', 'desc')->get();
+            return $this->responseExcel('reportes.excel.compras', compact(
+                'compras', 'totalComprado', 'cantidadCompras', 'promedioCompra',
+                'comprasPorProveedor', 'fechaDesde', 'fechaHasta', 'proveedorId', 'condicionPago'
+            ), "reporte_compras_{$fechaDesde}_al_{$fechaHasta}.xls");
+        }
+
         if ($request->input('export') === 'csv') {
             return $this->exportarComprasCSV($query->orderBy('fecha', 'desc')->get(), $fechaDesde, $fechaHasta);
         }
 
-        $totalComprado = (clone $query)->sum('total');
-
         if ($request->input('export') === 'pdf') {
             $compras = $query->orderBy('fecha', 'desc')->get();
             $pdf = Pdf::loadView('reportes.pdf.compras', compact(
-                'compras', 'totalComprado', 'fechaDesde', 'fechaHasta'
+                'compras', 'totalComprado', 'cantidadCompras', 'promedioCompra',
+                'comprasPorProveedor', 'fechaDesde', 'fechaHasta', 'proveedorId', 'condicionPago'
             ))->setPaper('letter', 'portrait');
 
             return $pdf->stream("reporte_compras_{$fechaDesde}_al_{$fechaHasta}.pdf");
@@ -441,9 +508,9 @@ class ReporteController extends Controller
 
             foreach ($compras as $c) {
                 fputcsv($handle, [
-                    str_pad($c->id, 4, '0', STR_PAD_LEFT),
-                    $c->proveedor?->nombre ?? 'N/A',
-                    $c->proveedor?->rif ?? '',
+                    $c->numero_factura ?? ('COM-' . str_pad($c->id, 6, '0', STR_PAD_LEFT)),
+                    $c->proveedor?->razon_social ?? $c->proveedor?->nombre ?? 'N/A',
+                    $c->proveedor?->ruc ?? $c->proveedor?->rif ?? '',
                     $c->numero_factura ?? '',
                     $c->fecha ? \Carbon\Carbon::parse($c->fecha)->format('d/m/Y') : '',
                     $c->usuario?->name ?? 'Sistema',
@@ -478,6 +545,13 @@ class ReporteController extends Controller
             ->orderByDesc('total_unidades_vendidas')
             ->take(20)
             ->get();
+
+        // Exportación Excel
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            return $this->responseExcel('reportes.excel.productos-mas-vendidos', compact(
+                'ranking', 'fechaDesde', 'fechaHasta'
+            ), "reporte_top_medicamentos_{$fechaDesde}_al_{$fechaHasta}.xls");
+        }
 
         if ($request->input('export') === 'csv') {
             return $this->exportarTopProductosCSV($ranking, $fechaDesde, $fechaHasta);
@@ -527,6 +601,13 @@ class ReporteController extends Controller
     public function productosBajoStock(Request $request)
     {
         $productos = $this->inventarioService->productosConStockBajo();
+
+        // Exportación Excel
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            return $this->responseExcel('reportes.excel.productos-bajo-stock', compact(
+                'productos'
+            ), "reporte_stock_minimo_" . now()->format('Y-m-d') . ".xls");
+        }
 
         if ($request->input('export') === 'csv') {
             return $this->exportarBajoStockCSV($productos);
@@ -608,10 +689,6 @@ class ReporteController extends Controller
             ->take(20)
             ->get();
 
-        if ($request->input('export') === 'csv') {
-            return $this->exportarClientesCSV($topClientes, $fechaDesde, $fechaHasta);
-        }
-
         $totalClientes = Cliente::where('activo', true)->count();
         $clientesConCompras = $topClientes->count();
         $totalFacturadoClientes = $topClientes->sum('monto_total');
@@ -620,6 +697,18 @@ class ReporteController extends Controller
                 ? $totalFacturadoClientes / $topClientes->sum('total_ventas')
                 : 0)
             : 0;
+
+        // Exportación Excel
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            return $this->responseExcel('reportes.excel.clientes', compact(
+                'topClientes', 'totalClientes', 'clientesConCompras',
+                'totalFacturadoClientes', 'ticketPromedio', 'fechaDesde', 'fechaHasta'
+            ), "reporte_top_clientes_{$fechaDesde}_al_{$fechaHasta}.xls");
+        }
+
+        if ($request->input('export') === 'csv') {
+            return $this->exportarClientesCSV($topClientes, $fechaDesde, $fechaHasta);
+        }
 
         if ($request->input('export') === 'pdf') {
             $pdf = Pdf::loadView('reportes.pdf.clientes', compact(
@@ -690,16 +779,25 @@ class ReporteController extends Controller
             $query->where('estado', $estadoFiltro);
         }
 
-        if ($request->input('export') === 'csv') {
-            return $this->exportarRecetasCSV($query->orderBy('created_at', 'desc')->get(), $fechaDesde, $fechaHasta);
-        }
-
         $baseQuery = Receta::whereBetween(DB::raw('DATE(created_at)'), [$fechaDesde, $fechaHasta]);
         $totalRecetas    = (clone $baseQuery)->count();
         $procesadas      = (clone $baseQuery)->where('estado', 'procesada')->count();
         $pendientes      = (clone $baseQuery)->where('estado', 'pendiente')->count();
         $vencidas        = (clone $baseQuery)->where('estado', 'vencida')->count();
         $rechazadas      = (clone $baseQuery)->where('estado', 'rechazada')->count();
+
+        // Exportación Excel
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            $recetas = $query->orderBy('created_at', 'desc')->get();
+            return $this->responseExcel('reportes.excel.recetas', compact(
+                'recetas', 'totalRecetas', 'procesadas', 'pendientes',
+                'vencidas', 'rechazadas', 'fechaDesde', 'fechaHasta', 'estadoFiltro'
+            ), "reporte_recetas_{$fechaDesde}_al_{$fechaHasta}.xls");
+        }
+
+        if ($request->input('export') === 'csv') {
+            return $this->exportarRecetasCSV($query->orderBy('created_at', 'desc')->get(), $fechaDesde, $fechaHasta);
+        }
 
         if ($request->input('export') === 'pdf') {
             $recetas = $query->orderBy('created_at', 'desc')->get();
