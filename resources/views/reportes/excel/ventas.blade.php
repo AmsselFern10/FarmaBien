@@ -52,10 +52,10 @@
   </colgroup>
   <!-- Encabezado Institucional -->
   <tr>
-    <td colspan="9" class="header-brand">FARMABIEN - FARMACIA &amp; DROGUER&Iacute;A C.A.</td>
+    <td colspan="9" class="header-brand">{{ strtoupper(configuracion('empresa_nombre', 'FARMABIEN')) }} - {{ strtoupper(configuracion('empresa_razon_social', 'Farmacia & Droguería FarmaBien C.A.')) }}</td>
   </tr>
   <tr>
-    <td colspan="9" class="header-sub">RIF / RUC: J-40892154-0 &bull; Tel: (0212) 555-0199 / +58 412-1234567 &bull; Av. Principal Los Pr&oacute;ceres, Edif. FarmaBien, Caracas</td>
+    <td colspan="9" class="header-sub">RIF / RUC: {{ configuracion('empresa_ruc', 'J-40892154-0') }} &bull; Tel: {{ configuracion('empresa_telefono', '(0212) 555-0199') }} &bull; {{ configuracion('empresa_direccion', 'Caracas') }}</td>
   </tr>
   <tr>
     <td colspan="9" class="report-title">REPORTE DETALLADO DE VENTAS E INGRESOS</td>

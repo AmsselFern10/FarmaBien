@@ -11,6 +11,8 @@ use App\Http\Requests\StoreCompraRequest;
 use App\Http\Requests\UpdateCompraRequest;
 use App\Http\Requests\AnularCompraRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 
@@ -72,7 +74,11 @@ class CompraController extends Controller
 
             return redirect()->route('compras.show', $compra)
                 ->with('success', "Compra #{$compra->id} registrada exitosamente.");
+        } catch (QueryException $e) {
+            Log::error("Error de base de datos al registrar compra: " . $e->getMessage());
+            return back()->withInput()->with('error', 'Error en la base de datos al procesar la compra. La transacción fue revertida.');
         } catch (Exception $e) {
+            Log::warning("Excepción al registrar compra: " . $e->getMessage());
             return back()->withInput()->with('error', 'Error al procesar la compra: ' . $e->getMessage());
         }
     }
@@ -117,7 +123,11 @@ class CompraController extends Controller
 
             return redirect()->route('compras.show', $nuevaCompra)
                 ->with('success', "Compra actualizada exitosamente. Se generó la nueva versión #{$nuevaCompra->id}.");
+        } catch (QueryException $e) {
+            Log::error("Error de base de datos al modificar compra #{$compra->id}: " . $e->getMessage());
+            return back()->withInput()->with('error', 'Error en la base de datos al modificar la compra. Se revirtieron los cambios.');
         } catch (Exception $e) {
+            Log::warning("Excepción al modificar compra #{$compra->id}: " . $e->getMessage());
             return back()->withInput()->with('error', 'Error al modificar la compra: ' . $e->getMessage());
         }
     }
@@ -129,7 +139,11 @@ class CompraController extends Controller
 
             return redirect()->route('compras.show', $compra)
                 ->with('success', "Compra #{$compra->id} anulada correctamente y stock revertido.");
+        } catch (QueryException $e) {
+            Log::error("Error de base de datos al anular compra #{$compra->id}: " . $e->getMessage());
+            return back()->with('error', 'Error en la base de datos al anular la compra.');
         } catch (Exception $e) {
+            Log::warning("Excepción al anular compra #{$compra->id}: " . $e->getMessage());
             return back()->with('error', 'No se pudo anular la compra: ' . $e->getMessage());
         }
     }
@@ -150,8 +164,12 @@ class CompraController extends Controller
 
     public function verificarNumeroLote(Request $request)
     {
-        $productoId = $request->input('producto_id');
-        $numeroLote = trim($request->input('numero_lote'));
+        $productoId = (int) $request->input('producto_id');
+        $numeroLote = trim($request->input('numero_lote', ''));
+
+        if (empty($numeroLote) || !$productoId) {
+            return response()->json(['disponible' => false]);
+        }
 
         $existe = Lote::where('producto_id', $productoId)
             ->where('numero_lote', $numeroLote)

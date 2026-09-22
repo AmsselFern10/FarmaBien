@@ -12,6 +12,8 @@ use App\Services\FarmaIaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 use Exception;
 
 class ProductoController extends Controller
@@ -109,18 +111,21 @@ class ProductoController extends Controller
 
     public function store(StoreProductoRequest $request)
     {
+        $uploadedPath = null;
+
         try {
-            DB::transaction(function () use ($request) {
+            $producto = DB::transaction(function () use ($request, &$uploadedPath) {
                 $data = $request->validated();
 
+                // Manejo seguro de archivo de imagen
                 if ($request->hasFile('imagen')) {
-                    $path = $request->file('imagen')->store('productos', 'public');
-                    $data['imagen'] = $path;
+                    $uploadedPath = $request->file('imagen')->store('productos', 'public');
+                    $data['imagen'] = $uploadedPath;
                 }
 
                 $producto = Producto::create($data);
 
-                // Guardar presentaciones comerciales
+                // Procesamiento atómico de presentaciones comerciales
                 $presentaciones = $request->input('presentaciones', []);
                 if (empty($presentaciones)) {
                     PresentacionProducto::create([
@@ -144,17 +149,19 @@ class ProductoController extends Controller
 
                         PresentacionProducto::create([
                             'producto_id' => $producto->id,
-                            'nombre' => $p['nombre'],
-                            'descripcion' => $p['descripcion'] ?? null,
+                            'nombre' => trim($p['nombre']),
+                            'descripcion' => !empty($p['descripcion']) ? trim($p['descripcion']) : null,
                             'unidades_por_presentacion' => max(1, (int)($p['unidades_por_presentacion'] ?? 1)),
-                            'precio_compra' => !empty($p['precio_compra']) ? $p['precio_compra'] : ($esBase ? $producto->precio_compra : null),
-                            'precio_venta' => !empty($p['precio_venta']) ? $p['precio_venta'] : ($esBase ? $producto->precio_venta : null),
-                            'codigo_barras' => $p['codigo_barras'] ?? null,
+                            'precio_compra' => !empty($p['precio_compra']) ? (float)$p['precio_compra'] : ($esBase ? $producto->precio_compra : null),
+                            'precio_venta' => !empty($p['precio_venta']) ? (float)$p['precio_venta'] : ($esBase ? $producto->precio_venta : null),
+                            'codigo_barras' => !empty($p['codigo_barras']) ? trim($p['codigo_barras']) : null,
                             'es_unidad_base' => $esBase,
                             'activo' => true,
                             'orden' => $orden++,
                         ]);
                     }
+
+                    // Garantizar que siempre exista al menos una presentación como unidad base
                     if (!$hasBase) {
                         PresentacionProducto::create([
                             'producto_id' => $producto->id,
@@ -168,11 +175,41 @@ class ProductoController extends Controller
                         ]);
                     }
                 }
+
+                Log::info('Producto registrado exitosamente en el catálogo', [
+                    'producto_id' => $producto->id,
+                    'nombre' => $producto->nombre,
+                    'codigo_barra' => $producto->codigo_barra,
+                    'user_id' => auth()->id(),
+                ]);
+
+                return $producto;
             });
 
             return redirect()->route('productos.index')
-                ->with('success', 'Producto y presentaciones registrados exitosamente.');
+                ->with('success', "Producto '{$producto->nombre}' y sus presentaciones fueron registrados exitosamente.");
+        } catch (QueryException $qe) {
+            if ($uploadedPath && Storage::disk('public')->exists($uploadedPath)) {
+                Storage::disk('public')->delete($uploadedPath);
+            }
+
+            Log::error('Error de base de datos al registrar producto', [
+                'user_id' => auth()->id(),
+                'error_code' => $qe->getCode(),
+                'message' => $qe->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'No se pudo guardar el medicamento debido a un conflicto de datos o duplicidad en la base de datos.');
         } catch (Exception $e) {
+            if ($uploadedPath && Storage::disk('public')->exists($uploadedPath)) {
+                Storage::disk('public')->delete($uploadedPath);
+            }
+
+            Log::error('Error general al registrar producto', [
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
             return back()->withInput()->with('error', 'Error al guardar el producto: ' . $e->getMessage());
         }
     }
@@ -202,59 +239,164 @@ class ProductoController extends Controller
 
     public function update(UpdateProductoRequest $request, Producto $producto)
     {
+        $uploadedPath = null;
+        $oldImagePath = $producto->imagen;
+
         try {
-            DB::transaction(function () use ($request, $producto) {
+            DB::transaction(function () use ($request, $producto, &$uploadedPath) {
+                // Bloqueo pesimista para evitar colisiones concurrentes de actualización
+                $lockedProducto = Producto::where('id', $producto->id)->lockForUpdate()->firstOrFail();
+
                 $data = $request->validated();
 
                 if ($request->hasFile('imagen')) {
-                    if ($producto->imagen && Storage::disk('public')->exists($producto->imagen)) {
-                        Storage::disk('public')->delete($producto->imagen);
-                    }
-                    $data['imagen'] = $request->file('imagen')->store('productos', 'public');
+                    $uploadedPath = $request->file('imagen')->store('productos', 'public');
+                    $data['imagen'] = $uploadedPath;
                 }
 
-                $producto->update($data);
+                $lockedProducto->update($data);
 
-                // Actualizar presentaciones comerciales si se enviaron
+                // Sincronización Segura de Presentaciones (Preserva integridad referencial en ventas y compras)
                 if ($request->has('presentaciones')) {
-                    $producto->presentaciones()->delete();
-                    $presentaciones = $request->input('presentaciones', []);
+                    $presentacionesInput = $request->input('presentaciones', []);
+                    $processedIds = [];
                     $orden = 1;
                     $hasBase = false;
-                    foreach ($presentaciones as $p) {
+
+                    foreach ($presentacionesInput as $p) {
                         if (empty($p['nombre'])) continue;
+
                         $esBase = !empty($p['es_unidad_base']) || ((int)($p['unidades_por_presentacion'] ?? 1) === 1 && !$hasBase);
                         if ($esBase) $hasBase = true;
 
-                        PresentacionProducto::create([
-                            'producto_id' => $producto->id,
-                            'nombre' => $p['nombre'],
-                            'descripcion' => $p['descripcion'] ?? null,
+                        $presentacionData = [
+                            'producto_id' => $lockedProducto->id,
+                            'nombre' => trim($p['nombre']),
+                            'descripcion' => !empty($p['descripcion']) ? trim($p['descripcion']) : null,
                             'unidades_por_presentacion' => max(1, (int)($p['unidades_por_presentacion'] ?? 1)),
-                            'precio_compra' => !empty($p['precio_compra']) ? $p['precio_compra'] : ($esBase ? $producto->precio_compra : null),
-                            'precio_venta' => !empty($p['precio_venta']) ? $p['precio_venta'] : ($esBase ? $producto->precio_venta : null),
-                            'codigo_barras' => $p['codigo_barras'] ?? null,
+                            'precio_compra' => !empty($p['precio_compra']) ? (float)$p['precio_compra'] : ($esBase ? $lockedProducto->precio_compra : null),
+                            'precio_venta' => !empty($p['precio_venta']) ? (float)$p['precio_venta'] : ($esBase ? $lockedProducto->precio_venta : null),
+                            'codigo_barras' => !empty($p['codigo_barras']) ? trim($p['codigo_barras']) : null,
                             'es_unidad_base' => $esBase,
                             'activo' => true,
                             'orden' => $orden++,
-                        ]);
+                        ];
+
+                        if (!empty($p['id'])) {
+                            // Actualizar presentación existente
+                            $existing = PresentacionProducto::where('id', $p['id'])
+                                ->where('producto_id', $lockedProducto->id)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($existing) {
+                                $existing->update($presentacionData);
+                                $processedIds[] = $existing->id;
+                            } else {
+                                $newP = PresentacionProducto::create($presentacionData);
+                                $processedIds[] = $newP->id;
+                            }
+                        } else {
+                            // Crear nueva presentación
+                            $newP = PresentacionProducto::create($presentacionData);
+                            $processedIds[] = $newP->id;
+                        }
+                    }
+
+                    // Para presentaciones eliminadas por el usuario:
+                    // Si tienen historial financiero en ventas o compras, se desactivan (activo = false) para no romper relaciones.
+                    // Si no tienen historial, se eliminan con seguridad.
+                    $presentacionesNoEnviadas = PresentacionProducto::where('producto_id', $lockedProducto->id)
+                        ->whereNotIn('id', $processedIds)
+                        ->get();
+
+                    foreach ($presentacionesNoEnviadas as $pBorrar) {
+                        $tieneVentas = $pBorrar->detallesVentas()->exists();
+                        $tieneCompras = $pBorrar->detallesCompras()->exists();
+
+                        if ($tieneVentas || $tieneCompras) {
+                            $pBorrar->update(['activo' => false]);
+                        } else {
+                            $pBorrar->delete();
+                        }
+                    }
+
+                    // Asegurar que siempre haya una unidad base
+                    if (!$hasBase && count($processedIds) > 0) {
+                        PresentacionProducto::where('id', $processedIds[0])->update(['es_unidad_base' => true]);
                     }
                 }
+
+                Log::info('Producto actualizado exitosamente', [
+                    'producto_id' => $lockedProducto->id,
+                    'nombre' => $lockedProducto->nombre,
+                    'user_id' => auth()->id(),
+                ]);
             });
 
+            // Limpieza segura de imagen anterior solo tras confirmación exitosa en BD
+            if ($uploadedPath && $oldImagePath && Storage::disk('public')->exists($oldImagePath)) {
+                Storage::disk('public')->delete($oldImagePath);
+            }
+
             return redirect()->route('productos.index')
-                ->with('success', "Producto '{$producto->nombre}' actualizado exitosamente.");
+                ->with('success', "Medicamento '{$producto->nombre}' actualizado correctamente.");
+        } catch (QueryException $qe) {
+            if ($uploadedPath && Storage::disk('public')->exists($uploadedPath)) {
+                Storage::disk('public')->delete($uploadedPath);
+            }
+
+            Log::error('Error de base de datos al actualizar producto', [
+                'producto_id' => $producto->id,
+                'user_id' => auth()->id(),
+                'message' => $qe->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'No se pudo actualizar el medicamento debido a un conflicto de unicidad o integridad en la base de datos.');
         } catch (Exception $e) {
+            if ($uploadedPath && Storage::disk('public')->exists($uploadedPath)) {
+                Storage::disk('public')->delete($uploadedPath);
+            }
+
+            Log::error('Error general al actualizar producto', [
+                'producto_id' => $producto->id,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
             return back()->withInput()->with('error', 'Error al actualizar el producto: ' . $e->getMessage());
         }
     }
 
     public function destroy(Producto $producto)
     {
-        $producto->update(['activo' => !$producto->activo]);
-        $estado = $producto->activo ? 'activado' : 'desactivado';
+        try {
+            $estado = DB::transaction(function () use ($producto) {
+                // Bloqueo pesimista para evitar condiciones de carrera al activar/desactivar
+                $locked = Producto::where('id', $producto->id)->lockForUpdate()->firstOrFail();
+                $nuevoEstado = !$locked->activo;
+                $locked->update(['activo' => $nuevoEstado]);
 
-        return redirect()->route('productos.index')
-            ->with('success', "Producto '{$producto->nombre}' {$estado} correctamente.");
+                Log::info('Estado de producto modificado', [
+                    'producto_id' => $locked->id,
+                    'nombre' => $locked->nombre,
+                    'nuevo_estado' => $nuevoEstado ? 'activado' : 'desactivado',
+                    'user_id' => auth()->id(),
+                ]);
+
+                return $nuevoEstado ? 'activado' : 'desactivado';
+            });
+
+            return redirect()->route('productos.index')
+                ->with('success', "Producto '{$producto->nombre}' {$estado} correctamente.");
+        } catch (Exception $e) {
+            Log::error('Error al modificar estado de producto', [
+                'producto_id' => $producto->id,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No se pudo cambiar el estado del medicamento: ' . $e->getMessage());
+        }
     }
 }

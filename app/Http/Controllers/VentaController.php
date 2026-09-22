@@ -7,10 +7,13 @@ use App\Models\Cliente;
 use App\Models\Producto;
 use App\Models\Categoria;
 use App\Services\VentaService;
+use App\Services\CajaService;
 use App\Http\Requests\StoreVentaRequest;
 use App\Http\Requests\UpdateVentaRequest;
 use App\Http\Requests\AnularVentaRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 use Exception;
 
 class VentaController extends Controller
@@ -90,7 +93,18 @@ class VentaController extends Controller
             ->filter(fn($p) => $p->lotes->isNotEmpty())
             ->values();
 
-        return view('ventas.create', compact('clientes', 'categorias', 'productos'));
+        // Sesión de caja activa del usuario actual (para badge en POS)
+        $sesionActivaCaja = null;
+        if (class_exists(CajaService::class)) {
+            try {
+                $cajaService = app(CajaService::class);
+                $sesionActivaCaja = $cajaService->obtenerSesionActivaUsuario(auth()->user());
+            } catch (Exception $e) {
+                // Si no hay módulo de cajas activo, ignorar
+            }
+        }
+
+        return view('ventas.create', compact('clientes', 'categorias', 'productos', 'sesionActivaCaja'));
     }
 
     public function store(StoreVentaRequest $request)
@@ -109,7 +123,17 @@ class VentaController extends Controller
 
             return redirect()->route('ventas.show', $venta)
                 ->with('success', "Venta #{$venta->id} procesada exitosamente.");
+        } catch (QueryException $e) {
+            Log::error("Error de base de datos al procesar venta: " . $e->getMessage());
+            $errorMsg = "Error en la base de datos al procesar la venta. La transacción fue revertida.";
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $errorMsg], 500);
+            }
+            return back()->withInput()->with('error', $errorMsg);
         } catch (Exception $e) {
+            Log::warning("Excepción de negocio al procesar venta: " . $e->getMessage());
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -183,7 +207,11 @@ class VentaController extends Controller
 
             return redirect()->route('ventas.show', $nuevaVenta)
                 ->with('success', "Venta actualizada exitosamente. Se generó la nueva venta #{$nuevaVenta->id}.");
+        } catch (QueryException $e) {
+            Log::error("Error de base de datos al modificar venta #{$venta->id}: " . $e->getMessage());
+            return back()->withInput()->with('error', 'Error en la base de datos al modificar la venta. Se revirtieron todos los cambios.');
         } catch (Exception $e) {
+            Log::warning("Error al modificar venta #{$venta->id}: " . $e->getMessage());
             return back()->withInput()->with('error', 'Error al modificar la venta: ' . $e->getMessage());
         }
     }
@@ -195,7 +223,11 @@ class VentaController extends Controller
 
             return redirect()->route('ventas.show', $venta)
                 ->with('success', "Venta #{$venta->id} anulada exitosamente y stock reincorporado al lote.");
+        } catch (QueryException $e) {
+            Log::error("Error de base de datos al anular venta #{$venta->id}: " . $e->getMessage());
+            return back()->with('error', 'Error en la base de datos al anular la venta. No se aplicaron cambios.');
         } catch (Exception $e) {
+            Log::warning("Error al anular venta #{$venta->id}: " . $e->getMessage());
             return back()->with('error', 'No se pudo anular la venta: ' . $e->getMessage());
         }
     }

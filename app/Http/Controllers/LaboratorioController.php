@@ -6,6 +6,10 @@ use App\Models\Laboratorio;
 use App\Http\Requests\StoreLaboratorioRequest;
 use App\Http\Requests\UpdateLaboratorioRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
+use Exception;
 
 class LaboratorioController extends Controller
 {
@@ -51,10 +55,37 @@ class LaboratorioController extends Controller
 
     public function store(StoreLaboratorioRequest $request)
     {
-        $laboratorio = Laboratorio::create($request->validated());
+        try {
+            $laboratorio = DB::transaction(function () use ($request) {
+                $laboratorio = Laboratorio::create($request->validated());
 
-        return redirect()->route('laboratorios.index')
-            ->with('success', "Laboratorio '{$laboratorio->nombre}' registrado correctamente.");
+                Log::info('Laboratorio registrado exitosamente', [
+                    'laboratorio_id' => $laboratorio->id,
+                    'nombre' => $laboratorio->nombre,
+                    'codigo' => $laboratorio->codigo,
+                    'user_id' => auth()->id(),
+                ]);
+
+                return $laboratorio;
+            });
+
+            return redirect()->route('laboratorios.index')
+                ->with('success', "Laboratorio '{$laboratorio->nombre}' registrado correctamente.");
+        } catch (QueryException $qe) {
+            Log::error('Error de base de datos al registrar laboratorio', [
+                'user_id' => auth()->id(),
+                'message' => $qe->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'No se pudo guardar el laboratorio. El nombre o código ingresado ya existe.');
+        } catch (Exception $e) {
+            Log::error('Error al registrar laboratorio', [
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al guardar el laboratorio: ' . $e->getMessage());
+        }
     }
 
     public function show(Laboratorio $laboratorio)
@@ -71,18 +102,67 @@ class LaboratorioController extends Controller
 
     public function update(UpdateLaboratorioRequest $request, Laboratorio $laboratorio)
     {
-        $laboratorio->update($request->validated());
+        try {
+            DB::transaction(function () use ($request, $laboratorio) {
+                $locked = Laboratorio::where('id', $laboratorio->id)->lockForUpdate()->firstOrFail();
+                $locked->update($request->validated());
 
-        return redirect()->route('laboratorios.index')
-            ->with('success', "Laboratorio '{$laboratorio->nombre}' actualizado correctamente.");
+                Log::info('Laboratorio actualizado exitosamente', [
+                    'laboratorio_id' => $locked->id,
+                    'nombre' => $locked->nombre,
+                    'user_id' => auth()->id(),
+                ]);
+            });
+
+            return redirect()->route('laboratorios.index')
+                ->with('success', "Laboratorio '{$laboratorio->nombre}' actualizado correctamente.");
+        } catch (QueryException $qe) {
+            Log::error('Error de base de datos al actualizar laboratorio', [
+                'laboratorio_id' => $laboratorio->id,
+                'user_id' => auth()->id(),
+                'message' => $qe->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'No se pudo actualizar el laboratorio. Conflicto de nombre o código duplicado.');
+        } catch (Exception $e) {
+            Log::error('Error al actualizar laboratorio', [
+                'laboratorio_id' => $laboratorio->id,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al actualizar el laboratorio: ' . $e->getMessage());
+        }
     }
 
     public function destroy(Laboratorio $laboratorio)
     {
-        $laboratorio->update(['activo' => !$laboratorio->activo]);
-        $estado = $laboratorio->activo ? 'activado' : 'desactivado';
+        try {
+            $estado = DB::transaction(function () use ($laboratorio) {
+                $locked = Laboratorio::where('id', $laboratorio->id)->lockForUpdate()->firstOrFail();
+                $nuevoEstado = !$locked->activo;
+                $locked->update(['activo' => $nuevoEstado]);
 
-        return redirect()->route('laboratorios.index')
-            ->with('success', "Laboratorio '{$laboratorio->nombre}' {$estado} correctamente.");
+                Log::info('Estado de laboratorio modificado', [
+                    'laboratorio_id' => $locked->id,
+                    'nombre' => $locked->nombre,
+                    'nuevo_estado' => $nuevoEstado ? 'activado' : 'desactivado',
+                    'user_id' => auth()->id(),
+                ]);
+
+                return $nuevoEstado ? 'activado' : 'desactivado';
+            });
+
+            return redirect()->route('laboratorios.index')
+                ->with('success', "Laboratorio '{$laboratorio->nombre}' {$estado} correctamente.");
+        } catch (Exception $e) {
+            Log::error('Error al modificar estado de laboratorio', [
+                'laboratorio_id' => $laboratorio->id,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No se pudo modificar el estado del laboratorio: ' . $e->getMessage());
+        }
     }
 }

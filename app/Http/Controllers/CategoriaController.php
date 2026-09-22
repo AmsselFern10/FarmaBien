@@ -6,6 +6,10 @@ use App\Models\Categoria;
 use App\Http\Requests\StoreCategoriaRequest;
 use App\Http\Requests\UpdateCategoriaRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
+use Exception;
 
 class CategoriaController extends Controller
 {
@@ -57,10 +61,36 @@ class CategoriaController extends Controller
 
     public function store(StoreCategoriaRequest $request)
     {
-        $categoria = Categoria::create($request->validated());
+        try {
+            $categoria = DB::transaction(function () use ($request) {
+                $categoria = Categoria::create($request->validated());
 
-        return redirect()->route('categorias.index')
-            ->with('success', "Categoría '{$categoria->nombre}' creada exitosamente.");
+                Log::info('Categoría registrada exitosamente', [
+                    'categoria_id' => $categoria->id,
+                    'nombre' => $categoria->nombre,
+                    'user_id' => auth()->id(),
+                ]);
+
+                return $categoria;
+            });
+
+            return redirect()->route('categorias.index')
+                ->with('success', "Categoría '{$categoria->nombre}' creada exitosamente.");
+        } catch (QueryException $qe) {
+            Log::error('Error de base de datos al crear categoría', [
+                'user_id' => auth()->id(),
+                'message' => $qe->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'No se pudo registrar la categoría. Ya existe un registro con ese nombre.');
+        } catch (Exception $e) {
+            Log::error('Error al registrar categoría', [
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al guardar la categoría: ' . $e->getMessage());
+        }
     }
 
     public function show(Categoria $categoria)
@@ -77,18 +107,67 @@ class CategoriaController extends Controller
 
     public function update(UpdateCategoriaRequest $request, Categoria $categoria)
     {
-        $categoria->update($request->validated());
+        try {
+            DB::transaction(function () use ($request, $categoria) {
+                $locked = Categoria::where('id', $categoria->id)->lockForUpdate()->firstOrFail();
+                $locked->update($request->validated());
 
-        return redirect()->route('categorias.index')
-            ->with('success', "Categoría '{$categoria->nombre}' actualizada exitosamente.");
+                Log::info('Categoría actualizada exitosamente', [
+                    'categoria_id' => $locked->id,
+                    'nombre' => $locked->nombre,
+                    'user_id' => auth()->id(),
+                ]);
+            });
+
+            return redirect()->route('categorias.index')
+                ->with('success', "Categoría '{$categoria->nombre}' actualizada exitosamente.");
+        } catch (QueryException $qe) {
+            Log::error('Error de base de datos al actualizar categoría', [
+                'categoria_id' => $categoria->id,
+                'user_id' => auth()->id(),
+                'message' => $qe->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'No se pudo actualizar la categoría debido a un conflicto de duplicidad de nombre.');
+        } catch (Exception $e) {
+            Log::error('Error al actualizar categoría', [
+                'categoria_id' => $categoria->id,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al actualizar la categoría: ' . $e->getMessage());
+        }
     }
 
     public function destroy(Categoria $categoria)
     {
-        $categoria->update(['activo' => !$categoria->activo]);
-        $estado = $categoria->activo ? 'activada' : 'desactivada';
+        try {
+            $estado = DB::transaction(function () use ($categoria) {
+                $locked = Categoria::where('id', $categoria->id)->lockForUpdate()->firstOrFail();
+                $nuevoEstado = !$locked->activo;
+                $locked->update(['activo' => $nuevoEstado]);
 
-        return redirect()->route('categorias.index')
-            ->with('success', "Categoría '{$categoria->nombre}' {$estado} correctamente.");
+                Log::info('Estado de categoría modificado', [
+                    'categoria_id' => $locked->id,
+                    'nombre' => $locked->nombre,
+                    'nuevo_estado' => $nuevoEstado ? 'activada' : 'desactivada',
+                    'user_id' => auth()->id(),
+                ]);
+
+                return $nuevoEstado ? 'activada' : 'desactivada';
+            });
+
+            return redirect()->route('categorias.index')
+                ->with('success', "Categoría '{$categoria->nombre}' {$estado} correctamente.");
+        } catch (Exception $e) {
+            Log::error('Error al modificar estado de categoría', [
+                'categoria_id' => $categoria->id,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No se pudo modificar el estado de la categoría: ' . $e->getMessage());
+        }
     }
 }

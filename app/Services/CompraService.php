@@ -8,6 +8,7 @@ use App\Models\Lote;
 use App\Models\Producto;
 use App\Models\PresentacionProducto;
 use App\Models\MovimientoInventario;
+use App\Models\Proveedor;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
@@ -15,7 +16,8 @@ use Exception;
 class CompraService
 {
     /**
-     * Registrar una compra completa con soporte para presentaciones fraccionadas y Kardex auditado
+     * Registrar una compra completa con soporte para presentaciones fraccionadas,
+     * bloqueo pesimista ACID y Kardex auditado.
      * 
      * @param array $data
      * @return Compra
@@ -24,33 +26,39 @@ class CompraService
     public function registrarCompra(array $data): Compra
     {
         return DB::transaction(function () use ($data) {
-            
             $this->validarDatosCompra($data);
-            
+
+            $proveedorId = (int) $data['proveedor_id'];
+            $proveedor = Proveedor::findOrFail($proveedorId);
+            if (!$proveedor->activo) {
+                throw new Exception("El proveedor '{$proveedor->nombre}' se encuentra inactivo.");
+            }
+
             // 1. Crear cabecera de la compra
             $compra = Compra::create([
-                'proveedor_id' => $data['proveedor_id'],
-                'user_id' => Auth::id() ?? 1,
+                'proveedor_id'       => $proveedor->id,
+                'user_id'            => Auth::id() ?? 1,
                 'numero_comprobante' => $data['numero_comprobante'] ?? null,
-                'subtotal' => 0,
-                'impuesto' => 0,
-                'total' => 0,
-                'estado' => 'recibida',
-                'fecha' => $data['fecha'] ?? now(),
+                'subtotal'           => 0,
+                'impuesto'           => 0,
+                'total'              => 0,
+                'estado'             => 'recibida',
+                'fecha'              => $data['fecha'] ?? now(),
             ]);
 
             $totalAcumulado = 0;
 
-            // 2. Procesar cada producto adquirido
+            // 2. Procesar cada producto adquirido con bloqueo pesimista
             foreach ($data['productos'] as $item) {
                 $subtotalItem = $this->procesarDetalleCompra($compra, $item);
                 $totalAcumulado += $subtotalItem;
             }
 
             // 3. Actualizar importes totales
+            $totalFinal = round($totalAcumulado, 2);
             $compra->update([
-                'subtotal' => $totalAcumulado,
-                'total' => $totalAcumulado,
+                'subtotal' => $totalFinal,
+                'total'    => $totalFinal,
             ]);
 
             return $compra->load([
@@ -64,84 +72,102 @@ class CompraService
     }
 
     /**
-     * Procesar un ítem de detalle de compra
+     * Procesar un ítem de detalle de compra creando el Lote y registrando el Kardex.
      * 
      * @param Compra $compra
      * @param array $item
-     * @return float
+     * @return float Subtotal del item
      * @throws Exception
      */
     protected function procesarDetalleCompra(Compra $compra, array $item): float
     {
-        $producto = Producto::findOrFail($item['producto_id']);
-        
-        $presentacionId = $item['presentacion_id'] ?? null;
+        $productoId = (int) $item['producto_id'];
+
+        // Bloquear el producto para prevenir condiciones de carrera en costos
+        $producto = Producto::where('id', $productoId)
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        if (!$producto->activo) {
+            throw new Exception("El producto '{$producto->nombre}' se encuentra inactivo.");
+        }
+
+        $presentacionId = !empty($item['presentacion_id']) ? (int) $item['presentacion_id'] : null;
         $cantidadPresentaciones = (int) ($item['cantidad_presentaciones'] ?? $item['cantidad'] ?? 1);
         $precioPresentacion = (float) $item['precio_unitario'];
-        
-        // Determinar factor de conversión
+
+        if ($cantidadPresentaciones <= 0) {
+            throw new Exception("La cantidad para '{$producto->nombre}' debe ser mayor a 0.");
+        }
+
+        if ($precioPresentacion < 0) {
+            throw new Exception("El precio de compra para '{$producto->nombre}' no puede ser negativo.");
+        }
+
+        // Determinar factor de conversión y presentación
+        $presentacion = null;
         if ($presentacionId) {
             $presentacion = PresentacionProducto::where('producto_id', $producto->id)
                 ->where('id', $presentacionId)
                 ->firstOrFail();
-            $unidadesPorPresentacion = $presentacion->unidades_por_presentacion;
+
+            $unidadesPorPresentacion = max(1, (int) $presentacion->unidades_por_presentacion);
             $tipoPresentacion = $presentacion->nombre;
         } else {
             $unidadesPorPresentacion = 1;
             $tipoPresentacion = 'Unidad Base';
         }
 
-        // Cálculos de unidades base y costos
+        // Cálculos de unidades base y costos unitarios
         $cantidadUnidadesBase = $cantidadPresentaciones * $unidadesPorPresentacion;
         $subtotal = round($cantidadPresentaciones * $precioPresentacion, 2);
         $costoUnitarioBase = round($precioPresentacion / $unidadesPorPresentacion, 4);
 
-        // Validar número de lote y fecha de vencimiento
         $numeroLote = trim($item['numero_lote']);
         $fechaVencimiento = $item['fecha_vencimiento'];
 
-        // 1. Crear el Lote
+        // 1. Crear el Lote Físico
         $lote = Lote::create([
-            'producto_id' => $producto->id,
-            'compra_id' => $compra->id,
-            'proveedor_id' => $compra->proveedor_id,
-            'numero_lote' => $numeroLote,
+            'producto_id'       => $producto->id,
+            'compra_id'         => $compra->id,
+            'proveedor_id'      => $compra->proveedor_id,
+            'numero_lote'       => $numeroLote,
             'fecha_vencimiento' => $fechaVencimiento,
-            'stock_inicial' => $cantidadUnidadesBase,
-            'stock_actual' => $cantidadUnidadesBase,
-            'precio_compra' => $costoUnitarioBase,
-            'activo' => true,
+            'stock_inicial'     => $cantidadUnidadesBase,
+            'stock_actual'      => $cantidadUnidadesBase,
+            'precio_compra'     => $costoUnitarioBase,
+            'activo'            => true,
         ]);
 
         // 2. Crear Detalle de Compra
         DetalleCompra::create([
-            'compra_id' => $compra->id,
-            'producto_id' => $producto->id,
-            'lote_id' => $lote->id,
-            'presentacion_id' => $presentacionId,
-            'tipo_presentacion' => $tipoPresentacion,
+            'compra_id'                 => $compra->id,
+            'producto_id'               => $producto->id,
+            'lote_id'                   => $lote->id,
+            'presentacion_id'           => $presentacionId,
+            'tipo_presentacion'         => $tipoPresentacion,
             'unidades_por_presentacion' => $unidadesPorPresentacion,
-            'cantidad_presentaciones' => $cantidadPresentaciones,
-            'cantidad_unidades_base' => $cantidadUnidadesBase,
-            'precio_unitario' => $precioPresentacion,
-            'subtotal' => $subtotal,
+            'cantidad_presentaciones'   => $cantidadPresentaciones,
+            'cantidad_unidades_base'    => $cantidadUnidadesBase,
+            'precio_unitario'           => $precioPresentacion,
+            'subtotal'                  => $subtotal,
         ]);
 
         // 3. Registrar en Kardex Auditoría (ENTRADA por COMPRA)
         MovimientoInventario::create([
-            'producto_id' => $producto->id,
-            'lote_id' => $lote->id,
-            'user_id' => Auth::id() ?? 1,
-            'tipo' => 'entrada',
-            'subtipo' => 'compra',
-            'cantidad' => $cantidadUnidadesBase,
-            'stock_anterior' => 0,
-            'stock_posterior' => $cantidadUnidadesBase,
-            'costo_unitario' => $costoUnitarioBase,
-            'costo_total' => $subtotal,
-            'origen' => 'compra',
-            'origen_id' => $compra->id,
-            'motivo' => "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) - Lote {$lote->numero_lote}",
+            'producto_id'      => $producto->id,
+            'lote_id'          => $lote->id,
+            'user_id'          => Auth::id() ?? 1,
+            'tipo'             => 'entrada',
+            'subtipo'          => 'compra',
+            'cantidad'         => $cantidadUnidadesBase,
+            'stock_anterior'   => 0,
+            'stock_posterior'  => $cantidadUnidadesBase,
+            'costo_unitario'   => $costoUnitarioBase,
+            'costo_total'      => $subtotal,
+            'origen'           => 'compra',
+            'origen_id'        => $compra->id,
+            'motivo'           => "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) - Lote {$lote->numero_lote}",
             'fecha_movimiento' => now(),
         ]);
 
@@ -185,7 +211,7 @@ class CompraService
     }
 
     /**
-     * Anular una compra (validando que los lotes no hayan sido vendidos)
+     * Anular una compra (validando que ningún lote haya sido vendido o dispensado)
      * 
      * @param int $compraId
      * @param string $motivo
@@ -195,7 +221,6 @@ class CompraService
     public function anularCompra(int $compraId, string $motivo): Compra
     {
         return DB::transaction(function () use ($compraId, $motivo) {
-            
             $compra = Compra::with(['detalles', 'lotes'])
                 ->where('id', $compraId)
                 ->lockForUpdate()
@@ -205,49 +230,59 @@ class CompraService
                 throw new Exception("La compra #{$compraId} no puede ser anulada porque ya está anulada o fue modificada.");
             }
 
-            // Validar que ningún lote tenga ventas
+            // Validar que ningún lote tenga ventas o movimientos de salida posteriores
             foreach ($compra->lotes as $lote) {
-                $loteBloqueado = Lote::where('id', $lote->id)->lockForUpdate()->first();
+                $loteBloqueado = Lote::where('id', $lote->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
                 if ($loteBloqueado->stock_actual < $loteBloqueado->stock_inicial) {
                     $vendidas = $loteBloqueado->stock_inicial - $loteBloqueado->stock_actual;
                     throw new Exception(
-                        "No se puede anular la compra: el lote '{$loteBloqueado->numero_lote}' ya tiene {$vendidas} unidades vendidas."
+                        "No se puede anular la compra #{$compraId}: el lote '{$loteBloqueado->numero_lote}' ya tiene {$vendidas} unidades vendidas o dispensadas."
+                    );
+                }
+
+                if ($loteBloqueado->detallesVentas()->exists()) {
+                    throw new Exception(
+                        "No se puede anular la compra #{$compraId}: el lote '{$loteBloqueado->numero_lote}' ya tiene historial de ventas asociado."
                     );
                 }
             }
 
-            // Proceder con la anulación y registro en Kardex
+            // Proceder con la anulación atómica y registro de salida en Kardex
             foreach ($compra->lotes as $lote) {
-                $stockAnterior = $lote->stock_actual;
-                $costoUnitario = (float) $lote->precio_compra;
+                $loteBloqueado = Lote::where('id', $lote->id)->lockForUpdate()->firstOrFail();
+                $stockAnterior = (int) $loteBloqueado->stock_actual;
+                $costoUnitario = (float) $loteBloqueado->precio_compra;
                 $costoTotal = round($stockAnterior * $costoUnitario, 2);
 
-                $lote->stock_actual = 0;
-                $lote->activo = false;
-                $lote->save();
+                $loteBloqueado->stock_actual = 0;
+                $loteBloqueado->activo = false;
+                $loteBloqueado->save();
 
                 MovimientoInventario::create([
-                    'producto_id' => $lote->producto_id,
-                    'lote_id' => $lote->id,
-                    'user_id' => Auth::id() ?? 1,
-                    'tipo' => 'salida',
-                    'subtipo' => 'anulacion_compra',
-                    'cantidad' => -$stockAnterior,
-                    'stock_anterior' => $stockAnterior,
-                    'stock_posterior' => 0,
-                    'costo_unitario' => $costoUnitario,
-                    'costo_total' => $costoTotal,
-                    'origen' => 'anulacion_compra',
-                    'origen_id' => $compra->id,
-                    'motivo' => "Anulación de compra #{$compra->id}: {$motivo}",
+                    'producto_id'      => $loteBloqueado->producto_id,
+                    'lote_id'          => $loteBloqueado->id,
+                    'user_id'          => Auth::id() ?? 1,
+                    'tipo'             => 'salida',
+                    'subtipo'          => 'anulacion_compra',
+                    'cantidad'         => -$stockAnterior,
+                    'stock_anterior'   => $stockAnterior,
+                    'stock_posterior'  => 0,
+                    'costo_unitario'   => $costoUnitario,
+                    'costo_total'      => $costoTotal,
+                    'origen'           => 'anulacion_compra',
+                    'origen_id'        => $compra->id,
+                    'motivo'           => "Anulación de compra #{$compra->id}: {$motivo}",
                     'fecha_movimiento' => now(),
                 ]);
             }
 
             $compra->update([
-                'estado' => 'anulada',
-                'anulado_por' => Auth::id() ?? 1,
-                'fecha_anulacion' => now(),
+                'estado'           => 'anulada',
+                'anulado_por'      => Auth::id() ?? 1,
+                'fecha_anulacion'  => now(),
                 'motivo_anulacion' => $motivo,
             ]);
 
@@ -256,7 +291,7 @@ class CompraService
     }
 
     /**
-     * Modificar una compra existente con trazabilidad completa
+     * Modificar una compra existente con trazabilidad completa y reversión controlada.
      * 
      * @param int $compraId
      * @param array $data
@@ -267,22 +302,30 @@ class CompraService
     public function modificarCompra(int $compraId, array $data, string $motivo): Compra
     {
         return DB::transaction(function () use ($compraId, $data, $motivo) {
-            
-            $compraOriginal = Compra::with('lotes')->where('id', $compraId)->lockForUpdate()->firstOrFail();
+            $compraOriginal = Compra::with('lotes')
+                ->where('id', $compraId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if (!$compraOriginal->puedeModificarse()) {
                 throw new Exception("La compra #{$compraId} no puede modificarse en su estado actual.");
             }
 
-            // Anular compra original
-            $this->anularCompra($compraId, "Modificación - {$motivo}");
+            // Anular compra original (revirtiendo sus lotes si no han sido vendidos)
+            $this->anularCompra($compraId, "Modificación: {$motivo}");
 
-            // Crear nueva compra
+            // Crear nueva compra con los datos actualizados
             $nuevaCompra = $this->registrarCompra($data);
 
-            // Establecer enlaces de trazabilidad
-            $compraOriginal->update(['reemplazada_por' => $nuevaCompra->id]);
-            $nuevaCompra->update(['compra_original_id' => $compraOriginal->id]);
+            // Establecer enlaces de trazabilidad bidireccional
+            $compraOriginal->update([
+                'reemplazada_por'  => $nuevaCompra->id,
+                'motivo_anulacion' => "Modificada y reemplazada por Compra #{$nuevaCompra->id}. Motivo: {$motivo}",
+            ]);
+
+            $nuevaCompra->update([
+                'compra_original_id' => $compraOriginal->id,
+            ]);
 
             return $nuevaCompra->load(['detalles', 'proveedor', 'lotes', 'compraOriginal']);
         });

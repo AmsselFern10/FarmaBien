@@ -101,6 +101,20 @@ class RolePermissionSeeder extends Seeder
             'anular recetas',
             'ver ventas recetas',
 
+            // Cajas y Arqueos
+            'ver cajas',
+            'crear cajas',
+            'editar cajas',
+            'desactivar cajas',
+            'abrir caja',
+            'cerrar caja',
+            'registrar movimientos caja',
+            'ver arqueos caja',
+
+            // Ajustes y Configuración General
+            'ver ajustes',
+            'editar ajustes',
+
             // Usuarios y Seguridad
             'ver usuarios',
             'crear usuarios',
@@ -130,7 +144,7 @@ class RolePermissionSeeder extends Seeder
         // 1. ADMIN → TODOS LOS PERMISOS
         $admin->syncPermissions(Permission::all());
 
-        // 2. FARMACÉUTICO / REGENTE → Control Técnico, Recetas Retenidas, Lotes, Catálogos, Alertas
+        // 2. FARMACÉUTICO / REGENTE → Control Técnico, Recetas Retenidas, Lotes, Catálogos, Alertas, Auditoría Cajas
         $farmaceutico->syncPermissions([
             'ver dashboard',
             'ver alertas vencimientos',
@@ -158,9 +172,12 @@ class RolePermissionSeeder extends Seeder
             // Compras y Ventas (Auditoría)
             'ver compras', 'ver detalle compras',
             'ver ventas', 'ver detalle ventas',
+
+            // Cajas (Auditoría)
+            'ver cajas', 'ver arqueos caja',
         ]);
 
-        // 3. CAJERO / DISPENSADOR → Ventas, Dispensación de Recetas, Clientes
+        // 3. CAJERO / DISPENSADOR → Ventas, Dispensación de Recetas, Clientes, Cajas
         $cajero->syncPermissions([
             'ver dashboard',
             'ver alertas vencimientos',
@@ -175,6 +192,13 @@ class RolePermissionSeeder extends Seeder
             'realizar ventas',
             'ver ventas propias',
             'ver detalle ventas',
+
+            // Cajas (Operación Diaria)
+            'ver cajas',
+            'abrir caja',
+            'cerrar caja',
+            'registrar movimientos caja',
+            'ver arqueos caja',
 
             // Recetas
             'ver recetas',
@@ -204,6 +228,9 @@ class RolePermissionSeeder extends Seeder
 
             // Kardex
             'ver movimientos inventario', 'ajustar inventario', 'ver kardex', 'exportar kardex',
+
+            // Cajas (Auditoría de Cierres para Bodega)
+            'ver cajas', 'ver arqueos caja',
         ]);
 
         echo " Roles y permisos sincronizados exitosamente.\n";

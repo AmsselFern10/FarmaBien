@@ -40,6 +40,14 @@
                     </a>
                     @endcanany
 
+                    <!-- Control de Cajas -->
+                    @can('ver cajas')
+                    <a href="{{ route('cajas.index') }}" 
+                       class="px-3 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('cajas.*') ? 'bg-slate-100 dark:bg-slate-700 text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-700/50' }}">
+                        Cajas
+                    </a>
+                    @endcan
+
                     <!-- Compras -->
                     @can('ver compras')
                     <a href="{{ route('compras.index') }}" 
@@ -82,7 +90,7 @@
                     @canany(['ver productos', 'ver laboratorios', 'ver categorias', 'ver clientes', 'ver proveedores'])
                     <x-dropdown align="left" width="56">
                         <x-slot name="trigger">
-                            <button class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-700/50' }}">
+                            <button class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-700/50' }}">
                                 <span>Catálogos</span>
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                             </button>
@@ -91,6 +99,7 @@
                             @can('ver productos')<x-dropdown-link :href="route('productos.index')">💊 Medicamentos</x-dropdown-link>@endcan
                             @can('ver laboratorios')<x-dropdown-link :href="route('laboratorios.index')">🔬 Laboratorios</x-dropdown-link>@endcan
                             @can('ver categorias')<x-dropdown-link :href="route('categorias.index')">🏷️ Categorías</x-dropdown-link>@endcan
+                            @can('ver productos')<x-dropdown-link :href="route('presentaciones.index')">📦 Presentaciones</x-dropdown-link>@endcan
                             @can('ver clientes')<x-dropdown-link :href="route('clientes.index')">👤 Clientes / Pacientes</x-dropdown-link>@endcan
                             @can('ver proveedores')<x-dropdown-link :href="route('proveedores.index')">🚚 Proveedores</x-dropdown-link>@endcan
                         </x-slot>
@@ -105,13 +114,24 @@
                     </a>
                     @endcan
 
-                    <!-- Admin Link -->
-                    @role('Admin')
-                    <a href="{{ route('admin.dashboard') }}" 
-                       class="px-3 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.*') || request()->routeIs('usuarios.*') ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-700/50' }}">
-                        ⚙️ Admin
-                    </a>
-                    @endrole
+                    <!-- Admin & Ajustes Dropdown -->
+                    @canany(['ver usuarios', 'ver ajustes'])
+                    <x-dropdown align="left" width="56">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.*') || request()->routeIs('usuarios.*') || request()->routeIs('ajustes.*') ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-700/50' }}">
+                                <span>⚙️ Admin</span>
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            @role('Admin')<x-dropdown-link :href="route('usuarios.index')">👥 Usuarios & Roles</x-dropdown-link>@endrole
+                            @can('ver ajustes')<x-dropdown-link :href="route('ajustes.index')">⚙️ Ajustes & Configuración</x-dropdown-link>@endcan
+                            @if(configuracion('catalogo_publico_activo', true))
+                                <x-dropdown-link :href="route('catalogo.publico')" target="_blank">🌐 Catálogo Público</x-dropdown-link>
+                            @endif
+                        </x-slot>
+                    </x-dropdown>
+                    @endcanany
                 </div>
             </div>
 
@@ -165,6 +185,9 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">👤 Mi Perfil</x-dropdown-link>
+                        @can('ver ajustes')
+                            <x-dropdown-link :href="route('ajustes.index')">⚙️ Ajustes</x-dropdown-link>
+                        @endcan
                         <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -198,13 +221,15 @@
         <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">📊 Dashboard</x-responsive-nav-link>
         @can('realizar ventas')<x-responsive-nav-link :href="route('ventas.create')" :active="request()->routeIs('ventas.create')" class="text-emerald-600 dark:text-emerald-400 font-bold">⚡ Punto de Venta (POS)</x-responsive-nav-link>@endcan
         @canany(['ver ventas', 'ver ventas propias'])<x-responsive-nav-link :href="route('ventas.index')" :active="request()->routeIs('ventas.index')">💰 Historial Ventas</x-responsive-nav-link>@endcanany
+        @can('ver cajas')<x-responsive-nav-link :href="route('cajas.index')" :active="request()->routeIs('cajas.*')">💵 Control de Cajas</x-responsive-nav-link>@endcan
         @can('ver compras')<x-responsive-nav-link :href="route('compras.index')" :active="request()->routeIs('compras.*')">🚚 Compras</x-responsive-nav-link>@endcan
         @can('ver movimientos inventario')<x-responsive-nav-link :href="route('inventario.index')" :active="request()->routeIs('inventario.*')">📦 Inventario & Kardex</x-responsive-nav-link>@endcan
         @can('ver recetas')<x-responsive-nav-link :href="route('recetas.index')" :active="request()->routeIs('recetas.*')">📋 Recetas Médicas</x-responsive-nav-link>@endcan
         @can('ver productos')<x-responsive-nav-link :href="route('productos.index')" :active="request()->routeIs('productos.*')">💊 Medicamentos</x-responsive-nav-link>@endcan
         @can('ver laboratorios')<x-responsive-nav-link :href="route('laboratorios.index')" :active="request()->routeIs('laboratorios.*')">🔬 Laboratorios</x-responsive-nav-link>@endcan
         @can('ver reportes ventas')<x-responsive-nav-link :href="route('reportes.index')" :active="request()->routeIs('reportes.*')">📈 Reportes Gerenciales</x-responsive-nav-link>@endcan
-        @role('Admin')<x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">⚙️ Usuarios & Roles</x-responsive-nav-link>@endrole
+        @role('Admin')<x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">👥 Usuarios & Roles</x-responsive-nav-link>@endrole
+        @can('ver ajustes')<x-responsive-nav-link :href="route('ajustes.index')" :active="request()->routeIs('ajustes.*')">⚙️ Ajustes & Configuración</x-responsive-nav-link>@endcan
 
         <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
             <div class="font-bold text-slate-800 dark:text-slate-200">{{ Auth::user()->name }} ({{ Auth::user()->roles->first()?->name }})</div>

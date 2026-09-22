@@ -178,10 +178,16 @@
     <button class="print-button no-print" onclick="window.print()">Imprimir</button>
 
     <div class="center">
-        <div class="title">{{ env('EMPRESA_NOMBRE', 'FarmaBien') }}</div>
-        <div class="small">RUC: {{ env('EMPRESA_RUC', '-') }}</div>
-        <div class="small">{{ env('EMPRESA_DIRECCION', '-') }}</div>
-        <div class="small">Tel: {{ env('EMPRESA_TELEFONO', '-') }}</div>
+        @if(configuracion('empresa_logo'))
+            <div style="margin-bottom: 5px;">
+                <img src="{{ asset('storage/' . configuracion('empresa_logo')) }}" alt="Logo" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+            </div>
+        @endif
+        <div class="title">{{ configuracion('empresa_nombre', 'FarmaBien') }}</div>
+        <div class="small">{{ configuracion('empresa_razon_social', 'Farmacia & Droguería FarmaBien C.A.') }}</div>
+        <div class="small">RIF/RUC: {{ configuracion('empresa_ruc', 'J-40892154-0') }}</div>
+        <div class="small">{{ configuracion('empresa_direccion', 'Av. Principal Los Próceres, Caracas') }}</div>
+        <div class="small">Tel: {{ configuracion('empresa_telefono', '(0212) 555-0199') }}</div>
     </div>
 
     <div class="rule-strong"></div>
@@ -309,7 +315,9 @@
 
     <div class="footer center">
         <div class="rule"></div>
-        <div class="xs">{{ config('app.name') }} — {{ now()->format('d/m/Y H:i:s') }}</div>
+        <div class="small bold" style="margin: 4px 0;">{{ configuracion('empresa_pie_ticket', '¡Gracias por su compra!') }}</div>
+        <div class="xs">{{ configuracion('empresa_slogan', 'Tu salud y bienestar en las mejores manos.') }}</div>
+        <div class="xs" style="margin-top: 3px;">{{ configuracion('empresa_nombre', 'FarmaBien') }} — {{ now()->format('d/m/Y H:i:s') }}</div>
         <div class="rule"></div>
     </div>
 

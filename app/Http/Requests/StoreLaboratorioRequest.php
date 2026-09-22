@@ -23,4 +23,33 @@ class StoreLaboratorioRequest extends FormRequest
             'activo' => ['boolean'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'nombre.required' => 'El nombre del laboratorio es obligatorio.',
+            'nombre.unique' => 'Ya existe un laboratorio registrado con ese nombre.',
+            'codigo.unique' => 'El código de laboratorio ya está en uso.',
+            'email.email' => 'El formato del correo electrónico no es válido.',
+        ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $codigo = trim((string)$this->input('codigo', ''));
+        $contacto = trim((string)$this->input('contacto', ''));
+        $telefono = trim((string)$this->input('telefono', ''));
+        $email = trim((string)$this->input('email', ''));
+        $pais = trim((string)$this->input('pais_origen', ''));
+
+        $this->merge([
+            'nombre' => trim((string)$this->input('nombre', '')),
+            'codigo' => $codigo !== '' ? $codigo : null,
+            'contacto' => $contacto !== '' ? $contacto : null,
+            'telefono' => $telefono !== '' ? $telefono : null,
+            'email' => $email !== '' ? $email : null,
+            'pais_origen' => $pais !== '' ? $pais : null,
+            'activo' => $this->has('activo') ? $this->boolean('activo') : true,
+        ]);
+    }
 }

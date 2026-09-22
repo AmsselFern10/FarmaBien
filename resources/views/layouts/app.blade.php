@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" 
       x-data="{ 
-          darkMode: localStorage.getItem('farma_theme') === 'dark' || (!localStorage.getItem('farma_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+          darkMode: localStorage.getItem('farma_theme') === 'dark',
           toggleDarkMode() {
               this.darkMode = !this.darkMode;
               localStorage.setItem('farma_theme', this.darkMode ? 'dark' : 'light');
@@ -22,11 +22,45 @@
 
         <!-- Anti-flicker dark mode & Draft Pre-loader -->
         <script>
-            if (localStorage.getItem('farma_theme') === 'dark' || (!localStorage.getItem('farma_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+            (function() {
+                // Preferencia guardada en localStorage (prioridad máxima)
+                var saved = localStorage.getItem('farma_theme');
+
+                // Preferencia guardada en el servidor (BD via Ajustes) — PHP→JS bridge
+                var serverTheme = '{{ configuracion('interfaz_modo_oscuro_default', 'system') }}';
+
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+                var isDark;
+                if (saved === 'dark') {
+                    isDark = true;
+                } else if (saved === 'light') {
+                    isDark = false;
+                } else if (serverTheme === 'dark') {
+                    // Sin localStorage: el servidor manda, escribir para futuras cargas
+                    isDark = true;
+                    localStorage.setItem('farma_theme', 'dark');
+                } else if (serverTheme === 'light') {
+                    isDark = false;
+                    localStorage.setItem('farma_theme', 'light');
+                } else {
+                    // 'system' o sin preferencia
+                    isDark = prefersDark;
+                }
+
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+
+                // Sincronizar vista predeterminada de formularios (Moderna vs Compacta)
+                var savedFormLayout = localStorage.getItem('farmaFormViewMode');
+                var serverFormLayout = '{{ configuracion('interfaz_vista_formularios_default', 'modern') }}';
+                if (!savedFormLayout && serverFormLayout) {
+                    localStorage.setItem('farmaFormViewMode', serverFormLayout);
+                }
+            })();
 
             window.farmaGetDraft = function(path, defaults = {}) {
                 try {
@@ -208,5 +242,31 @@
             </div>
         </div>
         @stack('scripts')
+        @if(session('tema_aplicado'))
+        <script>
+            (function() {
+                var tema = '{{ session('tema_aplicado') }}';
+                if (tema === 'dark') {
+                    localStorage.setItem('farma_theme', 'dark');
+                    document.documentElement.classList.add('dark');
+                } else if (tema === 'light') {
+                    localStorage.setItem('farma_theme', 'light');
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    // 'system': borrar preferencia para que el siguiente load use el sistema
+                    localStorage.removeItem('farma_theme');
+                }
+            })();
+        </script>
+        @endif
+
+        @if(session('form_view_aplicado'))
+        <script>
+            (function() {
+                var formMode = '{{ session('form_view_aplicado') }}';
+                localStorage.setItem('farmaFormViewMode', formMode);
+            })();
+        </script>
+        @endif
     </body>
 </html>

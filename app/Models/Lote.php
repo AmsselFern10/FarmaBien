@@ -79,6 +79,11 @@ class Lote extends Model
         return $query->where('fecha_vencimiento', '<=', now()->toDateString());
     }
 
+    public function scopeVigentes($query)
+    {
+        return $query->where('fecha_vencimiento', '>', now()->toDateString());
+    }
+
     public function scopeProximosVencer($query, int $dias = 30)
     {
         return $query->where('fecha_vencimiento', '<=', now()->addDays($dias)->toDateString())

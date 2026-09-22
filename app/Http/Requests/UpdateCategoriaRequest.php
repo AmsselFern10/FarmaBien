@@ -14,17 +14,17 @@ class UpdateCategoriaRequest extends FormRequest
 
     public function rules(): array
     {
-        $categoriaId = $this->route('categoria'); // ID de la categoría en la ruta
+        $categoriaId = $this->route('categoria')?->id ?? $this->route('categoria');
 
         return [
             'nombre' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('categorias')->ignore($categoriaId)
+                Rule::unique('categorias', 'nombre')->ignore($categoriaId)
             ],
-            'descripcion' => 'nullable|string|max:200',
-            'activo' => 'boolean',
+            'descripcion' => ['nullable', 'string', 'max:200'],
+            'activo' => ['boolean'],
         ];
     }
 
@@ -35,5 +35,14 @@ class UpdateCategoriaRequest extends FormRequest
             'nombre.unique' => 'Ya existe otra categoría con ese nombre.',
             'nombre.max' => 'El nombre no puede exceder 100 caracteres.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'nombre' => trim((string)$this->input('nombre', '')),
+            'descripcion' => $this->filled('descripcion') ? trim((string)$this->input('descripcion')) : null,
+            'activo' => $this->has('activo') ? $this->boolean('activo') : true,
+        ]);
     }
 }

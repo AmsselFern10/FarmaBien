@@ -464,9 +464,28 @@ function posVentaData() {
                 <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 <span class="text-slate-800 dark:text-slate-200 font-semibold">Terminal POS Mostrador</span>
             </nav>
-            <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <span>Punto de Venta (POS Rápido)</span>
-            </h1>
+            <div class="flex flex-wrap items-center gap-2">
+                <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <span>Punto de Venta (POS Rápido)</span>
+                </h1>
+                @if(isset($sesionActivaCaja) && $sesionActivaCaja)
+                    <a href="{{ route('cajas.show', $sesionActivaCaja) }}" 
+                       class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900 transition"
+                       title="Ver arqueo de caja activo">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>{{ $sesionActivaCaja->caja->nombre }}</span>
+                        <span class="font-mono">|</span>
+                        <span>${{ number_format($sesionActivaCaja->monto_esperado_efectivo, 2) }}</span>
+                    </a>
+                @else
+                    <a href="{{ route('cajas.index') }}"
+                       class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900 transition"
+                       title="No hay caja abierta. Haz clic para abrir un turno.">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Sin caja abierta</span>
+                    </a>
+                @endif
+            </div>
         </div>
 
         <div class="flex items-center space-x-2 self-start sm:self-auto">

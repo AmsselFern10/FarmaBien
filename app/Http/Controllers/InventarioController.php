@@ -8,6 +8,8 @@ use App\Models\MovimientoInventario;
 use App\Services\InventarioService;
 use App\Http\Requests\AjusteInventarioRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 use Exception;
 
 class InventarioController extends Controller
@@ -18,7 +20,7 @@ class InventarioController extends Controller
     {
         $this->inventarioService = $inventarioService;
         $this->middleware('permission:ver movimientos inventario')->only(['index', 'movimientos', 'lotes', 'kardexProducto', 'alertas']);
-        $this->middleware('permission:ajustar inventario')->only(['ajustar', 'storeAjuste']);
+        $this->middleware('permission:ajustar inventario')->only(['ajustar', 'storeAjuste', 'bajaVencidos']);
     }
 
     public function index()
@@ -60,7 +62,7 @@ class InventarioController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $productos = Producto::activos()->orderBy('nombre')->get();
+        $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
 
         return view('inventario.movimientos', compact('movimientos', 'productos'));
     }
@@ -132,9 +134,43 @@ class InventarioController extends Controller
             $movimiento = $this->inventarioService->ajustarInventario($request->validated());
 
             return redirect()->route('inventario.movimientos')
-                ->with('success', "Ajuste registrado exitosamente en el Kardex para el lote '{$movimiento->lote->numero_lote}'.");
+                ->with('success', "Ajuste de inventario aplicado exitosamente en el Kardex para el lote '{$movimiento->lote->numero_lote}' ({$movimiento->producto->nombre}).");
+        } catch (QueryException $qe) {
+            Log::error('Error de base de datos en ajuste de inventario', [
+                'user_id' => auth()->id(),
+                'payload' => $request->except(['_token']),
+                'message' => $qe->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al procesar el ajuste en la base de datos debido a un conflicto de concurrencia o integridad.');
         } catch (Exception $e) {
-            return back()->withInput()->with('error', 'Error al procesar el ajuste de inventario: ' . $e->getMessage());
+            Log::error('Excepción en ajuste de inventario', [
+                'user_id' => auth()->id(),
+                'payload' => $request->except(['_token']),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Endpoint para dar de baja automática a lotes vencidos
+     */
+    public function bajaVencidos()
+    {
+        try {
+            $totalBajas = $this->inventarioService->desactivarLotesVencidos();
+
+            return redirect()->route('inventario.alertas')
+                ->with('success', "Se procesó la baja automática de {$totalBajas} lote(s) vencido(s) con registro en Kardex.");
+        } catch (Exception $e) {
+            Log::error('Error al ejecutar baja de lotes vencidos', [
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Error al procesar la baja de lotes vencidos: ' . $e->getMessage());
         }
     }
 }

@@ -49,10 +49,10 @@
     <col style="width: 130pt;">
   </colgroup>
   <tr>
-    <td colspan="5" class="header-brand">FARMABIEN - FARMACIA &amp; DROGUER&Iacute;A C.A.</td>
+    <td colspan="5" class="header-brand">{{ strtoupper(configuracion('empresa_nombre', 'FARMABIEN')) }} - {{ strtoupper(configuracion('empresa_razon_social', 'Farmacia & Droguería FarmaBien C.A.')) }}</td>
   </tr>
   <tr>
-    <td colspan="5" class="header-sub">RIF / RUC: J-40892154-0 &bull; Tel: (0212) 555-0199 &bull; Av. Principal Los Pr&oacute;ceres, Caracas</td>
+    <td colspan="5" class="header-sub">RIF / RUC: {{ configuracion('empresa_ruc', 'J-40892154-0') }} &bull; Tel: {{ configuracion('empresa_telefono', '(0212) 555-0199') }} &bull; {{ configuracion('empresa_direccion', 'Caracas') }}</td>
   </tr>
   <tr>
     <td colspan="5" class="report-title">RANKING TOP 20: MEDICAMENTOS M&Aacute;S VENDIDOS</td>

@@ -14,6 +14,7 @@ class Venta extends Model
     protected $fillable = [
         'cliente_id',
         'user_id',
+        'sesion_caja_id',
         'tipo_comprobante',
         'serie',
         'numero_comprobante',
@@ -49,6 +50,11 @@ class Venta extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function sesionCaja(): BelongsTo
+    {
+        return $this->belongsTo(SesionCaja::class, 'sesion_caja_id');
     }
 
     public function anuladoPor(): BelongsTo

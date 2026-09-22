@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             UserSeeder::class,
             DatosInicialesSeeder::class,
+            ConfiguracionSeeder::class,
+            CajaSeeder::class,
         ]);
     }
 }

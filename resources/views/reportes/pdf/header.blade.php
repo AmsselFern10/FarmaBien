@@ -1,12 +1,12 @@
 <table class="header-table">
     <tr>
         <td style="width: 60%; vertical-align: top;">
-            <div class="pharmacy-title">FARMABIEN</div>
-            <div class="pharmacy-subtitle">Farmacia & Droguería FarmaBien C.A. · Sistema de Gestión Farmacéutica</div>
+            <div class="pharmacy-title">{{ configuracion('empresa_nombre', 'FARMABIEN') }}</div>
+            <div class="pharmacy-subtitle">{{ configuracion('empresa_razon_social', 'Farmacia & Droguería FarmaBien C.A.') }} · Sistema Farmacéutico</div>
             <div class="pharmacy-details">
-                <strong>RIF / RUC:</strong> J-40892154-0 &nbsp;|&nbsp; <strong>Teléfono:</strong> (0212) 555-0199 / +58 412-1234567<br>
-                <strong>Dirección:</strong> Av. Principal Los Próceres, Edif. FarmaBien, Caracas - Venezuela<br>
-                <strong>Correo:</strong> administracion@farmabien.com &nbsp;|&nbsp; <strong>Sucursal:</strong> Principal (001)
+                <strong>RIF / RUC:</strong> {{ configuracion('empresa_ruc', 'J-40892154-0') }} &nbsp;|&nbsp; <strong>Teléfono:</strong> {{ configuracion('empresa_telefono', '(0212) 555-0199') }}<br>
+                <strong>Dirección:</strong> {{ configuracion('empresa_direccion', 'Av. Principal Los Próceres, Caracas') }}<br>
+                <strong>Correo:</strong> {{ configuracion('empresa_email', 'contacto@farmabien.com') }} &nbsp;|&nbsp; <strong>Sucursal:</strong> Principal (001)
             </div>
         </td>
         <td style="width: 40%; vertical-align: top; text-align: right;">

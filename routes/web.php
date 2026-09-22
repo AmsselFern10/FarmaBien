@@ -16,15 +16,21 @@ use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\Api\ProductoPresentacionController;
 use App\Http\Controllers\PresentacionController;
+use App\Http\Controllers\AjusteController;
+use App\Http\Controllers\CajaController;
+use App\Http\Controllers\PublicCatalogoController;
 
 /*
 |--------------------------------------------------------------------------
-| Ruta Pública
+| Rutas Públicas
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
+
+// Catálogo Público de Medicamentos para Clientes
+Route::get('/catalogo', [PublicCatalogoController::class, 'index'])->name('catalogo.publico');
 
 /*
 |--------------------------------------------------------------------------
@@ -117,6 +123,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/lotes', [InventarioController::class, 'lotes'])->name('lotes');
         Route::get('/kardex-producto/{producto}', [InventarioController::class, 'kardexProducto'])->name('kardex-producto');
         Route::get('/alertas', [InventarioController::class, 'alertas'])->name('alertas');
+        Route::post('/baja-vencidos', [InventarioController::class, 'bajaVencidos'])->name('baja-vencidos');
         Route::get('/ajustar', [InventarioController::class, 'ajustar'])->name('ajustar');
         Route::post('/ajustar', [InventarioController::class, 'storeAjuste'])->name('ajustar.store');
     });
@@ -145,6 +152,33 @@ Route::middleware('auth')->group(function () {
         Route::get('/clientes', [ReporteController::class, 'clientes'])->name('clientes');
         Route::get('/recetas', [ReporteController::class, 'recetas'])->name('recetas');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | GESTIÓN Y CONTROL DE CAJAS (Multicaja, Arqueos, Turnos)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('cajas')->name('cajas.')->group(function () {
+        Route::get('/', [CajaController::class, 'index'])->name('index');
+        Route::post('/', [CajaController::class, 'store'])->name('store');
+        Route::put('/{caja}', [CajaController::class, 'update'])->name('update');
+        Route::delete('/{caja}', [CajaController::class, 'destroy'])->name('destroy');
+        Route::post('/{caja}/abrir', [CajaController::class, 'abrir'])->name('abrir');
+        Route::get('/sesiones', [CajaController::class, 'sesiones'])->name('sesiones');
+        Route::get('/sesion/{sesion}', [CajaController::class, 'show'])->name('show');
+        Route::post('/sesion/{sesion}/cerrar', [CajaController::class, 'cerrar'])->name('cerrar');
+        Route::post('/sesion/{sesion}/movimientos', [CajaController::class, 'storeMovimiento'])->name('movimientos.store');
+        Route::get('/sesion/{sesion}/ticket', [CajaController::class, 'ticketArqueo'])->name('ticket');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | AJUSTES Y CONFIGURACIÓN DEL SISTEMA
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/ajustes', [AjusteController::class, 'index'])->name('ajustes.index');
+    Route::post('/ajustes', [AjusteController::class, 'update'])->name('ajustes.update');
+    Route::post('/ajustes/toggle-catalogo', [AjusteController::class, 'toggleCatalogo'])->name('ajustes.toggle-catalogo');
 });
 
 /*

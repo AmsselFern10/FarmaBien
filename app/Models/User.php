@@ -50,7 +50,26 @@ class User extends Authenticatable
     {
         return $this->hasMany(LoginLog::class)->orderByDesc('created_at');
     }
-public function scopeActivos($query)
+
+    public function sesionesCaja(): HasMany
+    {
+        return $this->hasMany(SesionCaja::class, 'user_id');
+    }
+
+    public function movimientosCaja(): HasMany
+    {
+        return $this->hasMany(MovimientoCaja::class, 'user_id');
+    }
+
+    /**
+     * Obtener la sesión de caja actualmente abierta para este usuario
+     */
+    public function sesionCajaActiva()
+    {
+        return $this->sesionesCaja()->where('estado', 'abierta')->with('caja')->first();
+    }
+
+    public function scopeActivos($query)
     {
         return $query->where('active', true);
     }
