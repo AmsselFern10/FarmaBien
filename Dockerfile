@@ -21,10 +21,8 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configure Apache DocumentRoot to Laravel public/
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# Configure Apache DocumentRoot and VirtualHost
+COPY apache.conf /etc/apache2/sites-available/000-default.conf
 RUN a2enmod rewrite headers
 
 # Set working directory
@@ -33,7 +31,7 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Install Composer dependencies cleanly (no-scripts prevents artisan boot failure during Docker build)
+# Install Composer dependencies cleanly
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 
 # Build frontend assets
