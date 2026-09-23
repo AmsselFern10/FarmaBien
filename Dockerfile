@@ -37,7 +37,6 @@ COPY . .
 
 # Install Composer dependencies with timeout resilience
 RUN composer config --global process-timeout 2000 \
-    && composer config --global max-parallel-http 4 \
     && composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 
 # Build frontend assets
