@@ -37,10 +37,10 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
         } elseif ($user->can('ver ventas propias')) {
-            $ventasHoy = Venta::where('usuario_id', $user->id)->whereDate('fecha', today())->completadas()->sum('total');
-            $cantidadVentasHoy = Venta::where('usuario_id', $user->id)->whereDate('fecha', today())->completadas()->count();
+            $ventasHoy = Venta::where('user_id', $user->id)->whereDate('fecha', today())->completadas()->sum('total');
+            $cantidadVentasHoy = Venta::where('user_id', $user->id)->whereDate('fecha', today())->completadas()->count();
             $ultimasVentas = Venta::with(['cliente', 'usuario'])
-                ->where('usuario_id', $user->id)
+                ->where('user_id', $user->id)
                 ->completadas()
                 ->orderBy('fecha', 'desc')
                 ->take(5)

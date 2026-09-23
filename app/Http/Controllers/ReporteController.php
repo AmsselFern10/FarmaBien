@@ -139,7 +139,7 @@ class ReporteController extends Controller
         }
 
         if (!empty($cajeroId)) {
-            $query->where('usuario_id', $cajeroId);
+            $query->where('user_id', $cajeroId);
         }
 
         $totalVendido = (clone $query)->sum('total');
@@ -181,7 +181,7 @@ class ReporteController extends Controller
             ->where('ventas.estado', 'completada')
             ->whereBetween(DB::raw('DATE(ventas.fecha)'), [$fechaDesde, $fechaHasta])
             ->when(!empty($metodoPago), fn($q) => $q->where('ventas.metodo_pago', $metodoPago))
-            ->when(!empty($cajeroId), fn($q) => $q->where('ventas.usuario_id', $cajeroId))
+            ->when(!empty($cajeroId), fn($q) => $q->where('ventas.user_id', $cajeroId))
             ->select(
                 'productos.id',
                 'productos.nombre',
