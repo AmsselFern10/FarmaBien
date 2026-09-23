@@ -20,6 +20,9 @@ RUN apt-get update && apt-get install -y \
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_MEMORY_LIMIT=-1 \
+    COMPOSER_PROCESS_TIMEOUT=2000
 
 # Configure Apache DocumentRoot and VirtualHost
 COPY apache.conf /etc/apache2/sites-available/000-default.conf
@@ -31,8 +34,9 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Install Composer dependencies cleanly
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
+# Install Composer dependencies with timeout resilience
+RUN composer config --global process-timeout 2000 \
+    && composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 
 # Build frontend assets
 RUN npm install && npm run build

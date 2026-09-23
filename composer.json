@@ -62,6 +62,7 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
+        "process-timeout": 2000,
         "sort-packages": true,
         "platform-check": false,
         "platform": {
