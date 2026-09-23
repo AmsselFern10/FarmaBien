@@ -22,7 +22,8 @@ RUN apt-get update && apt-get install -y \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_MEMORY_LIMIT=-1 \
-    COMPOSER_PROCESS_TIMEOUT=2000
+    COMPOSER_PROCESS_TIMEOUT=2000 \
+    COMPOSER_MAX_PARALLEL_HTTP=4
 
 # Configure Apache DocumentRoot and VirtualHost
 COPY apache.conf /etc/apache2/sites-available/000-default.conf
@@ -36,6 +37,7 @@ COPY . .
 
 # Install Composer dependencies with timeout resilience
 RUN composer config --global process-timeout 2000 \
+    && composer config --global max-parallel-http 4 \
     && composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 
 # Build frontend assets
