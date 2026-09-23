@@ -102,7 +102,7 @@
       <tr class="{{ $rowClass }}">
         <td class="td-text td-center">{{ $compra->numero_factura ?? ('COM-' . str_pad($compra->id, 6, '0', STR_PAD_LEFT)) }}</td>
         <td class="td-date">{{ \Carbon\Carbon::parse($compra->fecha)->format('Y-m-d H:i') }}</td>
-        <td class="td-text">{{ $compra->proveedor->razon_social ?? 'N/A' }}</td>
+        <td class="td-text">{{ $compra->proveedor->nombre ?? 'N/A' }}</td>
         <td class="td-text td-center">{{ $compra->proveedor->ruc ?? 'N/A' }}</td>
         <td class="td-text td-center">{{ ucfirst(str_replace('_', ' ', $compra->condicion_pago ?? 'Contado')) }}</td>
         <td class="td-text">{{ $compra->usuario->name ?? 'N/A' }}</td>

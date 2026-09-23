@@ -462,4 +462,27 @@ class VentaService
             })
             ->values();
     }
+
+    /**
+     * Validar la estructura básica de los datos de venta antes de procesar
+     */
+    protected function validarDatosVenta(array $data): void
+    {
+        if (empty($data['productos']) || !is_array($data['productos'])) {
+            throw new Exception("El carrito de venta no contiene ningún producto.");
+        }
+
+        foreach ($data['productos'] as $index => $item) {
+            if (empty($item['producto_id'])) {
+                throw new Exception("El ítem en la posición " . ($index + 1) . " no tiene un producto válido asignado.");
+            }
+            if (empty($item['lote_id'])) {
+                throw new Exception("El ítem en la posición " . ($index + 1) . " no tiene un lote de inventario seleccionado.");
+            }
+            $cantidad = (int) ($item['cantidad'] ?? 0);
+            if ($cantidad <= 0) {
+                throw new Exception("La cantidad debe ser mayor a 0 en todos los productos del carrito.");
+            }
+        }
+    }
 }

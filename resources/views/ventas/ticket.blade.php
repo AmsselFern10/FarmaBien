@@ -248,32 +248,19 @@
         <tbody>
             @foreach($venta->detalles as $detalle)
                 @php
-                    $usaPres = !empty($detalle->presentacion_id) || !empty($detalle->tipo_presentacion);
-                    $cantPres = (int)($detalle->cantidad_presentaciones ?? 1);
-                    $cant = $usaPres ? $cantPres : (int)($detalle->cantidad_unidades_base ?? 0);
-
-                    $precio = $usaPres
-                        ? (float)($detalle->precio_unitario * max(1,(int)$detalle->unidades_por_presentacion))
-                        : (float)$detalle->precio_unitario;
-
-                    $totalLinea = (float)($detalle->subtotal ?? 0);
-                    $descMonto = (float)($detalle->descuento_monto ?? 0);
-
-                    $nombrePres = $detalle->tipo_presentacion
-                        ?? $detalle->presentacion?->nombre
-                        ?? 'Unidad';
+                    $cant = (int)($detalle->cantidad ?? 1);
+                    $precio = (float)($detalle->precio_unitario ?? 0);
+                    $totalLinea = (float)($detalle->subtotal ?? ($cant * $precio));
+                    $nombrePres = $detalle->presentacion?->nombre ?? 'Unidad Base';
                 @endphp
                 <tr>
                     <td>
-                        <div class="item-name">{{ $detalle->producto?->nombre ?? 'Producto' }}</div>
-                        <div class="item-pres">{{ $usaPres ? $nombrePres : 'Unidad' }}</div>
+                        <div class="item-name">{{ $detalle->producto?->nombre ?? 'Medicamento' }}</div>
+                        <div class="item-pres">{{ $nombrePres }}</div>
                     </td>
                     <td class="qty">{{ $cant }}</td>
                     <td class="num">
                         <div>{{ number_format($precio, 2) }}</div>
-                        @if($descMonto > 0)
-                            <div class="xs">Desc: -{{ number_format($descMonto, 2) }}</div>
-                        @endif
                     </td>
                     <td class="num">{{ number_format($totalLinea, 2) }}</td>
                 </tr>
@@ -286,12 +273,20 @@
     <table class="totals">
         <tr>
             <td class="k">SUBTOTAL:</td>
-            <td class="v">{{ $moneda }} {{ number_format((float)($venta->subtotal_bruto ?? 0), 2) }}</td>
+            <td class="v">{{ $moneda }} {{ number_format((float)($venta->subtotal ?? 0), 2) }}</td>
         </tr>
+        @if(($venta->descuento ?? 0) > 0)
         <tr>
             <td class="k">DESCUENTO:</td>
-            <td class="v">{{ $moneda }} {{ number_format((float)($venta->descuento_monto_total ?? 0), 2) }}</td>
+            <td class="v">-{{ $moneda }} {{ number_format((float)($venta->descuento ?? 0), 2) }}</td>
         </tr>
+        @endif
+        @if(($venta->impuesto ?? 0) > 0)
+        <tr>
+            <td class="k">IMPUESTO:</td>
+            <td class="v">{{ $moneda }} {{ number_format((float)($venta->impuesto ?? 0), 2) }}</td>
+        </tr>
+        @endif
     </table>
 
     <div class="total-final">

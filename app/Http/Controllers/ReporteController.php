@@ -457,8 +457,8 @@ class ReporteController extends Controller
 
         $comprasPorProveedor = (clone $query)
             ->join('proveedores', 'compras.proveedor_id', '=', 'proveedores.id')
-            ->select('proveedores.razon_social', DB::raw('SUM(compras.total) as total'), DB::raw('COUNT(compras.id) as cantidad'))
-            ->groupBy('proveedores.razon_social')
+            ->select('proveedores.nombre', DB::raw('SUM(compras.total) as total'), DB::raw('COUNT(compras.id) as cantidad'))
+            ->groupBy('proveedores.id', 'proveedores.nombre')
             ->orderByDesc('total')
             ->get();
 
@@ -509,7 +509,7 @@ class ReporteController extends Controller
             foreach ($compras as $c) {
                 fputcsv($handle, [
                     $c->numero_factura ?? ('COM-' . str_pad($c->id, 6, '0', STR_PAD_LEFT)),
-                    $c->proveedor?->razon_social ?? $c->proveedor?->nombre ?? 'N/A',
+                    $c->proveedor?->nombre ?? 'N/A',
                     $c->proveedor?->ruc ?? $c->proveedor?->rif ?? '',
                     $c->numero_factura ?? '',
                     $c->fecha ? \Carbon\Carbon::parse($c->fecha)->format('d/m/Y') : '',

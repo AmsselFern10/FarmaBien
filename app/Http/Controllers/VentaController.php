@@ -23,7 +23,7 @@ class VentaController extends Controller
     public function __construct(VentaService $ventaService)
     {
         $this->ventaService = $ventaService;
-        $this->middleware('permission:ver ventas')->only(['index', 'show', 'ticket']);
+        $this->middleware('permission:ver ventas|ver ventas propias|realizar ventas')->only(['index', 'show', 'ticket']);
         $this->middleware('permission:realizar ventas')->only(['create', 'store', 'edit', 'update', 'buscarProductos']);
         $this->middleware('permission:anular ventas')->only(['anular']);
     }
@@ -147,6 +147,10 @@ class VentaController extends Controller
 
     public function show(Venta $venta)
     {
+        if (!auth()->user()->can('ver ventas') && auth()->user()->can('ver ventas propias') && $venta->user_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para ver esta venta.');
+        }
+
         $venta->load([
             'cliente',
             'usuario',
@@ -234,6 +238,10 @@ class VentaController extends Controller
 
     public function ticket(Venta $venta)
     {
+        if (!auth()->user()->can('ver ventas') && auth()->user()->can('ver ventas propias') && $venta->user_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para ver el ticket de esta venta.');
+        }
+
         $venta->load([
             'cliente',
             'usuario',
