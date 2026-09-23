@@ -89,10 +89,11 @@ class DatosInicialesSeeder extends Seeder
 
         $laboratorios = [];
         foreach ($laboratoriosData as $data) {
-            $laboratorios[$data['nombre']] = Laboratorio::firstOrCreate(
-                ['nombre' => $data['nombre']],
-                ['codigo' => $data['codigo'], 'pais_origen' => $data['pais_origen'], 'activo' => true]
+            $lab = Laboratorio::updateOrCreate(
+                ['codigo' => $data['codigo']],
+                ['nombre' => $data['nombre'], 'pais_origen' => $data['pais_origen'], 'activo' => true]
             );
+            $laboratorios[$data['nombre']] = $lab;
         }
 
         // =========================================================================
