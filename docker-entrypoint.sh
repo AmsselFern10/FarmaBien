@@ -12,6 +12,7 @@ php artisan package:discover --ansi || true
 # Storage link and database migration
 php artisan storage:link || true
 php artisan migrate --force || true
+php artisan db:seed --force || true
 
 # Cache configurations and routes
 php artisan config:cache || true
