@@ -40,10 +40,12 @@ RUN npm install && npm run build
 # Fix permissions for storage and bootstrap cache
 RUN mkdir -p /var/www/html/storage/framework/sessions \
              /var/www/html/storage/framework/views \
-             /var/www/html/storage/framework/cache \
+             /var/www/html/storage/framework/cache/data \
+             /var/www/html/storage/logs \
+             /var/www/html/storage/app/public \
              /var/www/html/bootstrap/cache \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+    && chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Copy and setup entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
