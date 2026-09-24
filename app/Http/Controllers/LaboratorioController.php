@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Laboratorio;
+use App\Models\AuditLog;
 use App\Http\Requests\StoreLaboratorioRequest;
 use App\Http\Requests\UpdateLaboratorioRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\QueryException;
 use Exception;
 
@@ -66,6 +68,13 @@ class LaboratorioController extends Controller
                     'user_id' => auth()->id(),
                 ]);
 
+                AuditLog::log('laboratorios', 'crear', "Laboratorio '{$laboratorio->nombre}' creado", [
+                    'laboratorio_id' => $laboratorio->id,
+                    'codigo' => $laboratorio->codigo,
+                ]);
+
+                Cache::forget('catalog_laboratorios_base');
+
                 return $laboratorio;
             });
 
@@ -112,6 +121,12 @@ class LaboratorioController extends Controller
                     'nombre' => $locked->nombre,
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log('laboratorios', 'actualizar', "Laboratorio '{$locked->nombre}' actualizado", [
+                    'laboratorio_id' => $locked->id,
+                ]);
+
+                Cache::forget('catalog_laboratorios_base');
             });
 
             return redirect()->route('laboratorios.index')
@@ -149,6 +164,15 @@ class LaboratorioController extends Controller
                     'nuevo_estado' => $nuevoEstado ? 'activado' : 'desactivado',
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log(
+                    'laboratorios',
+                    $nuevoEstado ? 'activar' : 'desactivar',
+                    "Laboratorio '{$locked->nombre}' " . ($nuevoEstado ? 'activado' : 'desactivado'),
+                    ['laboratorio_id' => $locked->id]
+                );
+
+                Cache::forget('catalog_laboratorios_base');
 
                 return $nuevoEstado ? 'activado' : 'desactivado';
             });

@@ -78,20 +78,9 @@ class VentaController extends Controller
 
     public function create()
     {
-        $clientes = Cliente::activos()->orderBy('nombre')->get();
-        $categorias = Categoria::activas()->orderBy('nombre')->get();
-        $productos = Producto::with([
-                'categoria',
-                'laboratorio',
-                'presentacionesActivas',
-                'lotes' => function ($query) {
-                    $query->disponibles()->orderBy('fecha_vencimiento', 'asc'); // FEFO
-                }
-            ])
-            ->activos()
-            ->get()
-            ->filter(fn($p) => $p->lotes->isNotEmpty())
-            ->values();
+        $clientes = Cliente::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
+        $categorias = Categoria::activas()->orderBy('nombre')->get(['id', 'nombre']);
+        $productos = $this->ventaService->buscarProductosParaVenta('', null, 24);
 
         // Sesión de caja activa del usuario actual (para badge en POS)
         $sesionActivaCaja = null;
@@ -104,7 +93,18 @@ class VentaController extends Controller
             }
         }
 
-        return view('ventas.create', compact('clientes', 'categorias', 'productos', 'sesionActivaCaja'));
+        // Cargar recetas recientes vigentes para vincular rápido en POS
+        $recetasRecientes = [];
+        if (class_exists(\App\Services\RecetaService::class)) {
+            try {
+                $recetaService = app(\App\Services\RecetaService::class);
+                $recetasRecientes = $recetaService->buscarRecetasDisponibles('', 15);
+            } catch (Exception $e) {
+                // Si falla la consulta de recetas, continuar
+            }
+        }
+
+        return view('ventas.create', compact('clientes', 'categorias', 'productos', 'sesionActivaCaja', 'recetasRecientes'));
     }
 
     public function store(StoreVentaRequest $request)
@@ -176,27 +176,20 @@ class VentaController extends Controller
 
         $venta->load([
             'detalles.producto.presentacionesActivas',
-            'detalles.producto.lotes',
+            'detalles.producto.lotes' => fn($q) => $q->disponibles()->orderBy('fecha_vencimiento', 'asc'),
             'detalles.lote',
             'detalles.presentacion',
             'cliente',
             'recetas'
         ]);
 
-        $clientes = Cliente::activos()->orderBy('nombre')->get();
-        $categorias = Categoria::activas()->orderBy('nombre')->get();
-        $productos = Producto::with([
-                'categoria',
-                'laboratorio',
-                'presentacionesActivas',
-                'lotes' => function ($query) {
-                    $query->disponibles()->orderBy('fecha_vencimiento', 'asc');
-                }
-            ])
-            ->activos()
-            ->get()
-            ->filter(fn($p) => $p->lotes->isNotEmpty())
-            ->values();
+        $clientes = Cliente::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
+        $categorias = Categoria::activas()->orderBy('nombre')->get(['id', 'nombre']);
+        
+        // Incluir productos de la venta actual + catálogo inicial limitado
+        $productosVenta = $venta->detalles->map(fn($d) => $d->producto)->filter()->unique('id');
+        $catalogoInicial = $this->ventaService->buscarProductosParaVenta('', null, 24);
+        $productos = $productosVenta->concat($catalogoInicial)->unique('id')->values();
 
         return view('ventas.edit', compact('venta', 'clientes', 'categorias', 'productos'));
     }
@@ -256,11 +249,10 @@ class VentaController extends Controller
     public function buscarProductos(Request $request)
     {
         $termino = trim($request->input('q', ''));
-        if (strlen($termino) < 2) {
-            return response()->json([]);
-        }
+        $categoriaId = $request->filled('categoria_id') ? (int)$request->input('categoria_id') : null;
+        $limit = min(30, max(1, (int)$request->input('limit', 20)));
 
-        $productos = $this->ventaService->buscarProductosParaVenta($termino);
+        $productos = $this->ventaService->buscarProductosParaVenta($termino, $categoriaId, $limit);
 
         return response()->json($productos);
     }

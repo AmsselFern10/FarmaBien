@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Producto;
 use App\Models\Lote;
 use App\Models\MovimientoInventario;
+use App\Models\AuditLog;
 use App\Services\InventarioService;
 use App\Http\Requests\AjusteInventarioRequest;
 use Illuminate\Http\Request;
@@ -133,6 +134,13 @@ class InventarioController extends Controller
         try {
             $movimiento = $this->inventarioService->ajustarInventario($request->validated());
 
+            AuditLog::log('inventario', 'ajuste', "Ajuste de inventario en lote {$movimiento->lote->numero_lote} ({$movimiento->producto->nombre})", [
+                'movimiento_id' => $movimiento->id,
+                'tipo' => $movimiento->tipo,
+                'cantidad' => $movimiento->cantidad,
+                'motivo' => $movimiento->motivo,
+            ]);
+
             return redirect()->route('inventario.movimientos')
                 ->with('success', "Ajuste de inventario aplicado exitosamente en el Kardex para el lote '{$movimiento->lote->numero_lote}' ({$movimiento->producto->nombre}).");
         } catch (QueryException $qe) {
@@ -161,6 +169,10 @@ class InventarioController extends Controller
     {
         try {
             $totalBajas = $this->inventarioService->desactivarLotesVencidos();
+
+            AuditLog::log('inventario', 'baja_vencidos', "Baja automática de {$totalBajas} lote(s) vencido(s)", [
+                'total_bajas' => $totalBajas,
+            ]);
 
             return redirect()->route('inventario.alertas')
                 ->with('success', "Se procesó la baja automática de {$totalBajas} lote(s) vencido(s) con registro en Kardex.");

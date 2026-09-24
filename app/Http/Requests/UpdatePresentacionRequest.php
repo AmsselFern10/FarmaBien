@@ -8,7 +8,7 @@ class UpdatePresentacionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('editar productos');
+        return $this->user()->can('editar presentaciones') || $this->user()->can('editar productos');
     }
 
     public function rules(): array

@@ -21,6 +21,7 @@ use App\Models\RecetaDetalle;
 use App\Models\Caja;
 use App\Models\SesionCaja;
 use App\Models\MovimientoCaja;
+use App\Models\Promocion;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -1630,6 +1631,52 @@ class DatosInicialesSeeder extends Seeder
             'monto_esperado_efectivo' => $sesionHoy->monto_inicial + $ventasHoyEfectivo,
         ]);
 
-        echo " Base de datos poblada exitosamente con el ecosistema farmacéutico completo de Nicaragua (40 Medicamentos, Presentaciones, Lotes, Recetas, Compras, Cajas y Ventas).\n";
+        // =========================================================================
+        // 10. PROMOCIONES Y DESCUENTOS INICIALES (1 Activa y 1 Inactiva)
+        // =========================================================================
+        $categoriaAnalgesicos = $categorias['Analgésicos y Antipiréticos'] ?? null;
+        $categoriaVitaminas = $categorias['Vitaminas, Minerales y Suplementos'] ?? null;
+
+        // 1. Promoción Activa: 20% de Descuento en Analgésicos y Fiebre
+        Promocion::updateOrCreate(
+            ['nombre' => 'Campaña Alivio: 20% Descuento en Analgésicos'],
+            [
+                'descripcion' => '20% de descuento directo en todos los medicamentos de la categoría Analgésicos y Antipiréticos en mostrador.',
+                'tipo' => 'porcentaje',
+                'valor' => 20.00,
+                'alcance' => 'categoria',
+                'producto_id' => null,
+                'categoria_id' => $categoriaAnalgesicos?->id,
+                'laboratorio_id' => null,
+                'fecha_inicio' => Carbon::now()->subDays(7),
+                'fecha_fin' => Carbon::now()->addMonths(2),
+                'min_unidades' => 1,
+                'stock_limite' => 500,
+                'stock_consumido' => 18,
+                'activo' => true,
+            ]
+        );
+
+        // 2. Promoción Inactiva: Combo 2x1 en Vitaminas y Suplementos (Inactiva / Fuera de Temporada)
+        Promocion::updateOrCreate(
+            ['nombre' => 'Combo 2x1 en Suplementos y Vitaminas (Inactiva)'],
+            [
+                'descripcion' => 'Lleva 2 y paga 1 en la línea de Vitaminas, Minerales y Suplementos. Promoción actualmente desactivada.',
+                'tipo' => '2x1',
+                'valor' => 0.00,
+                'alcance' => 'categoria',
+                'producto_id' => null,
+                'categoria_id' => $categoriaVitaminas?->id,
+                'laboratorio_id' => null,
+                'fecha_inicio' => Carbon::now()->subMonths(2),
+                'fecha_fin' => Carbon::now()->subDays(5),
+                'min_unidades' => 2,
+                'stock_limite' => 100,
+                'stock_consumido' => 100,
+                'activo' => false,
+            ]
+        );
+
+        echo " Base de datos poblada exitosamente con el ecosistema farmacéutico completo de Nicaragua (40 Medicamentos, Presentaciones, Lotes, Recetas, Compras, Cajas, Ventas y Promociones Activa/Inactiva).\n";
     }
 }

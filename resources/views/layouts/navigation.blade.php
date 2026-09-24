@@ -87,16 +87,17 @@
                     @endcan
 
                     <!-- Catálogos Dropdown -->
-                    @canany(['ver productos', 'ver laboratorios', 'ver categorias', 'ver clientes', 'ver proveedores'])
+                    @canany(['ver productos', 'ver laboratorios', 'ver categorias', 'ver clientes', 'ver proveedores', 'ver promociones'])
                     <x-dropdown align="left" width="56">
                         <x-slot name="trigger">
-                            <button class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-700/50' }}">
+                            <button class="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') || request()->routeIs('promociones.*') ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-700/50' }}">
                                 <span>Catálogos</span>
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                             </button>
                         </x-slot>
                         <x-slot name="content">
                             @can('ver productos')<x-dropdown-link :href="route('productos.index')">💊 Medicamentos</x-dropdown-link>@endcan
+                            @can('ver promociones')<x-dropdown-link :href="route('promociones.index')">🏷️ Promociones & Ofertas</x-dropdown-link>@endcan
                             @can('ver laboratorios')<x-dropdown-link :href="route('laboratorios.index')">🔬 Laboratorios</x-dropdown-link>@endcan
                             @can('ver categorias')<x-dropdown-link :href="route('categorias.index')">🏷️ Categorías</x-dropdown-link>@endcan
                             @can('ver productos')<x-dropdown-link :href="route('presentaciones.index')">📦 Presentaciones</x-dropdown-link>@endcan
@@ -226,6 +227,7 @@
         @can('ver movimientos inventario')<x-responsive-nav-link :href="route('inventario.index')" :active="request()->routeIs('inventario.*')">📦 Inventario & Kardex</x-responsive-nav-link>@endcan
         @can('ver recetas')<x-responsive-nav-link :href="route('recetas.index')" :active="request()->routeIs('recetas.*')">📋 Recetas Médicas</x-responsive-nav-link>@endcan
         @can('ver productos')<x-responsive-nav-link :href="route('productos.index')" :active="request()->routeIs('productos.*')">💊 Medicamentos</x-responsive-nav-link>@endcan
+        @can('ver promociones')<x-responsive-nav-link :href="route('promociones.index')" :active="request()->routeIs('promociones.*')">🏷️ Promociones & Ofertas</x-responsive-nav-link>@endcan
         @can('ver laboratorios')<x-responsive-nav-link :href="route('laboratorios.index')" :active="request()->routeIs('laboratorios.*')">🔬 Laboratorios</x-responsive-nav-link>@endcan
         @can('ver reportes ventas')<x-responsive-nav-link :href="route('reportes.index')" :active="request()->routeIs('reportes.*')">📈 Reportes Gerenciales</x-responsive-nav-link>@endcan
         @role('Admin')<x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">👥 Usuarios & Roles</x-responsive-nav-link>@endrole

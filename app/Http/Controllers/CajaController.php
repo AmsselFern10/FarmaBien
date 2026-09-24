@@ -6,6 +6,7 @@ use App\Models\Caja;
 use App\Models\SesionCaja;
 use App\Models\MovimientoCaja;
 use App\Models\User;
+use App\Models\AuditLog;
 use App\Services\CajaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -88,6 +89,10 @@ class CajaController extends Controller
                 'activo'      => true,
             ]);
 
+            AuditLog::log('cajas', 'crear', "Caja '{$caja->nombre}' ({$caja->codigo}) creada", [
+                'caja_id' => $caja->id,
+            ]);
+
             return redirect()->route('cajas.index')
                 ->with('success', "Caja '{$caja->nombre}' registrada exitosamente.");
         } catch (QueryException $e) {
@@ -118,6 +123,10 @@ class CajaController extends Controller
                 'activo'      => $request->boolean('activo'),
             ]);
 
+            AuditLog::log('cajas', 'actualizar', "Caja '{$caja->nombre}' actualizada", [
+                'caja_id' => $caja->id,
+            ]);
+
             return redirect()->route('cajas.index')
                 ->with('success', "Caja '{$caja->nombre}' actualizada correctamente.");
         } catch (QueryException $e) {
@@ -137,6 +146,10 @@ class CajaController extends Controller
 
         $caja->update(['activo' => !$caja->activo]);
         $estado = $caja->activo ? 'activada' : 'desactivada';
+
+        AuditLog::log('cajas', $caja->activo ? 'activar' : 'desactivar', "Caja '{$caja->nombre}' {$estado}", [
+            'caja_id' => $caja->id,
+        ]);
 
         return redirect()->route('cajas.index')
             ->with('success', "Caja '{$caja->nombre}' {$estado} correctamente.");
@@ -162,6 +175,12 @@ class CajaController extends Controller
                 (float) $request->input('monto_inicial'),
                 $request->input('observaciones_apertura')
             );
+
+            AuditLog::log('cajas', 'abrir_turno', "Apertura de turno en '{$caja->nombre}' con fondo de $" . number_format($sesion->monto_inicial, 2), [
+                'sesion_id' => $sesion->id,
+                'caja_id' => $caja->id,
+                'monto_inicial' => $sesion->monto_inicial,
+            ]);
 
             return redirect()->route('cajas.show', $sesion)
                 ->with('success', "Turno de caja abierto correctamente en '{$caja->nombre}' con un fondo de $" . number_format($sesion->monto_inicial, 2));
@@ -207,7 +226,7 @@ class CajaController extends Controller
         ]);
 
         try {
-            $this->cajaService->registrarMovimiento(
+            $mov = $this->cajaService->registrarMovimiento(
                 $sesion,
                 auth()->user(),
                 $request->input('tipo'),
@@ -217,6 +236,14 @@ class CajaController extends Controller
             );
 
             $tipoTexto = $request->input('tipo') === 'ingreso' ? 'Ingreso manual' : 'Egreso / Retiro';
+
+            AuditLog::log('cajas', 'movimiento_manual', "{$tipoTexto} de $" . number_format($mov->monto, 2) . " en sesión #{$sesion->id}: {$mov->concepto}", [
+                'sesion_id' => $sesion->id,
+                'tipo' => $mov->tipo,
+                'monto' => $mov->monto,
+                'concepto' => $mov->concepto,
+            ]);
+
             return back()->with('success', "{$tipoTexto} registrado exitosamente.");
         } catch (QueryException $e) {
             Log::error("Error de DB al registrar movimiento de caja: " . $e->getMessage());
@@ -251,6 +278,12 @@ class CajaController extends Controller
             $msgDif = $dif == 0 
                 ? "Cuadre exacto sin diferencias." 
                 : ($dif > 0 ? "Sobrante de +$" . number_format($dif, 2) : "Faltante de -$" . number_format(abs($dif), 2));
+
+            AuditLog::log('cajas', 'cerrar_turno', "Cierre y arqueo de sesión #{$sesionCerrada->id}. {$msgDif}", [
+                'sesion_id' => $sesionCerrada->id,
+                'monto_final_efectivo' => $sesionCerrada->monto_final_efectivo,
+                'diferencia' => $dif,
+            ]);
 
             return redirect()->route('cajas.show', $sesionCerrada)
                 ->with('success', "Caja cerrada formalmente. {$msgDif}");

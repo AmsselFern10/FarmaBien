@@ -39,6 +39,22 @@ class VentaService
 
             $userId = Auth::id() ?? 1;
 
+            // 0. Protección estricta contra duplicidad por parpadeo de red (Idempotency Key)
+            $idempotencyKey = !empty($data['idempotency_key']) ? trim($data['idempotency_key']) : null;
+            if ($idempotencyKey) {
+                $ventaExistente = Venta::where('idempotency_key', $idempotencyKey)->first();
+                if ($ventaExistente) {
+                    return $ventaExistente->load([
+                        'detalles.producto.laboratorio',
+                        'detalles.lote',
+                        'detalles.presentacion',
+                        'detalles.recetaDetalle.receta',
+                        'cliente',
+                        'recetas'
+                    ]);
+                }
+            }
+
             // 1. Obtener y bloquear la sesión de caja activa del usuario
             $sesionActiva = SesionCaja::where('user_id', $userId)
                 ->where('estado', 'abierta')
@@ -58,38 +74,106 @@ class VentaService
                 throw new Exception("No hay ninguna sesión de caja abierta en el sistema. Debes abrir un turno de caja antes de realizar ventas.");
             }
 
-            // 2. Crear cabecera inicial de la venta
-            $descuento = max(0, (float) ($data['descuento'] ?? 0));
-
-            $venta = Venta::create([
-                'cliente_id'         => $data['cliente_id'] ?? null,
-                'user_id'            => $userId,
-                'sesion_caja_id'     => $sesionActiva?->id,
-                'tipo_comprobante'   => $data['tipo_comprobante'] ?? 'ticket',
-                'serie'              => $data['serie'] ?? null,
-                'numero_comprobante' => $data['numero_comprobante'] ?? null,
-                'subtotal'           => 0,
-                'descuento'          => $descuento,
-                'impuesto'           => 0,
-                'total'              => 0,
-                'metodo_pago'        => $data['metodo_pago'] ?? 'efectivo',
-                'estado'             => 'completada',
-                'fecha'              => now(),
-            ]);
-
-            $totalAcumulado = 0;
+            // 2. Gestionar recetas médicas si la modalidad es 'creada'
             $recetasAsociadas = [];
+            $recetaModalidad = $data['receta_modalidad'] ?? 'sin_receta';
+            $recetaOmisionMotivo = $data['receta_omision_motivo'] ?? null;
 
             if (!empty($data['recetas']) && is_array($data['recetas'])) {
                 $recetasAsociadas = array_values(array_filter(array_unique($data['recetas'])));
             }
 
-            // 3. Procesar cada producto del carrito
+            if (!empty($data['receta_id']) && !in_array($data['receta_id'], $recetasAsociadas)) {
+                $recetasAsociadas[] = (int) $data['receta_id'];
+            }
+
+            // Quick-Create de Receta Médica desde POS
+            if ($recetaModalidad === 'creada' && !empty($data['receta_crear']) && is_array($data['receta_crear'])) {
+                $rcData = $data['receta_crear'];
+                $detallesReceta = [];
+
+                foreach ($data['productos'] as $prodItem) {
+                    $pModel = Producto::find($prodItem['producto_id']);
+                    if ($pModel && ($pModel->requiere_receta || in_array($pModel->tipo_control, ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente']))) {
+                        $detallesReceta[] = [
+                            'producto_id' => $pModel->id,
+                            'cantidad_recetada' => max(1, (int) ($prodItem['cantidad'] ?? 1) * (int) ($prodItem['factor'] ?? 1)),
+                            'posologia' => 'Según indicación médica en mostrador'
+                        ];
+                    }
+                }
+
+                if (!empty($detallesReceta)) {
+                    $numeroReceta = !empty($rcData['numero_receta']) 
+                        ? trim($rcData['numero_receta']) 
+                        : 'RX-' . strtoupper(uniqid());
+
+                    $nuevaReceta = $this->recetaService->registrarReceta([
+                        'cliente_id'          => $data['cliente_id'] ?? null,
+                        'paciente_nombre'     => !empty($rcData['paciente_nombre']) ? trim($rcData['paciente_nombre']) : ($data['cliente_nombre'] ?? 'Paciente Mostrador'),
+                        'paciente_documento'  => $rcData['paciente_documento'] ?? null,
+                        'medico_nombre'       => !empty($rcData['medico_nombre']) ? trim($rcData['medico_nombre']) : 'Dr. Médico Tratante',
+                        'medico_colegiatura'  => !empty($rcData['medico_colegiatura']) ? trim($rcData['medico_colegiatura']) : 'CMP-GENERAL',
+                        'medico_especialidad' => $rcData['medico_especialidad'] ?? 'Medicina General',
+                        'numero_receta'       => $numeroReceta,
+                        'fecha_emision'       => now()->toDateString(),
+                        'fecha_vencimiento'   => now()->addDays(30)->toDateString(),
+                        'tipo_receta'         => 'simple',
+                        'observaciones'       => 'Emitida desde Terminal POS al momento de la venta',
+                        'detalles'            => $detallesReceta
+                    ]);
+
+                    $recetasAsociadas[] = $nuevaReceta->id;
+
+                    // Asignar receta_detalle_id a los ítems correspondientes para que se dispense
+                    foreach ($nuevaReceta->detalles as $nrd) {
+                        foreach ($data['productos'] as &$prodItemRef) {
+                            if ($prodItemRef['producto_id'] == $nrd->producto_id && empty($prodItemRef['receta_detalle_id'])) {
+                                $prodItemRef['receta_detalle_id'] = $nrd->id;
+                            }
+                        }
+                    }
+                    unset($prodItemRef);
+                }
+            }
+
+            // 3. Crear cabecera inicial de la venta
+            $tipoDescuento = $data['tipo_descuento'] ?? 'monto';
+            $porcentajeDescuento = max(0, (float) ($data['porcentaje_descuento'] ?? 0));
+            $metodoPago = $data['metodo_pago'] ?? 'efectivo';
+
+            $venta = Venta::create([
+                'cliente_id'            => $data['cliente_id'] ?? null,
+                'user_id'               => $userId,
+                'sesion_caja_id'        => $sesionActiva?->id,
+                'tipo_comprobante'      => $data['tipo_comprobante'] ?? 'ticket',
+                'serie'                 => $data['serie'] ?? null,
+                'numero_comprobante'    => $data['numero_comprobante'] ?? null,
+                'idempotency_key'       => $idempotencyKey,
+                'subtotal'              => 0,
+                'descuento'             => 0,
+                'tipo_descuento'        => $tipoDescuento,
+                'porcentaje_descuento'  => $porcentajeDescuento,
+                'impuesto'              => 0,
+                'total'                 => 0,
+                'metodo_pago'           => $metodoPago,
+                'monto_recibido'        => null,
+                'cambio'                => 0,
+                'receta_modalidad'      => $recetaModalidad,
+                'receta_omision_motivo' => $recetaOmisionMotivo,
+                'referencia_pago'       => $data['referencia_pago'] ?? null,
+                'observaciones'         => $data['observaciones'] ?? null,
+                'estado'                => 'completada',
+                'fecha'                 => now(),
+            ]);
+
+            $totalAcumulado = 0;
+
+            // 4. Procesar cada producto del carrito
             foreach ($data['productos'] as $item) {
-                $subtotalItem = $this->procesarDetalleVenta($venta, $item);
+                $subtotalItem = $this->procesarDetalleVenta($venta, $item, $recetaModalidad);
                 $totalAcumulado += $subtotalItem;
 
-                // Si el item vino con receta vinculada, agregarla al listado general de recetas de la venta
                 if (!empty($item['receta_detalle_id'])) {
                     $recetaDetalle = RecetaDetalle::find($item['receta_detalle_id']);
                     if ($recetaDetalle && !in_array($recetaDetalle->receta_id, $recetasAsociadas)) {
@@ -98,22 +182,60 @@ class VentaService
                 }
             }
 
-            // 4. Calcular importes finales y actualizar cabecera
+            // 5. Calcular importes finales y descuentos
             $subtotalFinal = round($totalAcumulado, 2);
-            $totalFinal = max(0, round($subtotalFinal - $descuento, 2));
 
+            if ($tipoDescuento === 'porcentaje' && $porcentajeDescuento > 0) {
+                $descuentoCalculado = round($subtotalFinal * ($porcentajeDescuento / 100), 2);
+            } else {
+                $descuentoCalculado = max(0, (float) ($data['descuento'] ?? 0));
+                if ($subtotalFinal > 0 && $descuentoCalculado > 0) {
+                    $porcentajeDescuento = round(($descuentoCalculado / $subtotalFinal) * 100, 2);
+                }
+            }
+
+            $descuentoFinal = min($subtotalFinal, $descuentoCalculado);
+            $totalFinal = max(0, round($subtotalFinal - $descuentoFinal, 2));
+
+            // 6. Validación Matemática Infalible de Efectivo y Vuelto
+            $montoRecibido = null;
+            $cambio = 0;
+
+            if ($metodoPago === 'efectivo') {
+                $montoRecibido = isset($data['monto_recibido']) ? round((float) $data['monto_recibido'], 2) : null;
+
+                if ($montoRecibido === null) {
+                    throw new Exception("En pagos en efectivo es obligatorio ingresar el 'Monto Recibido por el Cliente'.");
+                }
+
+                if ($montoRecibido < $totalFinal) {
+                    $faltante = round($totalFinal - $montoRecibido, 2);
+                    throw new Exception("Monto insuficiente: El dinero recibido ($" . number_format($montoRecibido, 2) . ") es menor al total a pagar ($" . number_format($totalFinal, 2) . "). Faltan $" . number_format($faltante, 2) . ".");
+                }
+
+                $cambio = max(0, round($montoRecibido - $totalFinal, 2));
+            } else {
+                $montoRecibido = $totalFinal;
+                $cambio = 0;
+            }
+
+            // 7. Actualizar cabecera con importes finales exactos
             $venta->update([
-                'subtotal' => $subtotalFinal,
-                'descuento' => $descuento,
-                'total' => $totalFinal,
+                'subtotal'              => $subtotalFinal,
+                'descuento'             => $descuentoFinal,
+                'tipo_descuento'        => $tipoDescuento,
+                'porcentaje_descuento'  => $porcentajeDescuento,
+                'total'                 => $totalFinal,
+                'monto_recibido'        => $montoRecibido,
+                'cambio'                => $cambio,
             ]);
 
-            // 5. Vincular recetas a la tabla pivot
+            // 8. Vincular recetas a la tabla pivot
             if (!empty($recetasAsociadas)) {
                 $venta->recetas()->syncWithoutDetaching($recetasAsociadas);
             }
 
-            // 6. Recalcular totales de la caja activa
+            // 9. Recalcular totales de la caja activa
             if ($sesionActiva) {
                 app(CajaService::class)->recalcularTotales($sesionActiva);
             }
@@ -137,7 +259,7 @@ class VentaService
      * @return float Subtotal de la línea
      * @throws Exception
      */
-    protected function procesarDetalleVenta(Venta $venta, array $item): float
+    protected function procesarDetalleVenta(Venta $venta, array $item, string $recetaModalidad = 'sin_receta'): float
     {
         $productoId = (int) $item['producto_id'];
         $loteId = (int) $item['lote_id'];
@@ -209,16 +331,15 @@ class VentaService
         $recetaDetalleId = !empty($item['receta_detalle_id']) ? (int) $item['receta_detalle_id'] : null;
         $esControlado = $producto->requiere_receta || in_array($producto->tipo_control, ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente']);
 
-        if ($esControlado && $producto->tipo_control === 'receta_retenida' && !$recetaDetalleId) {
-            throw new Exception("El medicamento '{$producto->nombre}' es de RECETA RETENIDA y requiere asociar obligatoriamente la prescripción médica.");
+        if ($esControlado && $producto->tipo_control === 'receta_retenida' && !$recetaDetalleId && $recetaModalidad !== 'omitida') {
+            throw new Exception("El medicamento '{$producto->nombre}' es de RECETA RETENIDA y requiere asociar obligatoriamente la prescripción médica o declarar omisión justificada.");
         }
 
         if ($recetaDetalleId) {
-            $recetaDetalle = RecetaDetalle::where('id', $recetaDetalleId)->firstOrFail();
-            if ($recetaDetalle->producto_id !== $producto->id) {
-                throw new Exception("La receta médica seleccionada no corresponde al producto '{$producto->nombre}'.");
+            $recetaDetalle = RecetaDetalle::where('id', $recetaDetalleId)->first();
+            if ($recetaDetalle && $recetaDetalle->producto_id === $producto->id) {
+                $this->recetaService->dispensarMedicamento($recetaDetalleId, $cantidadUnidadesBase);
             }
-            $this->recetaService->dispensarMedicamento($recetaDetalleId, $cantidadUnidadesBase);
         }
 
         // 5. Descontar stock del lote de manera atómica
@@ -232,8 +353,22 @@ class VentaService
         $lote->stock_actual = $stockPosterior;
         $lote->save();
 
-        // 6. Calcular subtotal de la línea
-        $subtotal = round($cantidadPresentaciones * $precioUnitario, 2);
+        // 6. Calcular subtotal de la línea (incluyendo promoción automática o descuento manual)
+        $subtotalBruto = round($cantidadPresentaciones * $precioUnitario, 2);
+        $descuentoLinea = 0;
+
+        // Verificar si existe una promoción activa aplicable
+        $promo = $producto->promocion_vigente;
+        if ($promo && $promo->esVigente() && $cantidadPresentaciones >= $promo->min_unidades) {
+            $descuentoLinea = $promo->calcularDescuento($precioUnitario, $cantidadPresentaciones);
+            $promo->increment('stock_consumido', $cantidadPresentaciones);
+        } elseif (!empty($item['tipo_descuento']) && $item['tipo_descuento'] === 'porcentaje' && !empty($item['porcentaje_descuento'])) {
+            $descuentoLinea = round($subtotalBruto * ((float) $item['porcentaje_descuento'] / 100), 2);
+        } elseif (!empty($item['descuento'])) {
+            $descuentoLinea = max(0, (float) $item['descuento']);
+        }
+
+        $subtotal = max(0, round($subtotalBruto - $descuentoLinea, 2));
 
         // 7. Crear Detalle de Venta
         DetalleVenta::create([
@@ -435,32 +570,84 @@ class VentaService
     }
 
     /**
-     * Búsqueda optimizada de productos para el mostrador de ventas (FIFO/FEFO de lotes disponibles)
+     * Búsqueda ultra-optimizada de productos para el mostrador de ventas (FIFO/FEFO de lotes disponibles)
+     * Limitada por defecto a los Top 20 resultados para no congelar el navegador ni saturar la memoria.
      * 
      * @param string $termino
+     * @param int|null $categoriaId
+     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function buscarProductosParaVenta(string $termino)
+    public function buscarProductosParaVenta(string $termino, ?int $categoriaId = null, int $limit = 20)
     {
-        return Producto::with([
-                'categoria',
-                'laboratorio',
+        $query = Producto::query()
+            ->select([
+                'id',
+                'codigo_barra',
+                'nombre',
+                'principio_activo',
+                'concentracion',
+                'forma_farmaceutica',
+                'precio_venta',
+                'precio_compra',
+                'ubicacion',
+                'requiere_receta',
+                'tipo_control',
+                'imagen',
+                'categoria_id',
+                'laboratorio_id',
+                'activo'
+            ])
+            ->with([
+                'categoria:id,nombre',
+                'laboratorio:id,nombre',
                 'presentacionesActivas',
-                'lotes' => function ($query) {
-                    $query->disponibles()->orderBy('fecha_vencimiento', 'asc');
+                'lotes' => function ($q) {
+                    $q->disponibles()
+                      ->orderBy('fecha_vencimiento', 'asc')
+                      ->select(['id', 'producto_id', 'numero_lote', 'fecha_vencimiento', 'stock_actual', 'precio_compra', 'activo']);
                 }
             ])
             ->activos()
-            ->where(function ($query) use ($termino) {
-                $query->where('nombre', 'like', "%{$termino}%")
-                    ->orWhere('principio_activo', 'like', "%{$termino}%")
-                    ->orWhere('codigo_barra', 'like', "%{$termino}%");
-            })
-            ->get()
-            ->filter(function ($producto) {
-                return $producto->lotes->isNotEmpty();
-            })
-            ->values();
+            ->whereHas('lotes', function ($q) {
+                $q->disponibles();
+            });
+
+        if ($categoriaId) {
+            $query->where('categoria_id', $categoriaId);
+        }
+
+        $termino = trim($termino);
+        if ($termino !== '') {
+            $query->where(function ($q) use ($termino) {
+                $q->where('nombre', 'like', "%{$termino}%")
+                  ->orWhere('principio_activo', 'like', "%{$termino}%")
+                  ->orWhere('codigo_barra', 'like', "%{$termino}%");
+            });
+        }
+
+        $productos = $query->orderBy('nombre', 'asc')
+            ->limit($limit)
+            ->get();
+
+        $productos->each(function ($prod) {
+            $promo = $prod->promocion_vigente;
+            if ($promo) {
+                $prod->promocion_activa = [
+                    'id'            => $promo->id,
+                    'nombre'        => $promo->nombre,
+                    'tipo'          => $promo->tipo,
+                    'valor'         => (float) $promo->valor,
+                    'min_unidades'  => (int) $promo->min_unidades,
+                    'badge'         => $promo->badge_texto,
+                    'precio_oferta' => $promo->calcularPrecioUnitario((float) $prod->precio_venta),
+                ];
+            } else {
+                $prod->promocion_activa = null;
+            }
+        });
+
+        return $productos;
     }
 
     /**

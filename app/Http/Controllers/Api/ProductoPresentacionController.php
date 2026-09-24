@@ -13,6 +13,12 @@ use Exception;
 
 class ProductoPresentacionController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:ver presentaciones|ver productos')->only(['index']);
+        $this->middleware('permission:crear presentaciones|crear productos')->only(['store']);
+    }
+
     public function index(Producto $producto)
     {
         $presentaciones = $producto->presentacionesActivas()

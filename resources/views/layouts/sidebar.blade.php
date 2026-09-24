@@ -204,12 +204,12 @@
         @endcan
 
         <!-- Accordion 3: Catálogos Maestros -->
-        @canany(['ver productos', 'ver laboratorios', 'ver categorias', 'ver clientes', 'ver proveedores'])
+        @canany(['ver productos', 'ver laboratorios', 'ver categorias', 'ver clientes', 'ver proveedores', 'ver promociones'])
         <div class="space-y-1">
             <button @click="toggleMenu('catalogos')" 
                     type="button" 
                     title="Catálogos del Sistema"
-                    class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') ? 'text-slate-200 bg-slate-800/40' : '' }}">
+                    class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('promociones.*') ? 'text-slate-200 bg-slate-800/40' : '' }}">
                 <div class="flex items-center min-w-0">
                     <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -233,6 +233,17 @@
                    class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('productos.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('productos.*') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Medicamentos</span>
+                </a>
+                @endcan
+
+                @can('ver promociones')
+                <a href="{{ route('promociones.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('promociones.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('promociones.*') ? '!bg-emerald-400' : '' }}"></span>
+                    <span class="flex items-center space-x-1.5">
+                        <span>Promociones & Descuentos</span>
+                        <span class="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-400 font-bold">Ofertas</span>
+                    </span>
                 </a>
                 @endcan
 

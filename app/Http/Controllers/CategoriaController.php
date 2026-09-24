@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Categoria;
+use App\Models\AuditLog;
 use App\Http\Requests\StoreCategoriaRequest;
 use App\Http\Requests\UpdateCategoriaRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\QueryException;
 use Exception;
 
@@ -71,6 +73,12 @@ class CategoriaController extends Controller
                     'user_id' => auth()->id(),
                 ]);
 
+                AuditLog::log('categorias', 'crear', "Categoría '{$categoria->nombre}' creada", [
+                    'categoria_id' => $categoria->id,
+                ]);
+
+                Cache::forget('catalog_categorias_base');
+
                 return $categoria;
             });
 
@@ -117,6 +125,12 @@ class CategoriaController extends Controller
                     'nombre' => $locked->nombre,
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log('categorias', 'actualizar', "Categoría '{$locked->nombre}' actualizada", [
+                    'categoria_id' => $locked->id,
+                ]);
+
+                Cache::forget('catalog_categorias_base');
             });
 
             return redirect()->route('categorias.index')
@@ -154,6 +168,15 @@ class CategoriaController extends Controller
                     'nuevo_estado' => $nuevoEstado ? 'activada' : 'desactivada',
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log(
+                    'categorias',
+                    $nuevoEstado ? 'activar' : 'desactivar',
+                    "Categoría '{$locked->nombre}' " . ($nuevoEstado ? 'activada' : 'desactivada'),
+                    ['categoria_id' => $locked->id]
+                );
+
+                Cache::forget('catalog_categorias_base');
 
                 return $nuevoEstado ? 'activada' : 'desactivada';
             });

@@ -159,22 +159,53 @@ class RecetaService
     }
 
     /**
-     * Buscar recetas vigentes disponibles para un paciente o cliente
+     * Buscar recetas vigentes disponibles para un paciente o cliente, o listar recientes
      * 
      * @param string $termino
+     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function buscarRecetasDisponibles(string $termino)
+    public function buscarRecetasDisponibles(string $termino = '', int $limit = 20)
     {
-        return Receta::with(['detalles.producto', 'cliente'])
+        $query = Receta::select([
+                'id',
+                'cliente_id',
+                'paciente_nombre',
+                'paciente_documento',
+                'paciente_edad',
+                'medico_nombre',
+                'medico_colegiatura',
+                'medico_especialidad',
+                'institucion_salud',
+                'numero_receta',
+                'fecha_emision',
+                'fecha_vencimiento',
+                'tipo_receta',
+                'estado',
+                'observaciones',
+            ])
+            ->with([
+                'detalles:id,receta_id,producto_id,cantidad_recetada,cantidad_dispensada,posologia',
+                'detalles.producto:id,nombre,principio_activo,concentracion,tipo_control,precio_venta,codigo_barra',
+                'cliente:id,nombre,documento',
+            ])
             ->pendientes()
-            ->vigentes()
-            ->where(function ($query) use ($termino) {
-                $query->where('numero_receta', 'like', "%{$termino}%")
+            ->vigentes();
+
+        $termino = trim($termino);
+        if (!empty($termino)) {
+            $query->where(function ($q) use ($termino) {
+                $q->where('numero_receta', 'like', "%{$termino}%")
                     ->orWhere('paciente_nombre', 'like', "%{$termino}%")
-                    ->orWhere('medico_nombre', 'like', "%{$termino}%");
-            })
+                    ->orWhere('paciente_documento', 'like', "%{$termino}%")
+                    ->orWhere('medico_nombre', 'like', "%{$termino}%")
+                    ->orWhere('medico_colegiatura', 'like', "%{$termino}%");
+            });
+        }
+
+        return $query->orderBy('id', 'desc')
             ->orderBy('fecha_emision', 'desc')
+            ->limit($limit)
             ->get();
     }
 }

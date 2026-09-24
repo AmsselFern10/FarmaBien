@@ -29,9 +29,20 @@ class PublicCatalogoController extends Controller
         $buscar = trim($request->input('buscar', ''));
 
         $query = Producto::activos()
-            ->with(['categoria', 'laboratorio', 'lotes' => function ($q) {
-                $q->activos()->vigentes();
-            }]);
+            ->select([
+                'id', 'codigo_barra', 'nombre', 'principio_activo', 'concentracion', 
+                'forma_farmaceutica', 'categoria_id', 'laboratorio_id', 'precio_venta', 
+                'imagen', 'requiere_receta', 'activo'
+            ])
+            ->with([
+                'categoria:id,nombre',
+                'laboratorio:id,nombre',
+                'lotes' => function ($q) {
+                    $q->select(['id', 'producto_id', 'stock_actual', 'fecha_vencimiento', 'activo'])
+                      ->activos()
+                      ->vigentes();
+                }
+            ]);
 
         // Búsqueda simplificada para clientes por Nombre comercial o Principio activo
         if (!empty($buscar)) {

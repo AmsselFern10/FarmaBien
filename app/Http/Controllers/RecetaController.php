@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Receta;
 use App\Models\Cliente;
 use App\Models\Producto;
+use App\Models\AuditLog;
 use App\Services\RecetaService;
 use App\Http\Requests\StoreRecetaRequest;
 use App\Http\Requests\UpdateRecetaRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class RecetaController extends Controller
@@ -26,7 +28,21 @@ class RecetaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Receta::with(['cliente'])->withCount('detalles');
+        $query = Receta::select([
+                'id',
+                'cliente_id',
+                'paciente_nombre',
+                'paciente_documento',
+                'medico_nombre',
+                'medico_colegiatura',
+                'numero_receta',
+                'fecha_emision',
+                'fecha_vencimiento',
+                'tipo_receta',
+                'estado',
+            ])
+            ->with(['cliente:id,nombre,apellido_paterno,apellido_materno,documento'])
+            ->withCount('detalles');
 
         if ($request->filled('buscar')) {
             $buscar = trim($request->input('buscar'));
@@ -61,8 +77,13 @@ class RecetaController extends Controller
 
     public function create()
     {
-        $clientes = Cliente::activos()->orderBy('nombre')->get();
-        $productos = Producto::with('laboratorio')->conReceta()->activos()->orderBy('nombre')->get();
+        $clientes = Cliente::select(['id', 'nombre', 'apellido_paterno', 'apellido_materno', 'documento'])->activos()->orderBy('nombre')->get();
+        $productos = Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
+            ->with('laboratorio:id,nombre')
+            ->conReceta()
+            ->activos()
+            ->orderBy('nombre')
+            ->get();
 
         return view('recetas.create', compact('clientes', 'productos'));
     }
@@ -78,6 +99,14 @@ class RecetaController extends Controller
             }
 
             $receta = $this->recetaService->registrarReceta($data);
+
+            AuditLog::log('recetas', 'crear', "Receta médica #{$receta->numero_receta} registrada", [
+                'receta_id' => $receta->id,
+                'paciente' => $receta->paciente_nombre,
+                'medico' => $receta->medico_nombre,
+            ]);
+
+            Cache::forget('dashboard_recetas_pendientes_count');
 
             if ($request->wantsJson()) {
                 return response()->json([
@@ -112,7 +141,7 @@ class RecetaController extends Controller
 
     public function edit(Receta $receta)
     {
-        $clientes = Cliente::activos()->orderBy('nombre')->get();
+        $clientes = Cliente::select(['id', 'nombre', 'apellido_paterno', 'apellido_materno', 'documento'])->activos()->orderBy('nombre')->get();
         $receta->load('detalles.producto');
 
         return view('recetas.edit', compact('receta', 'clientes'));
@@ -132,6 +161,12 @@ class RecetaController extends Controller
 
             $receta->update($data);
 
+            AuditLog::log('recetas', 'actualizar', "Receta médica #{$receta->numero_receta} actualizada", [
+                'receta_id' => $receta->id,
+            ]);
+
+            Cache::forget('dashboard_recetas_pendientes_count');
+
             return redirect()->route('recetas.show', $receta)
                 ->with('success', "Receta #{$receta->numero_receta} actualizada exitosamente.");
         } catch (Exception $e) {
@@ -145,7 +180,15 @@ class RecetaController extends Controller
             return back()->with('error', 'No se puede eliminar una receta que ya tiene medicamentos dispensados.');
         }
 
+        $num = $receta->numero_receta;
+        $id = $receta->id;
         $receta->delete();
+
+        AuditLog::log('recetas', 'eliminar', "Receta médica #{$num} eliminada", [
+            'receta_id' => $id,
+        ]);
+
+        Cache::forget('dashboard_recetas_pendientes_count');
 
         return redirect()->route('recetas.index')
             ->with('success', "Receta eliminada correctamente.");
@@ -174,6 +217,13 @@ class RecetaController extends Controller
 
         $receta->update(['estado' => $request->estado]);
 
+        AuditLog::log('recetas', 'cambiar_estado', "Estado de receta #{$receta->numero_receta} cambiado a {$request->estado}", [
+            'receta_id' => $receta->id,
+            'nuevo_estado' => $request->estado,
+        ]);
+
+        Cache::forget('dashboard_recetas_pendientes_count');
+
         return redirect()->route('recetas.show', $receta)
             ->with('success', 'Estado de la receta actualizado correctamente.');
     }
@@ -181,11 +231,9 @@ class RecetaController extends Controller
     public function buscarRecetas(Request $request)
     {
         $termino = trim($request->input('q', ''));
-        if (strlen($termino) < 2) {
-            return response()->json([]);
-        }
+        $limit = min(50, max(5, (int) $request->input('limit', 20)));
 
-        $recetas = $this->recetaService->buscarRecetasDisponibles($termino);
+        $recetas = $this->recetaService->buscarRecetasDisponibles($termino, $limit);
 
         return response()->json($recetas);
     }

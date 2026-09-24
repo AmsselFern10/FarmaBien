@@ -17,13 +17,20 @@
     <!-- Header & Quick Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-            <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>{{ $producto->nombre }}</span>
-                <span class="px-2 py-0.5 text-xs font-semibold rounded-full {{ $producto->activo ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }}">
+            <div class="flex items-center space-x-3">
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>{{ $producto->nombre }}</span>
+                </h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $producto->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
                     {{ $producto->activo ? 'Activo' : 'Inactivo' }}
                 </span>
-            </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                @if($producto->requiere_receta)
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
+                    Rx Receta Obligatoria
+                </span>
+                @endif
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 {{ $producto->principio_activo ?: 'Fórmula Farmacéutica' }} @if($producto->concentracion) • {{ $producto->concentracion }} @endif @if($producto->forma_farmaceutica) ({{ $producto->forma_farmaceutica }}) @endif
             </p>
         </div>
@@ -55,35 +62,28 @@
         </div>
     </div>
 
-    <!-- Hero Banner Card -->
+    <!-- SECCIÓN ULTRA-DESTACADA: IDENTIFICACIÓN Y CÓDIGO DE BARRAS -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 overflow-hidden">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            <!-- Imagen del Producto -->
-            <div class="md:col-span-4 lg:col-span-3">
-                <div class="relative h-56 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-800/60 flex items-center justify-center p-4 border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            
+            <!-- Foto del Producto -->
+            <div class="lg:col-span-3">
+                <div class="relative h-52 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-800/60 flex items-center justify-center p-4 border border-slate-200 dark:border-slate-700 overflow-hidden">
                     @if($producto->imagen)
                         <img src="{{ asset('storage/' . $producto->imagen) }}" 
                              alt="{{ $producto->nombre }}" 
                              class="w-full h-full object-contain">
                     @else
                         <div class="text-center text-slate-400">
-                            <svg class="w-16 h-16 mx-auto mb-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
-                            <span class="text-[11px] font-medium">Sin imagen registrada</span>
+                            <svg class="w-14 h-14 mx-auto mb-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            <span class="text-[11px] font-medium">Sin imagen</span>
                         </div>
-                    @endif
-
-                    @if($producto->requiere_receta)
-                    <div class="absolute top-2 left-2">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
-                            Receta Obligatoria
-                        </span>
-                    </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Ficha Hero Resumen -->
-            <div class="md:col-span-8 lg:col-span-9 space-y-4">
+            <!-- Bloque de Identificación, Código de Barras y Categorización -->
+            <div class="lg:col-span-5 space-y-3.5">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         📁 {{ $producto->categoria?->nombre ?? 'General' }}
@@ -91,11 +91,6 @@
                     <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         🔬 Lab: {{ $producto->laboratorio?->nombre ?? 'N/A' }}
                     </span>
-                    @if($producto->codigo_barra)
-                    <span class="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        🏷️ {{ $producto->codigo_barra }}
-                    </span>
-                    @endif
                     @if($producto->ubicacion)
                     <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                         📍 Ubicación: {{ $producto->ubicacion }}
@@ -103,46 +98,94 @@
                     @endif
                 </div>
 
+                <!-- Tarjeta Visual de Código de Barras (Alta Legibilidad) -->
+                <div class="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-3.5 border border-slate-200 dark:border-slate-700 space-y-2"
+                     x-data="{ copied: false }">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                            <span>Código de Barra / Identificador Escaneable</span>
+                        </span>
+                        @if($producto->codigo_barra)
+                        <button type="button" 
+                                @click="navigator.clipboard.writeText('{{ $producto->codigo_barra }}'); copied = true; setTimeout(() => copied = false, 2000)" 
+                                class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 transition shadow-2xs cursor-pointer">
+                            <span x-show="!copied">📋 Copiar</span>
+                            <span x-show="copied" class="text-emerald-600 dark:text-emerald-400">✓ ¡Copiado!</span>
+                        </button>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center space-x-3 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
+                        <!-- Representación Gráfica de Barras -->
+                        <div class="h-8 flex items-center space-x-0.5 shrink-0 px-1 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 select-none" title="Código de Barra FarmaBien">
+                            <div class="w-1 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-0.5 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-1.5 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-0.5 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-1 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-2 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-0.5 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-1.5 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-1 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-0.5 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                            <div class="w-2 h-6 bg-slate-900 dark:bg-slate-100"></div>
+                        </div>
+
+                        <!-- Número en Monospace Grande y Claro -->
+                        <div class="min-w-0 flex-1">
+                            <span class="font-mono text-base sm:text-lg font-black tracking-widest text-slate-900 dark:text-white block truncate">
+                                {{ $producto->codigo_barra ?: 'SIN CÓDIGO REGISTRADO' }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono">SKU ID: #{{ str_pad($producto->id, 6, '0', STR_PAD_LEFT) }}</span>
+                        </div>
+                    </div>
+                </div>
+
                 @if($producto->descripcion)
-                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 line-clamp-2">
                     {{ $producto->descripcion }}
                 </p>
                 @endif
+            </div>
 
-                <!-- Precios e Indicadores Financieros -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                        <span class="text-[10px] uppercase font-semibold text-slate-400">Precio Venta</span>
-                        <div class="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                            S/ {{ number_format($producto->precio_venta, 2) }}
-                        </div>
+            <!-- Indicadores Financieros y Precios -->
+            <div class="lg:col-span-4 grid grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Precio Venta (Base)</span>
+                    <div class="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        S/ {{ number_format($producto->precio_venta, 2) }}
                     </div>
+                    <span class="text-[10px] text-slate-400">por unidad</span>
+                </div>
 
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                        <span class="text-[10px] uppercase font-semibold text-slate-400">Precio Compra</span>
-                        <div class="text-lg font-black text-slate-700 dark:text-slate-300">
-                            S/ {{ number_format($producto->precio_compra ?? 0, 2) }}
-                        </div>
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Precio Compra</span>
+                    <div class="text-xl font-black text-slate-700 dark:text-slate-300 mt-0.5">
+                        S/ {{ number_format($producto->precio_compra ?? 0, 2) }}
                     </div>
+                    <span class="text-[10px] text-slate-400">costo adquisición</span>
+                </div>
 
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                        <span class="text-[10px] uppercase font-semibold text-slate-400">Margen Estimado</span>
-                        @php
-                            $compra = (float)($producto->precio_compra ?? 0);
-                            $venta = (float)$producto->precio_venta;
-                            $margen = $venta > 0 ? (($venta - $compra) / $venta) * 100 : 0;
-                        @endphp
-                        <div class="text-lg font-black text-slate-800 dark:text-slate-200">
-                            {{ number_format($margen, 1) }}%
-                        </div>
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Margen Estimado</span>
+                    @php
+                        $compra = (float)($producto->precio_compra ?? 0);
+                        $venta = (float)$producto->precio_venta;
+                        $margen = $venta > 0 ? (($venta - $compra) / $venta) * 100 : 0;
+                    @endphp
+                    <div class="text-xl font-black text-slate-800 dark:text-slate-200 mt-0.5">
+                        {{ number_format($margen, 1) }}%
                     </div>
+                    <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Rentabilidad</span>
+                </div>
 
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-                        <span class="text-[10px] uppercase font-semibold text-slate-400">Stock Mínimo</span>
-                        <div class="text-lg font-black text-slate-700 dark:text-slate-300">
-                            {{ $producto->stock_minimo }} unid.
-                        </div>
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Stock Mínimo</span>
+                    <div class="text-xl font-black text-slate-700 dark:text-slate-300 mt-0.5">
+                        {{ $producto->stock_minimo }} <span class="text-xs font-normal">unid.</span>
                     </div>
+                    <span class="text-[10px] text-slate-400">umbral de alerta</span>
                 </div>
             </div>
         </div>
@@ -175,7 +218,7 @@
                 </div>
 
                 <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Registro Sanitario</span>
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Registro Sanitario (DIGEMID)</span>
                     <span class="font-mono font-bold text-slate-800 dark:text-slate-200 text-sm">{{ $producto->registro_sanitario ?: 'En trámite / No registrado' }}</span>
                 </div>
 
@@ -357,13 +400,6 @@
                     </div>
                 </div>
             @endif
-        </div>
-
-        <div class="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 flex items-start space-x-2.5 text-xs text-blue-900 dark:text-blue-200">
-            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <div>
-                <span class="font-bold">Arquitectura Farmacéutica FarmaBien:</span> Al registrar una venta en el Punto de Venta (POS), el farmacéutico puede elegir vender 1 caja, 2 blísteres o 3 pastillas sueltas. El sistema traduce automáticamente las presentaciones a unidades base, descontando el inventario del lote más próximo a vencer (criterio FEFO).
-            </div>
         </div>
     </div>
 

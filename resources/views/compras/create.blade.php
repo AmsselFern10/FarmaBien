@@ -41,6 +41,7 @@
         numero_comprobante: @js(old('numero_comprobante', '')),
         fecha: @js(old('fecha', date('Y-m-d')))
     }),
+    guardandoCompra: false,
     items: [
         {
             uid: Date.now(),
@@ -270,7 +271,10 @@
         return this.items.reduce((acc, it) => acc + this.calcularUnidadesBase(it), 0);
     }
 }"
-@keydown.window="if ($event.key === 'Escape' && formLayout === 'compact' && !modalNuevaPres) { limpiarFormulario(); }"
+@keydown.window="
+    if ($event.key === 'F3') { $event.preventDefault(); (document.getElementById('compraBuscador') || document.querySelector('select[name*=\'producto_id\']'))?.focus(); }
+    if ($event.key === 'Escape' && formLayout === 'compact' && !modalNuevaPres) { limpiarFormulario(); }
+"
 :class="formLayout === 'compact' ? 'w-full max-w-full' : 'max-w-7xl mx-auto'"
 class="space-y-4 transition-all duration-200">
 
@@ -322,7 +326,7 @@ class="space-y-4 transition-all duration-200">
     </div>
 
     <!-- Main Form -->
-    <form action="{{ route('compras.store') }}" method="POST" id="formCompra">
+    <form action="{{ route('compras.store') }}" method="POST" id="formCompra" @submit="if(guardandoCompra) { $event.preventDefault(); return; } guardandoCompra = true;">
         @csrf
 
         <!-- Error Alert -->
@@ -351,19 +355,21 @@ class="space-y-4 transition-all duration-200">
                     <div class="flex items-center space-x-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
                         <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">FICHA RÁPIDA DE COMPRA & INGRESO DE LOTES</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">Esc = Limpiar</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold hidden sm:inline">F3 = Enfocar Medicamento | Esc = Limpiar</span>
                     </div>
 
                     <div class="flex items-center space-x-2">
                         <button type="button" 
                                 @click="limpiarFormulario()" 
+                                :disabled="guardandoCompra"
                                 class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-bold transition cursor-pointer">
                             Limpiar (Esc)
                         </button>
                         <button type="submit" 
-                                class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                                :disabled="guardandoCompra"
+                                class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            <span>Guardar Compra</span>
+                            <span x-text="guardandoCompra ? 'Guardando...' : 'Guardar Compra'">Guardar Compra</span>
                         </button>
                     </div>
                 </div>
@@ -833,9 +839,10 @@ class="space-y-4 transition-all duration-200">
                             Cancelar
                         </a>
                         <button type="submit" 
-                                class="flex-1 md:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer">
+                                :disabled="guardandoCompra"
+                                class="flex-1 md:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            <span>Guardar Compra e Ingresar Lotes</span>
+                            <span x-text="guardandoCompra ? 'Guardando...' : 'Guardar Compra e Ingresar Lotes'">Guardar Compra e Ingresar Lotes</span>
                         </button>
                     </div>
                 </div>

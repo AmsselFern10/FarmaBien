@@ -6,6 +6,7 @@ use App\Models\Producto;
 use App\Models\Categoria;
 use App\Models\Laboratorio;
 use App\Models\PresentacionProducto;
+use App\Models\AuditLog;
 use App\Http\Requests\StoreProductoRequest;
 use App\Http\Requests\UpdateProductoRequest;
 use App\Services\FarmaIaService;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\QueryException;
 use Exception;
 
@@ -28,7 +30,7 @@ class ProductoController extends Controller
 
     public function index(Request $request, FarmaIaService $iaService)
     {
-        $query = Producto::with(['categoria', 'laboratorio', 'presentacionesActivas'])
+        $query = Producto::with(['categoria:id,nombre', 'laboratorio:id,nombre', 'presentacionesActivas'])
             ->withSum(['lotes as stock_total' => function ($q) {
                 $q->where('activo', true);
             }], 'stock_actual');
@@ -69,8 +71,14 @@ class ProductoController extends Controller
         }
 
         $productos = $query->orderBy('nombre', 'asc')->paginate(12)->withQueryString();
-        $categorias = Categoria::activos()->orderBy('nombre')->get();
-        $laboratorios = Laboratorio::activos()->orderBy('nombre')->get();
+        
+        $categorias = Cache::remember('catalog_categorias_base', 300, function () {
+            return Categoria::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+        });
+
+        $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {
+            return Laboratorio::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+        });
 
         return view('productos.index', compact('productos', 'categorias', 'laboratorios'));
     }
@@ -103,8 +111,13 @@ class ProductoController extends Controller
 
     public function create()
     {
-        $categorias = Categoria::activos()->orderBy('nombre')->get();
-        $laboratorios = Laboratorio::activos()->orderBy('nombre')->get();
+        $categorias = Cache::remember('catalog_categorias_base', 300, function () {
+            return Categoria::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+        });
+
+        $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {
+            return Laboratorio::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+        });
 
         return view('productos.create', compact('categorias', 'laboratorios'));
     }
@@ -117,9 +130,9 @@ class ProductoController extends Controller
             $producto = DB::transaction(function () use ($request, &$uploadedPath) {
                 $data = $request->validated();
 
-                // Manejo seguro de archivo de imagen
+                // Manejo seguro y optimizado de archivo de imagen (conversión automática a WebP)
                 if ($request->hasFile('imagen')) {
-                    $uploadedPath = $request->file('imagen')->store('productos', 'public');
+                    $uploadedPath = app(\App\Services\ImageOptimizerService::class)->optimizarYGuardarWebp($request->file('imagen'));
                     $data['imagen'] = $uploadedPath;
                 }
 
@@ -183,6 +196,15 @@ class ProductoController extends Controller
                     'user_id' => auth()->id(),
                 ]);
 
+                AuditLog::log('productos', 'crear', "Medicamento '{$producto->nombre}' registrado en catálogo", [
+                    'producto_id' => $producto->id,
+                    'codigo_barra' => $producto->codigo_barra,
+                    'categoria_id' => $producto->categoria_id,
+                    'laboratorio_id' => $producto->laboratorio_id,
+                ]);
+
+                Cache::forget('dashboard_stock_critico_count');
+
                 return $producto;
             });
 
@@ -230,8 +252,14 @@ class ProductoController extends Controller
 
     public function edit(Producto $producto)
     {
-        $categorias = Categoria::activos()->orderBy('nombre')->get();
-        $laboratorios = Laboratorio::activos()->orderBy('nombre')->get();
+        $categorias = Cache::remember('catalog_categorias_base', 300, function () {
+            return Categoria::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+        });
+
+        $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {
+            return Laboratorio::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+        });
+
         $producto->load('presentaciones');
 
         return view('productos.edit', compact('producto', 'categorias', 'laboratorios'));
@@ -250,7 +278,7 @@ class ProductoController extends Controller
                 $data = $request->validated();
 
                 if ($request->hasFile('imagen')) {
-                    $uploadedPath = $request->file('imagen')->store('productos', 'public');
+                    $uploadedPath = app(\App\Services\ImageOptimizerService::class)->optimizarYGuardarWebp($request->file('imagen'));
                     $data['imagen'] = $uploadedPath;
                 }
 
@@ -332,6 +360,13 @@ class ProductoController extends Controller
                     'nombre' => $lockedProducto->nombre,
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log('productos', 'actualizar', "Medicamento '{$lockedProducto->nombre}' actualizado", [
+                    'producto_id' => $lockedProducto->id,
+                    'cambios' => array_keys($data),
+                ]);
+
+                Cache::forget('dashboard_stock_critico_count');
             });
 
             // Limpieza segura de imagen anterior solo tras confirmación exitosa en BD
@@ -383,6 +418,15 @@ class ProductoController extends Controller
                     'nuevo_estado' => $nuevoEstado ? 'activado' : 'desactivado',
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log(
+                    'productos',
+                    $nuevoEstado ? 'activar' : 'desactivar',
+                    "Medicamento '{$locked->nombre}' " . ($nuevoEstado ? 'activado' : 'desactivado'),
+                    ['producto_id' => $locked->id]
+                );
+
+                Cache::forget('dashboard_stock_critico_count');
 
                 return $nuevoEstado ? 'activado' : 'desactivado';
             });

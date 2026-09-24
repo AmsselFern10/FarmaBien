@@ -168,6 +168,14 @@
 
         .footer{ margin-top: 10px; }
     </style>
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('autoprint') === '1' || params.has('autoprint')) {
+                setTimeout(function() { window.print(); }, 250);
+            }
+        });
+    </script>
 </head>
 <body>
 @php

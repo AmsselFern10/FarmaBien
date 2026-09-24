@@ -7,9 +7,18 @@
 @endsection
 
 @section('page-actions')
-    <div>
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Ajustes de Inventario</h2>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Filtra, revisa la vista previa y exporta a PDF/Excel.</p>
+    <div class="flex items-center justify-between gap-4 w-full">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Ajustes de Inventario</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Filtra, revisa la vista previa y exporta a PDF/Excel.</p>
+        </div>
+        <button type="button" 
+                @click="$dispatch('toggle-pos-fullscreen')"
+                title="Modo Pantalla Completa / Ocultar Barras"
+                class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            <span class="hidden sm:inline">Modo Full</span>
+        </button>
     </div>
 @endsection
 

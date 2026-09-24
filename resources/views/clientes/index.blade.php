@@ -16,6 +16,9 @@
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Padrón de Clientes y Pacientes</span>
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    {{ $clientes->total() }} registrados
+                </span>
             </h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Directorio de pacientes, historial de dispensación y vinculación de recetas médicas.
@@ -23,7 +26,7 @@
         </div>
         @can('crear clientes')
         <a href="{{ route('clientes.create') }}" 
-           class="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-sm transition shrink-0">
+           class="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition shrink-0">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>Nuevo Cliente / Paciente</span>
         </a>
@@ -32,7 +35,7 @@
 
     <!-- Quick Stats Cards Row -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Pacientes</p>
                 <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ $clientes->total() }}</p>
@@ -42,7 +45,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">En esta Página</p>
                 <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ $clientes->count() }}</p>
@@ -52,7 +55,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Página Actual</p>
                 <p class="text-xl font-bold text-slate-800 dark:text-slate-200 mt-0.5">{{ $clientes->currentPage() }} / {{ $clientes->lastPage() }}</p>
@@ -62,7 +65,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Recetas Médicas</p>
                 <a href="{{ route('recetas.index') }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline mt-0.5 block">Ver Recetas &rarr;</a>
@@ -74,7 +77,7 @@
     </div>
 
     <!-- Search & Advanced Filter Bar -->
-    <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
         <form method="GET" action="{{ route('clientes.index') }}" class="flex flex-col md:flex-row items-center gap-3">
             <!-- Search Input -->
             <div class="relative flex-1 w-full">
@@ -125,10 +128,10 @@
     </div>
 
     <!-- Table Card -->
-    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[11px]">
                     <tr>
                         <th class="px-5 py-3.5">Cliente / Paciente</th>
                         <th class="px-5 py-3.5">Documento (DNI/RUC)</th>
@@ -136,7 +139,7 @@
                         <th class="px-5 py-3.5 text-center">Compras</th>
                         <th class="px-5 py-3.5 text-center">Recetas</th>
                         <th class="px-5 py-3.5 text-center">Estado</th>
-                        <th class="px-5 py-3.5 text-right">Acciones</th>
+                        <th class="px-5 py-3.5 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
@@ -148,7 +151,7 @@
                             <span class="block text-[11px] font-normal text-slate-400">{{ $cli->email }}</span>
                             @endif
                         </td>
-                        <td class="px-5 py-3.5 font-mono font-medium text-slate-700 dark:text-slate-300">
+                        <td class="px-5 py-3.5 font-mono font-bold text-slate-700 dark:text-slate-300">
                             {{ $cli->documento ?? '—' }}
                         </td>
                         <td class="px-5 py-3.5 text-slate-500 dark:text-slate-400">
@@ -175,21 +178,21 @@
                             </span>
                             @endif
                         </td>
-                        <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                            <div class="inline-flex items-center justify-end space-x-1">
+                        <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center justify-center space-x-1">
                                 @can('ver clientes')
                                 <a href="{{ route('clientes.show', $cli) }}" 
-                                   class="inline-flex items-center justify-center w-7 h-7 text-slate-400 hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-lg transition" 
+                                   class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" 
                                    title="Ver Ficha y Registro Clínico">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
                                 @endcan
 
                                 @can('editar clientes')
                                 <a href="{{ route('clientes.edit', $cli) }}" 
-                                   class="inline-flex items-center justify-center w-7 h-7 text-slate-400 hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-lg transition" 
+                                   class="w-7 h-7 inline-flex items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 transition" 
                                    title="Editar Cliente">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </a>
                                 @endcan
 
@@ -198,12 +201,12 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 
-                                            class="inline-flex items-center justify-center w-7 h-7 text-slate-400 hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-lg transition" 
+                                            class="w-7 h-7 inline-flex items-center justify-center rounded-lg {{ $cli->activo ? 'bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-600' }} transition" 
                                             title="{{ $cli->activo ? 'Desactivar' : 'Activar' }}">
                                         @if($cli->activo)
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                         @else
-                                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         @endif
                                     </button>
                                 </form>

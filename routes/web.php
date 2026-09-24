@@ -19,6 +19,7 @@ use App\Http\Controllers\PresentacionController;
 use App\Http\Controllers\AjusteController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\PublicCatalogoController;
+use App\Http\Controllers\PromocionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,30 @@ Route::get('/', function () {
 
 // Catálogo Público de Medicamentos para Clientes
 Route::get('/catalogo', [PublicCatalogoController::class, 'index'])->name('catalogo.publico');
+
+// Health Check Endpoint (Para Monitoreo, Docker, Render y Cloud Hosting)
+Route::get('/health', function () {
+    $dbConnected = false;
+    $dbDriver = config('database.default');
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $dbConnected = true;
+    } catch (\Throwable $e) {}
+
+    $status = $dbConnected ? 200 : 503;
+    return response()->json([
+        'status'      => $dbConnected ? 'healthy' : 'unhealthy',
+        'app'         => config('app.name', 'FarmaBien'),
+        'version'     => '2.0.0',
+        'environment' => config('app.env'),
+        'database'    => [
+            'driver'    => $dbDriver,
+            'connected' => $dbConnected,
+        ],
+        'cache'       => config('cache.default'),
+        'timestamp'   => now()->toIso8601String(),
+    ], $status);
+})->name('health');
 
 /*
 |--------------------------------------------------------------------------
@@ -62,7 +87,7 @@ Route::middleware('auth')->group(function () {
     | ENDPOINTS JSON / API BAJO SESIÓN WEB
     |--------------------------------------------------------------------------
     */
-    Route::prefix('api')->name('api.')->group(function () {
+    Route::prefix('api')->name('api.')->middleware('throttle:100,1')->group(function () {
         Route::get('/productos/{producto}/presentaciones', [ProductoPresentacionController::class, 'index'])
             ->name('productos.presentaciones.index');
 
@@ -109,6 +134,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('categorias', CategoriaController::class);
     Route::resource('clientes', ClienteController::class);
     Route::resource('proveedores', ProveedorController::class)->parameters(['proveedores' => 'proveedor']);
+    Route::post('promociones/{promocion}/toggle-activo', [PromocionController::class, 'toggleActivo'])->name('promociones.toggle-activo');
+    Route::resource('promociones', PromocionController::class)->parameters(['promociones' => 'promocion']);
     Route::post('presentaciones/{presentacion}/toggle-activo', [PresentacionController::class, 'toggleActivo'])->name('presentaciones.toggle-activo');
     Route::resource('presentaciones', PresentacionController::class)->parameters(['presentaciones' => 'presentacion']);
 

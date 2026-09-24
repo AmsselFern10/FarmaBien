@@ -101,7 +101,7 @@
             @endcan
 
             <!-- Catálogos -->
-            @canany(['ver productos', 'ver laboratorios', 'ver categorias', 'ver clientes', 'ver proveedores'])
+            @canany(['ver productos', 'ver laboratorios', 'ver categorias', 'ver clientes', 'ver proveedores', 'ver promociones'])
             <div class="space-y-1">
                 <button @click="openMobileMenus.catalogos = !openMobileMenus.catalogos"
                         class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800">
@@ -110,6 +110,7 @@
                 </button>
                 <div x-show="openMobileMenus.catalogos" class="pl-4 space-y-1 border-l border-slate-800 ml-3">
                     @can('ver productos')<a href="{{ route('productos.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Medicamentos</a>@endcan
+                    @can('ver promociones')<a href="{{ route('promociones.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-rose-400 font-semibold hover:bg-slate-800 flex items-center justify-between"><span>Promociones & Descuentos</span><span class="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300">Ofertas</span></a>@endcan
                     @can('ver laboratorios')<a href="{{ route('laboratorios.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Laboratorios</a>@endcan
                     @can('ver categorias')<a href="{{ route('categorias.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Categorías</a>@endcan
                     @can('ver proveedores')<a href="{{ route('proveedores.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Proveedores</a>@endcan

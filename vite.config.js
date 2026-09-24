@@ -11,4 +11,24 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        chunkSizeWarningLimit: 1000,
+        cssCodeSplit: true,
+        minify: 'esbuild',
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('alpinejs') || id.includes('@alpinejs')) {
+                            return 'vendor-alpine';
+                        }
+                        if (id.includes('axios')) {
+                            return 'vendor-axios';
+                        }
+                        return 'vendor';
+                    }
+                },
+            },
+        },
+    },
 });

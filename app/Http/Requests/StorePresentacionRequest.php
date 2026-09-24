@@ -8,7 +8,7 @@ class StorePresentacionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('crear productos');
+        return $this->user()->can('crear presentaciones') || $this->user()->can('crear productos');
     }
 
     public function rules(): array

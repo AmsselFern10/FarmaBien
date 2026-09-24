@@ -148,9 +148,9 @@
                 </div>
             </div>
 
-            <!-- Fila Inferior: Checkbox bajo stock + Botones + Toggle de Vista -->
+            <!-- Fila Inferior: Checkbox bajo stock + Botón Filtrar + Limpiar + Toggle de Vista -->
             <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
-                <div class="flex items-center space-x-4">
+                <div class="flex flex-wrap items-center gap-3">
                     <label class="inline-flex items-center space-x-2 cursor-pointer select-none text-slate-700 dark:text-slate-300">
                         <input type="checkbox" 
                                name="bajo_stock" 
@@ -161,9 +161,14 @@
                         <span class="font-medium">Solo productos en stock bajo</span>
                     </label>
 
+                    <button type="submit" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                        <span>Filtrar</span>
+                    </button>
+
                     @if(request()->hasAny(['buscar', 'categoria_id', 'laboratorio_id', 'tipo_control', 'bajo_stock']))
-                    <a href="{{ route('productos.index') }}" class="text-rose-600 dark:text-rose-400 hover:underline flex items-center space-x-1 font-medium">
-                        <span>Limpiar filtros</span>
+                    <a href="{{ route('productos.index') }}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition flex items-center space-x-1 font-medium">
+                        <span>Limpiar</span>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                     @endif
@@ -219,6 +224,8 @@
                     @if($producto->imagen)
                         <img src="{{ asset('storage/' . $producto->imagen) }}" 
                              alt="{{ $producto->nombre }}" 
+                             loading="lazy"
+                             decoding="async"
                              class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300">
                     @else
                         <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -226,12 +233,18 @@
                         </div>
                     @endif
 
-                    <!-- Badges Top Left: Receta -->
+                    <!-- Badges Top Left: Receta & Promo -->
                     <div class="absolute top-2.5 left-2.5 flex flex-col gap-1">
                         @if($producto->requiere_receta)
                         <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/90 text-white backdrop-blur-xs shadow-xs">
                             <span>Rx</span>
                             <span>Receta</span>
+                        </span>
+                        @endif
+                        @if($producto->tiene_oferta)
+                        <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600/90 text-white backdrop-blur-xs shadow-xs">
+                            <span>🔥</span>
+                            <span>{{ $producto->badge_oferta }}</span>
                         </span>
                         @endif
                     </div>
@@ -300,9 +313,16 @@
                     <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-baseline justify-between">
                         <div>
                             <span class="text-[10px] text-slate-400 uppercase font-semibold">Precio Venta</span>
-                            <div class="text-base font-extrabold text-slate-900 dark:text-white">
-                                S/ {{ number_format($producto->precio_venta, 2) }}
-                            </div>
+                            @if($producto->tiene_oferta)
+                                <div class="flex items-baseline space-x-1.5">
+                                    <span class="text-xs line-through text-slate-400 font-mono font-medium">${{ number_format($producto->precio_venta, 2) }}</span>
+                                    <span class="text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">${{ number_format($producto->precio_oferta, 2) }}</span>
+                                </div>
+                            @else
+                                <div class="text-base font-extrabold text-slate-900 dark:text-white font-mono">
+                                    ${{ number_format($producto->precio_venta, 2) }}
+                                </div>
+                            @endif
                         </div>
                         <div class="text-right">
                             <span class="text-[10px] text-slate-400 uppercase font-semibold">Disponible</span>
@@ -397,7 +417,7 @@
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
                                     @if($producto->imagen)
-                                        <img src="{{ asset('storage/' . $producto->imagen) }}" alt="{{ $producto->nombre }}" class="w-full h-full object-cover">
+                                        <img src="{{ asset('storage/' . $producto->imagen) }}" alt="{{ $producto->nombre }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                     @else
                                         <span class="text-xs font-bold text-slate-400">Rx</span>
                                     @endif
@@ -456,8 +476,18 @@
                         </td>
 
                         <!-- Precio Venta -->
-                        <td class="py-3 px-4 text-right whitespace-nowrap font-bold text-slate-900 dark:text-white">
-                            S/ {{ number_format($producto->precio_venta, 2) }}
+                        <td class="py-3 px-4 text-right whitespace-nowrap font-mono">
+                            @if($producto->tiene_oferta)
+                                <div class="text-[11px] line-through text-slate-400">${{ number_format($producto->precio_venta, 2) }}</div>
+                                <div class="font-extrabold text-emerald-600 dark:text-emerald-400">
+                                    ${{ number_format($producto->precio_oferta, 2) }}
+                                    <span class="ml-0.5 px-1 py-0.2 rounded text-[9px] bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold">{{ $producto->badge_oferta }}</span>
+                                </div>
+                            @else
+                                <span class="font-bold text-slate-900 dark:text-white">
+                                    ${{ number_format($producto->precio_venta, 2) }}
+                                </span>
+                            @endif
                         </td>
 
                         <!-- Estado -->

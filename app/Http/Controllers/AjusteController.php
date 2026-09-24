@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Configuracion;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -41,7 +42,7 @@ class AjusteController extends Controller
             'empresa_ciudad'                     => ['nullable', 'string', 'max:100'],
             'empresa_slogan'                     => ['nullable', 'string', 'max:255'],
             'empresa_pie_ticket'                 => ['nullable', 'string', 'max:255'],
-            'empresa_logo'                       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
+            'empresa_logo'                       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'interfaz_modo_oscuro_default'       => ['nullable', 'string', 'in:light,dark,system'],
             'interfaz_vista_formularios_default' => ['nullable', 'string', 'in:modern,compact'],
             'interfaz_registros_por_pagina'      => ['nullable', 'integer', 'min:10', 'max:100'],
@@ -49,6 +50,16 @@ class AjusteController extends Controller
             'catalogo_publico_mostrar_precios'   => ['nullable', 'boolean'],
             'catalogo_publico_mostrar_stock'     => ['nullable', 'boolean'],
             'modulo_cajas_estricto'              => ['nullable', 'boolean'],
+            'impresora_tipo'                     => ['nullable', 'string', 'in:red,bluetooth,usb,navegador'],
+            'impresora_ip'                       => ['nullable', 'string', 'max:50'],
+            'impresora_puerto'                   => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'impresora_ancho_papel'              => ['nullable', 'string', 'in:58,80'],
+            'impresora_corte_automatico'         => ['nullable', 'boolean'],
+            'impresora_abrir_cajon'              => ['nullable', 'boolean'],
+            'impresora_impresion_automatica'     => ['nullable', 'boolean'],
+            'cajon_tipo'                         => ['nullable', 'string', 'in:escpos,usb,manual'],
+            'lector_modo'                        => ['nullable', 'string', 'in:hid,usb_serial,camara'],
+            'lector_sufijo'                      => ['nullable', 'string', 'in:enter,tab,none'],
         ]);
 
         $tab = $request->input('tab', 'empresa');
@@ -94,7 +105,26 @@ class AjusteController extends Controller
             Configuracion::set('modulo_cajas_estricto', $request->boolean('modulo_cajas_estricto'), 'modulos', 'boolean');
         }
 
+        // Hardware & Periféricos
+        if ($tab === 'hardware' || $request->has('impresora_tipo')) {
+            if ($request->has('impresora_tipo')) Configuracion::set('impresora_tipo', $request->input('impresora_tipo'), 'hardware');
+            if ($request->has('impresora_ip')) Configuracion::set('impresora_ip', $request->input('impresora_ip'), 'hardware');
+            if ($request->has('impresora_puerto')) Configuracion::set('impresora_puerto', $request->input('impresora_puerto', '9100'), 'hardware', 'integer');
+            if ($request->has('impresora_ancho_papel')) Configuracion::set('impresora_ancho_papel', $request->input('impresora_ancho_papel', '80'), 'hardware', 'integer');
+            Configuracion::set('impresora_corte_automatico', $request->boolean('impresora_corte_automatico'), 'hardware', 'boolean');
+            Configuracion::set('impresora_abrir_cajon', $request->boolean('impresora_abrir_cajon'), 'hardware', 'boolean');
+            Configuracion::set('impresora_impresion_automatica', $request->boolean('impresora_impresion_automatica'), 'hardware', 'boolean');
+            if ($request->has('cajon_tipo')) Configuracion::set('cajon_tipo', $request->input('cajon_tipo', 'escpos'), 'hardware');
+            if ($request->has('lector_modo')) Configuracion::set('lector_modo', $request->input('lector_modo', 'hid'), 'hardware');
+            if ($request->has('lector_sufijo')) Configuracion::set('lector_sufijo', $request->input('lector_sufijo', 'enter'), 'hardware');
+        }
+
         Configuracion::clearCache();
+
+        AuditLog::log('ajustes', 'actualizar', "Configuraciones del sistema actualizadas (pestaña: {$tab})", [
+            'tab' => $tab,
+            'user_id' => auth()->id(),
+        ]);
 
         // Si se guardó la preferencia de tema o vista de formularios, pasarla como flash para que el layout
         // la propague a localStorage del navegador en la siguiente carga
@@ -123,6 +153,10 @@ class AjusteController extends Controller
 
         Configuracion::set('catalogo_publico_activo', $nuevo, 'modulos', 'boolean');
         Configuracion::clearCache();
+
+        AuditLog::log('ajustes', 'toggle_catalogo', "Catálogo público " . ($nuevo ? 'activado' : 'desactivado'), [
+            'activo' => $nuevo,
+        ]);
 
         if ($request->wantsJson()) {
             return response()->json([

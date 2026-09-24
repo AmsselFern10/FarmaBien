@@ -1,11 +1,21 @@
 {
+  "_vendor-alpine-159b8952.js": {
+    "file": "assets/vendor-alpine-159b8952.js"
+  },
+  "_vendor-axios-058efe08.js": {
+    "file": "assets/vendor-axios-058efe08.js"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-b1974fd4.css",
+    "file": "assets/app-c703eae7.css",
     "isEntry": true,
     "src": "resources/css/app.css"
   },
   "resources/js/app.js": {
-    "file": "assets/app-05f19eec.js",
+    "file": "assets/app-52a7fb39.js",
+    "imports": [
+      "_vendor-axios-058efe08.js",
+      "_vendor-alpine-159b8952.js"
+    ],
     "isEntry": true,
     "src": "resources/js/app.js"
   }

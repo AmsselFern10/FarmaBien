@@ -42,7 +42,25 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            //
+            if ($this->shouldReport($e)) {
+                try {
+                    \App\Models\AuditLog::log(
+                        'sistema',
+                        'excepcion',
+                        'Excepción del sistema: ' . substr($e->getMessage(), 0, 255),
+                        [
+                            'exception' => get_class($e),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'code' => $e->getCode(),
+                            'url' => request()?->fullUrl(),
+                            'method' => request()?->method(),
+                        ]
+                    );
+                } catch (Throwable $logEx) {
+                    // Silently ignore to avoid recursive errors
+                }
+            }
         });
     }
 }

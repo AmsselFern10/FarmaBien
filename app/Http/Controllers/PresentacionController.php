@@ -16,10 +16,10 @@ class PresentacionController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:ver productos')->only(['index', 'show']);
-        $this->middleware('permission:crear productos')->only(['create', 'store']);
-        $this->middleware('permission:editar productos')->only(['edit', 'update', 'toggleActivo']);
-        $this->middleware('permission:eliminar productos')->only(['destroy']);
+        $this->middleware('permission:ver presentaciones|ver productos')->only(['index', 'show']);
+        $this->middleware('permission:crear presentaciones|crear productos')->only(['create', 'store']);
+        $this->middleware('permission:editar presentaciones|editar productos')->only(['edit', 'update', 'toggleActivo']);
+        $this->middleware('permission:desactivar presentaciones|desactivar productos')->only(['destroy']);
     }
 
     public function index(Request $request)

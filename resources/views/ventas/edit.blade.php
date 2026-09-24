@@ -61,7 +61,12 @@ function posVentaEditData() {
             serie: '{{ old('serie', $venta->serie ?? '') }}',
             numero_comprobante: '{{ old('numero_comprobante', $venta->numero_comprobante ?? '') }}',
             metodo_pago: '{{ old('metodo_pago', $venta->metodo_pago ?? 'efectivo') }}',
+            monto_recibido: {{ old('monto_recibido', $venta->monto_recibido ?? (float)$venta->total) }},
+            tipo_descuento: '{{ old('tipo_descuento', $venta->tipo_descuento ?? 'monto') }}',
+            porcentaje_descuento: {{ old('porcentaje_descuento', $venta->porcentaje_descuento ?? 0) }},
             descuento: {{ old('descuento', $venta->descuento ?? 0) }},
+            referencia_pago: '{{ old('referencia_pago', $venta->referencia_pago ?? '') }}',
+            observaciones: '{{ old('observaciones', $venta->observaciones ?? '') }}',
             motivo_modificacion: '{{ old('motivo_modificacion', '') }}'
         },
 
@@ -232,10 +237,33 @@ function posVentaEditData() {
             return this.items.reduce((acc, it) => acc + (parseFloat(this.calcularSubtotal(it)) || 0), 0).toFixed(2);
         },
 
+        calcularDescuentoTotal() {
+            const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
+            if (this.formData.tipo_descuento === 'porcentaje') {
+                const pct = Math.min(100, Math.max(0, parseFloat(this.formData.porcentaje_descuento) || 0));
+                return Math.round((sub * (pct / 100)) * 100) / 100;
+            }
+            return Math.min(sub, Math.max(0, parseFloat(this.formData.descuento) || 0));
+        },
+
         calcularTotalGeneral() {
             const sub = parseFloat(this.calcularSubtotalGeneral()) || 0;
-            const desc = parseFloat(this.formData.descuento) || 0;
+            const desc = this.calcularDescuentoTotal();
             return Math.max(0, sub - desc).toFixed(2);
+        },
+
+        calcularCambio() {
+            const tot = parseFloat(this.calcularTotalGeneral()) || 0;
+            const rec = parseFloat(this.formData.monto_recibido);
+            if (isNaN(rec) || rec < tot) return '0.00';
+            return (rec - tot).toFixed(2);
+        },
+
+        esMontoRecibidoValido() {
+            if (this.formData.metodo_pago !== 'efectivo') return true;
+            const tot = parseFloat(this.calcularTotalGeneral()) || 0;
+            const rec = parseFloat(this.formData.monto_recibido);
+            return !isNaN(rec) && rec >= tot;
         },
 
         getClienteNombre() {
@@ -248,6 +276,42 @@ function posVentaEditData() {
             if (!this.formData.cliente_id) return 'Sin Documento';
             const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
             return cl && cl.documento ? cl.documento : 'Sin Documento';
+        },
+
+        buscandoServidor: false,
+        cacheBusqueda: {},
+        debounceTimer: null,
+
+        async buscarEnServidor(query) {
+            if (!query || query.trim().length < 2) return;
+            const q = query.trim().toLowerCase();
+            if (this.cacheBusqueda[q]) {
+                this.incorporarResultados(this.cacheBusqueda[q]);
+                return;
+            }
+
+            this.buscandoServidor = true;
+            try {
+                const res = await fetch(`/api/productos/buscar?q=${encodeURIComponent(q)}&limit=20`);
+                if (res.ok) {
+                    const data = await res.json();
+                    this.cacheBusqueda[q] = data;
+                    this.incorporarResultados(data);
+                }
+            } catch (e) {
+                console.error("Error al buscar productos en servidor:", e);
+            } finally {
+                this.buscandoServidor = false;
+            }
+        },
+
+        incorporarResultados(productos) {
+            if (!Array.isArray(productos)) return;
+            productos.forEach(p => {
+                if (!this.catalogo.some(c => c.id == p.id)) {
+                    this.catalogo.push(p);
+                }
+            });
         },
 
         productosFiltrados() {
@@ -402,7 +466,7 @@ function posVentaEditData() {
                             Cancelar (Esc)
                         </a>
                         <button type="submit" 
-                                :disabled="!formData.motivo_modificacion || formData.motivo_modificacion.trim().length < 5 || items.length === 0"
+                                :disabled="!formData.motivo_modificacion || formData.motivo_modificacion.trim().length < 5 || items.length === 0 || !esMontoRecibidoValido()"
                                 class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             <span>Actualizar Venta</span>
@@ -493,6 +557,62 @@ function posVentaEditData() {
                                 </select>
                             </div>
                         </div>
+
+                        <!-- Panel de Efectivo / Control de Caja (si es efectivo) -->
+                        <div x-show="formData.metodo_pago === 'efectivo'" class="p-3 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+                            <div class="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                <span>💵 Control de Efectivo y Vuelto</span>
+                                <span class="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded-md font-mono">Cálculo Inmediato</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-emerald-900 dark:text-emerald-200 mb-1">
+                                        Monto Entregado por Cliente <span class="text-rose-500">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-emerald-600 font-bold text-xs">$</span>
+                                        <input type="number" 
+                                               step="0.01" 
+                                               min="0"
+                                               name="monto_recibido"
+                                               x-model.number="formData.monto_recibido" 
+                                               @focus="$event.target.select()"
+                                               placeholder="0.00"
+                                               class="w-full pl-6 pr-2.5 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <!-- Botones de sugerencia rápida -->
+                                    <div class="flex items-center gap-1 mt-1.5">
+                                        <button type="button" @click="formData.monto_recibido = parseFloat(calcularTotalGeneral())" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">Exacto</button>
+                                        <button type="button" @click="formData.monto_recibido = Math.ceil(parseFloat(calcularTotalGeneral()) / 10) * 10 || 10" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">Redondeo</button>
+                                        <button type="button" @click="formData.monto_recibido = (parseFloat(calcularTotalGeneral()) + 10)" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">+$10</button>
+                                        <button type="button" @click="formData.monto_recibido = (parseFloat(calcularTotalGeneral()) + 20)" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">+$20</button>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col justify-between p-2 rounded-lg bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800">
+                                    <span class="text-[10px] font-semibold text-slate-500">Cambio / Vuelto a Entregar:</span>
+                                    <div class="flex items-baseline justify-between">
+                                        <span class="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                                            $<span x-text="calcularCambio()"></span>
+                                        </span>
+                                        <span x-show="!esMontoRecibidoValido()" class="text-[10px] text-rose-500 font-bold bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200">
+                                            Faltan $<span x-text="(parseFloat(calcularTotalGeneral()) - (parseFloat(formData.monto_recibido) || 0)).toFixed(2)"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Referencia de Pago (si no es efectivo) -->
+                        <div x-show="formData.metodo_pago !== 'efectivo'">
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Referencia / N° Operación
+                            </label>
+                            <input type="text" 
+                                   name="referencia_pago" 
+                                   x-model="formData.referencia_pago" 
+                                   placeholder="Ej: Operación POS #847291 / Transf. 99201"
+                                   class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 font-medium">
+                        </div>
                     </div>
 
                     <!-- Panel 2: Resumen Liquidación Actualizado (4 cols) -->
@@ -502,19 +622,58 @@ function posVentaEditData() {
                             <span>Resumen Actualizado</span>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                                <span class="text-[10px] font-semibold text-slate-500 block">Ítems a Despachar:</span>
-                                <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="items.length + ' líneas'"></span>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-semibold text-slate-500">Subtotal Bruto:</span>
+                                <span class="font-bold text-slate-900 dark:text-white" x-text="'$' + calcularSubtotalGeneral()"></span>
                             </div>
-                            <div>
-                                <span class="text-[10px] font-semibold text-slate-500 block">Descuento Global ($):</span>
-                                <input type="number" 
-                                       step="0.10" 
-                                       min="0"
-                                       name="descuento"
-                                       x-model="formData.descuento" 
-                                       class="w-24 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-slate-900 dark:text-white text-right">
+
+                            <!-- Descuento con selector % o $ -->
+                            <div class="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">Descuento Global:</span>
+                                    <div class="inline-flex rounded-md shadow-2xs">
+                                        <button type="button" 
+                                                @click="formData.tipo_descuento = 'monto'"
+                                                :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'"
+                                                class="px-2 py-0.5 text-[10px] rounded-l-md transition cursor-pointer">$</button>
+                                        <button type="button" 
+                                                @click="formData.tipo_descuento = 'porcentaje'"
+                                                :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'"
+                                                class="px-2 py-0.5 text-[10px] rounded-r-md transition cursor-pointer">%</button>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="tipo_descuento" :value="formData.tipo_descuento">
+
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex-1">
+                                        <template x-if="formData.tipo_descuento === 'porcentaje'">
+                                            <div class="relative">
+                                                <input type="number" 
+                                                       step="1" 
+                                                       min="0" 
+                                                       max="100"
+                                                       name="porcentaje_descuento"
+                                                       x-model.number="formData.porcentaje_descuento" 
+                                                       @focus="$event.target.select()"
+                                                       placeholder="0"
+                                                       class="w-full px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-rose-600 text-right">
+                                                <span class="absolute inset-y-0 right-2 flex items-center text-xs text-slate-400 font-bold pointer-events-none">%</span>
+                                            </div>
+                                        </template>
+                                        <template x-if="formData.tipo_descuento === 'monto'">
+                                            <input type="number" 
+                                                   step="0.10" 
+                                                   min="0"
+                                                   name="descuento"
+                                                   x-model.number="formData.descuento" 
+                                                   @focus="$event.target.select()"
+                                                   placeholder="0.00"
+                                                   class="w-full px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-rose-600 text-right">
+                                        </template>
+                                    </div>
+                                    <span class="text-xs font-bold text-rose-600 dark:text-rose-400" x-text="'-$' + calcularDescuentoTotal().toFixed(2)"></span>
+                                </div>
                             </div>
                         </div>
 
@@ -551,7 +710,7 @@ function posVentaEditData() {
                                     <th class="py-2 px-3 min-w-[200px]">Medicamento / Fármaco</th>
                                     <th class="py-2 px-3 min-w-[160px]">Presentación</th>
                                     <th class="py-2 px-3 min-w-[190px]">Lote (FEFO) & Ubicación</th>
-                                    <th class="py-2 px-2 text-center w-16">Cant.</th>
+                                    <th class="py-2 px-2 text-center w-20">Cant.</th>
                                     <th class="py-2 px-2 text-right w-20">P. Venta</th>
                                     <th class="py-2 px-2 text-right w-20">Desc. ($)</th>
                                     <th class="py-2 px-3 text-right w-24">Subtotal</th>
@@ -585,6 +744,11 @@ function posVentaEditData() {
                                                     <option :value="pres.id" x-text="pres.nombre + ' (x' + pres.unidades + ')'"></option>
                                                 </template>
                                             </select>
+                                            <template x-if="item.factor > 1">
+                                                <div class="mt-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                                    📦 <span x-text="item.cantidad"></span> pres. x <span x-text="item.factor"></span> = -<span x-text="calcularUnidadesBase(item)"></span> u. base
+                                                </div>
+                                            </template>
                                         </td>
 
                                         <!-- Lote & Ubicación -->
@@ -608,7 +772,8 @@ function posVentaEditData() {
                                                    :name="'productos[' + idx + '][cantidad]'"
                                                    x-model.number="item.cantidad" 
                                                    min="1" 
-                                                   class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-center focus:ring-1 focus:ring-emerald-500">
+                                                   @focus="$event.target.select()"
+                                                   class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-center focus:ring-2 focus:ring-emerald-500">
                                         </td>
 
                                         <!-- Precio Venta -->
@@ -656,7 +821,7 @@ function posVentaEditData() {
                 <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-slate-400 text-[11px]">
                     <span>Los cambios registrarán una nueva versión de venta con ajuste automático en Kardex.</span>
                     <button type="submit" 
-                            :disabled="!formData.motivo_modificacion || formData.motivo_modificacion.trim().length < 5 || items.length === 0"
+                            :disabled="!formData.motivo_modificacion || formData.motivo_modificacion.trim().length < 5 || items.length === 0 || !esMontoRecibidoValido()"
                             class="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         <span>Actualizar y Generar Versión</span>

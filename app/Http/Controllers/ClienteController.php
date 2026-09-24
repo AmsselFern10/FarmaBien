@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\AuditLog;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ClienteController extends Controller
 {
@@ -60,7 +62,16 @@ class ClienteController extends Controller
 
     public function store(StoreClienteRequest $request)
     {
-        $cliente = Cliente::create($request->validated());
+        $cliente = DB::transaction(function () use ($request) {
+            $cliente = Cliente::create($request->validated());
+
+            AuditLog::log('clientes', 'crear', "Cliente '{$cliente->nombre}' registrado", [
+                'cliente_id' => $cliente->id,
+                'documento' => $cliente->documento,
+            ]);
+
+            return $cliente;
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -95,7 +106,14 @@ class ClienteController extends Controller
 
     public function update(UpdateClienteRequest $request, Cliente $cliente)
     {
-        $cliente->update($request->validated());
+        DB::transaction(function () use ($request, $cliente) {
+            $locked = Cliente::where('id', $cliente->id)->lockForUpdate()->firstOrFail();
+            $locked->update($request->validated());
+
+            AuditLog::log('clientes', 'actualizar', "Cliente '{$locked->nombre}' actualizado", [
+                'cliente_id' => $locked->id,
+            ]);
+        });
 
         return redirect()->route('clientes.index')
             ->with('success', "Cliente '{$cliente->nombre}' actualizado exitosamente.");
@@ -103,10 +121,22 @@ class ClienteController extends Controller
 
     public function destroy(Cliente $cliente)
     {
-        $cliente->update(['activo' => !$cliente->activo]);
-        $estado = $cliente->activo ? 'activado' : 'desactivado';
+        $nuevoEstado = DB::transaction(function () use ($cliente) {
+            $locked = Cliente::where('id', $cliente->id)->lockForUpdate()->firstOrFail();
+            $estadoBool = !$locked->activo;
+            $locked->update(['activo' => $estadoBool]);
+
+            AuditLog::log(
+                'clientes',
+                $estadoBool ? 'activar' : 'desactivar',
+                "Cliente '{$locked->nombre}' " . ($estadoBool ? 'activado' : 'desactivado'),
+                ['cliente_id' => $locked->id]
+            );
+
+            return $estadoBool ? 'activado' : 'desactivado';
+        });
 
         return redirect()->route('clientes.index')
-            ->with('success', "Cliente '{$cliente->nombre}' {$estado} correctamente.");
+            ->with('success', "Cliente '{$cliente->nombre}' {$nuevoEstado} correctamente.");
     }
 }

@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\LoginLog;
+use App\Models\AuditLog;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -48,14 +50,23 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request)
     {
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'active' => $request->boolean('active', true),
-        ]);
+        $user = DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'active' => $request->boolean('active', true),
+            ]);
 
-        $user->syncRoles([$request->role]);
+            $user->syncRoles([$request->role]);
+
+            AuditLog::log('usuarios', 'crear', "Usuario '{$user->name}' ({$user->email}) creado", [
+                'user_id' => $user->id,
+                'role' => $request->role,
+            ]);
+
+            return $user;
+        });
 
         return redirect()->route('usuarios.index')
             ->with('success', "Usuario '{$user->name}' creado exitosamente.");
@@ -88,18 +99,28 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $usuario)
     {
-        $data = [
-            'name' => $request->name,
-            'email' => $request->email,
-            'active' => $request->boolean('active', true),
-        ];
+        DB::transaction(function () use ($request, $usuario) {
+            $locked = User::where('id', $usuario->id)->lockForUpdate()->firstOrFail();
 
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
+            $data = [
+                'name' => $request->name,
+                'email' => $request->email,
+                'active' => $request->boolean('active', true),
+            ];
 
-        $usuario->update($data);
-        $usuario->syncRoles([$request->role]);
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($request->password);
+            }
+
+            $locked->update($data);
+            $locked->syncRoles([$request->role]);
+
+            AuditLog::log('usuarios', 'actualizar', "Usuario '{$locked->name}' actualizado", [
+                'user_id' => $locked->id,
+                'role' => $request->role,
+                'active' => $locked->active,
+            ]);
+        });
 
         return redirect()->route('usuarios.index')
             ->with('success', "Usuario '{$usuario->name}' actualizado exitosamente.");
@@ -111,10 +132,22 @@ class UserController extends Controller
             return back()->with('error', 'No puedes desactivar tu propia cuenta de usuario.');
         }
 
-        $usuario->update(['active' => !$usuario->active]);
-        $estado = $usuario->active ? 'activado' : 'desactivado';
+        $nuevoEstado = DB::transaction(function () use ($usuario) {
+            $locked = User::where('id', $usuario->id)->lockForUpdate()->firstOrFail();
+            $estadoBool = !$locked->active;
+            $locked->update(['active' => $estadoBool]);
+
+            AuditLog::log(
+                'usuarios',
+                $estadoBool ? 'activar' : 'desactivar',
+                "Usuario '{$locked->name}' " . ($estadoBool ? 'activado' : 'desactivado'),
+                ['user_id' => $locked->id]
+            );
+
+            return $estadoBool ? 'activado' : 'desactivado';
+        });
 
         return redirect()->route('usuarios.index')
-            ->with('success', "Usuario '{$usuario->name}' {$estado} correctamente.");
+            ->with('success', "Usuario '{$usuario->name}' {$nuevoEstado} correctamente.");
     }
 }

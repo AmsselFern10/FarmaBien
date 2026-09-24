@@ -140,6 +140,74 @@ class Producto extends Model
         return round((($this->precio_venta - $this->precio_compra) / $this->precio_compra) * 100, 2);
     }
 
+    public function promociones(): HasMany
+    {
+        return $this->hasMany(Promocion::class);
+    }
+
+    /**
+     * Obtiene la promoción activa y vigente prioritaria para el producto
+     * (Prioridad: Específica por Producto > Por Categoría > Por Laboratorio > General)
+     */
+    public function getPromocionVigenteAttribute(): ?Promocion
+    {
+        // 1. Promoción directa por producto
+        $promo = Promocion::vigentes()
+            ->where('alcance', 'producto')
+            ->where('producto_id', $this->id)
+            ->latest('id')
+            ->first();
+
+        if ($promo) return $promo;
+
+        // 2. Promoción por categoría
+        if ($this->categoria_id) {
+            $promo = Promocion::vigentes()
+                ->where('alcance', 'categoria')
+                ->where('categoria_id', $this->categoria_id)
+                ->latest('id')
+                ->first();
+
+            if ($promo) return $promo;
+        }
+
+        // 3. Promoción por laboratorio
+        if ($this->laboratorio_id) {
+            $promo = Promocion::vigentes()
+                ->where('alcance', 'laboratorio')
+                ->where('laboratorio_id', $this->laboratorio_id)
+                ->latest('id')
+                ->first();
+
+            if ($promo) return $promo;
+        }
+
+        // 4. Promoción general
+        return Promocion::vigentes()
+            ->where('alcance', 'general')
+            ->latest('id')
+            ->first();
+    }
+
+    public function getTieneOfertaAttribute(): bool
+    {
+        return $this->promocion_vigente !== null;
+    }
+
+    public function getPrecioOfertaAttribute(): ?float
+    {
+        $promo = $this->promocion_vigente;
+        if (!$promo) return null;
+
+        return $promo->calcularPrecioUnitario((float)$this->precio_venta);
+    }
+
+    public function getBadgeOfertaAttribute(): ?string
+    {
+        $promo = $this->promocion_vigente;
+        return $promo ? $promo->badge_texto : null;
+    }
+
     public function getNombreCompletoAttribute(): string
     {
         $partes = [$this->nombre];

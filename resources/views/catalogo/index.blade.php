@@ -263,6 +263,8 @@
                         @if(!empty($producto->imagen) && \Illuminate\Support\Facades\Storage::disk('public')->exists($producto->imagen))
                             <img src="{{ asset('storage/' . $producto->imagen) }}" 
                                  alt="{{ $producto->nombre }}" 
+                                 loading="lazy"
+                                 decoding="async"
                                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200">
                         @else
                             <div class="flex flex-col items-center justify-center text-slate-300 group-hover:text-emerald-500 transition-colors">
@@ -273,13 +275,19 @@
 
                         {{-- Badges Flotantes --}}
                         <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5">
-                            @if($producto->categoria)
-                                <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/95 text-slate-700 shadow-2xs border border-slate-200/80 truncate max-w-[130px]">
-                                    {{ $producto->categoria->nombre }}
-                                </span>
-                            @else
-                                <span></span>
-                            @endif
+                            <div class="flex items-center gap-1 min-w-0">
+                                @if($producto->categoria)
+                                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/95 text-slate-700 shadow-2xs border border-slate-200/80 truncate max-w-[110px]">
+                                        {{ $producto->categoria->nombre }}
+                                    </span>
+                                @endif
+                                @if($producto->tiene_oferta)
+                                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-600 text-white shadow-2xs flex items-center gap-0.5">
+                                        <span>🔥</span>
+                                        <span>{{ $producto->badge_oferta }}</span>
+                                    </span>
+                                @endif
+                            </div>
 
                             @if($mostrarStock)
                                 @if($tieneStock)
@@ -347,9 +355,21 @@
                             @if($mostrarPrecios)
                                 <div class="flex items-baseline justify-between">
                                     <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Precio:</span>
-                                    <span class="text-base sm:text-lg font-black text-emerald-700">
-                                        ${{ number_format($producto->precio_venta, 2) }}
-                                    </span>
+                                    @if($producto->tiene_oferta)
+                                        <div class="flex items-baseline gap-1.5">
+                                            <span class="text-xs line-through text-slate-400 font-semibold">${{ number_format($producto->precio_venta, 2) }}</span>
+                                            <span class="text-base sm:text-lg font-black text-emerald-700">
+                                                ${{ number_format($producto->precio_oferta, 2) }}
+                                            </span>
+                                            <span class="px-1.5 py-0.2 rounded text-[10px] bg-rose-100 text-rose-700 font-bold">
+                                                {{ $producto->badge_oferta }}
+                                            </span>
+                                        </div>
+                                    @else
+                                        <span class="text-base sm:text-lg font-black text-emerald-700">
+                                            ${{ number_format($producto->precio_venta, 2) }}
+                                        </span>
+                                    @endif
                                 </div>
                             @endif
 

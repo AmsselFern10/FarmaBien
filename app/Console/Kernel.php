@@ -12,7 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Purgar logs de actividad y accesos de más de 30 días diariamente a las 02:00 AM
+        $schedule->command('farma:purge-logs --days=30 --force')
+            ->dailyAt('02:00')
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/db-maintenance.log'));
     }
 
     /**
