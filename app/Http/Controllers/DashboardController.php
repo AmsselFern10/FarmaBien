@@ -89,9 +89,9 @@ class DashboardController extends Controller
                     ->sum('total');
             });
 
-            $ultimasCompras = Compra::select(['id', 'numero_factura', 'tipo_comprobante', 'fecha', 'total', 'proveedor_id', 'user_id', 'estado', 'created_at'])
+            $ultimasCompras = Compra::select(['id', 'numero_comprobante', 'fecha', 'total', 'proveedor_id', 'user_id', 'estado', 'created_at'])
                 ->with([
-                    'proveedor:id,razon_social,nombre',
+                    'proveedor:id,nombre',
                     'usuario:id,name',
                 ])
                 ->recibidas()

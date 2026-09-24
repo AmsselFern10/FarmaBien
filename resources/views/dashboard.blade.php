@@ -257,7 +257,7 @@
                                 {{ $compra->proveedor->razon_social ?? $compra->proveedor->nombre ?? 'Proveedor Droguería' }}
                             </p>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
-                                Factura: {{ $compra->numero_factura ?? 'S/N' }} &bull; {{ $compra->fecha ? \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y') : $compra->created_at->format('d/m/Y') }}
+                                Factura: {{ $compra->numero_comprobante ?? $compra->numero_factura ?? 'S/N' }} &bull; {{ $compra->fecha ? \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y') : $compra->created_at->format('d/m/Y') }}
                             </p>
                         </div>
                     </div>

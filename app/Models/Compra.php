@@ -152,4 +152,9 @@ class Compra extends Model
         
         return $cadena->unique('id')->values();
     }
+
+    public function getNumeroFacturaAttribute(): ?string
+    {
+        return $this->attributes['numero_comprobante'] ?? null;
+    }
 }
