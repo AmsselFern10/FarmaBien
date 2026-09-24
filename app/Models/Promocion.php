@@ -40,6 +40,16 @@ class Promocion extends Model
         'activo'          => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('promociones_vigentes_pos');
+        });
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('promociones_vigentes_pos');
+        });
+    }
+
     // Relaciones
     public function producto(): BelongsTo
     {

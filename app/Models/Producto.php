@@ -151,42 +151,19 @@ class Producto extends Model
      */
     public function getPromocionVigenteAttribute(): ?Promocion
     {
-        // 1. Promoción directa por producto
-        $promo = Promocion::vigentes()
-            ->where('alcance', 'producto')
-            ->where('producto_id', $this->id)
-            ->latest('id')
-            ->first();
+        $promociones = \Illuminate\Support\Facades\Cache::remember('promociones_vigentes_pos', 60, function () {
+            return Promocion::vigentes()->orderBy('id', 'desc')->get();
+        });
 
-        if ($promo) return $promo;
-
-        // 2. Promoción por categoría
-        if ($this->categoria_id) {
-            $promo = Promocion::vigentes()
-                ->where('alcance', 'categoria')
-                ->where('categoria_id', $this->categoria_id)
-                ->latest('id')
-                ->first();
-
-            if ($promo) return $promo;
-        }
-
-        // 3. Promoción por laboratorio
-        if ($this->laboratorio_id) {
-            $promo = Promocion::vigentes()
-                ->where('alcance', 'laboratorio')
-                ->where('laboratorio_id', $this->laboratorio_id)
-                ->latest('id')
-                ->first();
-
-            if ($promo) return $promo;
-        }
-
-        // 4. Promoción general
-        return Promocion::vigentes()
-            ->where('alcance', 'general')
-            ->latest('id')
-            ->first();
+        return $promociones->first(function ($p) {
+            return $p->alcance === 'producto' && (int)$p->producto_id === (int)$this->id;
+        }) ?? $promociones->first(function ($p) {
+            return $p->alcance === 'categoria' && (int)$p->categoria_id === (int)$this->categoria_id;
+        }) ?? $promociones->first(function ($p) {
+            return $p->alcance === 'laboratorio' && (int)$p->laboratorio_id === (int)$this->laboratorio_id;
+        }) ?? $promociones->first(function ($p) {
+            return $p->alcance === 'general';
+        });
     }
 
     public function getTieneOfertaAttribute(): bool

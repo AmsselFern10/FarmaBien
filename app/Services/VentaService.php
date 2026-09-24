@@ -630,8 +630,22 @@ class VentaService
             ->limit($limit)
             ->get();
 
-        $productos->each(function ($prod) {
-            $promo = $prod->promocion_vigente;
+        // Optimización de promociones: 1 sola consulta en memoria o desde caché en lugar de N*4 queries (N+1)
+        $promociones = \Illuminate\Support\Facades\Cache::remember('promociones_vigentes_pos', 60, function () {
+            return \App\Models\Promocion::vigentes()->orderBy('id', 'desc')->get();
+        });
+
+        $productos->each(function ($prod) use ($promociones) {
+            $promo = $promociones->first(function ($p) use ($prod) {
+                return $p->alcance === 'producto' && (int)$p->producto_id === (int)$prod->id;
+            }) ?? $promociones->first(function ($p) use ($prod) {
+                return $p->alcance === 'categoria' && (int)$p->categoria_id === (int)$prod->categoria_id;
+            }) ?? $promociones->first(function ($p) use ($prod) {
+                return $p->alcance === 'laboratorio' && (int)$p->laboratorio_id === (int)$prod->laboratorio_id;
+            }) ?? $promociones->first(function ($p) {
+                return $p->alcance === 'general';
+            });
+
             if ($promo) {
                 $prod->promocion_activa = [
                     'id'            => $promo->id,

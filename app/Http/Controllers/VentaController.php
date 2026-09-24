@@ -78,8 +78,12 @@ class VentaController extends Controller
 
     public function create()
     {
-        $clientes = Cliente::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
-        $categorias = Categoria::activas()->orderBy('nombre')->get(['id', 'nombre']);
+        $clientes = \Illuminate\Support\Facades\Cache::remember('pos_clientes_init_50', 60, function () {
+            return Cliente::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
+        });
+        $categorias = \Illuminate\Support\Facades\Cache::remember('catalog_categorias_base', 300, function () {
+            return Categoria::activas()->orderBy('nombre')->get(['id', 'nombre']);
+        });
         $productos = $this->ventaService->buscarProductosParaVenta('', null, 24);
 
         // Sesión de caja activa del usuario actual (para badge en POS)
