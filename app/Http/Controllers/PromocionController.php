@@ -115,7 +115,7 @@ class PromocionController extends Controller
     public function create()
     {
         $categorias = Cache::remember('catalog_categorias_base', 300, function () {
-            return Categoria::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+            return Categoria::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
         });
 
         $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {
@@ -216,7 +216,7 @@ class PromocionController extends Controller
     public function edit(Promocion $promocion)
     {
         $categorias = Cache::remember('catalog_categorias_base', 300, function () {
-            return Categoria::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
+            return Categoria::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
         });
 
         $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {

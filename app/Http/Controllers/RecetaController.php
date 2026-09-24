@@ -41,7 +41,7 @@ class RecetaController extends Controller
                 'tipo_receta',
                 'estado',
             ])
-            ->with(['cliente:id,nombre,apellido_paterno,apellido_materno,documento'])
+            ->with(['cliente:id,nombre,documento'])
             ->withCount('detalles');
 
         if ($request->filled('buscar')) {
@@ -77,7 +77,7 @@ class RecetaController extends Controller
 
     public function create()
     {
-        $clientes = Cliente::select(['id', 'nombre', 'apellido_paterno', 'apellido_materno', 'documento'])->activos()->orderBy('nombre')->get();
+        $clientes = Cliente::select(['id', 'nombre', 'documento'])->activos()->orderBy('nombre')->get();
         $productos = Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
             ->with('laboratorio:id,nombre')
             ->conReceta()
@@ -141,7 +141,7 @@ class RecetaController extends Controller
 
     public function edit(Receta $receta)
     {
-        $clientes = Cliente::select(['id', 'nombre', 'apellido_paterno', 'apellido_materno', 'documento'])->activos()->orderBy('nombre')->get();
+        $clientes = Cliente::select(['id', 'nombre', 'documento'])->activos()->orderBy('nombre')->get();
         $receta->load('detalles.producto');
 
         return view('recetas.edit', compact('receta', 'clientes'));
