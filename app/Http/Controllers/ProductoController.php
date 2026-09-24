@@ -38,18 +38,19 @@ class ProductoController extends Controller
         if ($request->filled('buscar')) {
             $buscar = trim($request->input('buscar'));
             
-            // Si el término es una consulta en lenguaje natural / síntoma, obtener principios sugeridos
-            $iaMatches = $iaService->buscarSemantica($buscar);
-            $iaIds = !empty($iaMatches) ? array_column($iaMatches, 'id') : [];
+            // Principios activos sugeridos en memoria según lenguaje natural / síntomas
+            $principiosIa = $iaService->obtenerPrincipiosPorSintoma($buscar);
 
-            $query->where(function ($q) use ($buscar, $iaIds) {
+            $query->where(function ($q) use ($buscar, $principiosIa) {
                 $q->where('nombre', 'like', "%{$buscar}%")
                   ->orWhere('principio_activo', 'like', "%{$buscar}%")
                   ->orWhere('descripcion', 'like', "%{$buscar}%")
                   ->orWhere('codigo_barra', 'like', "%{$buscar}%");
 
-                if (!empty($iaIds)) {
-                    $q->orWhereIn('id', $iaIds);
+                if (!empty($principiosIa)) {
+                    foreach ($principiosIa as $pActivo) {
+                        $q->orWhere('principio_activo', 'like', "%{$pActivo}%");
+                    }
                 }
             });
         }

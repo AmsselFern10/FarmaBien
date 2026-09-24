@@ -55,6 +55,24 @@ class FarmaIaService
     ];
 
     /**
+     * Obtiene únicamente la lista de principios activos relacionados a síntomas
+     * en memoria sin realizar consultas previas a base de datos.
+     */
+    public function obtenerPrincipiosPorSintoma(string $query): array
+    {
+        $q = mb_strtolower(trim($query));
+        if (strlen($q) < 2) return [];
+
+        $principios = [];
+        foreach (self::$mapaSintomas as $sintoma => $activos) {
+            if (str_contains($q, $sintoma) || str_contains($sintoma, $q)) {
+                $principios = array_merge($principios, $activos);
+            }
+        }
+        return array_values(array_unique($principios));
+    }
+
+    /**
      * Búsqueda semántica en lenguaje natural.
      * Retorna array de productos enriquecidos con explicación clínica.
      */
