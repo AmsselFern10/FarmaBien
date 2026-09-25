@@ -136,11 +136,17 @@ class CajaController extends Controller
     }
 
     /**
-     * Desactivar o eliminar una caja
+     * Desactivar o activar una caja
      */
     public function destroy(Caja $caja)
     {
-        if ($caja->estaAbierta()) {
+        $user = auth()->user();
+        if (!$user->hasRole('admin') && !$user->can('desactivar cajas')) {
+            return back()->with('error', 'Solo el administrador puede activar o desactivar cajas.');
+        }
+
+        // Solo validamos sesión abierta si se intenta DESACTIVAR una caja activa
+        if ($caja->activo && $caja->estaAbierta()) {
             return back()->with('error', "No se puede desactivar la caja '{$caja->nombre}' porque tiene una sesión de turno abierta actualmente.");
         }
 
@@ -215,6 +221,17 @@ class CajaController extends Controller
      */
     public function storeMovimiento(Request $request, SesionCaja $sesion)
     {
+        $user = auth()->user();
+
+        // Solo el cajero dueño de la sesión o un admin puede registrar movimientos
+        if ($sesion->user_id !== $user->id && !$user->hasRole('admin')) {
+            $errorMsg = 'No tienes permiso para registrar movimientos en el turno de otro cajero.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $errorMsg], 403);
+            }
+            return back()->with('error', $errorMsg);
+        }
+
         $request->validate([
             'tipo'                   => ['required', 'in:ingreso,egreso'],
             'monto'                  => ['required', 'numeric', 'min:0.01'],
@@ -228,7 +245,7 @@ class CajaController extends Controller
         try {
             $mov = $this->cajaService->registrarMovimiento(
                 $sesion,
-                auth()->user(),
+                $user,
                 $request->input('tipo'),
                 (float) $request->input('monto'),
                 $request->input('concepto'),

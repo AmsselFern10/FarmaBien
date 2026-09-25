@@ -66,21 +66,23 @@
             </a>
 
             @if($sesion->estaAbierta())
-                @can('registrar movimientos caja')
-                <button type="button" @click="abrirMovimiento('ingreso')"
-                        class="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    <span>Movimiento</span>
-                </button>
-                @endcan
+                @if($sesion->user_id === auth()->id() || auth()->user()->hasRole('admin'))
+                    @can('registrar movimientos caja')
+                    <button type="button" @click="abrirMovimiento('ingreso')"
+                            class="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Movimiento</span>
+                    </button>
+                    @endcan
 
-                @can('cerrar caja')
-                <button type="button" @click="modalCerrar = true"
-                        class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span>Cerrar Turno</span>
-                </button>
-                @endcan
+                    @can('cerrar caja')
+                    <button type="button" @click="modalCerrar = true"
+                            class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Cerrar Turno</span>
+                    </button>
+                    @endcan
+                @endif
             @endif
 
             <a href="{{ route('cajas.index') }}"
