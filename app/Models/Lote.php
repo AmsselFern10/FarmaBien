@@ -56,7 +56,17 @@ class Lote extends Model
         return $this->hasMany(DetalleVenta::class);
     }
 
+    public function detallesVentas(): HasMany
+    {
+        return $this->hasMany(DetalleVenta::class);
+    }
+
     public function detallesCompra(): HasMany
+    {
+        return $this->hasMany(DetalleCompra::class);
+    }
+
+    public function detallesCompras(): HasMany
     {
         return $this->hasMany(DetalleCompra::class);
     }

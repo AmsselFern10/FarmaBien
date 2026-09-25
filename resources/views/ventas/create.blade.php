@@ -423,6 +423,15 @@ function posVentaData() {
             return this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control)).length;
         },
 
+        getProductosRxSummary() {
+            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            if (rxItems.length === 0) return 'Ninguno';
+            return rxItems.map(it => {
+                const uBase = this.calcularUnidadesBase(it);
+                return `${it.nombre}: ${uBase} u. (${it.cantidad} ${it.presentacion_nombre || 'Unidad'})`;
+            }).join(', ');
+        },
+
         getClienteNombre() {
             if (!this.formData.cliente_id) return 'PÚBLICO GENERAL';
             const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
@@ -737,25 +746,25 @@ function posVentaData() {
 
                 const payload = {
                     idempotency_key: this.idempotencyKey,
-                    cliente_id: this.formData.cliente_id || null,
+                    cliente_id: (this.formData.cliente_id && !isNaN(this.formData.cliente_id)) ? parseInt(this.formData.cliente_id) : null,
                     tipo_comprobante: this.formData.tipo_comprobante,
-                    serie: this.formData.serie || null,
-                    numero_comprobante: this.formData.numero_comprobante || null,
+                    serie: this.formData.serie ? this.formData.serie.trim() : null,
+                    numero_comprobante: this.formData.numero_comprobante ? this.formData.numero_comprobante.trim() : null,
                     metodo_pago: this.formData.metodo_pago,
-                    referencia_pago: this.formData.referencia_pago || null,
+                    referencia_pago: this.formData.referencia_pago ? this.formData.referencia_pago.trim() : null,
                     tipo_descuento: this.formData.tipo_descuento,
                     porcentaje_descuento: parseFloat(this.formData.porcentaje_descuento) || 0,
                     descuento: parseFloat(this.calcularDescuentoGeneralMonto()) || 0,
                     monto_recibido: this.formData.metodo_pago === 'efectivo' ? parseFloat(this.formData.monto_recibido) : parseFloat(this.calcularTotalGeneral()),
                     receta_modalidad: modalidadReceta,
-                    receta_id: recetaId,
+                    receta_id: (modalidadReceta === 'vinculada' && recetaId && !isNaN(recetaId)) ? parseInt(recetaId) : null,
                     receta_crear: recetaCrearPayload,
                     receta_omision_motivo: recetaOmisionMotivo,
-                    observaciones: this.formData.observaciones || null,
+                    observaciones: this.formData.observaciones ? this.formData.observaciones.trim() : null,
                     productos: this.items.map(it => ({
-                        producto_id: it.producto_id,
-                        lote_id: it.lote_id,
-                        presentacion_id: it.presentacion_id || null,
+                        producto_id: parseInt(it.producto_id),
+                        lote_id: parseInt(it.lote_id),
+                        presentacion_id: (it.presentacion_id && !isNaN(it.presentacion_id)) ? parseInt(it.presentacion_id) : null,
                         cantidad: parseInt(it.cantidad) || 1,
                         factor: parseInt(it.factor) || 1,
                         precio_unitario: parseFloat(it.precio_unitario) || 0,
@@ -787,7 +796,16 @@ function posVentaData() {
 
                 const data = await res.json();
                 if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'Error al procesar la venta');
+                    let errorText = data.message || 'Error al procesar la venta';
+                    if (data.errors && typeof data.errors === 'object') {
+                        const fieldErrors = Object.entries(data.errors)
+                            .map(([field, msgs]) => Array.isArray(msgs) ? msgs.join(' ') : msgs)
+                            .filter(Boolean);
+                        if (fieldErrors.length > 0) {
+                            errorText = fieldErrors.join(' | ');
+                        }
+                    }
+                    throw new Error(errorText);
                 }
 
                 // Éxito confirmado por el servidor:
@@ -821,8 +839,10 @@ function posVentaData() {
                     this.intentoReintento++;
                     this.modalErrorRed = true;
                     this.errorMsg = 'Parpadeo o corte temporal de conexión. Tu carrito está 100% a salvo y protegido contra duplicaciones.';
+                    if (window.farmaToast) window.farmaToast.warning(this.errorMsg, 'Conexión Inestable');
                 } else {
                     this.errorMsg = err.message || 'Error inesperado al procesar la venta.';
+                    if (window.farmaToast) window.farmaToast.warning(this.errorMsg, 'Validación Requerida');
                 }
             } finally {
                 this.procesandoVenta = false;
@@ -869,21 +889,21 @@ function posVentaData() {
                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                     <span>Modo Offline (Carrito Seguro)</span>
                 </span>
-                @if(isset($sesionActivaCaja) && $sesionActivaCaja)
+                @if(isset($sesionActivaCaja) && $sesionActivaCaja && $sesionActivaCaja->caja)
                     <a href="{{ route('cajas.show', $sesionActivaCaja) }}" 
-                       class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900 transition"
-                       title="Ver arqueo de caja activo">
+                       class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900 transition shadow-2xs"
+                       title="Ver arqueo de turno activo">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span>{{ $sesionActivaCaja->caja->nombre }}</span>
-                        <span class="font-mono">|</span>
-                        <span>${{ number_format($sesionActivaCaja->monto_esperado_efectivo, 2) }}</span>
+                        <span>Caja: {{ $sesionActivaCaja->caja->nombre }}</span>
+                        <span class="font-mono opacity-60">|</span>
+                        <span>Turno Abierto (${{ number_format($sesionActivaCaja->monto_esperado_efectivo, 2) }})</span>
                     </a>
                 @else
                     <a href="{{ route('cajas.index') }}"
-                       class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900 transition"
-                       title="No hay caja abierta. Haz clic para abrir un turno.">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span>Sin caja abierta</span>
+                       class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-200 dark:hover:bg-rose-900 transition shadow-2xs"
+                       title="No hay caja activa abierta. Haz clic para abrir un turno.">
+                        <svg class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Sin Caja Activa (Requiere Apertura)</span>
                     </a>
                 @endif
             </div>
@@ -1841,7 +1861,17 @@ function posVentaData() {
                         </div>
 
                         <!-- Opción B: Crear Nueva Receta (Quick-Create) -->
-                        <div x-show="recetaTab === 'crear'" class="space-y-2 animate-fadeIn">
+                        <div x-show="recetaTab === 'crear'" class="space-y-2.5 animate-fadeIn">
+                            <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-slate-800/80 border border-emerald-300 dark:border-emerald-700/60 text-[11px] space-y-1">
+                                <div class="flex items-center space-x-1.5 font-bold text-emerald-900 dark:text-emerald-300">
+                                    <span>💊</span>
+                                    <span>Prescripción sincronizada con el carrito:</span>
+                                </div>
+                                <div class="text-[10px] text-slate-600 dark:text-slate-300">
+                                    La receta cubrirá exactamente las unidades base solicitadas: <strong class="text-emerald-700 dark:text-emerald-400 font-mono" x-text="getProductosRxSummary()"></strong>.
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Médico Prescriptor <span class="text-rose-500">*</span></label>
@@ -1854,7 +1884,7 @@ function posVentaData() {
                                     <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Cédula / CMP <span class="text-rose-500">*</span></label>
                                     <input type="text" 
                                            x-model="recetaNueva.medico_colegiatura" 
-                                           placeholder="CMP-12345 o Cédula" 
+                                           placeholder="CMP-12345 o Cédula (Ej: 0411000x)" 
                                            class="w-full px-2.5 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium">
                                 </div>
                                 <div>

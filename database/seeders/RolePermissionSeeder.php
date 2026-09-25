@@ -196,12 +196,12 @@ class RolePermissionSeeder extends Seeder
             // Recetas (Control Total de Prescripciones)
             'ver recetas', 'recetas.index', 'registrar recetas', 'recetas.create', 'validar recetas', 'recetas.validar', 'dispensar recetas', 'recetas.dispensar', 'anular recetas', 'recetas.anular', 'ver ventas recetas', 'recetas.ventas',
 
-            // Compras y Ventas (Auditoría)
+            // Compras y Ventas (Auditoría y Operación en Mostrador)
             'ver compras', 'compras.index', 'ver detalle compras', 'compras.show',
-            'ver ventas', 'ventas.index', 'ver detalle ventas', 'ventas.show',
+            'ver ventas', 'ventas.index', 'ver ventas propias', 'ventas.own', 'realizar ventas', 'ventas.create', 'ver detalle ventas', 'ventas.show',
 
-            // Cajas (Auditoría)
-            'ver cajas', 'cajas.index', 'ver arqueos caja', 'cajas.arqueo',
+            // Cajas (Auditoría y Operación)
+            'ver cajas', 'cajas.index', 'abrir caja', 'cajas.open', 'cerrar caja', 'cajas.close', 'registrar movimientos caja', 'cajas.movimientos', 'ver arqueos caja', 'cajas.arqueo',
         ]);
 
         // 3. CAJERO / DISPENSADOR → Ventas, Dispensación de Recetas, Clientes, Cajas

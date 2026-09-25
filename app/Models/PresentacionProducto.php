@@ -42,7 +42,17 @@ class PresentacionProducto extends Model
         return $this->hasMany(DetalleCompra::class, 'presentacion_id');
     }
 
+    public function detallesCompra(): HasMany
+    {
+        return $this->hasMany(DetalleCompra::class, 'presentacion_id');
+    }
+
     public function detallesVentas(): HasMany
+    {
+        return $this->hasMany(DetalleVenta::class, 'presentacion_id');
+    }
+
+    public function detallesVenta(): HasMany
     {
         return $this->hasMany(DetalleVenta::class, 'presentacion_id');
     }

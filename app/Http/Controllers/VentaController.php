@@ -64,7 +64,7 @@ class VentaController extends Controller
             $query->whereDate('fecha', '<=', $request->input('fecha_hasta'));
         }
 
-        $ventas = $query->orderBy('fecha', 'desc')->paginate(15)->withQueryString();
+        $ventas = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
 
         $stats = [
             'total' => Venta::count(),
@@ -78,6 +78,14 @@ class VentaController extends Controller
 
     public function create()
     {
+        $user = auth()->user();
+        $sesionActivaCaja = $user ? $user->sesionCajaActiva() : null;
+
+        if (!$sesionActivaCaja || !$sesionActivaCaja->caja || !$sesionActivaCaja->caja->activo) {
+            return redirect()->route('cajas.index')
+                ->with('error', 'Atención: Se requiere apertura de caja activa para operar el POS.');
+        }
+
         $clientes = \Illuminate\Support\Facades\Cache::remember('pos_clientes_init_50', 60, function () {
             return Cliente::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
         });
@@ -85,17 +93,6 @@ class VentaController extends Controller
             return Categoria::activas()->orderBy('nombre')->get(['id', 'nombre']);
         });
         $productos = $this->ventaService->buscarProductosParaVenta('', null, 24);
-
-        // Sesión de caja activa del usuario actual (para badge en POS)
-        $sesionActivaCaja = null;
-        if (class_exists(CajaService::class)) {
-            try {
-                $cajaService = app(CajaService::class);
-                $sesionActivaCaja = $cajaService->obtenerSesionActivaUsuario(auth()->user());
-            } catch (Exception $e) {
-                // Si no hay módulo de cajas activo, ignorar
-            }
-        }
 
         // Cargar recetas recientes vigentes para vincular rápido en POS
         $recetasRecientes = [];
@@ -113,6 +110,20 @@ class VentaController extends Controller
 
     public function store(StoreVentaRequest $request)
     {
+        $user = auth()->user();
+        $sesionActivaCaja = $user ? $user->sesionCajaActiva() : null;
+
+        if (!$sesionActivaCaja || !$sesionActivaCaja->caja || !$sesionActivaCaja->caja->activo) {
+            $errorMsg = 'No se puede procesar la venta: Debes abrir un turno de caja antes de cobrar o tu caja asignada se encuentra inactiva.';
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMsg
+                ], 422);
+            }
+            return redirect()->route('cajas.index')->with('error', $errorMsg);
+        }
+
         try {
             $venta = $this->ventaService->procesarVenta($request->validated());
 

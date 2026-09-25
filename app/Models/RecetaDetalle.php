@@ -38,6 +38,11 @@ class RecetaDetalle extends Model
         return $this->hasMany(DetalleVenta::class, 'receta_detalle_id');
     }
 
+    public function detallesVentas(): HasMany
+    {
+        return $this->hasMany(DetalleVenta::class, 'receta_detalle_id');
+    }
+
     public function getPendienteDispensarAttribute(): int
     {
         return max(0, $this->cantidad_recetada - $this->cantidad_dispensada);

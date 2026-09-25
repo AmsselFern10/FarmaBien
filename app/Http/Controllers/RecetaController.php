@@ -70,7 +70,7 @@ class RecetaController extends Controller
             $query->whereDate('fecha_emision', '<=', $request->input('fecha_hasta'));
         }
 
-        $recetas = $query->orderBy('fecha_emision', 'desc')->paginate(15)->withQueryString();
+        $recetas = $query->orderBy('fecha_emision', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
 
         return view('recetas.index', compact('recetas'));
     }
@@ -142,9 +142,16 @@ class RecetaController extends Controller
     public function edit(Receta $receta)
     {
         $clientes = Cliente::select(['id', 'nombre', 'documento'])->activos()->orderBy('nombre')->get();
-        $receta->load('detalles.producto');
+        $productos = Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
+            ->with('laboratorio:id,nombre')
+            ->conReceta()
+            ->activos()
+            ->orderBy('nombre')
+            ->get();
 
-        return view('recetas.edit', compact('receta', 'clientes'));
+        $receta->load(['detalles.producto', 'cliente']);
+
+        return view('recetas.edit', compact('receta', 'clientes', 'productos'));
     }
 
     public function update(UpdateRecetaRequest $request, Receta $receta)

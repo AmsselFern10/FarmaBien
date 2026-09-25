@@ -55,23 +55,18 @@ class VentaService
                 }
             }
 
-            // 1. Obtener y bloquear la sesión de caja activa del usuario
+            // 1. Obtener y bloquear la sesión de caja activa del usuario (con caja activa)
             $sesionActiva = SesionCaja::where('user_id', $userId)
                 ->where('estado', 'abierta')
+                ->whereHas('caja', function ($q) {
+                    $q->where('activo', true);
+                })
                 ->lockForUpdate()
                 ->latest('fecha_apertura')
                 ->first();
 
             if (!$sesionActiva) {
-                // Fallback: buscar cualquier sesión abierta si el usuario no tiene una asignada
-                $sesionActiva = SesionCaja::where('estado', 'abierta')
-                    ->lockForUpdate()
-                    ->latest('fecha_apertura')
-                    ->first();
-            }
-
-            if (configuracion('modulo_cajas_estricto', true) && !$sesionActiva) {
-                throw new Exception("No hay ninguna sesión de caja abierta en el sistema. Debes abrir un turno de caja antes de realizar ventas.");
+                throw new Exception("Transacción rechazada: No tienes un turno de caja abierto o la caja asignada se encuentra inactiva. Debes abrir caja antes de realizar ventas.");
             }
 
             // 2. Gestionar recetas médicas si la modalidad es 'creada'
@@ -95,15 +90,32 @@ class VentaService
                 foreach ($data['productos'] as $prodItem) {
                     $pModel = Producto::find($prodItem['producto_id']);
                     if ($pModel && ($pModel->requiere_receta || in_array($pModel->tipo_control, ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente']))) {
-                        $detallesReceta[] = [
-                            'producto_id' => $pModel->id,
-                            'cantidad_recetada' => max(1, (int) ($prodItem['cantidad'] ?? 1) * (int) ($prodItem['factor'] ?? 1)),
-                            'posologia' => 'Según indicación médica en mostrador'
-                        ];
+                        $factor = 1;
+                        if (!empty($prodItem['presentacion_id'])) {
+                            $pres = PresentacionProducto::find($prodItem['presentacion_id']);
+                            if ($pres) {
+                                $factor = max(1, (int) $pres->unidades_por_presentacion);
+                            }
+                        } elseif (!empty($prodItem['factor'])) {
+                            $factor = max(1, (int) $prodItem['factor']);
+                        }
+
+                        $cantUnidades = max(1, (int) ($prodItem['cantidad'] ?? 1) * $factor);
+
+                        if (isset($detallesReceta[$pModel->id])) {
+                            $detallesReceta[$pModel->id]['cantidad_recetada'] += $cantUnidades;
+                        } else {
+                            $detallesReceta[$pModel->id] = [
+                                'producto_id' => $pModel->id,
+                                'cantidad_recetada' => $cantUnidades,
+                                'posologia' => 'Según indicación médica en mostrador'
+                            ];
+                        }
                     }
                 }
 
                 if (!empty($detallesReceta)) {
+                    $detallesReceta = array_values($detallesReceta);
                     $numeroReceta = !empty($rcData['numero_receta']) 
                         ? trim($rcData['numero_receta']) 
                         : 'RX-' . strtoupper(uniqid());

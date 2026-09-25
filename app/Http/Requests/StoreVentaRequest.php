@@ -42,6 +42,7 @@ class StoreVentaRequest extends FormRequest
             'productos.*.presentacion_id' => ['nullable', 'integer', 'exists:presentaciones_producto,id'],
             'productos.*.receta_detalle_id' => ['nullable', 'integer', 'exists:receta_detalles,id'],
             'productos.*.cantidad'        => ['required', 'integer', 'min:1'],
+            'productos.*.factor'          => ['nullable', 'integer', 'min:1'],
             'productos.*.precio_unitario' => ['nullable', 'numeric', 'min:0'],
             'productos.*.descuento'       => ['nullable', 'numeric', 'min:0'],
             'productos.*.tipo_descuento'  => ['nullable', 'string', 'in:monto,porcentaje'],
@@ -61,7 +62,11 @@ class StoreVentaRequest extends FormRequest
             'productos.*.lote_id.required'     => 'Debes seleccionar un lote válido para cada producto.',
             'productos.*.lote_id.exists'       => 'El lote seleccionado no existe.',
             'productos.*.cantidad.required'    => 'La cantidad es obligatoria.',
+            'productos.*.cantidad.integer'     => 'La cantidad debe ser un número entero.',
             'productos.*.cantidad.min'         => 'La cantidad debe ser al menos 1 unidad.',
+            'cliente_id.integer'          => 'El identificador del cliente debe ser numérico.',
+            'receta_id.integer'           => 'El identificador de la receta médica debe ser numérico.',
+            'receta_crear.medico_colegiatura.max' => 'La cédula / CMP del médico no puede superar los 50 caracteres.',
             'metodo_pago.required'        => 'Debes seleccionar un método de pago.',
             'metodo_pago.in'              => 'El método de pago no es válido.',
             'monto_recibido.required_if'  => 'En ventas con método Efectivo, el Monto Entregado / Recibido es obligatorio.',
@@ -76,6 +81,31 @@ class StoreVentaRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $productos = $this->input('productos');
+        if (is_array($productos)) {
+            foreach ($productos as &$p) {
+                if (is_array($p)) {
+                    $p['presentacion_id'] = (!empty($p['presentacion_id']) && is_numeric($p['presentacion_id'])) ? (int) $p['presentacion_id'] : null;
+                    $p['receta_detalle_id'] = (!empty($p['receta_detalle_id']) && is_numeric($p['receta_detalle_id'])) ? (int) $p['receta_detalle_id'] : null;
+                    $p['producto_id'] = (!empty($p['producto_id']) && is_numeric($p['producto_id'])) ? (int) $p['producto_id'] : null;
+                    $p['lote_id'] = (!empty($p['lote_id']) && is_numeric($p['lote_id'])) ? (int) $p['lote_id'] : null;
+                    $p['cantidad'] = (!empty($p['cantidad']) && is_numeric($p['cantidad'])) ? (int) $p['cantidad'] : 1;
+                    $p['factor'] = (!empty($p['factor']) && is_numeric($p['factor'])) ? (int) $p['factor'] : 1;
+                }
+            }
+            unset($p);
+        }
+
+        $recetaCrear = $this->input('receta_crear');
+        if (is_array($recetaCrear)) {
+            $recetaCrear['medico_colegiatura'] = isset($recetaCrear['medico_colegiatura']) ? trim((string) $recetaCrear['medico_colegiatura']) : null;
+            $recetaCrear['medico_nombre'] = isset($recetaCrear['medico_nombre']) ? trim((string) $recetaCrear['medico_nombre']) : null;
+            $recetaCrear['medico_especialidad'] = isset($recetaCrear['medico_especialidad']) ? trim((string) $recetaCrear['medico_especialidad']) : null;
+            $recetaCrear['paciente_nombre'] = isset($recetaCrear['paciente_nombre']) ? trim((string) $recetaCrear['paciente_nombre']) : null;
+            $recetaCrear['paciente_documento'] = isset($recetaCrear['paciente_documento']) ? trim((string) $recetaCrear['paciente_documento']) : null;
+            $recetaCrear['numero_receta'] = isset($recetaCrear['numero_receta']) ? trim((string) $recetaCrear['numero_receta']) : null;
+        }
+
         $this->merge([
             'tipo_comprobante'     => $this->filled('tipo_comprobante') ? trim($this->input('tipo_comprobante')) : 'ticket',
             'metodo_pago'          => $this->filled('metodo_pago') ? trim($this->input('metodo_pago')) : 'efectivo',
@@ -83,13 +113,16 @@ class StoreVentaRequest extends FormRequest
             'tipo_descuento'       => $this->filled('tipo_descuento') ? trim($this->input('tipo_descuento')) : 'monto',
             'porcentaje_descuento' => $this->filled('porcentaje_descuento') ? max(0, (float) $this->input('porcentaje_descuento')) : 0,
             'receta_modalidad'     => $this->filled('receta_modalidad') ? trim($this->input('receta_modalidad')) : 'sin_receta',
+            'receta_id'            => ($this->filled('receta_id') && is_numeric($this->input('receta_id'))) ? (int) $this->input('receta_id') : null,
+            'receta_crear'         => $recetaCrear,
             'receta_omision_motivo'=> $this->filled('receta_omision_motivo') ? trim($this->input('receta_omision_motivo')) : null,
             'serie'                => $this->filled('serie') ? trim($this->input('serie')) : null,
             'numero_comprobante'   => $this->filled('numero_comprobante') ? trim($this->input('numero_comprobante')) : null,
             'referencia_pago'      => $this->filled('referencia_pago') ? trim($this->input('referencia_pago')) : null,
             'observaciones'        => $this->filled('observaciones') ? trim($this->input('observaciones')) : null,
             'descuento'            => $this->filled('descuento') ? max(0, (float) $this->input('descuento')) : 0,
-            'cliente_id'           => $this->filled('cliente_id') ? (int) $this->input('cliente_id') : null,
+            'cliente_id'           => ($this->filled('cliente_id') && is_numeric($this->input('cliente_id'))) ? (int) $this->input('cliente_id') : null,
+            'productos'            => $productos,
         ]);
     }
 }

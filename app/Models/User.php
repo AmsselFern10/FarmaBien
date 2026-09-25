@@ -66,7 +66,32 @@ class User extends Authenticatable
      */
     public function sesionCajaActiva()
     {
-        return $this->sesionesCaja()->where('estado', 'abierta')->with('caja')->first();
+        return $this->sesionesCaja()->where('estado', 'abierta')->with('caja')->latest('fecha_apertura')->first();
+    }
+
+    /**
+     * Alias para turno activo
+     */
+    public function turnoActivo(): ?SesionCaja
+    {
+        return $this->sesionCajaActiva();
+    }
+
+    /**
+     * Comprobar si el usuario tiene un turno de caja activo
+     */
+    public function tieneTurnoActivo(): bool
+    {
+        $sesion = $this->sesionCajaActiva();
+        return $sesion !== null && $sesion->caja !== null && $sesion->caja->activo;
+    }
+
+    /**
+     * Obtener la caja activa asignada al usuario
+     */
+    public function cajaAsignada(): ?Caja
+    {
+        return $this->sesionCajaActiva()?->caja;
     }
 
     public function scopeActivos($query)

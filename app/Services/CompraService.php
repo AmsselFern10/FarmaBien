@@ -126,20 +126,47 @@ class CompraService
         $numeroLote = trim($item['numero_lote']);
         $fechaVencimiento = $item['fecha_vencimiento'];
 
-        // 1. Crear el Lote Físico
-        $lote = Lote::create([
-            'producto_id'       => $producto->id,
-            'compra_id'         => $compra->id,
-            'proveedor_id'      => $compra->proveedor_id,
-            'numero_lote'       => $numeroLote,
-            'fecha_vencimiento' => $fechaVencimiento,
-            'stock_inicial'     => $cantidadUnidadesBase,
-            'stock_actual'      => $cantidadUnidadesBase,
-            'precio_compra'     => $costoUnitarioBase,
-            'activo'            => true,
-        ]);
+        // 1. Buscar lote existente (mismo producto + mismo número de lote) o preparar uno nuevo
+        //    Esto evita duplicados cuando el mismo lote llega en múltiples compras o líneas.
+        $lote = Lote::where('producto_id', $producto->id)
+            ->where('numero_lote', $numeroLote)
+            ->lockForUpdate()
+            ->first();
 
-        // 2. Crear Detalle de Compra
+        $esLoteNuevo = is_null($lote);
+        $stockAnterior = $esLoteNuevo ? 0 : (int) $lote->stock_actual;
+
+        if ($esLoteNuevo) {
+            // ─── LOTE NUEVO ─────────────────────────────────────────────────
+            $lote = Lote::create([
+                'producto_id'       => $producto->id,
+                'compra_id'         => $compra->id,
+                'proveedor_id'      => $compra->proveedor_id,
+                'numero_lote'       => $numeroLote,
+                'fecha_vencimiento' => $fechaVencimiento,
+                'stock_inicial'     => $cantidadUnidadesBase,
+                'stock_actual'      => $cantidadUnidadesBase,
+                'precio_compra'     => $costoUnitarioBase,
+                'activo'            => true,
+            ]);
+        } else {
+            // ─── LOTE EXISTENTE: acumular stock y actualizar costo/vencimiento ──
+            // Recalcular stock_inicial acumulado y actualizar metadatos con los datos más recientes
+            $nuevoStockInicial = (int) $lote->stock_inicial + $cantidadUnidadesBase;
+            $nuevoStockActual  = $stockAnterior + $cantidadUnidadesBase;
+
+            $lote->update([
+                'stock_inicial'     => $nuevoStockInicial,
+                'stock_actual'      => $nuevoStockActual,
+                'precio_compra'     => $costoUnitarioBase,    // actualizar al costo más reciente
+                'fecha_vencimiento' => $fechaVencimiento,     // actualizar al vencimiento del nuevo ingreso
+                'activo'            => true,                  // reactivar si estaba desactivado
+            ]);
+        }
+
+        $stockPosterior = (int) $lote->fresh()->stock_actual;
+
+        // 2. Crear Detalle de Compra (siempre uno por línea de compra, aunque el lote sea existente)
         DetalleCompra::create([
             'compra_id'                 => $compra->id,
             'producto_id'               => $producto->id,
@@ -153,7 +180,11 @@ class CompraService
             'subtotal'                  => $subtotal,
         ]);
 
-        // 3. Registrar en Kardex Auditoría (ENTRADA por COMPRA)
+        // 3. Registrar en Kardex (ENTRADA individual por compra, con balance real pre/post)
+        $motivoKardex = $esLoteNuevo
+            ? "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) — Lote NUEVO: {$lote->numero_lote}"
+            : "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) — Reingreso al Lote: {$lote->numero_lote} (Stock acumulado)";
+
         MovimientoInventario::create([
             'producto_id'      => $producto->id,
             'lote_id'          => $lote->id,
@@ -161,13 +192,13 @@ class CompraService
             'tipo'             => 'entrada',
             'subtipo'          => 'compra',
             'cantidad'         => $cantidadUnidadesBase,
-            'stock_anterior'   => 0,
-            'stock_posterior'  => $cantidadUnidadesBase,
+            'stock_anterior'   => $stockAnterior,
+            'stock_posterior'  => $stockPosterior,
             'costo_unitario'   => $costoUnitarioBase,
             'costo_total'      => $subtotal,
             'origen'           => 'compra',
             'origen_id'        => $compra->id,
-            'motivo'           => "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) - Lote {$lote->numero_lote}",
+            'motivo'           => $motivoKardex,
             'fecha_movimiento' => now(),
         ]);
 
@@ -221,7 +252,7 @@ class CompraService
     public function anularCompra(int $compraId, string $motivo): Compra
     {
         return DB::transaction(function () use ($compraId, $motivo) {
-            $compra = Compra::with(['detalles', 'lotes'])
+            $compra = Compra::with(['detalles.lote'])
                 ->where('id', $compraId)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -230,16 +261,21 @@ class CompraService
                 throw new Exception("La compra #{$compraId} no puede ser anulada porque ya está anulada o fue modificada.");
             }
 
-            // Validar que ningún lote tenga ventas o movimientos de salida posteriores
-            foreach ($compra->lotes as $lote) {
-                $loteBloqueado = Lote::where('id', $lote->id)
+            // Validar por DETALLE: que las unidades aportadas por esta compra al lote
+            // aún estén disponibles (no vendidas por otros medios).
+            foreach ($compra->detalles as $detalle) {
+                $loteBloqueado = Lote::where('id', $detalle->lote_id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if ($loteBloqueado->stock_actual < $loteBloqueado->stock_inicial) {
-                    $vendidas = $loteBloqueado->stock_inicial - $loteBloqueado->stock_actual;
+                // Solo se puede anular si el stock actual permite absorber la reversión
+                $cantidadARevertir = (int) $detalle->cantidad_unidades_base;
+                if ($loteBloqueado->stock_actual < $cantidadARevertir) {
+                    $yaVendidas = $cantidadARevertir - $loteBloqueado->stock_actual;
                     throw new Exception(
-                        "No se puede anular la compra #{$compraId}: el lote '{$loteBloqueado->numero_lote}' ya tiene {$vendidas} unidades vendidas o dispensadas."
+                        "No se puede anular la compra #{$compraId}: del lote '{$loteBloqueado->numero_lote}' " .
+                        "ya se han vendido o dispensado {$yaVendidas} unidades de las {$cantidadARevertir} " .
+                        "que ingresaron por esta compra."
                     );
                 }
 
@@ -250,31 +286,44 @@ class CompraService
                 }
             }
 
-            // Proceder con la anulación atómica y registro de salida en Kardex
-            foreach ($compra->lotes as $lote) {
-                $loteBloqueado = Lote::where('id', $lote->id)->lockForUpdate()->firstOrFail();
-                $stockAnterior = (int) $loteBloqueado->stock_actual;
-                $costoUnitario = (float) $loteBloqueado->precio_compra;
-                $costoTotal = round($stockAnterior * $costoUnitario, 2);
+            // Proceder con la reversión atómica por línea de detalle
+            foreach ($compra->detalles as $detalle) {
+                $loteBloqueado = Lote::where('id', $detalle->lote_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-                $loteBloqueado->stock_actual = 0;
-                $loteBloqueado->activo = false;
+                $cantidadARevertir = (int) $detalle->cantidad_unidades_base;
+                $stockAnterior     = (int) $loteBloqueado->stock_actual;
+                $stockPosterior    = max(0, $stockAnterior - $cantidadARevertir);
+                $costoUnitario     = (float) $loteBloqueado->precio_compra;
+                $costoTotal        = round($cantidadARevertir * $costoUnitario, 2);
+
+                // Descontar del lote solo lo que esta compra aportó
+                $loteBloqueado->stock_actual  = $stockPosterior;
+                $loteBloqueado->stock_inicial = max(0, (int) $loteBloqueado->stock_inicial - $cantidadARevertir);
+
+                // Desactivar el lote solo si se queda sin stock
+                if ($stockPosterior <= 0) {
+                    $loteBloqueado->activo = false;
+                }
+
                 $loteBloqueado->save();
 
+                // Registrar salida por anulación en Kardex con balance real
                 MovimientoInventario::create([
                     'producto_id'      => $loteBloqueado->producto_id,
                     'lote_id'          => $loteBloqueado->id,
                     'user_id'          => Auth::id() ?? 1,
                     'tipo'             => 'salida',
                     'subtipo'          => 'anulacion_compra',
-                    'cantidad'         => -$stockAnterior,
+                    'cantidad'         => -$cantidadARevertir,
                     'stock_anterior'   => $stockAnterior,
-                    'stock_posterior'  => 0,
+                    'stock_posterior'  => $stockPosterior,
                     'costo_unitario'   => $costoUnitario,
                     'costo_total'      => $costoTotal,
                     'origen'           => 'anulacion_compra',
                     'origen_id'        => $compra->id,
-                    'motivo'           => "Anulación de compra #{$compra->id}: {$motivo}",
+                    'motivo'           => "Anulación de compra #{$compra->id}: {$motivo} (Lote: {$loteBloqueado->numero_lote})",
                     'fecha_movimiento' => now(),
                 ]);
             }

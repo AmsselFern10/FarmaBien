@@ -10,7 +10,11 @@ function recetaFormData() {
         productos: [],
         init() {
             this.productos = window._recetaProductos || [];
-            this.agregarDetalle();
+            if (window._recetaDetalles && window._recetaDetalles.length > 0) {
+                this.detalles = JSON.parse(JSON.stringify(window._recetaDetalles));
+            } else {
+                this.agregarDetalle();
+            }
         },
         getQueryKey(idx) { return 'q_'+idx; },
         getFiltrados(idx) { return this['_filt_'+idx] || []; },
@@ -43,16 +47,28 @@ function recetaFormData() {
      class="space-y-4 transition-all duration-200">
 
 @php
-$recetaProductosJson = $productos->map(function($p){ return ['id'=>$p->id,'nombre'=>$p->nombre]; })->values();
+$recetaProductosJson = ($productos ?? collect())->map(function($p){ return ['id'=>$p->id,'nombre'=>$p->nombre]; })->values();
+$recetaDetallesJson = ($receta->detalles ?? collect())->map(function($d){
+    return [
+        'id' => $d->id,
+        'producto_id' => $d->producto_id,
+        'producto_nombre' => $d->producto?->nombre ?? '',
+        'cantidad_recetada' => (int) $d->cantidad_recetada,
+        'posologia' => $d->posologia ?? '',
+    ];
+})->values();
 @endphp
-<script>window._recetaProductos = @json($recetaProductosJson);</script>
+<script>
+window._recetaProductos = @json($recetaProductosJson);
+window._recetaDetalles = @json($recetaDetallesJson);
+</script>
 
     {{-- Breadcrumb & Toggle --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
         <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
             <a href="{{ route('recetas.index') }}" class="hover:text-emerald-600 transition">Recetas Medicas</a>
             <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <span class="text-slate-800 dark:text-slate-200 font-semibold">Nueva</span>
+            <span class="text-slate-800 dark:text-slate-200 font-semibold">Editar</span>
         </nav>
         <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
             <button type="button" @click="setLayout('modern')" :class="formLayout==='modern'?'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold':'text-slate-600 hover:text-slate-900 dark:text-slate-400'" class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1 cursor-pointer">
@@ -67,20 +83,20 @@ $recetaProductosJson = $productos->map(function($p){ return ['id'=>$p->id,'nombr
     </div>
 
     <div class="flex items-center justify-between gap-2">
-        <div><h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Editar Receta: {{ \$receta->numero_receta }}</h1><p class="text-xs text-slate-500 dark:text-slate-400">Modifica los datos de la receta medica.</p></div>
+        <div><h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Editar Receta: {{ $receta->numero_receta ?? '' }}</h1><p class="text-xs text-slate-500 dark:text-slate-400">Modifica los datos de la receta medica.</p></div>
         <a href="{{ route('recetas.index') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition shrink-0">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             <span>Volver</span>
         </a>
     </div>
 
-    @if($errors->any())
+    @if(isset($errors) && $errors->any())
     <div class="px-4 py-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 text-xs text-rose-800 dark:text-rose-300">
         <ul class="list-disc list-inside space-y-0.5">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
     </div>
     @endif
 
-    <form method="POST" action="{{ route('recetas.update', \$receta) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('recetas.update', $receta) }}" enctype="multipart/form-data">
     @csrf
         @method('PUT')
     {{-- ===== COMPACTA ===== --}}
@@ -138,7 +154,7 @@ $recetaProductosJson = $productos->map(function($p){ return ['id'=>$p->id,'nombr
                 </div>
                 <div><label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Emision *</label><input type="date" name="fecha_emision" value="{{ old('fecha_emision', $receta->fecha_emision?->toDateString()) }}" required class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"></div>
                 <div><label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Vencimiento</label><input type="date" name="fecha_vencimiento" value="{{ old('fecha_vencimiento', $receta->fecha_vencimiento?->toDateString()) }}" class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"></div>
-                <div><label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Observaciones</label><textarea name="observaciones" rows="2" class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">{{ old('observaciones') }}</textarea></div>
+                <div><label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Observaciones</label><textarea name="observaciones" rows="2" class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">{{ old('observaciones', $receta->observaciones ?? '') }}</textarea></div>
             </div>
 
             {{-- Col 4: Medicamentos --}}
@@ -279,7 +295,7 @@ $recetaProductosJson = $productos->map(function($p){ return ['id'=>$p->id,'nombr
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Observaciones</label>
-                    <textarea name="observaciones" rows="2" placeholder="Notas adicionales..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">{{ old('observaciones') }}</textarea>
+                    <textarea name="observaciones" rows="2" placeholder="Notas adicionales..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">{{ old('observaciones', $receta->observaciones ?? '') }}</textarea>
                 </div>
             </div>
         </div>

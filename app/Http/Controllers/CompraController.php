@@ -54,7 +54,7 @@ class CompraController extends Controller
             $query->whereDate('fecha', '<=', $request->input('fecha_hasta'));
         }
 
-        $compras = $query->orderBy('fecha', 'desc')->paginate(15)->withQueryString();
+        $compras = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
 
         return view('compras.index', compact('compras'));
     }

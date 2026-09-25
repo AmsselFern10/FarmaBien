@@ -516,7 +516,187 @@ if (document.readyState === 'loading') {
 document.addEventListener('alpine:initialized', () => window.farmaTriggerAutoFocus());
 window.addEventListener('farma:layout-changed', () => window.farmaTriggerAutoFocus());
 
+// ==========================================
+// 4. ENTERPRISE TOAST NOTIFICATION ENGINE & HTTP INTERCEPTOR
+// ==========================================
+class FarmaToastEngine {
+    constructor() {
+        this.container = null;
+        this.init();
+    }
+
+    init() {
+        if (typeof document === 'undefined') return;
+        if (document.getElementById('farma-toast-container')) {
+            this.container = document.getElementById('farma-toast-container');
+            return;
+        }
+
+        const c = document.createElement('div');
+        c.id = 'farma-toast-container';
+        c.className = 'fixed top-4 right-4 z-[99999] flex flex-col gap-2.5 max-w-md w-full pointer-events-none px-3 sm:px-0';
+        document.body.appendChild(c);
+        this.container = c;
+
+        // Global Event Listener
+        window.addEventListener('farma:notify', (e) => {
+            const { type, message, title, duration } = e.detail || {};
+            this.show(type || 'info', message || '', title || null, duration || 4500);
+        });
+    }
+
+    show(type, message, title = null, duration = 4500) {
+        if (!this.container) this.init();
+        if (!this.container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto transform transition-all duration-300 ease-out translate-y-[-10px] opacity-0 shadow-xl rounded-2xl p-3.5 border flex items-start space-x-3 text-xs backdrop-blur-md cursor-pointer';
+
+        let bgClass, borderClass, iconSvg, titleText, titleColor, descColor;
+
+        switch (type) {
+            case 'success':
+                bgClass = 'bg-emerald-50/95 dark:bg-emerald-950/90';
+                borderClass = 'border-emerald-300 dark:border-emerald-700/80';
+                titleColor = 'text-emerald-900 dark:text-emerald-200';
+                descColor = 'text-emerald-700 dark:text-emerald-300';
+                titleText = title || 'Operación Exitosa';
+                iconSvg = `<svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+                break;
+            case 'warning':
+                bgClass = 'bg-amber-50/95 dark:bg-amber-950/90';
+                borderClass = 'border-amber-300 dark:border-amber-700/80';
+                titleColor = 'text-amber-900 dark:text-amber-200';
+                descColor = 'text-amber-800 dark:text-amber-300';
+                titleText = title || 'Validación Requerida';
+                iconSvg = `<svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+                break;
+            case 'error':
+                bgClass = 'bg-rose-50/95 dark:bg-rose-950/90';
+                borderClass = 'border-rose-300 dark:border-rose-700/80';
+                titleColor = 'text-rose-900 dark:text-rose-200';
+                descColor = 'text-rose-800 dark:text-rose-300';
+                titleText = title || 'Error en la Solicitud';
+                iconSvg = `<svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
+                break;
+            default: // info
+                bgClass = 'bg-indigo-50/95 dark:bg-indigo-950/90';
+                borderClass = 'border-indigo-300 dark:border-indigo-700/80';
+                titleColor = 'text-indigo-900 dark:text-indigo-200';
+                descColor = 'text-indigo-800 dark:text-indigo-300';
+                titleText = title || 'Información del Sistema';
+                iconSvg = `<svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+                break;
+        }
+
+        toast.className += ` ${bgClass} ${borderClass}`;
+        toast.innerHTML = `
+            <div class="mt-0.5">${iconSvg}</div>
+            <div class="flex-1 min-w-0">
+                <div class="font-bold ${titleColor} text-[12px] leading-tight">${titleText}</div>
+                <div class="${descColor} text-[11px] mt-0.5 leading-relaxed break-words">${message}</div>
+            </div>
+            <button type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-1 p-0.5 rounded-md transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        `;
+
+        const closeBtn = toast.querySelector('button');
+        const dismiss = () => {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', 'translate-y-[-10px]');
+            setTimeout(() => toast.remove(), 250);
+        };
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dismiss();
+            });
+        }
+        toast.addEventListener('click', dismiss);
+
+        this.container.appendChild(toast);
+
+        // Animate entrance
+        requestAnimationFrame(() => {
+            toast.classList.remove('opacity-0', 'translate-y-[-10px]');
+            toast.classList.add('opacity-100', 'translate-y-0');
+        });
+
+        // Auto dismiss
+        let autoDismissTimer = setTimeout(dismiss, duration);
+        toast.addEventListener('mouseenter', () => clearTimeout(autoDismissTimer));
+        toast.addEventListener('mouseleave', () => {
+            autoDismissTimer = setTimeout(dismiss, 2000);
+        });
+    }
+
+    success(msg, title = null, duration = 4500) { this.show('success', msg, title, duration); }
+    warning(msg, title = null, duration = 5500) { this.show('warning', msg, title, duration); }
+    error(msg, title = null, duration = 6500) { this.show('error', msg, title, duration); }
+    info(msg, title = null, duration = 4500) { this.show('info', msg, title, duration); }
+}
+
+// Global Interceptor Setup
+function setupGlobalHttpInterceptors() {
+    if (window.axios) {
+        window.axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response) {
+                    const status = error.response.status;
+                    const data = error.response.data || {};
+
+                    if (status === 422) {
+                        let formattedMsg = '';
+                        if (data.errors && typeof data.errors === 'object') {
+                            const messages = [];
+                            Object.values(data.errors).forEach(errList => {
+                                if (Array.isArray(errList)) {
+                                    messages.push(...errList);
+                                } else if (typeof errList === 'string') {
+                                    messages.push(errList);
+                                }
+                            });
+                            formattedMsg = messages.join(' ');
+                        }
+                        if (!formattedMsg) {
+                            formattedMsg = data.message || 'Por favor verifica los campos requeridos.';
+                        }
+                        if (window.farmaToast) {
+                            window.farmaToast.warning(formattedMsg, 'Validación Requerida');
+                        }
+                    } else if (status === 403) {
+                        if (window.farmaToast) {
+                            window.farmaToast.error(data.message || 'No tienes permisos suficientes para realizar esta acción.', 'Acceso Denegado');
+                        }
+                    } else if (status === 419) {
+                        if (window.farmaToast) {
+                            window.farmaToast.error('La sesión ha expirado por inactividad. Por favor recarga la página.', 'Sesión Expirada');
+                        }
+                    } else if (status >= 500) {
+                        if (window.farmaToast) {
+                            window.farmaToast.error(data.message || 'Ocurrió un inconveniente al procesar la solicitud en el servidor.', 'Error del Sistema');
+                        }
+                    }
+                }
+                return Promise.reject(error);
+            }
+        );
+    }
+}
+
+// Global helper
+window.farmaNotify = function(message, type = 'info', title = null) {
+    if (window.farmaToast) {
+        window.farmaToast.show(type, message, title);
+    }
+};
+
 // Instantiate systems
 window.farmaProgressBar = new FarmaProgressBar();
 window.farmaDraftEngine = new FarmaDraftEngine();
+window.farmaToast = new FarmaToastEngine();
+setupGlobalHttpInterceptors();
 
