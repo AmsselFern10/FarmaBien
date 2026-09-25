@@ -121,8 +121,10 @@ class InventarioController extends Controller
 
     public function ajustar()
     {
-        $lotes = Lote::with(['producto.laboratorio'])
+        $lotes = Lote::select(['id', 'producto_id', 'numero_lote', 'stock_actual', 'fecha_vencimiento'])
+            ->with(['producto:id,nombre,principio_activo'])
             ->where('activo', true)
+            ->where('stock_actual', '>', 0)
             ->orderBy('numero_lote', 'asc')
             ->get();
 

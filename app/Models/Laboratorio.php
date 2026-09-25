@@ -32,4 +32,9 @@ class Laboratorio extends Model
     {
         return $query->where('activo', true);
     }
+
+    public function scopeActivo($query)
+    {
+        return $query->where('activo', true);
+    }
 }

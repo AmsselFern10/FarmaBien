@@ -61,8 +61,15 @@ class CompraController extends Controller
 
     public function create()
     {
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
-        $productos = Producto::with(['presentacionesActivas', 'laboratorio'])->activos()->orderBy('nombre')->get();
+        $proveedores = Proveedor::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
+        $productos = Producto::select(['id', 'nombre', 'codigo_barra', 'principio_activo', 'laboratorio_id', 'precio_compra'])
+            ->with([
+                'presentacionesActivas:id,producto_id,nombre,unidades_por_presentacion,precio_compra',
+                'laboratorio:id,nombre'
+            ])
+            ->activos()
+            ->orderBy('nombre')
+            ->get();
 
         return view('compras.create', compact('proveedores', 'productos'));
     }
@@ -107,8 +114,15 @@ class CompraController extends Controller
         }
 
         $compra->load(['detalles.producto.presentacionesActivas', 'proveedor', 'lotes']);
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
-        $productos = Producto::with(['presentacionesActivas', 'laboratorio'])->activos()->orderBy('nombre')->get();
+        $proveedores = Proveedor::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
+        $productos = Producto::select(['id', 'nombre', 'codigo_barra', 'principio_activo', 'laboratorio_id', 'precio_compra'])
+            ->with([
+                'presentacionesActivas:id,producto_id,nombre,unidades_por_presentacion,precio_compra',
+                'laboratorio:id,nombre'
+            ])
+            ->activos()
+            ->orderBy('nombre')
+            ->get();
 
         return view('compras.edit', compact('compra', 'proveedores', 'productos'));
     }
@@ -154,6 +168,11 @@ class CompraController extends Controller
         $pdf = Pdf::loadView('compras.pdf', compact('compra'));
 
         return $pdf->download("compra-{$compra->id}.pdf");
+    }
+
+    public function imprimir(Compra $compra)
+    {
+        return $this->imprimirTicket($compra);
     }
 
     public function imprimirTicket(Compra $compra)

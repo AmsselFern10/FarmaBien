@@ -77,6 +77,11 @@ class Lote extends Model
         return $query->where('activo', true);
     }
 
+    public function scopeActivo($query)
+    {
+        return $query->where('activo', true);
+    }
+
     public function scopeDisponibles($query)
     {
         return $query->where('activo', true)

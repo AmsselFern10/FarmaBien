@@ -41,7 +41,17 @@ class Receta extends Model
         return $this->belongsTo(Cliente::class);
     }
 
+    public function paciente(): BelongsTo
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_id');
+    }
+
     public function detalles(): HasMany
+    {
+        return $this->hasMany(RecetaDetalle::class);
+    }
+
+    public function detallesReceta(): HasMany
     {
         return $this->hasMany(RecetaDetalle::class);
     }

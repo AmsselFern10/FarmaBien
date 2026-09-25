@@ -132,7 +132,7 @@ class ReporteController extends Controller
 
         $query = Venta::with(['cliente', 'usuario', 'detalles'])
             ->completadas()
-            ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+            ->whereBetween('fecha', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"]);
 
         if (!empty($metodoPago)) {
             $query->where('metodo_pago', $metodoPago);
@@ -441,7 +441,7 @@ class ReporteController extends Controller
 
         $query = Compra::with(['proveedor', 'usuario'])
             ->recibidas()
-            ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+            ->whereBetween('fecha', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"]);
 
         if (!empty($proveedorId)) {
             $query->where('proveedor_id', $proveedorId);
@@ -671,18 +671,18 @@ class ReporteController extends Controller
 
         $topClientes = Cliente::whereHas('ventas', function ($q) use ($fechaDesde, $fechaHasta) {
                 $q->where('estado', 'completada')
-                  ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+                  ->whereBetween('fecha', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"]);
             })
             ->withCount([
                 'ventas as total_ventas' => function ($q) use ($fechaDesde, $fechaHasta) {
                     $q->where('estado', 'completada')
-                      ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+                      ->whereBetween('fecha', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"]);
                 }
             ])
             ->withSum([
                 'ventas as monto_total' => function ($q) use ($fechaDesde, $fechaHasta) {
                     $q->where('estado', 'completada')
-                      ->whereBetween(DB::raw('DATE(fecha)'), [$fechaDesde, $fechaHasta]);
+                      ->whereBetween('fecha', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"]);
                 }
             ], 'total')
             ->orderByDesc('monto_total')

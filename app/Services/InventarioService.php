@@ -392,47 +392,56 @@ class InventarioService
     }
 
     /**
+    /**
      * Valorización integral del inventario (PEPS / Costo de adquisición por lote)
+     * Utiliza agregación SQL directa de alto rendimiento para 0 consumo de memoria RAM.
      * 
+     * @param bool $incluirDetalles
      * @return array
      */
-    public function valorizacionInventario(): array
+    public function valorizacionInventario(bool $incluirDetalles = false): array
     {
-        $lotes = Lote::with(['producto.categoria', 'producto.laboratorio'])
+        $resumen = DB::table('lotes')
             ->where('activo', true)
             ->where('stock_actual', '>', 0)
-            ->get();
+            ->selectRaw('
+                COALESCE(SUM(stock_actual * precio_compra), 0) as valor_total,
+                COALESCE(SUM(stock_actual), 0) as total_unidades,
+                COUNT(id) as total_lotes_activos,
+                COUNT(DISTINCT producto_id) as total_productos
+            ')
+            ->first();
 
-        $valorTotal = 0;
-        $cantidadTotal = 0;
-        $productosIds = [];
         $detalles = [];
+        if ($incluirDetalles) {
+            $lotes = Lote::with(['producto.categoria', 'producto.laboratorio'])
+                ->where('activo', true)
+                ->where('stock_actual', '>', 0)
+                ->limit(200)
+                ->get();
 
-        foreach ($lotes as $lote) {
-            $valorLote = round($lote->stock_actual * $lote->precio_compra, 2);
-            $valorTotal += $valorLote;
-            $cantidadTotal += $lote->stock_actual;
-            $productosIds[$lote->producto_id] = true;
-
-            $detalles[] = [
-                'producto_id'        => $lote->producto_id,
-                'producto'           => $lote->producto->nombre_completo ?? $lote->producto->nombre,
-                'categoria'          => $lote->producto->categoria->nombre ?? 'Sin categoría',
-                'laboratorio'        => $lote->producto->laboratorio->nombre ?? 'Sin laboratorio',
-                'lote'               => $lote->numero_lote,
-                'fecha_vencimiento'  => $lote->fecha_vencimiento->format('d/m/Y'),
-                'stock'              => $lote->stock_actual,
-                'precio_compra'      => (float) $lote->precio_compra,
-                'valor_total'        => $valorLote,
-            ];
+            foreach ($lotes as $lote) {
+                $valorLote = round($lote->stock_actual * (float)$lote->precio_compra, 2);
+                $detalles[] = [
+                    'producto_id'        => $lote->producto_id,
+                    'producto'           => $lote->producto?->nombre_completo ?? $lote->producto?->nombre ?? 'Medicamento',
+                    'categoria'          => $lote->producto?->categoria?->nombre ?? 'Sin categoría',
+                    'laboratorio'        => $lote->producto?->laboratorio?->nombre ?? 'Sin laboratorio',
+                    'lote'               => $lote->numero_lote,
+                    'fecha_vencimiento'  => $lote->fecha_vencimiento ? $lote->fecha_vencimiento->format('d/m/Y') : 'N/A',
+                    'stock'              => $lote->stock_actual,
+                    'precio_compra'      => (float) $lote->precio_compra,
+                    'valor_total'        => $valorLote,
+                ];
+            }
         }
 
         return [
-            'valor_total'        => round($valorTotal, 2),
-            'total_unidades'     => $cantidadTotal,
-            'total_lotes_activos'=> count($detalles),
-            'total_productos'    => count($productosIds),
-            'detalles'           => collect($detalles)->sortByDesc('valor_total')->values()->all(),
+            'valor_total'        => round((float) ($resumen->valor_total ?? 0), 2),
+            'total_unidades'     => (int) ($resumen->total_unidades ?? 0),
+            'total_lotes_activos'=> (int) ($resumen->total_lotes_activos ?? 0),
+            'total_productos'    => (int) ($resumen->total_productos ?? 0),
+            'detalles'           => $detalles,
         ];
     }
 }

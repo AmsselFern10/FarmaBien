@@ -103,6 +103,11 @@ class Producto extends Model
         return $query->where('activo', true);
     }
 
+    public function scopeActivo($query)
+    {
+        return $query->where('activo', true);
+    }
+
     public function scopeConReceta($query)
     {
         return $query->where('requiere_receta', true)
