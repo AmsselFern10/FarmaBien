@@ -165,7 +165,7 @@
 <body>
 @php
     $moneda = env('MONEDA_SIMBOLO', 'C$');
-    $proveedorNombre = \Illuminate\Support\Str::limit($compra->proveedor->nombre ?? '-', 26);
+    $proveedorNombre = \Illuminate\Support\Str::limit($compra->proveedor?->nombre ?? 'Sin Proveedor', 26);
 @endphp
 
     <button class="print-button no-print" onclick="window.print()">Imprimir</button>
@@ -196,7 +196,7 @@
     <div class="info-grid">
         <div class="info-col">
             <div class="kv"><span class="k">FECHA:</span><span class="v">{{ optional($compra->fecha)->format('d/m/Y H:i') }}</span></div>
-            <div class="kv"><span class="k">CAJERO:</span><span class="v">{{ $compra->usuario->name ?? '-' }}</span></div>
+            <div class="kv"><span class="k">CAJERO:</span><span class="v">{{ $compra->usuario?->name ?? 'Sistema' }}</span></div>
         </div>
         <div class="info-col right-col">
             <div class="kv"><span class="k">PROVEEDOR:</span><span class="v">{{ $proveedorNombre }}</span></div>
@@ -226,21 +226,19 @@
         <tbody>
             @foreach($compra->detalles as $detalle)
                 @php
-                    $usaPres = $detalle->usaPresentacion();
+                    $usaPres = !empty($detalle->presentacion_id) || (!empty($detalle->tipo_presentacion) && $detalle->tipo_presentacion !== 'Unidad Base') || (method_exists($detalle, 'usaPresentacion') && $detalle->usaPresentacion());
                     $cantPres = (int)($detalle->cantidad_presentaciones ?? 1);
                     $cant = $usaPres ? $cantPres : (int)($detalle->cantidad_unidades_base ?? $detalle->cantidad ?? 0);
 
-                    $precio = $usaPres
-                        ? (float)($detalle->precio_presentacion ?? ($detalle->precio_unitario * max(1,(int)$detalle->unidades_por_presentacion)))
-                        : (float)$detalle->precio_unitario;
-
-                    $totalLinea = (float)($detalle->subtotal ?? 0);
+                    $precio = (float)($detalle->precio_unitario ?? 0);
+                    $totalLinea = (float)($detalle->subtotal ?? ($cant * $precio));
                     $descMonto = (float)($detalle->descuento_monto ?? 0);
+                    $nombrePres = $detalle->presentacion?->nombre ?? $detalle->tipo_presentacion ?? ($usaPres ? 'Presentación' : 'Unidad Base');
                 @endphp
                 <tr>
                     <td>
-                        <div class="item-name">{{ $detalle->producto->nombre ?? 'Producto' }}</div>
-                        <div class="item-pres">{{ $usaPres ? ($detalle->nombre_presentacion ?? 'Presentación') : 'Unidad' }}</div>
+                        <div class="item-name">{{ $detalle->producto?->nombre ?? 'Producto eliminado' }}</div>
+                        <div class="item-pres">{{ $nombrePres }}</div>
                     </td>
                     <td class="qty">{{ $cant }}</td>
                     <td class="num">

@@ -147,14 +147,14 @@
     <div class="rule"></div>
 
     <!-- Datos del Turno y Terminal -->
-    <div class="kv"><span class="k">Caja / Terminal:</span><span class="v bold">{{ $sesion->caja->nombre }} ({{ $sesion->caja->codigo }})</span></div>
-    <div class="kv"><span class="k">Cajero Apertura:</span><span class="v">{{ $sesion->usuario->name }}</span></div>
+    <div class="kv"><span class="k">Caja / Terminal:</span><span class="v bold">{{ $sesion->caja?->nombre ?? 'Caja Principal' }} ({{ $sesion->caja?->codigo ?? 'C-01' }})</span></div>
+    <div class="kv"><span class="k">Cajero Apertura:</span><span class="v">{{ $sesion->usuario?->name ?? 'Sistema' }}</span></div>
     @if($sesion->usuarioCierre)
-        <div class="kv"><span class="k">Cajero Cierre:</span><span class="v">{{ $sesion->usuarioCierre->name }}</span></div>
+        <div class="kv"><span class="k">Cajero Cierre:</span><span class="v">{{ $sesion->usuarioCierre?->name ?? '-' }}</span></div>
     @endif
-    <div class="kv"><span class="k">F. Apertura:</span><span class="v">{{ $sesion->fecha_apertura->format('d/m/Y H:i:s') }}</span></div>
+    <div class="kv"><span class="k">F. Apertura:</span><span class="v">{{ optional($sesion->fecha_apertura)->format('d/m/Y H:i:s') }}</span></div>
     @if($sesion->fecha_cierre)
-        <div class="kv"><span class="k">F. Cierre:</span><span class="v">{{ $sesion->fecha_cierre->format('d/m/Y H:i:s') }}</span></div>
+        <div class="kv"><span class="k">F. Cierre:</span><span class="v">{{ optional($sesion->fecha_cierre)->format('d/m/Y H:i:s') }}</span></div>
     @else
         <div class="kv"><span class="k">Estado:</span><span class="v bold">** TURNO EN CURSO **</span></div>
     @endif
@@ -213,7 +213,7 @@
     <div class="sign-area">
         <div class="sign-box">
             Firma Cajero(a)<br>
-            {{ $sesion->usuario->name }}
+            {{ $sesion->usuario?->name ?? 'Cajero(a)' }}
         </div>
         <div class="sign-box">
             Firma Supervisor(a)<br>

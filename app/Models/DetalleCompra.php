@@ -49,4 +49,9 @@ class DetalleCompra extends Model
     {
         return $this->belongsTo(PresentacionProducto::class, 'presentacion_id');
     }
+
+    public function usaPresentacion(): bool
+    {
+        return !empty($this->presentacion_id) || (!empty($this->tipo_presentacion) && $this->tipo_presentacion !== 'Unidad Base');
+    }
 }

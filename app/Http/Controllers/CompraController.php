@@ -150,7 +150,7 @@ class CompraController extends Controller
 
     public function generarPDF(Compra $compra)
     {
-        $compra->load(['proveedor', 'usuario', 'detalles.producto.laboratorio', 'lotes']);
+        $compra->load(['proveedor', 'usuario', 'detalles.producto.laboratorio', 'detalles.presentacion', 'lotes']);
         $pdf = Pdf::loadView('compras.pdf', compact('compra'));
 
         return $pdf->download("compra-{$compra->id}.pdf");
@@ -158,7 +158,7 @@ class CompraController extends Controller
 
     public function imprimirTicket(Compra $compra)
     {
-        $compra->load(['proveedor', 'usuario', 'detalles.producto', 'lotes']);
+        $compra->load(['proveedor', 'usuario', 'detalles.producto.laboratorio', 'detalles.presentacion', 'lotes']);
         return view('compras.ticket', compact('compra'));
     }
 

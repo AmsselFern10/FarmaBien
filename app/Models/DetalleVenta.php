@@ -55,4 +55,9 @@ class DetalleVenta extends Model
     {
         return $this->belongsTo(RecetaDetalle::class, 'receta_detalle_id');
     }
+
+    public function usaPresentacion(): bool
+    {
+        return !empty($this->presentacion_id);
+    }
 }
