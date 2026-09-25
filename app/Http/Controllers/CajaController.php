@@ -258,6 +258,17 @@ class CajaController extends Controller
      */
     public function cerrar(Request $request, SesionCaja $sesion)
     {
+        $user = auth()->user();
+
+        // Solo el cajero dueño de la sesión o un admin puede cerrarla
+        if ($sesion->user_id !== $user->id && !$user->hasRole('admin')) {
+            $errorMsg = 'No tienes permiso para cerrar el turno de otro cajero.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $errorMsg], 403);
+            }
+            return redirect()->route('cajas.index')->with('error', $errorMsg);
+        }
+
         $request->validate([
             'monto_final_efectivo' => ['required', 'numeric', 'min:0'],
             'observaciones_cierre' => ['nullable', 'string', 'max:500'],
@@ -269,7 +280,7 @@ class CajaController extends Controller
         try {
             $sesionCerrada = $this->cajaService->cerrarCaja(
                 $sesion,
-                auth()->user(),
+                $user,
                 (float) $request->input('monto_final_efectivo'),
                 $request->input('observaciones_cierre')
             );

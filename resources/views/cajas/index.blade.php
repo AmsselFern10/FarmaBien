@@ -213,19 +213,32 @@
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-1.5">
                                 @if($caja->sesionActiva)
-                                    <a href="{{ route('cajas.show', $caja->sesionActiva) }}"
-                                       class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        <span>Ver Arqueo</span>
-                                    </a>
+                                    {{-- Ver Arqueo: solo el dueño de la sesión O admin --}}
+                                    @if($caja->sesionActiva->user_id === auth()->id() || auth()->user()->hasRole('admin'))
+                                        <a href="{{ route('cajas.show', $caja->sesionActiva) }}"
+                                           class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <span>Ver Arqueo</span>
+                                        </a>
+                                    @endif
+                                    {{-- Cerrar: solo el dueño de la sesión O admin --}}
                                     @can('cerrar caja')
+                                    @if($caja->sesionActiva->user_id === auth()->id() || auth()->user()->hasRole('admin'))
                                     <a href="{{ route('cajas.show', $caja->sesionActiva) }}"
                                        class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
                                        title="Ir al arqueo para cerrar este turno">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                         <span>Cerrar</span>
                                     </a>
+                                    @endif
                                     @endcan
+                                    {{-- Indicador para otros usuarios: caja ocupada por otro cajero --}}
+                                    @if($caja->sesionActiva->user_id !== auth()->id() && !auth()->user()->hasRole('admin'))
+                                        <span class="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-200 dark:border-amber-800"
+                                              title="Turno abierto por {{ $caja->sesionActiva->usuario?->name }}">
+                                            En uso · {{ Str::words($caja->sesionActiva->usuario?->name ?? '', 1, '') }}
+                                        </span>
+                                    @endif
                                 @else
                                     @if($caja->activo)
                                         @can('abrir caja')
