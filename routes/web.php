@@ -20,6 +20,7 @@ use App\Http\Controllers\AjusteController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\PublicCatalogoController;
 use App\Http\Controllers\PromocionController;
+use App\Http\Controllers\BenchmarkController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +33,9 @@ Route::get('/', function () {
 
 // Catálogo Público de Medicamentos para Clientes
 Route::get('/catalogo', [PublicCatalogoController::class, 'index'])->name('catalogo.publico');
+
+// Telemetría y Métricas de Rendimiento ISO/IEC 25023 (Para Render, Local y Monitoreo)
+Route::get('/benchmark/metricas', [BenchmarkController::class, 'metricas'])->name('benchmark.metricas');
 
 // Health Check Endpoint (Para Monitoreo, Docker, Render y Cloud Hosting)
 Route::get('/health', function () {
