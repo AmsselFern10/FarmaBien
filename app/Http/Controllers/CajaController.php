@@ -23,7 +23,7 @@ class CajaController extends Controller
         $this->middleware('permission:ver cajas')->only(['index', 'show', 'sesiones', 'ticketArqueo']);
         $this->middleware('permission:crear cajas')->only(['store']);
         $this->middleware('permission:editar cajas')->only(['update']);
-        $this->middleware('permission:desactivar cajas')->only(['destroy']);
+        $this->middleware('permission:desactivar cajas')->only(['toggleEstado', 'destroy']);
         $this->middleware('permission:abrir caja')->only(['abrir']);
         $this->middleware('permission:cerrar caja')->only(['cerrar']);
         $this->middleware('permission:registrar movimientos caja')->only(['storeMovimiento']);
@@ -136,9 +136,9 @@ class CajaController extends Controller
     }
 
     /**
-     * Desactivar o activar una caja
+     * Alternar estado Activa / Inactiva de una caja
      */
-    public function destroy(Caja $caja)
+    public function toggleEstado(Caja $caja)
     {
         $user = auth()->user();
         if (!$user->hasRole('admin') && !$user->can('desactivar cajas')) {
@@ -159,6 +159,39 @@ class CajaController extends Controller
 
         return redirect()->route('cajas.index')
             ->with('success', "Caja '{$caja->nombre}' {$estado} correctamente.");
+    }
+
+    /**
+     * Eliminar definitivamente una caja del sistema
+     */
+    public function destroy(Caja $caja)
+    {
+        $user = auth()->user();
+        if (!$user->hasRole('admin') && !$user->can('desactivar cajas')) {
+            return back()->with('error', 'Solo el administrador puede eliminar cajas.');
+        }
+
+        if ($caja->estaAbierta()) {
+            return back()->with('error', "No se puede eliminar la caja '{$caja->nombre}' porque tiene un turno abierto actualmente. Cierra el turno antes de eliminarla.");
+        }
+
+        try {
+            $nombreCaja = $caja->nombre;
+            $codigoCaja = $caja->codigo;
+            $cajaId = $caja->id;
+
+            $caja->delete();
+
+            AuditLog::log('cajas', 'eliminar', "Caja '{$nombreCaja}' ({$codigoCaja}) eliminada definitivamente del sistema", [
+                'caja_id' => $cajaId,
+            ]);
+
+            return redirect()->route('cajas.index')
+                ->with('success', "Caja '{$nombreCaja}' eliminada exitosamente del sistema.");
+        } catch (QueryException $e) {
+            Log::error("Error al eliminar caja #{$caja->id}: " . $e->getMessage());
+            return back()->with('error', 'No se pudo eliminar la caja debido a registros dependientes en la base de datos.');
+        }
     }
 
     /**

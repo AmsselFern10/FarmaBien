@@ -6,7 +6,7 @@
 <div class="space-y-4" x-data="{
     activeTab: 'ventas',
     modalMovimiento: false,
-    modalCerrar: false,
+    modalCerrar: {{ request()->boolean('cerrar') ? 'true' : 'false' }},
     tipoMovimiento: 'ingreso',
     montoFinal: '',
     diferencia: 0,

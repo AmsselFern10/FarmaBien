@@ -193,6 +193,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [CajaController::class, 'index'])->name('index');
         Route::post('/', [CajaController::class, 'store'])->name('store');
         Route::put('/{caja}', [CajaController::class, 'update'])->name('update');
+        Route::post('/{caja}/toggle', [CajaController::class, 'toggleEstado'])->name('toggle');
         Route::delete('/{caja}', [CajaController::class, 'destroy'])->name('destroy');
         Route::post('/{caja}/abrir', [CajaController::class, 'abrir'])->name('abrir');
         Route::get('/sesiones', [CajaController::class, 'sesiones'])->name('sesiones');

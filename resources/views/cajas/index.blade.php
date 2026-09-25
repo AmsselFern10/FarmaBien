@@ -211,27 +211,37 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1.5">
+                            <div class="flex items-center justify-end gap-1.5 flex-wrap">
                                 @if($caja->sesionActiva)
                                     {{-- Ver Arqueo: solo el dueño de la sesión O admin --}}
                                     @if($caja->sesionActiva->user_id === auth()->id() || auth()->user()->hasRole('admin'))
                                         <a href="{{ route('cajas.show', $caja->sesionActiva) }}"
-                                           class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1">
+                                           class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
+                                           title="Ver detalle de ventas, movimientos y arqueo">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Ver Arqueo</span>
                                         </a>
                                     @endif
-                                    {{-- Cerrar: solo el dueño de la sesión O admin --}}
+
+                                    {{-- Cerrar: dueño de la sesión O admin (cerrar turno de otro) --}}
                                     @can('cerrar caja')
-                                    @if($caja->sesionActiva->user_id === auth()->id() || auth()->user()->hasRole('admin'))
-                                    <a href="{{ route('cajas.show', $caja->sesionActiva) }}"
-                                       class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
-                                       title="Ir al arqueo para cerrar este turno">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        <span>Cerrar</span>
-                                    </a>
+                                    @if($caja->sesionActiva->user_id === auth()->id())
+                                        <a href="{{ route('cajas.show', ['sesion' => $caja->sesionActiva, 'cerrar' => 1]) }}"
+                                           class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
+                                           title="Cerrar mi turno y realizar arqueo">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Cerrar Turno</span>
+                                        </a>
+                                    @elseif(auth()->user()->hasRole('admin'))
+                                        <a href="{{ route('cajas.show', ['sesion' => $caja->sesionActiva, 'cerrar' => 1]) }}"
+                                           class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold transition inline-flex items-center gap-1 shadow-2xs"
+                                           title="Cerrar el turno de {{ $caja->sesionActiva->usuario?->name }} como Administrador">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Cerrar Turno (Admin)</span>
+                                        </a>
                                     @endif
                                     @endcan
+
                                     {{-- Indicador para otros usuarios: caja ocupada por otro cajero --}}
                                     @if($caja->sesionActiva->user_id !== auth()->id() && !auth()->user()->hasRole('admin'))
                                         <span class="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-200 dark:border-amber-800"
@@ -256,28 +266,42 @@
                                             @endif
                                         @endcan
                                     @endif
-                                @endif
 
-                                @can('editar cajas')
-                                <button type="button"
-                                        @click="abrirEditarCaja({ id: {{ $caja->id }}, nombre: '{{ addslashes($caja->nombre) }}', codigo: '{{ addslashes($caja->codigo) }}', ubicacion: '{{ addslashes($caja->ubicacion ?? '') }}', descripcion: '{{ addslashes($caja->descripcion ?? '') }}' })"
-                                        class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold transition">
-                                    Editar
-                                </button>
-                                @endcan
-
-                                @can('desactivar cajas')
-                                @if(!$caja->sesionActiva)
-                                <form method="POST" action="{{ route('cajas.destroy', $caja) }}" class="inline"
-                                      onsubmit="return confirm('¿{{ $caja->activo ? 'Desactivar' : 'Activar' }} la caja \'{{ $caja->nombre }}\'?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit"
-                                            class="px-2.5 py-1 rounded-lg {{ $caja->activo ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 hover:bg-rose-100' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100' }} text-[11px] font-semibold transition">
-                                        {{ $caja->activo ? 'Desactivar' : 'Activar' }}
+                                    @can('editar cajas')
+                                    <button type="button"
+                                            @click="abrirEditarCaja({ id: {{ $caja->id }}, nombre: '{{ addslashes($caja->nombre) }}', codigo: '{{ addslashes($caja->codigo) }}', ubicacion: '{{ addslashes($caja->ubicacion ?? '') }}', descripcion: '{{ addslashes($caja->descripcion ?? '') }}' })"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold transition">
+                                        Editar
                                     </button>
-                                </form>
+                                    @endcan
+
+                                    @can('desactivar cajas')
+                                    {{-- Botón Activar / Desactivar (Toggle) --}}
+                                    <form method="POST" action="{{ route('cajas.toggle', $caja) }}" class="inline"
+                                          onsubmit="return confirm('¿{{ $caja->activo ? 'Desactivar' : 'Activar' }} la caja \'{{ $caja->nombre }}\'?')">
+                                        @csrf
+                                        <button type="submit"
+                                                class="px-2.5 py-1 rounded-lg {{ $caja->activo ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 hover:bg-amber-100' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100' }} text-[11px] font-semibold transition"
+                                                title="{{ $caja->activo ? 'Desactivar caja' : 'Activar caja' }}">
+                                            {{ $caja->activo ? 'Desactivar' : 'Activar' }}
+                                        </button>
+                                    </form>
+
+                                    {{-- Botón Eliminar Caja (Quitar permanentemente) --}}
+                                    @if(auth()->user()->hasRole('admin') || auth()->user()->can('desactivar cajas'))
+                                    <form method="POST" action="{{ route('cajas.destroy', $caja) }}" class="inline"
+                                          onsubmit="return confirm('¿Estás seguro de ELIMINAR permanentemente la caja \'{{ $caja->nombre }}\' ({{ $caja->codigo }})? Esta acción la quitará por completo del sistema.')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit"
+                                                class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
+                                                title="Eliminar permanentemente esta caja">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Eliminar</span>
+                                        </button>
+                                    </form>
+                                    @endif
+                                    @endcan
                                 @endif
-                                @endcan
                             </div>
                         </td>
                     </tr>
