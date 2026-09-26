@@ -164,6 +164,7 @@ Route::middleware('auth')->group(function () {
     | RECETAS MÉDICAS
     |--------------------------------------------------------------------------
     */
+    Route::get('recetas/{receta}/archivo', [RecetaController::class, 'verArchivo'])->name('recetas.archivo');
     Route::post('recetas/{receta}/validar', [RecetaController::class, 'validar'])->name('recetas.validar');
     Route::post('recetas/{receta}/estado', [RecetaController::class, 'cambiarEstado'])->name('recetas.estado');
     Route::resource('recetas', RecetaController::class);

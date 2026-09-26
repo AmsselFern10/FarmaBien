@@ -177,10 +177,11 @@ $vencida = $receta->estaVencida();
                 <p class="text-sm text-slate-600 dark:text-slate-400 italic leading-relaxed">{{ $receta->observaciones }}</p>
                 @endif
                 @if($receta->archivo_receta)
-                <a href="{{ Storage::url($receta->archivo_receta) }}" target="_blank"
-                   class="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                <a href="{{ route('recetas.archivo', $receta) }}" target="_blank"
+                   class="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                   title="Visualizar documento clínico de forma segura">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                    Ver Receta Adjunta
+                    <span>Ver Receta Adjunta (Seguro)</span>
                 </a>
                 @endif
             </div>

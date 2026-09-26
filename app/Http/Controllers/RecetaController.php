@@ -21,9 +21,62 @@ class RecetaController extends Controller
     public function __construct(RecetaService $recetaService)
     {
         $this->recetaService = $recetaService;
-        $this->middleware('permission:ver recetas')->only(['index', 'show']);
+        $this->middleware('permission:ver recetas')->only(['index', 'show', 'verArchivo']);
         $this->middleware('permission:registrar recetas')->only(['create', 'store', 'edit', 'update', 'buscarRecetas']);
         $this->middleware('permission:validar recetas')->only(['validar']);
+    }
+
+    /**
+     * Descargar o visualizar de forma segura el archivo adjunto de una receta médica.
+     * Solo accesible para usuarios autenticados con permisos sobre recetas (Admin, Farmacéutico, o Cajero autorizado).
+     */
+    public function verArchivo(Receta $receta)
+    {
+        $user = auth()->user();
+
+        // 1. Verificación de autorización
+        if (!$user || (!$user->can('ver recetas') && !$user->hasRole(['Admin', 'Farmaceutico']) && !$user->can('dispensar recetas'))) {
+            AuditLog::log('recetas', 'acceso_no_autorizado', "Intento no autorizado de visualización de archivo de receta #{$receta->numero_receta}", [
+                'receta_id' => $receta->id,
+                'user_id' => $user?->id,
+                'ip' => request()->ip(),
+            ]);
+            abort(403, 'No tienes autorización para acceder a los archivos clínicos de recetas médicas.');
+        }
+
+        if (empty($receta->archivo_receta)) {
+            abort(404, 'La receta médica no cuenta con un archivo digitalizado adjunto.');
+        }
+
+        // 2. Localizar archivo (privado primero en local, fallback a public para archivos previos)
+        $path = null;
+        if (Storage::disk('local')->exists($receta->archivo_receta)) {
+            $path = Storage::disk('local')->path($receta->archivo_receta);
+        } elseif (Storage::disk('public')->exists($receta->archivo_receta)) {
+            $path = Storage::disk('public')->path($receta->archivo_receta);
+        }
+
+        if (!$path || !file_exists($path)) {
+            abort(404, 'El archivo de la receta no se encuentra en el servidor.');
+        }
+
+        // 3. Registrar auditoría de acceso al documento clínico
+        AuditLog::log('recetas', 'ver_archivo', "Visualización segura de archivo de receta #{$receta->numero_receta}", [
+            'receta_id' => $receta->id,
+            'user_id' => $user->id,
+        ]);
+
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+        $fileName = basename($receta->archivo_receta);
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => "inline; filename=\"{$fileName}\"",
+            'Cache-Control' => 'private, no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function index(Request $request)
@@ -94,7 +147,8 @@ class RecetaController extends Controller
             $data = $request->validated();
 
             if ($request->hasFile('archivo_receta')) {
-                $path = $request->file('archivo_receta')->store('recetas', 'public');
+                // Almacenar en disco privado 'local' fuera del directorio público web
+                $path = $request->file('archivo_receta')->store('recetas', 'local');
                 $data['archivo_receta'] = $path;
             }
 
@@ -160,10 +214,16 @@ class RecetaController extends Controller
             $data = $request->validated();
 
             if ($request->hasFile('archivo_receta')) {
-                if ($receta->archivo_receta && Storage::disk('public')->exists($receta->archivo_receta)) {
-                    Storage::disk('public')->delete($receta->archivo_receta);
+                // Eliminar archivo anterior si existe (buscar en local o en public)
+                if ($receta->archivo_receta) {
+                    if (Storage::disk('local')->exists($receta->archivo_receta)) {
+                        Storage::disk('local')->delete($receta->archivo_receta);
+                    } elseif (Storage::disk('public')->exists($receta->archivo_receta)) {
+                        Storage::disk('public')->delete($receta->archivo_receta);
+                    }
                 }
-                $data['archivo_receta'] = $request->file('archivo_receta')->store('recetas', 'public');
+                // Guardar en almacenamiento seguro 'local'
+                $data['archivo_receta'] = $request->file('archivo_receta')->store('recetas', 'local');
             }
 
             $receta->update($data);
