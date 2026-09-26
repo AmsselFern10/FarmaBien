@@ -214,10 +214,13 @@ function posVentaData() {
             
             if (existeIdx !== -1) {
                 this.items[existeIdx].cantidad++;
+                // Mover el ítem al inicio (unshift) para que el cajero siempre lo vea arriba
+                const itemActualizado = this.items.splice(existeIdx, 1)[0];
+                this.items.unshift(itemActualizado);
                 return;
             }
 
-            this.items.push({
+            this.items.unshift({
                 uid: Date.now() + Math.random().toString(36).substr(2, 5),
                 producto_id: producto.id,
                 nombre: producto.nombre,
@@ -919,15 +922,6 @@ function posVentaData() {
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
-            <!-- Ticket Preview Shortcut Button -->
-            <button type="button" 
-                    @click="modalTicketPreview = true"
-                    title="Ver Vista Previa del Ticket [F7]"
-                    class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-2xs">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Ticket (F7)</span>
-            </button>
-
             <!-- Mode Switcher -->
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
@@ -1337,15 +1331,18 @@ function posVentaData() {
     <!-- ============================================================== -->
     <!-- MODO 2: VISTA MODERNA (TOUCH / ORGANIZACIÓN ESPACIOSA)          -->
     <!-- ============================================================== -->
+    <!-- ============================================================== -->
+    <!-- MODO 2: VISTA MODERNA (TOUCH / ORGANIZACIÓN ESPACIOSA)          -->
+    <!-- ============================================================== -->
     <template x-if="formLayout === 'modern'">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 animate-fadeIn">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[calc(100vh-8.5rem)] lg:min-h-[580px] animate-fadeIn">
             
             <!-- Columna Izquierda: Cliente + Buscador & Catálogo de Medicamentos (5 cols) -->
-            <div class="lg:col-span-5 space-y-3.5">
+            <div class="lg:col-span-5 flex flex-col h-full space-y-3 min-h-0">
                 
-                <!-- Card 1: Identificación del Cliente -->
-                <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs space-y-2.5">
-                    <div class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-1.5">
+                <!-- Card 1: Identificación del Cliente (Fijo) -->
+                <div class="shrink-0 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
+                    <div class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-1">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                             <span>Cliente Registrado</span>
@@ -1377,8 +1374,8 @@ function posVentaData() {
                     </div>
                 </div>
 
-                <!-- Card 2: Buscador y Filtro de Categoría -->
-                <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs space-y-2.5">
+                <!-- Card 2: Buscador y Filtro de Categoría (Fijo) -->
+                <div class="shrink-0 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
                     <div class="relative">
                         <input type="text" 
                                id="posBuscadorModern"
@@ -1417,7 +1414,7 @@ function posVentaData() {
 
                 <!-- Grid de Tarjetas de Medicamentos con Virtual Scroll y Carga Progresiva -->
                 <div @scroll.passive="if ($event.target.scrollTop + $event.target.clientHeight >= $event.target.scrollHeight - 60) cargarMasProductos()"
-                     class="max-h-[480px] overflow-y-auto pr-1 custom-scrollbar space-y-2.5">
+                     class="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar space-y-2.5">
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <template x-for="prod in productosVisibles()" :key="prod.id">
@@ -1476,157 +1473,155 @@ function posVentaData() {
             </div>
 
             <!-- Columna Derecha: Carrito de Despacho (7 cols) -->
-            <div class="lg:col-span-7 space-y-3.5">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 space-y-3">
-                    
-                    <!-- Header Carrito -->
-                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-800">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
-                            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                                Carrito de Despacho (<span x-text="items.length"></span> ítems)
-                            </h3>
+            <div class="lg:col-span-7 flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 overflow-hidden">
+                
+                <!-- Header Carrito (Fijo) -->
+                <div class="shrink-0 flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-800">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
+                        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            Carrito de Despacho (<span x-text="items.length"></span> ítems)
+                        </h3>
+                    </div>
+                    <button type="button" @click="limpiarVenta()" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">Vaciar Todo</button>
+                </div>
+
+                <!-- Lista de Ítems en Carrito con Scroll Interno -->
+                <div class="flex-1 min-h-0 overflow-y-auto pr-1.5 my-2.5 custom-scrollbar space-y-2.5">
+                    <template x-for="(item, idx) in items" :key="item.uid">
+                        <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 space-y-2 shadow-2xs">
+                            <!-- Fila 1: Título, Principio Activo, Precio Unitario y Botón Eliminar -->
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-bold text-xs text-slate-900 dark:text-white flex items-center space-x-1.5">
+                                        <span class="truncate" x-text="item.nombre"></span>
+                                        <span x-show="item.promocion_activa" 
+                                              class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-500 text-white shrink-0 shadow-2xs animate-pulse"
+                                              x-text="'🔥 ' + (item.promocion_activa?.badge_texto || 'PROMO')"></span>
+                                        <span x-show="item.requiere_receta" class="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-500 text-white shrink-0">Rx</span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-500 truncate" x-text="item.principio_activo"></div>
+                                </div>
+                                <div class="flex items-center space-x-2 shrink-0">
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300" x-text="'$' + parseFloat(item.precio_unitario).toFixed(2) + '/u'"></span>
+                                    <button type="button" @click="eliminarItem(idx)" class="text-slate-400 hover:text-rose-600 text-sm font-bold transition p-0.5 cursor-pointer">&times;</button>
+                                </div>
+                            </div>
+
+                            <!-- Fila 2: Selectores de Presentación y Lote FEFO -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                <!-- Presentación & Equivalencia -->
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">Presentación</label>
+                                    <select x-model="item.presentacion_id" @change="onPresentacionChange(idx)" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium">
+                                        <template x-for="pres in item.presentacionesDisponibles" :key="pres.id">
+                                            <option :value="pres.id" x-text="pres.nombre + ' (' + pres.unidades + ' unid. c/u)'"></option>
+                                        </template>
+                                    </select>
+                                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+                                        📦 Equivale a <span x-text="calcularUnidadesBase(item)"></span> unidades base
+                                    </div>
+                                </div>
+
+                                <!-- Lote FEFO -->
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">Lote (FEFO: Stock)</label>
+                                    <select x-model="item.lote_id" @change="onLoteChange(idx)" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-medium">
+                                        <template x-for="l in item.lotesDisponibles" :key="l.id">
+                                            <option :value="l.id" x-text="l.numero_lote + ' (' + l.stock_actual + 'u)'"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Fila 3: Stepper de Cantidad, Descuento y Subtotal -->
+                            <div class="flex items-center justify-between pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80">
+                                <!-- Selector Cantidad Prominente -->
+                                <div class="flex items-center space-x-1">
+                                    <button type="button" @click="if(item.cantidad > 1) item.cantidad--" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">-</button>
+                                    <input type="number" 
+                                           min="1" 
+                                           x-model.number="item.cantidad" 
+                                           @focus="$event.target.select()"
+                                           class="w-16 py-1 text-center font-black text-sm bg-white dark:bg-slate-800 border-2 border-emerald-500/60 dark:border-emerald-600 rounded-lg text-slate-900 dark:text-white shadow-2xs">
+                                    <button type="button" @click="item.cantidad++" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">+</button>
+                                </div>
+
+                                <!-- Descuento Ítem -->
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-[10px] text-slate-500 font-bold">Desc %:</span>
+                                    <input type="number" 
+                                           step="1" 
+                                           min="0" 
+                                           max="100"
+                                           x-model="item.porcentaje_descuento" 
+                                           @focus="$event.target.select()"
+                                           placeholder="0"
+                                           class="w-14 px-1 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-xs font-bold text-rose-600 text-right">
+                                </div>
+
+                                <!-- Subtotal por Fila -->
+                                <div class="text-right">
+                                    <span class="font-black text-xs text-slate-900 dark:text-white" x-text="'$' + calcularSubtotal(item)"></span>
+                                </div>
+                            </div>
                         </div>
-                        <button type="button" @click="limpiarVenta()" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">Vaciar Todo</button>
+                    </template>
+
+                    <div x-show="items.length === 0" class="py-12 text-center text-slate-400 text-xs">
+                        🛒 El carrito está vacío. Seleccione medicamentos del catálogo para comenzar.
+                    </div>
+                </div>
+
+                <!-- Totales y Botones de Cobro / Ticket (Fijo al Fondo) -->
+                <div class="shrink-0 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 bg-white dark:bg-slate-900">
+                    <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300">
+                        <span>Subtotal Bruto:</span>
+                        <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
                     </div>
 
-                    <!-- Lista de Ítems en Carrito -->
-                    <div class="space-y-2.5 max-h-[460px] overflow-y-auto pr-1 custom-scrollbar">
-                        <template x-for="(item, idx) in items" :key="item.uid">
-                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 space-y-2 shadow-2xs">
-                                <!-- Fila 1: Título, Principio Activo, Precio Unitario y Botón Eliminar -->
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="font-bold text-xs text-slate-900 dark:text-white flex items-center space-x-1.5">
-                                            <span class="truncate" x-text="item.nombre"></span>
-                                            <span x-show="item.promocion_activa" 
-                                                  class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-500 text-white shrink-0 shadow-2xs animate-pulse"
-                                                  x-text="'🔥 ' + (item.promocion_activa?.badge_texto || 'PROMO')"></span>
-                                            <span x-show="item.requiere_receta" class="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-500 text-white shrink-0">Rx</span>
-                                        </div>
-                                        <div class="text-[10px] text-slate-500 truncate" x-text="item.principio_activo"></div>
-                                    </div>
-                                    <div class="flex items-center space-x-2 shrink-0">
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300" x-text="'$' + parseFloat(item.precio_unitario).toFixed(2) + '/u'"></span>
-                                        <button type="button" @click="eliminarItem(idx)" class="text-slate-400 hover:text-rose-600 text-sm font-bold transition p-0.5 cursor-pointer">&times;</button>
-                                    </div>
-                                </div>
-
-                                <!-- Fila 2: Selectores de Presentación y Lote FEFO -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                    <!-- Presentación & Equivalencia -->
-                                    <div>
-                                        <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">Presentación</label>
-                                        <select x-model="item.presentacion_id" @change="onPresentacionChange(idx)" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium">
-                                            <template x-for="pres in item.presentacionesDisponibles" :key="pres.id">
-                                                <option :value="pres.id" x-text="pres.nombre + ' (' + pres.unidades + ' unid. c/u)'"></option>
-                                            </template>
-                                        </select>
-                                        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-                                            📦 Equivale a <span x-text="calcularUnidadesBase(item)"></span> unidades base
-                                        </div>
-                                    </div>
-
-                                    <!-- Lote FEFO -->
-                                    <div>
-                                        <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-0.5">Lote (FEFO: Stock)</label>
-                                        <select x-model="item.lote_id" @change="onLoteChange(idx)" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-medium">
-                                            <template x-for="l in item.lotesDisponibles" :key="l.id">
-                                                <option :value="l.id" x-text="l.numero_lote + ' (' + l.stock_actual + 'u)'"></option>
-                                            </template>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Fila 3: Stepper de Cantidad, Descuento y Subtotal -->
-                                <div class="flex items-center justify-between pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80">
-                                    <!-- Selector Cantidad Prominente -->
-                                    <div class="flex items-center space-x-1">
-                                        <button type="button" @click="if(item.cantidad > 1) item.cantidad--" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">-</button>
-                                        <input type="number" 
-                                               min="1" 
-                                               x-model.number="item.cantidad" 
-                                               @focus="$event.target.select()"
-                                               class="w-16 py-1 text-center font-black text-sm bg-white dark:bg-slate-800 border-2 border-emerald-500/60 dark:border-emerald-600 rounded-lg text-slate-900 dark:text-white shadow-2xs">
-                                        <button type="button" @click="item.cantidad++" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">+</button>
-                                    </div>
-
-                                    <!-- Descuento Ítem -->
-                                    <div class="flex items-center space-x-1">
-                                        <span class="text-[10px] text-slate-500 font-bold">Desc %:</span>
-                                        <input type="number" 
-                                               step="1" 
-                                               min="0" 
-                                               max="100"
-                                               x-model="item.porcentaje_descuento" 
-                                               @focus="$event.target.select()"
-                                               placeholder="0"
-                                               class="w-14 px-1 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-xs font-bold text-rose-600 text-right">
-                                    </div>
-
-                                    <!-- Subtotal por Fila -->
-                                    <div class="text-right">
-                                        <span class="font-black text-xs text-slate-900 dark:text-white" x-text="'$' + calcularSubtotal(item)"></span>
-                                    </div>
-                                </div>
+                    <!-- Descuento Global Configurable -->
+                    <div class="flex justify-between items-center text-xs text-slate-600 dark:text-slate-300">
+                        <div class="flex items-center space-x-1.5">
+                            <span>Descuento Global:</span>
+                            <div class="inline-flex rounded border border-slate-300 dark:border-slate-700 text-[10px]">
+                                <button type="button" @click="formData.tipo_descuento = 'porcentaje'" :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">%</button>
+                                <button type="button" @click="formData.tipo_descuento = 'monto'" :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">$</button>
                             </div>
-                        </template>
-
-                        <div x-show="items.length === 0" class="py-12 text-center text-slate-400 text-xs">
-                            🛒 El carrito está vacío. Seleccione medicamentos del catálogo para comenzar.
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <span class="text-rose-600 font-bold">-$</span>
+                            <span class="text-rose-600 font-bold" x-text="calcularDescuentoGeneralMonto()"></span>
+                            <input type="number" 
+                                   :step="formData.tipo_descuento === 'porcentaje' ? 1 : 0.10" 
+                                   min="0" 
+                                   :max="formData.tipo_descuento === 'porcentaje' ? 100 : null"
+                                   x-model="formData[formData.tipo_descuento === 'porcentaje' ? 'porcentaje_descuento' : 'descuento']" 
+                                   @focus="$event.target.select()"
+                                   class="w-16 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-rose-600 text-right">
+                            <span class="text-xs font-bold" x-text="formData.tipo_descuento === 'porcentaje' ? '%' : '$'"></span>
                         </div>
                     </div>
 
-                    <!-- Totales y Botones de Cobro / Ticket -->
-                    <div class="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300">
-                            <span>Subtotal Bruto:</span>
-                            <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
-                        </div>
+                    <div class="flex justify-between text-base font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <span>Total a Pagar:</span>
+                        <span class="text-2xl text-emerald-600 dark:text-emerald-400" x-text="'$' + calcularTotalGeneral()"></span>
+                    </div>
 
-                        <!-- Descuento Global Configurable -->
-                        <div class="flex justify-between items-center text-xs text-slate-600 dark:text-slate-300">
-                            <div class="flex items-center space-x-1.5">
-                                <span>Descuento Global:</span>
-                                <div class="inline-flex rounded border border-slate-300 dark:border-slate-700 text-[10px]">
-                                    <button type="button" @click="formData.tipo_descuento = 'porcentaje'" :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">%</button>
-                                    <button type="button" @click="formData.tipo_descuento = 'monto'" :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">$</button>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-1">
-                                <span class="text-rose-600 font-bold">-$</span>
-                                <span class="text-rose-600 font-bold" x-text="calcularDescuentoGeneralMonto()"></span>
-                                <input type="number" 
-                                       :step="formData.tipo_descuento === 'porcentaje' ? 1 : 0.10" 
-                                       min="0" 
-                                       :max="formData.tipo_descuento === 'porcentaje' ? 100 : null"
-                                       x-model="formData[formData.tipo_descuento === 'porcentaje' ? 'porcentaje_descuento' : 'descuento']" 
-                                       @focus="$event.target.select()"
-                                       class="w-16 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-rose-600 text-right">
-                                <span class="text-xs font-bold" x-text="formData.tipo_descuento === 'porcentaje' ? '%' : '$'"></span>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between text-base font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
-                            <span>Total a Pagar:</span>
-                            <span class="text-2xl text-emerald-600 dark:text-emerald-400" x-text="'$' + calcularTotalGeneral()"></span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2 pt-1.5">
-                            <button type="button" 
-                                    @click="modalTicketPreview = true"
-                                    class="py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                <span>Ticket (F7)</span>
-                            </button>
-                            <button type="button" 
-                                    @click="abrirModalCobro()"
-                                    :disabled="items.length === 0"
-                                    class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-extrabold shadow-sm transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                <span>Cobrar (F4)</span>
-                            </button>
-                        </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1.5">
+                        <button type="button" 
+                                @click="modalTicketPreview = true"
+                                class="py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            <span>Ticket (F7)</span>
+                        </button>
+                        <button type="button" 
+                                @click="abrirModalCobro()"
+                                :disabled="items.length === 0"
+                                class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-extrabold shadow-sm transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <span>Cobrar (F4)</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1637,9 +1632,12 @@ function posVentaData() {
     <!-- ============================================================== -->
     <!-- MODAL DE COBRO INTEGRADO: EFECTIVO ESTRICTO + RECETAS RX       -->
     <!-- ============================================================== -->
+    <!-- ============================================================== -->
+    <!-- MODAL DE COBRO INTEGRADO: 3 COLUMNAS ULTRA-ERGONÓMICO           -->
+    <!-- ============================================================== -->
     <div x-show="modalCobro" 
          x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto" 
          aria-labelledby="modal-cobro-title" 
          role="dialog" 
          aria-modal="true"
@@ -1649,210 +1647,125 @@ function posVentaData() {
              x-transition:enter="ease-out duration-200"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
-             class="bg-white dark:bg-slate-900 rounded-2xl text-left shadow-2xl transform transition-all w-full max-w-4xl border border-slate-300 dark:border-slate-800 my-auto flex flex-col max-h-[92vh]">
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left shadow-2xl transform transition-all w-full max-w-6xl border border-slate-300 dark:border-slate-800 my-auto flex flex-col max-h-[92vh]">
             
             <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
                 <div class="flex items-center space-x-2">
                     <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-xs"></span>
-                    <h3 class="text-sm font-black uppercase text-slate-800 dark:text-slate-200">
+                    <h3 class="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
                         Cobro & Emisión de Comprobante
                     </h3>
                 </div>
-                <button type="button" @click="modalCobro = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                <button type="button" @click="modalCobro = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 cursor-pointer">&times;</button>
             </div>
 
-            <!-- Modal Body: 2 Columnas -->
-            <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto flex-1">
+            <!-- Modal Body: 3 Columnas en Desktop (Todo visible sin scroll) -->
+            <div class="p-5 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-y-auto flex-1 min-h-0">
                 
-                <!-- Columna Izquierda: Opciones de Cobro & Recetas Rx (7 cols) -->
-                <div class="lg:col-span-7 space-y-4">
+                <!-- ======================================================= -->
+                <!-- COLUMNA 1 (Izquierda): Total & Requisito Receta Médica  -->
+                <!-- ======================================================= -->
+                <div class="lg:col-span-4 flex flex-col space-y-3 min-h-0">
                     
-                    <!-- Total Gigante en Modal -->
-                    <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-center">
-                        <span class="text-xs font-semibold text-slate-500 block">Total a Cobrar</span>
+                    <!-- Total Gigante -->
+                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-center shrink-0">
+                        <span class="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Total a Cobrar</span>
                         <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                             $<span x-text="calcularTotalGeneral()"></span>
                         </span>
-                        <div class="text-[11px] text-slate-500 mt-1" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
-                            (Subtotal: $<span x-text="calcularSubtotalGeneral()"></span> &bull; Descuento: -$<span x-text="calcularDescuentoGeneralMonto()"></span>)
+                        <div class="text-[10px] text-slate-500 mt-0.5" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
+                            (Subtotal: $<span x-text="calcularSubtotalGeneral()"></span> &bull; Desc: -$<span x-text="calcularDescuentoGeneralMonto()"></span>)
                         </div>
                     </div>
 
-                    <!-- SECCIÓN 1: REGLA DE BLOQUEO POR MEDICAMENTOS CON RECETA (Rx) -->
-                    <div x-show="tieneProductosRx()" class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 space-y-3">
-                        <div class="flex items-center justify-between border-b border-amber-200 dark:border-amber-800/60 pb-2">
-                            <div class="flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider">Requisito Rx</span>
-                                <h4 class="text-xs font-black text-amber-950 dark:text-amber-200">Dispensación Asistida por Receta Médica</h4>
+                    <!-- REGLA DE RECETA (Rx) SI APLICA -->
+                    <div x-show="tieneProductosRx()" class="p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 space-y-2 flex-1 min-h-0 flex flex-col">
+                        <div class="flex items-center justify-between border-b border-amber-200 dark:border-amber-800/60 pb-1.5 shrink-0">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="px-1.5 py-0.2 rounded bg-amber-500 text-white text-[9px] font-black uppercase">Requisito Rx</span>
+                                <h4 class="text-xs font-black text-amber-950 dark:text-amber-200">Dispensación Asistida</h4>
                             </div>
                             <span class="text-[10px] text-amber-700 dark:text-amber-400 font-bold">Obligatorio</span>
                         </div>
 
-                        <!-- Selector de las 3 Opciones de Receta -->
-                        <div class="grid grid-cols-3 gap-1.5 p-1 bg-amber-100/70 dark:bg-amber-900/40 rounded-xl">
+                        <!-- Selector de Opciones: Vincular / Crear / Omitir -->
+                        <div class="grid grid-cols-3 gap-1 p-0.5 bg-amber-100/80 dark:bg-amber-900/50 rounded-lg shrink-0">
                             <button type="button" 
                                     @click="recetaTab = 'vincular'; formData.receta_modalidad = 'vinculada';"
                                     :class="recetaTab === 'vincular' ? 'bg-white dark:bg-slate-800 text-amber-900 dark:text-white font-black shadow-xs' : 'text-amber-800 dark:text-amber-300 font-semibold'"
-                                    class="py-2 px-1 text-[11px] rounded-lg transition flex items-center justify-center space-x-1 cursor-pointer">
+                                    class="py-1 px-1 text-[10px] rounded transition flex items-center justify-center space-x-1 cursor-pointer">
                                 <span>🔗</span> <span>Vincular</span>
                             </button>
                             <button type="button" 
                                     @click="recetaTab = 'crear'; formData.receta_modalidad = 'creada';"
                                     :class="recetaTab === 'crear' ? 'bg-white dark:bg-slate-800 text-amber-900 dark:text-white font-black shadow-xs' : 'text-amber-800 dark:text-amber-300 font-semibold'"
-                                    class="py-2 px-1 text-[11px] rounded-lg transition flex items-center justify-center space-x-1 cursor-pointer">
+                                    class="py-1 px-1 text-[10px] rounded transition flex items-center justify-center space-x-1 cursor-pointer">
                                 <span>➕</span> <span>Crear</span>
                             </button>
                             <button type="button" 
                                     @click="recetaTab = 'omitir'; formData.receta_modalidad = 'omitida';"
                                     :class="recetaTab === 'omitir' ? 'bg-white dark:bg-slate-800 text-amber-900 dark:text-white font-black shadow-xs' : 'text-amber-800 dark:text-amber-300 font-semibold'"
-                                    class="py-2 px-1 text-[11px] rounded-lg transition flex items-center justify-center space-x-1 cursor-pointer">
+                                    class="py-1 px-1 text-[10px] rounded transition flex items-center justify-center space-x-1 cursor-pointer">
                                 <span>🚫</span> <span>Omitir</span>
                             </button>
                         </div>
 
-                        <!-- Opción A: Vincular Receta Existente (Combobox Inteligente + Recetas Recientes + Vista Previa) -->
-                        <div x-show="recetaTab === 'vincular'" class="space-y-3 animate-fadeIn">
-                            
-                            <!-- 1. VISTA PREVIA RÁPIDA DE LA RECETA SELECCIONADA -->
+                        <!-- Opción A: Vincular Receta -->
+                        <div x-show="recetaTab === 'vincular'" class="space-y-2 flex-1 min-h-0 flex flex-col">
+                            <!-- Si ya está seleccionada -->
                             <template x-if="recetaSeleccionadaObj">
-                                <div class="p-3.5 bg-white dark:bg-slate-800 rounded-xl border-2 border-emerald-400 dark:border-emerald-600 shadow-sm space-y-2.5">
-                                    <div class="flex items-center justify-between border-b border-emerald-100 dark:border-slate-700 pb-2">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            <span class="text-xs font-black text-emerald-900 dark:text-emerald-300">
-                                                Receta Vinculada: #<span x-text="recetaSeleccionadaObj.numero_receta"></span>
+                                <div class="p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-emerald-400 dark:border-emerald-600 shadow-2xs space-y-1.5 text-xs">
+                                    <div class="flex items-center justify-between border-b border-emerald-100 dark:border-slate-700 pb-1">
+                                        <div class="flex items-center space-x-1">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            <span class="text-xs font-black text-emerald-800 dark:text-emerald-300">
+                                                #<span x-text="recetaSeleccionadaObj.numero_receta"></span>
                                             </span>
-                                            <span class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase"
-                                                  :class="recetaSeleccionadaObj.tipo_receta === 'retenida' ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'"
-                                                  x-text="recetaSeleccionadaObj.tipo_receta || 'Simple'"></span>
                                         </div>
-                                        <button type="button" 
-                                                @click="deseleccionarReceta()" 
-                                                class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[10px] font-bold transition flex items-center space-x-1 cursor-pointer">
-                                            <span>✕ Cambiar Receta</span>
-                                        </button>
+                                        <button type="button" @click="deseleccionarReceta()" class="text-[10px] text-rose-600 hover:underline font-bold cursor-pointer">✕ Cambiar</button>
                                     </div>
-
-                                    <!-- Grid de Datos Compactos de la Receta -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] bg-emerald-50/40 dark:bg-slate-900/60 p-2.5 rounded-lg border border-emerald-100 dark:border-slate-750">
-                                        <div>
-                                            <span class="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Paciente:</span>
-                                            <strong class="text-slate-800 dark:text-slate-200" x-text="recetaSeleccionadaObj.paciente_nombre"></strong>
-                                            <span class="text-slate-500 text-[10px]" x-text="recetaSeleccionadaObj.paciente_documento ? ' (Doc: ' + recetaSeleccionadaObj.paciente_documento + ')' : ''"></span>
-                                        </div>
-                                        <div>
-                                            <span class="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Médico Prescriptor:</span>
-                                            <strong class="text-slate-800 dark:text-slate-200" x-text="recetaSeleccionadaObj.medico_nombre"></strong>
-                                            <span class="text-slate-500 text-[10px]" x-text="' (Col/CMP: ' + (recetaSeleccionadaObj.medico_colegiatura || 'S/N') + ')'"></span>
-                                        </div>
-                                        <div>
-                                            <span class="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Fecha de Emisión:</span>
-                                            <span class="text-slate-700 dark:text-slate-300 font-medium" x-text="recetaSeleccionadaObj.fecha_emision ? new Date(recetaSeleccionadaObj.fecha_emision).toLocaleDateString('es-ES') : 'No especificada'"></span>
-                                        </div>
-                                        <div>
-                                            <span class="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Vigencia / Vencimiento:</span>
-                                            <span class="font-medium" :class="recetaSeleccionadaObj.fecha_vencimiento ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500'" x-text="recetaSeleccionadaObj.fecha_vencimiento ? new Date(recetaSeleccionadaObj.fecha_vencimiento).toLocaleDateString('es-ES') : 'Vigente'"></span>
-                                        </div>
+                                    <div class="text-[11px] space-y-0.5 text-slate-700 dark:text-slate-300">
+                                        <div>Pac: <strong x-text="recetaSeleccionadaObj.paciente_nombre"></strong></div>
+                                        <div class="text-[10px] text-slate-500">Dr. <span x-text="recetaSeleccionadaObj.medico_nombre"></span> (Col: <span x-text="recetaSeleccionadaObj.medico_colegiatura || 'S/N'"></span>)</div>
                                     </div>
-
-                                    <!-- Medicamentos Prescritos en esta Receta -->
-                                    <div x-show="recetaSeleccionadaObj.detalles && recetaSeleccionadaObj.detalles.length > 0" class="space-y-1">
-                                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">Fármacos Prescritos en Receta:</span>
-                                        <div class="space-y-1 max-h-24 overflow-y-auto">
-                                            <template x-for="det in recetaSeleccionadaObj.detalles" :key="det.id">
-                                                <div class="flex items-center justify-between px-2 py-1 bg-white dark:bg-slate-700/60 rounded border border-slate-200 dark:border-slate-600 text-[10px]">
-                                                    <div class="flex items-center space-x-1.5 truncate">
-                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate" x-text="det.producto?.nombre || ('Producto #' + det.producto_id)"></span>
-                                                        <span class="text-slate-500 truncate" x-text="det.posologia ? ' - ' + det.posologia : ''"></span>
-                                                    </div>
-                                                    <span class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold shrink-0" x-text="'Cant: ' + det.cantidad_recetada + (det.cantidad_dispensada > 0 ? ' (Disp: ' + det.cantidad_dispensada + ')' : '')"></span>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-
-                                    <div class="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold flex items-center space-x-1 pt-1">
-                                        <span>✓</span>
-                                        <span>Esta receta será vinculada automáticamente a la venta y sus ítems serán descontados.</span>
-                                    </div>
+                                    <div class="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold">✓ Receta vinculada correctamente</div>
                                 </div>
                             </template>
 
-                            <!-- 2. COMBOBOX INTELIGENTE CON CARGA AUTOMÁTICA DE RECETAS RECIENTES -->
+                            <!-- Si no está seleccionada -->
                             <template x-if="!recetaSeleccionadaObj">
-                                <div class="space-y-2">
-                                    <!-- Input de Búsqueda / Autocomplete -->
-                                    <div class="relative">
+                                <div class="space-y-1.5 flex-1 min-h-0 flex flex-col">
+                                    <!-- Buscador -->
+                                    <div class="relative shrink-0">
                                         <input type="text" 
                                                x-model="recetaBusqueda" 
                                                @input.debounce.250ms="buscarRecetasAsync()"
-                                               @focus="recetaDropdownAbierto = true"
-                                               placeholder="Buscar por Paciente, Médico o N° Folio de Receta..." 
-                                               class="w-full pl-8 pr-20 py-2 bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-700 focus:border-emerald-500 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 font-medium">
-                                        <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-amber-600">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                        </div>
-                                        <div class="absolute inset-y-0 right-0 pr-2 flex items-center space-x-1">
-                                            <span x-show="buscandoRecetas" x-cloak class="text-[9px] text-amber-600 font-bold animate-pulse">Buscando...</span>
-                                            <button x-show="recetaBusqueda" 
-                                                    type="button" 
-                                                    @click="recetaBusqueda = ''; buscarRecetasAsync();" 
-                                                    class="text-slate-400 hover:text-slate-600 text-xs px-1 font-bold cursor-pointer">&times;</button>
+                                               placeholder="Buscar paciente o N° folio..." 
+                                               class="w-full pl-7 pr-6 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400">
+                                        <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-amber-600">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                         </div>
                                     </div>
 
-                                    <!-- Lista de Recetas: Recientes / Resultados de Búsqueda -->
-                                    <div class="border border-amber-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
-                                        <!-- Header de la Lista -->
-                                        <div class="px-3 py-1.5 bg-amber-100/60 dark:bg-slate-750 border-b border-amber-200 dark:border-slate-700 flex items-center justify-between text-[10px] font-bold text-slate-700 dark:text-slate-300">
-                                            <span x-show="!recetaBusqueda" class="flex items-center space-x-1 text-amber-900 dark:text-amber-200">
-                                                <span>🕒</span> <span>Recetas Recientes (Vincular con 1 Clic):</span>
-                                            </span>
-                                            <span x-show="recetaBusqueda" class="flex items-center space-x-1 text-slate-800 dark:text-slate-200">
-                                                <span>🔍</span> <span>Resultados de Búsqueda:</span>
-                                            </span>
-                                            <span class="text-slate-500 font-mono" x-text="recetasEncontradas.length + ' disponible(s)'"></span>
+                                    <!-- Lista con scroll interno -->
+                                    <div class="border border-amber-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden flex-1 min-h-0 flex flex-col">
+                                        <div class="px-2 py-1 bg-amber-100/60 dark:bg-slate-750 text-[10px] font-bold text-slate-700 dark:text-slate-300 flex justify-between shrink-0">
+                                            <span>Recetas Disponibles:</span>
+                                            <span class="text-slate-500 font-mono" x-text="recetasEncontradas.length"></span>
                                         </div>
-
-                                        <!-- Contenedor con Scroll de Recetas -->
-                                        <div class="max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+                                        <div class="overflow-y-auto max-h-36 divide-y divide-slate-100 dark:divide-slate-700 text-xs custom-scrollbar">
                                             <template x-for="rec in recetasEncontradas" :key="rec.id">
-                                                <div @click="seleccionarReceta(rec)" 
-                                                     class="p-2.5 hover:bg-emerald-50 dark:hover:bg-slate-700/80 cursor-pointer flex items-center justify-between gap-2 transition group">
+                                                <div @click="seleccionarReceta(rec)" class="p-1.5 hover:bg-emerald-50 dark:hover:bg-slate-700/80 cursor-pointer flex items-center justify-between gap-1 transition">
                                                     <div class="min-w-0 flex-1">
-                                                        <div class="flex items-center space-x-2">
-                                                            <strong class="text-xs text-slate-900 dark:text-white font-black group-hover:text-emerald-700 dark:group-hover:text-emerald-300" x-text="'#' + rec.numero_receta"></strong>
-                                                            <span class="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase"
-                                                                  :class="rec.tipo_receta === 'retenida' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'"
-                                                                  x-text="rec.tipo_receta || 'Simple'"></span>
-                                                            <span class="text-[10px] text-slate-400" x-text="rec.fecha_emision ? new Date(rec.fecha_emision).toLocaleDateString('es-ES') : ''"></span>
-                                                        </div>
-                                                        <div class="text-[11px] text-slate-700 dark:text-slate-300 truncate mt-0.5">
-                                                            <span>Pac: <strong x-text="rec.paciente_nombre"></strong></span>
-                                                            <span class="text-slate-500" x-text="' &bull; Dr. ' + rec.medico_nombre"></span>
-                                                        </div>
-                                                        <!-- Fármacos incluidos en la receta -->
-                                                        <div x-show="rec.detalles && rec.detalles.length > 0" class="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5 flex items-center space-x-1">
-                                                            <span class="text-emerald-600 dark:text-emerald-400">💊</span>
-                                                            <span x-text="rec.detalles.map(d => (d.producto ? d.producto.nombre : 'Fármaco') + ' (' + d.cantidad_recetada + ')').join(', ')"></span>
-                                                        </div>
+                                                        <div class="font-bold text-[10px] text-slate-800 dark:text-white truncate" x-text="'#' + rec.numero_receta + ' • ' + rec.paciente_nombre"></div>
+                                                        <div class="text-[9px] text-slate-500 truncate" x-text="'Dr. ' + rec.medico_nombre"></div>
                                                     </div>
-
-                                                    <button type="button" 
-                                                            class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-2xs transition shrink-0 group-hover:scale-105">
-                                                        + Vincular
-                                                    </button>
+                                                    <span class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold shrink-0 shadow-2xs">+ Vincular</span>
                                                 </div>
                                             </template>
-
-                                            <!-- Estado Vacío -->
-                                            <div x-show="recetasEncontradas.length === 0 && !buscandoRecetas" class="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                                                <span>No se encontraron recetas médicas vigentes con ese criterio.</span>
-                                                <button type="button" @click="recetaTab = 'crear'; formData.receta_modalidad = 'creada';" class="block mx-auto mt-1 text-emerald-600 font-bold hover:underline">
-                                                    + Crear una nueva receta rápida
-                                                </button>
+                                            <div x-show="recetasEncontradas.length === 0" class="p-2.5 text-center text-[10px] text-slate-400">
+                                                Sin recetas encontradas.
                                             </div>
                                         </div>
                                     </div>
@@ -1860,107 +1773,93 @@ function posVentaData() {
                             </template>
                         </div>
 
-                        <!-- Opción B: Crear Nueva Receta (Quick-Create) -->
-                        <div x-show="recetaTab === 'crear'" class="space-y-2.5 animate-fadeIn">
-                            <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-slate-800/80 border border-emerald-300 dark:border-emerald-700/60 text-[11px] space-y-1">
-                                <div class="flex items-center space-x-1.5 font-bold text-emerald-900 dark:text-emerald-300">
-                                    <span>💊</span>
-                                    <span>Prescripción sincronizada con el carrito:</span>
-                                </div>
-                                <div class="text-[10px] text-slate-600 dark:text-slate-300">
-                                    La receta cubrirá exactamente las unidades base solicitadas: <strong class="text-emerald-700 dark:text-emerald-400 font-mono" x-text="getProductosRxSummary()"></strong>.
-                                </div>
+                        <!-- Opción B: Crear Nueva Receta -->
+                        <div x-show="recetaTab === 'crear'" class="space-y-1.5 text-xs">
+                            <div>
+                                <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Médico <span class="text-rose-500">*</span></label>
+                                <input type="text" x-model="recetaNueva.medico_nombre" placeholder="Dr. Nombre Completo" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs font-medium">
                             </div>
-
-                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Médico Prescriptor <span class="text-rose-500">*</span></label>
-                                    <input type="text" 
-                                           x-model="recetaNueva.medico_nombre" 
-                                           placeholder="Dr. Nombre Completo" 
-                                           class="w-full px-2.5 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Cédula / CMP <span class="text-rose-500">*</span></label>
-                                    <input type="text" 
-                                           x-model="recetaNueva.medico_colegiatura" 
-                                           placeholder="CMP-12345 o Cédula (Ej: 0411000x)" 
-                                           class="w-full px-2.5 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Nombre del Paciente</label>
-                                    <input type="text" 
-                                           x-model="recetaNueva.paciente_nombre" 
-                                           placeholder="Nombre del Paciente" 
-                                           class="w-full px-2.5 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">N° Folio / Receta (Opcional)</label>
-                                    <input type="text" 
-                                           x-model="recetaNueva.numero_receta" 
-                                           placeholder="Autogenerado si está vacío" 
-                                           class="w-full px-2.5 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white">
-                                </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Cédula / CMP <span class="text-rose-500">*</span></label>
+                                <input type="text" x-model="recetaNueva.medico_colegiatura" placeholder="CMP-12345 o Cédula" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Paciente</label>
+                                <input type="text" x-model="recetaNueva.paciente_nombre" placeholder="Nombre del Paciente" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs">
                             </div>
                         </div>
 
-                        <!-- Opción C: Omitir con Declaración y Justificación -->
-                        <div x-show="recetaTab === 'omitir'" class="space-y-2 animate-fadeIn bg-amber-100/50 dark:bg-amber-950/60 p-3 rounded-xl border border-amber-300 dark:border-amber-800">
-                            <label class="flex items-start space-x-2 text-xs text-amber-900 dark:text-amber-200 cursor-pointer">
-                                <input type="checkbox" 
-                                       x-model="recetaOmisionConfirmada" 
-                                       class="mt-0.5 rounded border-amber-400 text-amber-600 focus:ring-amber-500">
-                                <span class="font-bold">Declaro bajo mi responsabilidad que autorizo el despacho sin receta física adjunta.</span>
+                        <!-- Opción C: Omitir Receta -->
+                        <div x-show="recetaTab === 'omitir'" class="space-y-1.5 text-xs bg-amber-100/50 dark:bg-amber-950/60 p-2 rounded-xl border border-amber-300">
+                            <label class="flex items-start space-x-1.5 text-[10px] text-amber-900 dark:text-amber-200 cursor-pointer">
+                                <input type="checkbox" x-model="recetaOmisionConfirmada" class="mt-0.5 rounded border-amber-400 text-amber-600">
+                                <span class="font-bold">Autorizo despacho sin receta física.</span>
                             </label>
-
                             <div>
-                                <label class="block text-[10px] font-bold text-amber-900 dark:text-amber-300 mb-0.5">Motivo / Justificación para Auditoría <span class="text-rose-500">*</span></label>
-                                <input type="text" 
-                                       x-model="formData.receta_omision_motivo" 
-                                       placeholder="Ej: Continuación de tratamiento crónico o emergencia validada en mostrador" 
-                                       class="w-full px-2.5 py-1 bg-white dark:bg-slate-800 border border-amber-400 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white">
+                                <label class="block text-[9px] font-bold text-amber-900 dark:text-amber-300 mb-0.5">Motivo <span class="text-rose-500">*</span></label>
+                                <input type="text" x-model="formData.receta_omision_motivo" placeholder="Ej: Tratamiento crónico validado" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-400 rounded-lg text-xs">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Método de Pago -->
+                    <!-- Si NO hay productos Rx -->
+                    <div x-show="!tieneProductosRx()" class="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-slate-800/50 border border-emerald-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+                        <div class="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                            <span>✓</span>
+                            <span>Venta Libre (Sin Requisito Rx)</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400">
+                            No se detectaron medicamentos con restricción. Puede registrar el cobro de inmediato.
+                        </p>
+                        <div class="text-[11px] text-slate-700 dark:text-slate-300 pt-1">
+                            Cliente: <strong x-text="getClienteNombre()"></strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================= -->
+                <!-- COLUMNA 2 (Centro): Método de Pago & Monto Recibido     -->
+                <!-- ======================================================= -->
+                <div class="lg:col-span-4 flex flex-col space-y-3 min-h-0">
+                    
+                    <!-- Selector Método de Pago -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                             Método de Pago
                         </label>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div class="grid grid-cols-2 gap-1.5">
                             <button type="button" 
                                     @click="formData.metodo_pago = 'efectivo'"
-                                    :class="formData.metodo_pago === 'efectivo' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    :class="formData.metodo_pago === 'efectivo' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
                                     class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
                                 <span>💵</span> <span>Efectivo</span>
                             </button>
                             <button type="button" 
                                     @click="formData.metodo_pago = 'tarjeta'"
-                                    :class="formData.metodo_pago === 'tarjeta' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    :class="formData.metodo_pago === 'tarjeta' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
                                     class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
                                 <span>💳</span> <span>Tarjeta</span>
                             </button>
                             <button type="button" 
                                     @click="formData.metodo_pago = 'transferencia'"
-                                    :class="formData.metodo_pago === 'transferencia' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    :class="formData.metodo_pago === 'transferencia' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
                                     class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
                                 <span>📱</span> <span>Transferencia</span>
                             </button>
                             <button type="button" 
                                     @click="formData.metodo_pago = 'mixto'"
-                                    :class="formData.metodo_pago === 'mixto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
+                                    :class="formData.metodo_pago === 'mixto' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
                                     class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
                                 <span>🔄</span> <span>Mixto</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Calculadora de Efectivo Estricta con Cambio Matemático -->
-                    <div x-show="formData.metodo_pago === 'efectivo'" class="space-y-3 p-4 rounded-xl border-2 border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-slate-800/40 animate-fadeIn">
-                        <div class="grid grid-cols-2 gap-3">
+                    <!-- Calculadora de Efectivo Estricta -->
+                    <div x-show="formData.metodo_pago === 'efectivo'" class="space-y-2.5 p-3.5 rounded-xl border-2 border-emerald-400 dark:border-emerald-700 bg-emerald-50/50 dark:bg-slate-800/60 animate-fadeIn">
+                        <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-xs font-black text-slate-800 dark:text-slate-200 mb-1">
+                                <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-0.5">
                                     Monto Recibido ($) <span class="text-rose-500">*</span>
                                 </label>
                                 <input type="number" 
@@ -1970,61 +1869,65 @@ function posVentaData() {
                                        x-model="formData.monto_recibido" 
                                        @focus="$event.target.select()"
                                        placeholder="0.00"
-                                       class="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-emerald-500 rounded-lg text-lg font-black text-slate-900 dark:text-white text-right focus:ring-2 focus:ring-emerald-500">
+                                       class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border-2 border-emerald-500 rounded-lg text-lg font-black text-slate-900 dark:text-white text-right focus:ring-2 focus:ring-emerald-500">
                             </div>
                             <div>
-                                <label class="block text-xs font-black text-slate-800 dark:text-slate-200 mb-1">
+                                <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-0.5">
                                     Cambio / Vuelto ($)
                                 </label>
-                                <div class="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-emerald-500/80 rounded-lg text-lg font-black text-emerald-600 dark:text-emerald-400 text-right" 
+                                <div class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border-2 border-emerald-500/80 rounded-lg text-lg font-black text-emerald-600 dark:text-emerald-400 text-right" 
                                      x-text="'$' + calcularVuelto()"></div>
                             </div>
                         </div>
 
-                        <!-- Alerta Visual si el monto es insuficiente -->
+                        <!-- Alerta si falta dinero -->
                         <div x-show="formData.monto_recibido !== '' && parseFloat(formData.monto_recibido) < parseFloat(calcularTotalGeneral())" 
-                             class="p-2.5 rounded-lg bg-rose-100 dark:bg-rose-950/60 border border-rose-300 text-rose-800 dark:text-rose-200 text-xs font-bold flex items-center space-x-1.5 animate-pulse">
-                            <span>⚠️ Dinero insuficiente: Faltan $<span x-text="calcularFaltanteEfectivo()"></span> para cubrir el total.</span>
+                             class="p-2 rounded-lg bg-rose-100 dark:bg-rose-950/60 border border-rose-300 text-rose-800 dark:text-rose-200 text-[11px] font-bold flex items-center space-x-1 animate-pulse">
+                            <span>⚠️ Dinero insuficiente: Faltan $<span x-text="calcularFaltanteEfectivo()"></span></span>
                         </div>
 
-                        <!-- Botones de Denominaciones Rápidas -->
-                        <div class="flex items-center space-x-1.5 text-xs flex-wrap gap-y-1">
-                            <span class="text-[10px] text-slate-500 font-bold">Rápido:</span>
-                            <button type="button" @click="setMontoRecibido(calcularTotalGeneral())" class="px-2.5 py-1 rounded bg-white dark:bg-slate-700 border text-xs font-bold hover:bg-slate-100 transition cursor-pointer">Exacto</button>
-                            <button type="button" @click="setMontoRecibido(5)" class="px-2 py-1 rounded bg-white dark:bg-slate-700 border text-xs font-bold hover:bg-slate-100 transition cursor-pointer">$5</button>
-                            <button type="button" @click="setMontoRecibido(10)" class="px-2 py-1 rounded bg-white dark:bg-slate-700 border text-xs font-bold hover:bg-slate-100 transition cursor-pointer">$10</button>
-                            <button type="button" @click="setMontoRecibido(20)" class="px-2 py-1 rounded bg-white dark:bg-slate-700 border text-xs font-bold hover:bg-slate-100 transition cursor-pointer">$20</button>
-                            <button type="button" @click="setMontoRecibido(50)" class="px-2 py-1 rounded bg-white dark:bg-slate-700 border text-xs font-bold hover:bg-slate-100 transition cursor-pointer">$50</button>
-                            <button type="button" @click="setMontoRecibido(100)" class="px-2 py-1 rounded bg-white dark:bg-slate-700 border text-xs font-bold hover:bg-slate-100 transition cursor-pointer">$100</button>
+                        <!-- Denominaciones Rápidas -->
+                        <div class="space-y-1 pt-1">
+                            <span class="text-[10px] text-slate-500 font-bold block">Acceso Rápido:</span>
+                            <div class="grid grid-cols-3 gap-1">
+                                <button type="button" @click="setMontoRecibido(calcularTotalGeneral())" class="py-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[11px] font-black hover:bg-emerald-200 transition cursor-pointer">Exacto</button>
+                                <button type="button" @click="setMontoRecibido(5)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$5</button>
+                                <button type="button" @click="setMontoRecibido(10)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$10</button>
+                                <button type="button" @click="setMontoRecibido(20)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$20</button>
+                                <button type="button" @click="setMontoRecibido(50)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$50</button>
+                                <button type="button" @click="setMontoRecibido(100)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$100</button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Referencia de Pago (Para Tarjeta / Transferencia) -->
                     <div x-show="formData.metodo_pago !== 'efectivo'">
                         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            N° de Operación / Referencia de Pago
+                            N° de Operación / Referencia POS
                         </label>
                         <input type="text" 
                                x-model="formData.referencia_pago"
-                               placeholder="Ej: OP-98342 o Código de Aprobación POS..."
-                               class="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white">
+                               placeholder="Ej: OP-98342 o Código de Aprobación..."
+                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-medium">
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Vista Previa del Ticket en Vivo (5 cols) -->
-                <div class="lg:col-span-5 bg-slate-100 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
-                    <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase pb-1 border-b border-slate-200 dark:border-slate-800">
+                <!-- ======================================================= -->
+                <!-- COLUMNA 3 (Derecha): Vista Previa de Ticket Térmico     -->
+                <!-- ======================================================= -->
+                <div class="lg:col-span-4 bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col space-y-2 min-h-0">
+                    <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase pb-1 border-b border-slate-200 dark:border-slate-800 shrink-0">
                         <span>🧾 Vista Previa de Ticket</span>
                         <span class="text-[9px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 px-1.5 py-0.2 rounded font-mono">80mm ESC/POS</span>
                     </div>
 
                     <!-- Ticket Papel Térmico Simulado -->
-                    <div class="bg-white text-slate-900 font-mono text-[10px] p-3.5 rounded-lg shadow-sm border border-slate-300 space-y-2 max-h-[380px] overflow-y-auto leading-tight">
+                    <div class="bg-white text-slate-900 font-mono text-[9px] p-3 rounded-lg shadow-xs border border-slate-300 space-y-1.5 flex-1 max-h-[380px] overflow-y-auto leading-tight custom-scrollbar">
                         <div class="text-center">
                             <div class="font-extrabold text-xs uppercase">{{ config('app.name', 'FarmaBien') }}</div>
                             <div>RUC: {{ env('EMPRESA_RUC', '20123456789') }}</div>
-                            <div class="text-[9px] text-slate-600">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123, Managua') }}</div>
-                            <div class="text-[9px] text-slate-600">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
+                            <div class="text-[8px] text-slate-600">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123, Managua') }}</div>
+                            <div class="text-[8px] text-slate-600">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
                         </div>
 
                         <div class="border-t border-dashed border-slate-400 my-1"></div>
@@ -2036,12 +1939,12 @@ function posVentaData() {
                             <div>DOC: <span x-text="getClienteDocumento()"></span></div>
                             <div>PAGO: <span class="uppercase font-bold" x-text="formData.metodo_pago"></span></div>
                             <template x-if="recetaTab === 'vincular' && recetaSeleccionadaObj">
-                                <div class="text-amber-800 font-bold text-[9px] pt-0.5">
+                                <div class="text-amber-800 font-bold text-[8px] pt-0.5">
                                     RECETA: #<span x-text="recetaSeleccionadaObj.numero_receta"></span> (Dr. <span x-text="recetaSeleccionadaObj.medico_nombre"></span>)
                                 </div>
                             </template>
                             <template x-if="recetaTab === 'crear' && recetaNueva.medico_nombre">
-                                <div class="text-amber-800 font-bold text-[9px] pt-0.5">
+                                <div class="text-amber-800 font-bold text-[8px] pt-0.5">
                                     RECETA NUEVA: Dr. <span x-text="recetaNueva.medico_nombre"></span> (CMP: <span x-text="recetaNueva.medico_colegiatura"></span>)
                                 </div>
                             </template>
@@ -2054,7 +1957,7 @@ function posVentaData() {
 
                         <div class="border-t border-dashed border-slate-400 my-1"></div>
 
-                        <table class="w-full text-[9px] text-left">
+                        <table class="w-full text-[8px] text-left">
                             <thead>
                                 <tr class="border-b border-slate-300 font-bold">
                                     <th>CANT/ITEM</th>
@@ -2065,12 +1968,12 @@ function posVentaData() {
                             <tbody>
                                 <template x-for="item in items" :key="item.uid">
                                     <tr class="border-b border-slate-100">
-                                        <td class="py-1">
+                                        <td class="py-0.5">
                                             <div class="font-bold" x-text="item.nombre"></div>
-                                            <div class="text-[8px] text-slate-500" x-text="(item.presentacion_nombre || 'Unidad') + ' x' + item.cantidad"></div>
+                                            <div class="text-[7px] text-slate-500" x-text="(item.presentacion_nombre || 'Unidad') + ' x' + item.cantidad"></div>
                                         </td>
-                                        <td class="py-1 text-right" x-text="'$' + parseFloat(item.precio_unitario).toFixed(2)"></td>
-                                        <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
+                                        <td class="py-0.5 text-right" x-text="'$' + parseFloat(item.precio_unitario).toFixed(2)"></td>
+                                        <td class="py-0.5 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -2087,15 +1990,15 @@ function posVentaData() {
                                 <span>DESCUENTO:</span>
                                 <span class="font-bold" x-text="'-$' + calcularDescuentoGeneralMonto()"></span>
                             </div>
-                            <div class="flex justify-between font-extrabold text-xs border-t border-slate-300 pt-1">
+                            <div class="flex justify-between font-extrabold text-xs border-t border-slate-300 pt-0.5">
                                 <span>TOTAL:</span>
                                 <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
                             </div>
-                            <div class="flex justify-between text-[9px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
+                            <div class="flex justify-between text-[8px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
                                 <span>RECIBIDO:</span>
                                 <span x-text="'$' + parseFloat(formData.monto_recibido).toFixed(2)"></span>
                             </div>
-                            <div class="flex justify-between text-[9px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
+                            <div class="flex justify-between text-[8px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
                                 <span>CAMBIO:</span>
                                 <span class="font-bold text-emerald-700" x-text="'$' + calcularVuelto()"></span>
                             </div>
@@ -2110,7 +2013,7 @@ function posVentaData() {
             </div><!-- /.grid (modal body) -->
 
             <!-- Modal Footer -->
-            <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0 rounded-b-2xl">
+            <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0 rounded-b-2xl">
                 <div>
                     <span x-show="!esValidoCobro()" class="text-xs text-rose-600 font-bold flex items-center space-x-1">
                         <span>⚠️</span>
