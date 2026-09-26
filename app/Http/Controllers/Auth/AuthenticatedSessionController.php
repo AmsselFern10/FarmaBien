@@ -8,6 +8,8 @@ use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -15,9 +17,19 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('auth.login');
+        // Calcular si la IP actual tiene un bloqueo activo
+        $throttleKey = 'login|' . $request->ip();
+        $lockoutUntil = null;
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 10)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            // Timestamp epoch en milisegundos para JavaScript
+            $lockoutUntil = (now()->timestamp + $seconds) * 1000;
+        }
+
+        return view('auth.login', compact('lockoutUntil'));
     }
 
     /**
@@ -25,7 +37,22 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        try {
+            $request->authenticate();
+        } catch (ValidationException $e) {
+            // Si es un error 429 (throttle), añadir el timestamp de desbloqueo
+            if ($e->status === 429) {
+                $throttleKey  = 'login|' . $request->ip();
+                $seconds      = RateLimiter::availableIn($throttleKey);
+                $lockoutUntil = (now()->timestamp + $seconds) * 1000;
+
+                throw $e->withMessages(array_merge(
+                    $e->errors(),
+                    ['lockout_until' => $lockoutUntil]
+                ));
+            }
+            throw $e;
+        }
 
         $request->session()->regenerate();
 

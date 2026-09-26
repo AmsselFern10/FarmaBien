@@ -17,7 +17,7 @@
                 </div>
             </div>
 
-            <!-- Value Propositions (Claras, legibles y sin tecnicismos innecesarios) -->
+            <!-- Value Propositions -->
             <div class="space-y-6 mt-10">
                 <div class="flex items-start space-x-3.5">
                     <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 text-lg shadow-inner">
@@ -78,16 +78,14 @@
         </div>
     </div>
 
-    <!-- Right Column (Form & Quick Roles) -->
-    <div x-data="{
-        email: '{{ old('email') }}',
-        password: '',
-        setRole(userEmail, roleName) {
-            this.email = userEmail;
-            this.password = 'password';
-        }
-    }" class="col-span-12 lg:col-span-6 p-8 sm:p-12 flex flex-col justify-between bg-slate-900 border-l border-slate-800">
-        
+    <!-- Right Column (Form) -->
+    {{-- lockoutUntil viene del controlador (ms epoch), o null si no hay bloqueo activo --}}
+    <div
+        x-data="loginForm({{ $lockoutUntil ?? 'null' }})"
+        x-init="init()"
+        class="col-span-12 lg:col-span-6 p-8 sm:p-12 flex flex-col justify-between bg-slate-900 border-l border-slate-800"
+    >
+
         <!-- Mobile Logo -->
         <div class="lg:hidden flex items-center space-x-3 mb-6">
             <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow">
@@ -108,8 +106,25 @@
             <!-- Session Status Alert -->
             <x-auth-session-status class="mb-4" :status="session('status')" />
 
+            <!-- Lockout Banner -->
+            <div
+                x-show="locked"
+                x-cloak
+                class="mb-4 p-4 rounded-xl bg-red-950/70 border border-red-700/60 flex items-start space-x-3"
+                role="alert"
+            >
+                <span class="text-red-400 text-xl mt-0.5">🔒</span>
+                <div>
+                    <p class="text-red-300 font-bold text-sm">Acceso bloqueado temporalmente</p>
+                    <p class="text-red-400/80 text-xs mt-0.5">
+                        Demasiados intentos fallidos. Puedes volver a intentarlo en
+                        <span class="font-mono font-bold text-red-300" x-text="countdown"></span>.
+                    </p>
+                </div>
+            </div>
+
             <!-- Login Form -->
-            <form method="POST" action="{{ route('login') }}" class="space-y-4">
+            <form method="POST" action="{{ route('login') }}" class="space-y-4" @submit.prevent="submitForm($event)">
                 @csrf
 
                 <!-- Email Input -->
@@ -121,14 +136,16 @@
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
                         </div>
-                        <input id="email" 
-                               name="email" 
-                               type="email" 
+                        <input id="email"
+                               name="email"
+                               type="email"
                                x-model="email"
-                               required 
-                               autofocus 
-                               autocomplete="username" 
+                               required
+                               autofocus
+                               autocomplete="username"
                                placeholder="correo@farmabien.com"
+                               :disabled="locked"
+                               :class="locked ? 'opacity-50 cursor-not-allowed' : ''"
                                class="block w-full pl-11 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition" />
                     </div>
                     <x-input-error :messages="$errors->get('email')" class="mt-1.5" />
@@ -150,13 +167,15 @@
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                         </div>
-                        <input id="password" 
-                               name="password" 
-                               type="password" 
+                        <input id="password"
+                               name="password"
+                               type="password"
                                x-model="password"
-                               required 
-                               autocomplete="current-password" 
+                               required
+                               autocomplete="current-password"
                                placeholder="••••••••"
+                               :disabled="locked"
+                               :class="locked ? 'opacity-50 cursor-not-allowed' : ''"
                                class="block w-full pl-11 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium transition" />
                     </div>
                     <x-input-error :messages="$errors->get('password')" class="mt-1.5" />
@@ -165,9 +184,10 @@
                 <!-- Remember Me -->
                 <div class="flex items-center justify-between pt-1">
                     <label for="remember_me" class="inline-flex items-center cursor-pointer">
-                        <input id="remember_me" 
-                               type="checkbox" 
+                        <input id="remember_me"
+                               type="checkbox"
                                name="remember"
+                               :disabled="locked"
                                class="rounded bg-slate-800 border-slate-700 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-slate-900">
                         <span class="ms-2 text-xs font-semibold text-slate-300">Mantener sesión activa</span>
                     </label>
@@ -175,10 +195,42 @@
 
                 <!-- Submit Button -->
                 <div class="pt-3">
-                    <button type="submit" 
-                            class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold rounded-xl shadow-lg shadow-emerald-600/30 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition flex items-center justify-center space-x-2 text-sm">
-                        <span>Ingresar al Sistema</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    <button
+                        type="submit"
+                        :disabled="locked || loading"
+                        :class="{
+                            'opacity-50 cursor-not-allowed bg-slate-700 shadow-none': locked,
+                            'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 shadow-lg shadow-emerald-600/30': !locked && !loading,
+                            'bg-emerald-700 cursor-wait': loading && !locked
+                        }"
+                        class="w-full py-3.5 px-4 text-white font-extrabold rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition flex items-center justify-center space-x-2 text-sm"
+                    >
+                        <!-- Estado bloqueado -->
+                        <template x-if="locked">
+                            <span class="flex items-center space-x-2">
+                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                                <span>Bloqueado — espera <span class="font-mono" x-text="countdown"></span></span>
+                            </span>
+                        </template>
+                        <!-- Estado cargando -->
+                        <template x-if="!locked && loading">
+                            <span class="flex items-center space-x-2">
+                                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span>Verificando...</span>
+                            </span>
+                        </template>
+                        <!-- Estado normal -->
+                        <template x-if="!locked && !loading">
+                            <span class="flex items-center space-x-2">
+                                <span>Ingresar al Sistema</span>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </span>
+                        </template>
                     </button>
                 </div>
             </form>
@@ -190,31 +242,114 @@
                 Selecciona un rol para probar (Demo):
             </p>
             <div class="grid grid-cols-2 gap-2.5">
-                <button type="button" 
-                        @click="setRole('admin@farmabien.com', 'Admin')"
-                        class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
+                <button type="button"
+                        @click="if(!locked){ email='admin@farmabien.com'; password='password'; }"
+                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
+                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
                     <span>👑 Administrador</span>
                     <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
                 </button>
-                <button type="button" 
-                        @click="setRole('farmaceutico@farmabien.com', 'Farmaceutico')"
-                        class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
+                <button type="button"
+                        @click="if(!locked){ email='farmaceutico@farmabien.com'; password='password'; }"
+                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
+                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
                     <span>💊 Farmacéutico</span>
                     <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
                 </button>
-                <button type="button" 
-                        @click="setRole('cajero@farmabien.com', 'Cajero')"
-                        class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
+                <button type="button"
+                        @click="if(!locked){ email='cajero@farmabien.com'; password='password'; }"
+                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
+                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
                     <span>🧾 Cajero / POS</span>
                     <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
                 </button>
-                <button type="button" 
-                        @click="setRole('inventario@farmabien.com', 'Inventario')"
-                        class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
+                <button type="button"
+                        @click="if(!locked){ email='inventario@farmabien.com'; password='password'; }"
+                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
+                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
                     <span>📦 Inventario</span>
                     <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
                 </button>
             </div>
         </div>
     </div>
+
+    <script>
+    /**
+     * Alpine JS component for the login form.
+     *
+     * Lockout logic:
+     *  - The server passes lockoutUntil (ms epoch) when the IP is already blocked.
+     *  - On a 429 response the form reads the lockout_until error from the session
+     *    and saves it to localStorage['fb_lockout'] so the state persists across reloads
+     *    on THIS device only. Other devices are unaffected.
+     *  - Every second the countdown is recalculated. When it reaches 0 the button re-enables.
+     */
+    function loginForm(serverLockoutUntil) {
+        return {
+            email:     '{{ old('email') }}',
+            password:  '',
+            locked:    false,
+            loading:   false,
+            countdown: '',
+            _timer:    null,
+
+            init() {
+                const LS_KEY = 'fb_lockout';
+
+                // 1. Server says this IP is blocked (on page load / redirect)
+                if (serverLockoutUntil && serverLockoutUntil > Date.now()) {
+                    localStorage.setItem(LS_KEY, serverLockoutUntil);
+                }
+
+                // 2. Check localStorage (persists across F5 on same device)
+                const stored = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+                if (stored > Date.now()) {
+                    this._startLockout(stored);
+                } else {
+                    localStorage.removeItem(LS_KEY);
+                }
+
+                // 3. If the server returned a lockout_until validation error (422→session),
+                //    it will be embedded in the page as a PHP var below.
+                @if ($errors->has('lockout_until'))
+                const phpLockout = {{ $errors->first('lockout_until') }};
+                if (phpLockout && phpLockout > Date.now()) {
+                    localStorage.setItem(LS_KEY, phpLockout);
+                    this._startLockout(phpLockout);
+                }
+                @endif
+            },
+
+            _startLockout(until) {
+                this.locked = true;
+                this._tick(until);
+                this._timer = setInterval(() => {
+                    if (! this._tick(until)) {
+                        clearInterval(this._timer);
+                        this.locked = false;
+                        this.countdown = '';
+                        localStorage.removeItem('fb_lockout');
+                    }
+                }, 1000);
+            },
+
+            _tick(until) {
+                const remaining = Math.ceil((until - Date.now()) / 1000);
+                if (remaining <= 0) return false;
+                const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+                const s = String(remaining % 60).padStart(2, '0');
+                this.countdown = `${m}:${s}`;
+                return true;
+            },
+
+            submitForm(event) {
+                if (this.locked) return;
+                this.loading = true;
+                // Submit the native form
+                event.target.submit();
+            },
+        };
+    }
+    </script>
 </x-guest-layout>
