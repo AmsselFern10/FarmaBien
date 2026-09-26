@@ -55,68 +55,68 @@
     </div>
 
     <!-- Quick Stats Cards Row -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Comprobantes</p>
-                <p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{{ $compras->total() }}</p>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Comprobantes</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ $compras->total() }}</p>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">En esta página</p>
-                <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ $compras->count() }}</p>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">En esta página</p>
+                <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ $compras->count() }}</p>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Monto Página</p>
-                <p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">${{ number_format($compras->sum('total'), 2) }}</p>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Monto Página</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">${{ number_format($compras->sum('total'), 2) }}</p>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">$</span>
+            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">$</span>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Control Vencimientos</p>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Control Vencimientos</p>
                 <a href="{{ route('inventario.alertas') }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline mt-0.5 block">Alertas de Lotes &rarr;</a>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
     </div>
 
     <!-- Filter & Search Bar -->
-    <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-3">
-        <form method="GET" action="{{ route('compras.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5">
+    <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+        <form method="GET" action="{{ route('compras.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3">
             <!-- Search Input -->
             <div class="relative md:col-span-4">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
                 <input type="text" 
                        name="buscar" 
                        value="{{ request('buscar') }}" 
                        placeholder="Buscar por N° factura o proveedor..." 
-                       class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                       class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
             </div>
 
             <!-- Estado Filter -->
             <div class="md:col-span-2">
                 <select name="estado" 
                         onchange="this.form.submit()" 
-                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                     <option value="">Estado: Todos</option>
                     <option value="recibida" {{ request('estado') === 'recibida' ? 'selected' : '' }}>Recibidas</option>
                     <option value="anulada" {{ request('estado') === 'anulada' ? 'selected' : '' }}>Anuladas</option>
@@ -128,7 +128,7 @@
                 <input type="date" 
                        name="fecha_desde" 
                        value="{{ request('fecha_desde') }}" 
-                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                        placeholder="Desde">
             </div>
 
@@ -137,7 +137,7 @@
                 <input type="date" 
                        name="fecha_hasta" 
                        value="{{ request('fecha_hasta') }}" 
-                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                       class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                        placeholder="Hasta">
             </div>
 
@@ -161,11 +161,11 @@
     </div>
 
     <!-- Compras Table -->
-    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs overflow-hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-300 dark:border-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         <th class="px-5 py-3.5">ID / Comprobante</th>
                         <th class="px-5 py-3.5">Proveedor</th>
                         <th class="px-5 py-3.5">Fecha</th>
@@ -176,7 +176,7 @@
                         <th class="px-5 py-3.5 text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @forelse($compras as $compra)
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                         <!-- ID / Comprobante -->
@@ -330,7 +330,7 @@
         </div>
 
         @if($compras->hasPages())
-        <div class="px-4 py-3 border-t border-slate-300 dark:border-slate-800">
+        <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900">
             {{ $compras->links() }}
         </div>
         @endif
@@ -339,11 +339,11 @@
     <!-- Modal Anular Compra -->
     <div x-show="modalAnular" 
          x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
          @keydown.escape.window="modalAnular = false"
          @click.self="modalAnular = false">
         
-        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-xl space-y-4"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 my-auto"
              @click.stop>
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -353,7 +353,7 @@
                     </div>
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">Anular Compra</h3>
                 </div>
-                <button @click="modalAnular = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+                <button @click="modalAnular = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold">&times;</button>
             </div>
 
             <p class="text-xs text-slate-600 dark:text-slate-300">
@@ -373,19 +373,19 @@
                               required 
                               minlength="5"
                               placeholder="Ej: Factura cancelada por el proveedor o error en productos recibidos..."
-                              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500"></textarea>
+                              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"></textarea>
                 </div>
 
                 <div class="flex items-center justify-end space-x-2 pt-2">
                     <button type="button" 
                             @click="modalAnular = false" 
-                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            class="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                         Cancelar
                     </button>
                     <button type="submit" 
                             :disabled="motivoAnulacion.trim().length < 5"
                             :class="motivoAnulacion.trim().length < 5 ? 'opacity-50 cursor-not-allowed' : ''"
-                            class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition">
+                            class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-xs transition">
                         Confirmar Anulación
                     </button>
                 </div>
