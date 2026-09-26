@@ -163,14 +163,16 @@
                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                        placeholder="Hasta">
                 <button type="submit" 
-                        class="px-3 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer">
-                    Filtrar
+                        class="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition inline-flex items-center justify-center gap-1.5 shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                    <span>Filtrar</span>
                 </button>
                 @if(request()->hasAny(['buscar', 'estado', 'tipo_comprobante', 'fecha_desde', 'fecha_hasta']))
                 <a href="{{ route('ventas.index') }}" 
                    title="Limpiar filtros"
-                   class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-700 transition">
-                    ✕
+                   class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center gap-1 shrink-0">
+                    <span>Limpiar</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </a>
                 @endif
             </div>
@@ -183,22 +185,22 @@
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                        <th class="py-3 px-4">Comprobante</th>
-                        <th class="py-3 px-4">Cliente</th>
-                        <th class="py-3 px-4">Fecha & Hora</th>
-                        <th class="py-3 px-4 text-center">Ítems</th>
-                        <th class="py-3 px-4 text-right">Total</th>
-                        <th class="py-3 px-4 text-center">Método Pago</th>
-                        <th class="py-3 px-4 text-center">Estado</th>
-                        <th class="py-3 px-4">Cajero</th>
-                        <th class="py-3 px-4 text-center">Acciones</th>
+                        <th class="px-5 py-3.5">Comprobante</th>
+                        <th class="px-5 py-3.5">Cliente</th>
+                        <th class="px-5 py-3.5">Fecha & Hora</th>
+                        <th class="px-5 py-3.5 text-center">Ítems</th>
+                        <th class="px-5 py-3.5 text-right">Total</th>
+                        <th class="px-5 py-3.5 text-center">Método Pago</th>
+                        <th class="px-5 py-3.5 text-center">Estado</th>
+                        <th class="px-5 py-3.5">Cajero</th>
+                        <th class="px-5 py-3.5 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
                     @forelse($ventas as $venta)
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition {{ $venta->estado === 'anulada' ? 'opacity-60 bg-slate-50/30 dark:bg-slate-950/30' : '' }}">
                         <!-- Comprobante -->
-                        <td class="py-3 px-4">
+                        <td class="px-5 py-3.5">
                             <div class="flex items-center space-x-2">
                                 <a href="{{ route('ventas.show', $venta) }}" class="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
                                     #{{ str_pad($venta->id, 5, '0', STR_PAD_LEFT) }}
@@ -213,7 +215,7 @@
                         </td>
 
                         <!-- Cliente -->
-                        <td class="py-3 px-4">
+                        <td class="px-5 py-3.5">
                             <div class="font-semibold text-slate-900 dark:text-white">
                                 {{ $venta->cliente->nombre ?? 'Público General (Venta Libre)' }}
                             </div>
@@ -225,20 +227,20 @@
                         </td>
 
                         <!-- Fecha -->
-                        <td class="py-3 px-4 text-slate-700 dark:text-slate-300">
+                        <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">
                             <div>{{ $venta->fecha ? $venta->fecha->format('d/m/Y') : '-' }}</div>
                             <div class="text-[10px] text-slate-400">{{ $venta->fecha ? $venta->fecha->format('H:i') : '' }}</div>
                         </td>
 
                         <!-- Ítems -->
-                        <td class="py-3 px-4 text-center">
+                        <td class="px-5 py-3.5 text-center">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                 {{ $venta->detalles_count }} prod.
                             </span>
                         </td>
 
                         <!-- Total -->
-                        <td class="py-3 px-4 text-right font-bold text-slate-900 dark:text-white">
+                        <td class="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white">
                             ${{ number_format($venta->total, 2) }}
                             @if($venta->descuento > 0)
                                 <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
@@ -248,14 +250,14 @@
                         </td>
 
                         <!-- Método Pago -->
-                        <td class="py-3 px-4 text-center">
+                        <td class="px-5 py-3.5 text-center">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                 {{ ucfirst($venta->metodo_pago ?? 'Efectivo') }}
                             </span>
                         </td>
 
                         <!-- Estado -->
-                        <td class="py-3 px-4 text-center">
+                        <td class="px-5 py-3.5 text-center">
                             @if($venta->estado === 'completada')
                                 @if($venta->fueModificada())
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
@@ -278,17 +280,17 @@
                         </td>
 
                         <!-- Cajero Responsable -->
-                        <td class="py-3 px-4 text-slate-600 dark:text-slate-400">
+                        <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">
                             {{ $venta->usuario->name ?? 'Cajero' }}
                         </td>
 
                         <!-- Acciones Cuarteto -->
-                        <td class="py-3 px-4 text-center whitespace-nowrap">
-                            <div class="inline-flex items-center justify-center space-x-1">
+                        <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center justify-center gap-1.5">
                                 <!-- Ver Ficha -->
                                 <a href="{{ route('ventas.show', $venta) }}" 
                                    title="Ver Detalle de Venta"
-                                   class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 inline-flex items-center justify-center transition">
+                                   class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
 
@@ -296,7 +298,7 @@
                                 <a href="{{ route('ventas.ticket', $venta) }}" 
                                    target="_blank"
                                    title="Imprimir Ticket Térmico"
-                                   class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 inline-flex items-center justify-center transition">
+                                   class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 </a>
 
@@ -305,7 +307,7 @@
                                     @can('realizar ventas')
                                     <a href="{{ route('ventas.edit', $venta) }}" 
                                        title="Editar Venta"
-                                       class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 inline-flex items-center justify-center transition">
+                                       class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                     </a>
                                     @endcan
@@ -317,7 +319,7 @@
                                     <button type="button" 
                                             @click="abrirModalAnular({{ $venta->id }}, '{{ $venta->numero_comprobante ?? '#' . $venta->id }}')" 
                                             title="Anular Venta"
-                                            class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 inline-flex items-center justify-center transition cursor-pointer">
+                                            class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                     </button>
                                     @endcan

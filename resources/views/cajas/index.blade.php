@@ -270,33 +270,37 @@
                                     @can('editar cajas')
                                     <button type="button"
                                             @click="abrirEditarCaja({ id: {{ $caja->id }}, nombre: '{{ addslashes($caja->nombre) }}', codigo: '{{ addslashes($caja->codigo) }}', ubicacion: '{{ addslashes($caja->ubicacion ?? '') }}', descripcion: '{{ addslashes($caja->descripcion ?? '') }}' })"
-                                            class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-semibold transition">
-                                        Editar
+                                            class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs"
+                                            title="Editar Caja">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
                                     @endcan
 
                                     @can('desactivar cajas')
                                     {{-- Botón Activar / Desactivar (Toggle) --}}
-                                    <form method="POST" action="{{ route('cajas.toggle', $caja) }}" class="inline"
+                                    <form method="POST" action="{{ route('cajas.toggle', $caja) }}" class="inline-flex m-0 p-0"
                                           onsubmit="return confirm('¿{{ $caja->activo ? 'Desactivar' : 'Activar' }} la caja \'{{ $caja->nombre }}\'?')">
                                         @csrf
                                         <button type="submit"
-                                                class="px-2.5 py-1 rounded-lg {{ $caja->activo ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 hover:bg-amber-100' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100' }} text-[11px] font-semibold transition"
+                                                class="w-8 h-8 rounded-lg {{ $caja->activo ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60' }} inline-flex items-center justify-center transition shadow-2xs"
                                                 title="{{ $caja->activo ? 'Desactivar caja' : 'Activar caja' }}">
-                                            {{ $caja->activo ? 'Desactivar' : 'Activar' }}
+                                            @if($caja->activo)
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                            @else
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            @endif
                                         </button>
                                     </form>
 
                                     {{-- Botón Eliminar Caja (Quitar permanentemente) --}}
                                     @if(auth()->user()->hasRole('admin') || auth()->user()->can('desactivar cajas'))
-                                    <form method="POST" action="{{ route('cajas.destroy', $caja) }}" class="inline"
+                                    <form method="POST" action="{{ route('cajas.destroy', $caja) }}" class="inline-flex m-0 p-0"
                                           onsubmit="return confirm('¿Estás seguro de ELIMINAR permanentemente la caja \'{{ $caja->nombre }}\' ({{ $caja->codigo }})? Esta acción la quitará por completo del sistema.')">
                                         @csrf @method('DELETE')
                                         <button type="submit"
-                                                class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
+                                                class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs"
                                                 title="Eliminar permanentemente esta caja">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Eliminar</span>
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </form>
                                     @endif

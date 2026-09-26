@@ -141,41 +141,46 @@
                 </select>
             </div>
 
-            @if(request()->anyFilled(['buscar', 'tipo', 'alcance', 'estado']))
-            <a href="{{ route('promociones.index') }}" 
-               class="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-medium rounded-xl transition shrink-0 flex items-center space-x-1"
-               title="Limpiar filtros">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                <span>Limpiar</span>
-            </a>
-            @endif
+            <!-- Buttons -->
+            <div class="flex items-center space-x-2 w-full md:w-auto shrink-0">
+                <button type="submit" class="w-full md:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition inline-flex items-center justify-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                    <span>Filtrar</span>
+                </button>
+                @if(request()->anyFilled(['buscar', 'tipo', 'alcance', 'estado']))
+                <a href="{{ route('promociones.index') }}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center gap-1">
+                    <span>Limpiar</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </a>
+                @endif
+            </div>
         </form>
     </div>
 
     <!-- Table Card -->
     <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                    <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                        <th class="py-3 px-4">Campaña / Nombre</th>
-                        <th class="py-3 px-4">Tipo & Beneficio</th>
-                        <th class="py-3 px-4">Alcance / Destino</th>
-                        <th class="py-3 px-4">Vigencia</th>
-                        <th class="py-3 px-4 text-center">Unidades / Límite</th>
-                        <th class="py-3 px-4 text-center">Estado</th>
-                        <th class="py-3 px-4 text-right">Acciones</th>
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[11px]">
+                    <tr>
+                        <th class="px-5 py-3.5">Campaña / Nombre</th>
+                        <th class="px-5 py-3.5">Tipo & Beneficio</th>
+                        <th class="px-5 py-3.5">Alcance / Destino</th>
+                        <th class="px-5 py-3.5">Vigencia</th>
+                        <th class="px-5 py-3.5 text-center">Unidades / Límite</th>
+                        <th class="px-5 py-3.5 text-center">Estado</th>
+                        <th class="px-5 py-3.5 text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @forelse($promociones as $promo)
                     @php
                         $isVigente = $promo->esVigente();
                         $isProgramada = $promo->activo && $promo->fecha_inicio > now();
                         $isExpirada = $promo->fecha_fin < now();
                     @endphp
-                    <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
-                        <td class="py-3.5 px-4">
+                    <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+                        <td class="px-5 py-3.5">
                             <div class="flex items-center space-x-3">
                                 <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs shrink-0">
                                     {{ $promo->badge_texto }}
@@ -190,15 +195,15 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold
                                 @if($promo->tipo === 'porcentaje') bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800
                                 @elseif($promo->tipo === 'monto_fijo') bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800
                                 @else bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 @endif">
                                 {{ strtoupper($promo->tipo) }}: {{ $promo->badge_texto }}
                             </span>
                         </td>
-                        <td class="py-3.5 px-4">
+                        <td class="px-5 py-3.5">
                             <div class="text-xs">
                                 <span class="font-semibold text-slate-800 dark:text-slate-200 block">
                                     {{ ucfirst($promo->alcance) }}
@@ -218,7 +223,7 @@
                                 </span>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 whitespace-nowrap">
+                        <td class="px-5 py-3.5 whitespace-nowrap">
                             <div class="text-[11px]">
                                 <p class="text-slate-800 dark:text-slate-200 font-medium">
                                     Desde: {{ $promo->fecha_inicio->format('d/m/Y H:i') }}
@@ -228,7 +233,7 @@
                                 </p>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                        <td class="px-5 py-3.5 text-center whitespace-nowrap">
                             <div class="text-[11px]">
                                 <span class="text-slate-800 dark:text-slate-200 font-bold">
                                     {{ $promo->stock_consumido }}
@@ -240,62 +245,62 @@
                             <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold block">Mín. {{ $promo->min_unidades }} unids</span>
                             @endif
                         </td>
-                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                        <td class="px-5 py-3.5 text-center whitespace-nowrap">
                             @if(!$promo->activo)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                     Inactiva
                                 </span>
                             @elseif($isExpirada)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                                     Expirada
                                 </span>
                             @elseif($isProgramada)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                                     Programada
                                 </span>
                             @else
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 animate-pulse">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 animate-pulse">
                                     ● En Vigor
                                 </span>
                             @endif
                         </td>
-                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                            <div class="flex items-center justify-end space-x-1">
+                        <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center justify-center gap-1.5">
                                 <a href="{{ route('promociones.show', $promo) }}" 
-                                   class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                                   class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800/60 inline-flex items-center justify-center transition shadow-2xs"
                                    title="Ver detalles">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
 
                                 @can('editar promociones')
                                 <a href="{{ route('promociones.edit', $promo) }}" 
-                                   class="p-1.5 text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition"
+                                   class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs"
                                    title="Editar promoción">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </a>
 
-                                <form method="POST" action="{{ route('promociones.toggle-activo', $promo) }}" class="inline">
+                                <form method="POST" action="{{ route('promociones.toggle-activo', $promo) }}" class="inline-flex m-0 p-0">
                                     @csrf
                                     <button type="submit" 
-                                            class="p-1.5 {{ $promo->activo ? 'text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/50' : 'text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50' }} rounded-lg transition"
+                                            class="w-8 h-8 rounded-lg {{ $promo->activo ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60' }} inline-flex items-center justify-center transition shadow-2xs"
                                             title="{{ $promo->activo ? 'Pausar/Desactivar' : 'Activar' }}">
                                         @if($promo->activo)
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         @else
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         @endif
                                     </button>
                                 </form>
                                 @endcan
 
                                 @can('desactivar promociones')
-                                <form method="POST" action="{{ route('promociones.destroy', $promo) }}" class="inline" onsubmit="return confirm('¿Seguro que deseas eliminar esta promoción?');">
+                                <form method="POST" action="{{ route('promociones.destroy', $promo) }}" class="inline-flex m-0 p-0" onsubmit="return confirm('¿Seguro que deseas eliminar esta promoción?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 
-                                            class="p-1.5 text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition"
+                                            class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs"
                                             title="Eliminar">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
                                 </form>
                                 @endcan
