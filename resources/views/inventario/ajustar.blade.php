@@ -68,23 +68,14 @@ $lotesJson = $lotes->map(function($l) {
 
 <div x-data="ajusteForm()" x-init="init()" class="space-y-5">
 
-    {{-- Breadcrumb & Quick Actions --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
-        <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
-            <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <a href="{{ route('inventario.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inventario</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <span class="text-slate-800 dark:text-slate-200 font-semibold">Ajuste de Stock</span>
-        </nav>
-        <button type="button" 
-                @click="$dispatch('toggle-pos-fullscreen')"
-                title="Modo Pantalla Completa / Ocultar Barras"
-                class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer self-start sm:self-auto">
-            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-            <span class="hidden sm:inline">Modo Full</span>
-        </button>
-    </div>
+    {{-- Breadcrumb --}}
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+        <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <a href="{{ route('inventario.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inventario</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-800 dark:text-slate-200 font-semibold">Ajuste de Stock</span>
+    </nav>
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -92,10 +83,19 @@ $lotesJson = $lotes->map(function($l) {
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">Ajuste Manual de Inventario</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Cada ajuste queda registrado en el Kardex con auditoría completa.</p>
         </div>
-        <a href="{{ route('inventario.index') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl shadow-2xs transition shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            <span>Volver</span>
-        </a>
+        <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span>Modo Full</span>
+            </button>
+            <a href="{{ route('inventario.index') }}" class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
+        </div>
     </div>
 
     @if(session('error'))
@@ -114,32 +114,32 @@ $lotesJson = $lotes->map(function($l) {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {{-- CARD IZQUIERDA: Buscar y seleccionar lote --}}
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-4">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 space-y-4">
             <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-extrabold shrink-0">1</span>
                 Seleccionar Lote
             </h3>
             <input type="hidden" name="lote_id" :value="loteId">
             <div>
-                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Busca por numero de lote o nombre <span class="text-rose-500">*</span></label>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Busca por número de lote o nombre <span class="text-rose-500">*</span></label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <input type="text" x-model="loteQuery" @focus="filtrar()" @input="filtrar()" @keydown.escape="showDropdown=false" :readonly="loteId !== null" placeholder="Ej: L-2024-001 o Ibuprofeno..." class="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition" :class="loteId ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700 cursor-default' : ''">
+                    <input type="text" x-model="loteQuery" @focus="filtrar()" @input="filtrar()" @keydown.escape="showDropdown=false" :readonly="loteId !== null" placeholder="Ej: L-2024-001 o Ibuprofeno..." class="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" :class="loteId ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700 cursor-default' : ''">
                     <div x-show="loteId" class="absolute inset-y-0 right-0 pr-3 flex items-center">
                         <button type="button" @click="deseleccionar()" class="text-slate-400 hover:text-rose-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                     </div>
                     <div x-show="showDropdown && !loteId" @click.outside="showDropdown=false" class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-56 overflow-y-auto">
                         <template x-for="l in lotesFiltrados" :key="l.id">
-                            <button type="button" @click="seleccionar(l)" class="w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+                            <button type="button" @click="seleccionar(l)" class="w-full text-left px-4 py-2.5 text-xs hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition border-b border-slate-100 dark:border-slate-700/50 last:border-0">
                                 <div class="flex items-center justify-between gap-2">
                                     <div><span class="font-semibold text-slate-800 dark:text-slate-200" x-text="l.producto"></span><span class="text-xs text-slate-400 font-mono ml-2" x-text="'Lote: '+l.numero_lote"></span><span x-show="l.vencido" class="ml-2 text-[10px] font-bold text-rose-500 uppercase">Vencido</span></div>
-                                    <div class="text-right shrink-0"><p class="text-sm font-bold text-emerald-600 dark:text-emerald-400" x-text="l.stock_actual+' un.'"></p><p class="text-[10px] text-slate-400" x-text="l.fecha_vencimiento"></p></div>
+                                    <div class="text-right shrink-0"><p class="text-xs font-bold text-emerald-600 dark:text-emerald-400" x-text="l.stock_actual+' un.'"></p><p class="text-[10px] text-slate-400" x-text="l.fecha_vencimiento"></p></div>
                                 </div>
                             </button>
                         </template>
-                        <div x-show="lotesFiltrados.length===0" class="px-4 py-4 text-sm text-slate-400 text-center">Sin resultados</div>
+                        <div x-show="lotesFiltrados.length===0" class="px-4 py-4 text-xs text-slate-400 text-center">Sin resultados</div>
                     </div>
                 </div>
             </div>
@@ -149,16 +149,16 @@ $lotesJson = $lotes->map(function($l) {
                 <div class="grid grid-cols-3 gap-2">
                     <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700 col-span-3">
                         <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Medicamento</p>
-                        <p class="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5" x-text="lote?.producto"></p>
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5" x-text="lote?.producto"></p>
                     </div>
                     <div class="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl p-3 border border-emerald-200 dark:border-emerald-800">
                         <p class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Stock</p>
-                        <p class="text-2xl font-extrabold text-emerald-700 dark:text-emerald-300 leading-tight" x-text="lote?.stock_actual"></p>
+                        <p class="text-xl font-extrabold text-emerald-700 dark:text-emerald-300 leading-tight" x-text="lote?.stock_actual"></p>
                         <p class="text-[10px] text-emerald-600">unidades</p>
                     </div>
                     <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700 col-span-2" :class="lote?.vencido ? '!bg-rose-50 dark:!bg-rose-950/30 !border-rose-200 dark:!border-rose-800' : ''">
                         <p class="text-[10px] font-semibold uppercase tracking-wider" :class="lote?.vencido ? 'text-rose-500' : 'text-slate-400'">Vencimiento</p>
-                        <p class="text-sm font-bold mt-0.5" :class="lote?.vencido ? 'text-rose-700 dark:text-rose-300' : 'text-slate-700 dark:text-slate-300'" x-text="lote?.fecha_vencimiento"></p>
+                        <p class="text-xs font-bold mt-0.5" :class="lote?.vencido ? 'text-rose-700 dark:text-rose-300' : 'text-slate-700 dark:text-slate-300'" x-text="lote?.fecha_vencimiento"></p>
                         <p x-show="lote?.vencido" class="text-[10px] font-extrabold text-rose-500 uppercase mt-0.5">¡Vencido!</p>
                     </div>
                 </div>
@@ -168,12 +168,12 @@ $lotesJson = $lotes->map(function($l) {
                 </div>
             </div>
             <div x-show="!lote" class="flex items-center justify-center h-24 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                <p class="text-sm text-slate-400">Busca y selecciona un lote arriba</p>
+                <p class="text-xs text-slate-400">Busca y selecciona un lote arriba</p>
             </div>
         </div>
 
         {{-- CARD DERECHA: Ajuste de stock --}}
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-5" :class="!lote ? 'opacity-50 pointer-events-none' : ''">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 space-y-5" :class="!lote ? 'opacity-50 pointer-events-none' : ''">
             <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-extrabold shrink-0">2</span>
                 Ajuste de Stock
@@ -181,7 +181,7 @@ $lotesJson = $lotes->map(function($l) {
 
             {{-- Botones rapidos --}}
             <div class="space-y-2">
-                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Ajuste rapido</p>
+                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Ajuste rápido</p>
                 <div class="flex flex-wrap gap-1.5">
                     <button type="button" @click="sumar(-50)" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition">-50</button>
                     <button type="button" @click="sumar(-20)" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition">-20</button>
@@ -194,7 +194,7 @@ $lotesJson = $lotes->map(function($l) {
                     <button type="button" @click="sumar(10)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+10</button>
                     <button type="button" @click="sumar(20)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+20</button>
                     <button type="button" @click="sumar(50)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+50</button>
-                    <button type="button" @click="stockNuevo=0" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 text-xs font-bold hover:bg-slate-200 transition">Vaciar (0)</button>
+                    <button type="button" @click="stockNuevo=0" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-bold hover:bg-slate-200 transition">Vaciar (0)</button>
                 </div>
             </div>
 
@@ -202,7 +202,7 @@ $lotesJson = $lotes->map(function($l) {
             <div class="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nuevo Stock Total <span class="text-rose-500">*</span></label>
-                    <input type="number" name="stock_nuevo" x-model="stockNuevo" min="0" required placeholder="0" class="w-28 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xl font-bold font-mono text-slate-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                    <input type="number" name="stock_nuevo" x-model="stockNuevo" min="0" required placeholder="0" class="w-28 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xl font-bold font-mono text-slate-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] text-slate-400 mb-1">Diferencia</p>
@@ -212,7 +212,7 @@ $lotesJson = $lotes->map(function($l) {
                         <svg x-show="diferencia === 0" class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
                         <span class="text-lg font-extrabold" :class="diferencia > 0 ? 'text-emerald-600 dark:text-emerald-400' : diferencia < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'" x-text="diferenciaLabel"></span>
                     </div>
-                    <p x-show="diferencia === 0 && stockNuevo !== ''" class="text-[11px] text-amber-600 font-semibold mt-0.5">Sin cambio — el valor es identico al actual.</p>
+                    <p x-show="diferencia === 0 && stockNuevo !== ''" class="text-[11px] text-amber-600 font-semibold mt-0.5">Sin cambio — el valor es idéntico al actual.</p>
                 </div>
             </div>
 
@@ -220,17 +220,17 @@ $lotesJson = $lotes->map(function($l) {
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Tipo de Ajuste <span class="text-rose-500">*</span></label>
-                    <select name="subtipo" x-model="subtipo" required class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                    <select name="subtipo" x-model="subtipo" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                         <option value="ajuste_manual">Ajuste Manual (General)</option>
                         <option value="ajuste_positivo">Ajuste Positivo (Conteo mayor)</option>
                         <option value="ajuste_negativo">Ajuste Negativo (Conteo menor)</option>
-                        <option value="merma_danio">Merma por Danio / Deterioro</option>
+                        <option value="merma_danio">Merma por Daño / Deterioro</option>
                         <option value="merma_vencimiento">Merma por Vencimiento</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Descripcion <span class="text-rose-500">*</span> <span class="font-normal text-slate-400">(min. 5 caracteres)</span></label>
-                    <input type="text" name="motivo" x-model="motivo" required minlength="5" maxlength="255" placeholder="Ej: Conteo fisico del 18/09/2026..." class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Descripción <span class="text-rose-500">*</span> <span class="font-normal text-slate-400">(mín. 5 caracteres)</span></label>
+                    <input type="text" name="motivo" x-model="motivo" required minlength="5" maxlength="255" placeholder="Ej: Conteo físico del 18/09/2026..." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                 </div>
             </div>
         </div>
@@ -238,8 +238,8 @@ $lotesJson = $lotes->map(function($l) {
 
     {{-- Footer acciones --}}
     <div class="flex items-center justify-between gap-3">
-        <button type="button" @click="limpiar()" class="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl transition">Limpiar</button>
-        <button type="submit" :disabled="!loteId || stockNuevo==='' || diferencia===0 || motivo.length<5" class="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
+        <button type="button" @click="limpiar()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl shadow-2xs transition">Limpiar</button>
+        <button type="submit" :disabled="!loteId || stockNuevo==='' || diferencia===0 || motivo.length<5" class="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition disabled:opacity-40 disabled:cursor-not-allowed">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             <span>Registrar Ajuste en Kardex</span>
         </button>
