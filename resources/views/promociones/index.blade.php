@@ -3,7 +3,7 @@
 @section('title', 'Promociones y Descuentos - FarmaBien')
 
 @section('content')
-<div class="space-y-5" x-data="{ fullWidth: false }">
+<div class="space-y-5">
     <!-- Breadcrumb -->
     <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
         <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
@@ -11,7 +11,7 @@
         <span class="text-slate-800 dark:text-slate-200 font-semibold">Promociones & Descuentos</span>
     </nav>
 
-    <!-- Header & Action -->
+    <!-- Header & Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -24,19 +24,19 @@
                 Campañas promocionales automáticas vinculadas a Catálogos y Punto de Venta (POS).
             </p>
         </div>
-        <div class="flex items-center space-x-2">
-            <!-- Botón Modo Full Width -->
-            <button @click="fullWidth = !fullWidth; $dispatch('toggle-full-width', { full: fullWidth })" 
-                    type="button" 
-                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-                    :title="fullWidth ? 'Modo estándar' : 'Modo pantalla completa'">
-                <svg x-show="!fullWidth" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                <svg x-show="fullWidth" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0h4M4 4v4m11 0l5-5m0 0h-4m4 0v4M9 15l-5 5m0 0h4m-4 0v-4m11 0l5 5m0 0h-4m4 0v-4"/></svg>
+        <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <!-- Botón Modo Full -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span>Modo Full</span>
             </button>
 
             @can('crear promociones')
             <a href="{{ route('promociones.create') }}" 
-               class="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition shrink-0">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Nueva Promoción</span>
             </a>
@@ -89,9 +89,9 @@
 
     <!-- Search & Advanced Filter Bar -->
     <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
-        <form method="GET" action="{{ route('promociones.index') }}" class="flex flex-col md:flex-row items-center gap-3">
+        <form method="GET" action="{{ route('promociones.index') }}" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <!-- Search Input -->
-            <div class="relative flex-1 w-full">
+            <div class="relative flex-1 min-w-0">
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
@@ -105,8 +105,7 @@
             <!-- Tipo Filter -->
             <div class="w-full md:w-44 shrink-0">
                 <select name="tipo" 
-                        onchange="this.form.submit()" 
-                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                     <option value="">Tipo: Todos</option>
                     <option value="porcentaje" {{ request('tipo') === 'porcentaje' ? 'selected' : '' }}>Porcentaje (%)</option>
                     <option value="monto_fijo" {{ request('tipo') === 'monto_fijo' ? 'selected' : '' }}>Monto Fijo ($)</option>
@@ -118,8 +117,7 @@
             <!-- Alcance Filter -->
             <div class="w-full md:w-44 shrink-0">
                 <select name="alcance" 
-                        onchange="this.form.submit()" 
-                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                     <option value="">Alcance: Todos</option>
                     <option value="producto" {{ request('alcance') === 'producto' ? 'selected' : '' }}>Por Producto</option>
                     <option value="categoria" {{ request('alcance') === 'categoria' ? 'selected' : '' }}>Por Categoría</option>
@@ -131,8 +129,7 @@
             <!-- Estado Filter -->
             <div class="w-full md:w-44 shrink-0">
                 <select name="estado" 
-                        onchange="this.form.submit()" 
-                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                     <option value="">Estado: Todos</option>
                     <option value="vigentes" {{ request('estado') === 'vigentes' ? 'selected' : '' }}>Vigentes y Activas</option>
                     <option value="programadas" {{ request('estado') === 'programadas' ? 'selected' : '' }}>Programadas</option>
@@ -142,15 +139,15 @@
             </div>
 
             <!-- Buttons -->
-            <div class="flex items-center space-x-2 w-full md:w-auto shrink-0">
-                <button type="submit" class="w-full md:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition inline-flex items-center justify-center gap-1.5">
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition inline-flex items-center justify-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                     <span>Filtrar</span>
                 </button>
                 @if(request()->anyFilled(['buscar', 'tipo', 'alcance', 'estado']))
                 <a href="{{ route('promociones.index') }}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     <span>Limpiar</span>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </a>
                 @endif
             </div>
@@ -182,7 +179,7 @@
                     <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
                         <td class="px-5 py-3.5">
                             <div class="flex items-center space-x-3">
-                                <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs shrink-0">
+                                <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs shrink-0 border border-rose-200/60 dark:border-rose-800/60">
                                     {{ $promo->badge_texto }}
                                 </div>
                                 <div class="min-w-0">
@@ -196,7 +193,7 @@
                             </div>
                         </td>
                         <td class="px-5 py-3.5 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold
                                 @if($promo->tipo === 'porcentaje') bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800
                                 @elseif($promo->tipo === 'monto_fijo') bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800
                                 @else bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 @endif">
@@ -274,7 +271,7 @@
 
                                 @can('editar promociones')
                                 <a href="{{ route('promociones.edit', $promo) }}" 
-                                   class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs"
+                                   class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60 inline-flex items-center justify-center transition shadow-2xs"
                                    title="Editar promoción">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </a>
@@ -325,7 +322,7 @@
         </div>
 
         @if($promociones->hasPages())
-        <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900">
             {{ $promociones->links() }}
         </div>
         @endif

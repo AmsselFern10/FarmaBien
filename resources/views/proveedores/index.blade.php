@@ -24,13 +24,26 @@
                 Distribuidores mayoristas, droguerías autorizadas y gestión de compras de abastecimiento.
             </p>
         </div>
-        @can('crear proveedores')
-        <a href="{{ route('proveedores.create') }}" 
-           class="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition shrink-0">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            <span>Nuevo Proveedor</span>
-        </a>
-        @endcan
+        <div class="flex items-center gap-2.5 shrink-0">
+            <button @click="toggleFullScreen()"
+                    type="button"
+                    class="inline-flex items-center space-x-2 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl shadow-xs transition">
+                <svg x-show="!isFullScreen" class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+                <svg x-show="isFullScreen" class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                <span x-text="isFullScreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
+            @can('crear proveedores')
+            <a href="{{ route('proveedores.create') }}" 
+               class="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>Nuevo Proveedor</span>
+            </a>
+            @endcan
+        </div>
     </div>
 
     <!-- Quick Stats Cards Row -->
