@@ -199,7 +199,12 @@
                                 @endcan
 
                                 @can('desactivar proveedores')
-                                <form method="POST" action="{{ route('proveedores.destroy', $prov) }}" class="inline-flex items-center m-0 p-0" onsubmit="return confirm('¿Deseas cambiar el estado de este proveedor?');">
+                                <form method="POST" action="{{ route('proveedores.destroy', $prov) }}" class="inline-flex items-center m-0 p-0"
+                                      data-confirm
+                                      data-confirm-title="{{ $prov->activo ? 'Desactivar proveedor' : 'Activar proveedor' }}"
+                                      data-confirm-body="{{ $prov->activo ? '&quot;'.$prov->nombre.'&quot; no podrá usarse en nuevas compras. Puedes reactivarlo cuando quieras.' : '&quot;'.$prov->nombre.'&quot; volverá a estar disponible para registrar compras.' }}"
+                                      data-confirm-type="{{ $prov->activo ? 'warning' : 'default' }}"
+                                      data-confirm-ok="{{ $prov->activo ? 'Sí, desactivar' : 'Sí, activar' }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 

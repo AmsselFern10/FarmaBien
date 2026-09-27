@@ -291,7 +291,12 @@
                                 @endcan
 
                                 @can('desactivar promociones')
-                                <form method="POST" action="{{ route('promociones.destroy', $promo) }}" class="inline-flex m-0 p-0" onsubmit="return confirm('¿Seguro que deseas eliminar esta promoción?');">
+                                <form method="POST" action="{{ route('promociones.destroy', $promo) }}" class="inline-flex m-0 p-0"
+                                      data-confirm
+                                      data-confirm-title="Eliminar promoción"
+                                      data-confirm-body="La promoción &quot;{{ $promo->nombre }}&quot; será eliminada permanentemente y dejará de aplicarse en el POS."
+                                      data-confirm-type="danger"
+                                      data-confirm-ok="Sí, eliminar">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 

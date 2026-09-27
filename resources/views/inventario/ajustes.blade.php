@@ -41,11 +41,7 @@
 
 <div class="max-w-7xl mx-auto px-4 sm:px-1 lg:px-3 py-2">
 
-    @if (session('error'))
-        <div class="mb-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-800 dark:text-rose-200">
-            <p class="font-bold">{{ session('error') }}</p>
-        </div>
-    @endif
+
 
     {{-- Filtros --}}
     <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 shadow-sm p-5 mb-4">

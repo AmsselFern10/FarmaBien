@@ -195,7 +195,12 @@
                                 @endcan
 
                                 @can('desactivar categorias')
-                                <form method="POST" action="{{ route('categorias.destroy', $cat) }}" class="inline-flex items-center m-0 p-0" onsubmit="return confirm('¿Deseas cambiar el estado de esta categoría?');">
+                                <form method="POST" action="{{ route('categorias.destroy', $cat) }}" class="inline-flex items-center m-0 p-0"
+                                      data-confirm
+                                      data-confirm-title="{{ $cat->activo ? 'Desactivar categoría' : 'Activar categoría' }}"
+                                      data-confirm-body="{{ $cat->activo ? 'Los productos de &quot;'.$cat->nombre.'&quot; quedarán ocultos. Puedes reactivarla cuando quieras.' : 'La categoría &quot;'.$cat->nombre.'&quot; y sus productos volverán a ser visibles.' }}"
+                                      data-confirm-type="{{ $cat->activo ? 'warning' : 'default' }}"
+                                      data-confirm-ok="{{ $cat->activo ? 'Sí, desactivar' : 'Sí, activar' }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 

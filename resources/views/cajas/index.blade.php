@@ -65,25 +65,7 @@
         </div>
     </div>
 
-    {{-- Flash --}}
-    @if(session('success'))
-    <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <svg class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('success') }}</span>
-        </div>
-        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
-    </div>
-    @endif
-    @if(session('error'))
-    <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <svg class="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('error') }}</span>
-        </div>
-        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
-    </div>
-    @endif
+
 
     {{-- Sesión activa del usuario actual --}}
     @if($sesionUsuario)
@@ -290,7 +272,11 @@
                                     @can('desactivar cajas')
                                     {{-- Botón Activar / Desactivar (Toggle) --}}
                                     <form method="POST" action="{{ route('cajas.toggle', $caja) }}" class="inline-flex m-0 p-0"
-                                          onsubmit="return confirm('¿{{ $caja->activo ? 'Desactivar' : 'Activar' }} la caja \'{{ $caja->nombre }}\'?')">
+                                          data-confirm
+                                          data-confirm-title="{{ $caja->activo ? 'Desactivar caja' : 'Activar caja' }}"
+                                          data-confirm-body="{{ $caja->activo ? 'La caja &quot;'.$caja->nombre.'&quot; quedará inactiva y no podrá usarse en nuevos turnos.' : 'La caja &quot;'.$caja->nombre.'&quot; volverá a estar disponible para abrir turnos.' }}"
+                                          data-confirm-type="{{ $caja->activo ? 'warning' : 'default' }}"
+                                          data-confirm-ok="{{ $caja->activo ? 'Sí, desactivar' : 'Sí, activar' }}">
                                         @csrf
                                         <button type="submit"
                                                 class="w-8 h-8 rounded-lg {{ $caja->activo ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60' }} inline-flex items-center justify-center transition shadow-2xs"
@@ -306,7 +292,11 @@
                                     {{-- Botón Eliminar Caja (Quitar permanentemente) --}}
                                     @if(auth()->user()->hasRole('admin') || auth()->user()->can('desactivar cajas'))
                                     <form method="POST" action="{{ route('cajas.destroy', $caja) }}" class="inline-flex m-0 p-0"
-                                          onsubmit="return confirm('¿Estás seguro de ELIMINAR permanentemente la caja \'{{ $caja->nombre }}\' ({{ $caja->codigo }})? Esta acción la quitará por completo del sistema.')">
+                                          data-confirm
+                                          data-confirm-title="Eliminar caja permanentemente"
+                                          data-confirm-body="La caja &quot;{{ $caja->nombre }}&quot; ({{ $caja->codigo }}) será eliminada por completo del sistema. Esta acción no se puede deshacer."
+                                          data-confirm-type="danger"
+                                          data-confirm-ok="Sí, eliminar">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                                 class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs"

@@ -150,30 +150,8 @@
 
                 <!-- Main Scrollable Area -->
                 <div class="flex-1 overflow-y-auto">
-                    <!-- Flash Alerts -->
-                    <div x-show="!posFullscreen" class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-                        @if (session('success'))
-                            <div class="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 p-4 rounded-xl shadow-sm flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-300 font-bold text-xs">
-                                        ✓
-                                    </div>
-                                    <span class="text-emerald-900 dark:text-emerald-100 font-medium text-sm">{{ session('success') }}</span>
-                                </div>
-                            </div>
-                        @endif
-
-                        @if (session('error'))
-                            <div class="bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 p-4 rounded-xl shadow-sm flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-7 h-7 rounded-full bg-rose-100 dark:bg-rose-900 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-300 font-bold text-xs">
-                                        ✕
-                                    </div>
-                                    <span class="text-rose-900 dark:text-rose-100 font-medium text-sm">{{ session('error') }}</span>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
+                    {{-- Sistema unificado de notificaciones (toast + modal de confirmación) --}}
+                    <x-notifications />
 
                     <!-- Page View Content -->
                     <main class="page-fade-in mx-auto w-full transition-all duration-200"

@@ -154,9 +154,15 @@
             this.nuevaPres.cargando = false;
         }
     },
-    limpiarFormulario() {
-        if (this.items.length > 0 && !confirm('¿Desea limpiar todos los campos del formulario de compra?')) {
-            return;
+    async limpiarFormulario() {
+        if (this.items.length > 0) {
+            const ok = await window.farmaConfirm({
+                title: '¿Limpiar formulario?',
+                body: 'Se eliminarán todos los productos ingresados y se reiniciarán los campos de la compra.',
+                type: 'warning',
+                ok: 'Sí, limpiar'
+            });
+            if (!ok) return;
         }
         this.formData = { proveedor_id: '', numero_comprobante: '', fecha: '{{ date('Y-m-d') }}' };
         this.items = [{

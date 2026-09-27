@@ -321,9 +321,15 @@ function posVentaData() {
             this.items.splice(idx, 1);
         },
 
-        limpiarVenta() {
-            if (this.items.length > 0 && !confirm('¿Desea vaciar el carrito y reiniciar la venta actual?')) {
-                return;
+        async limpiarVenta() {
+            if (this.items.length > 0) {
+                const ok = await window.farmaConfirm({
+                    title: '¿Vaciar carrito?',
+                    body: 'Se descartarán todos los productos agregados y se reiniciará la venta actual.',
+                    type: 'warning',
+                    ok: 'Sí, vaciar carrito'
+                });
+                if (!ok) return;
             }
             this.items = [];
             this.formData.cliente_id = '';

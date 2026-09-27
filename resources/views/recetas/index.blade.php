@@ -132,26 +132,7 @@
         </form>
     </div>
 
-    <!-- Alert Messages -->
-    @if(session('success'))
-    <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('success') }}</span>
-        </div>
-        <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 text-sm font-bold">&times;</button>
-    </div>
-    @endif
 
-    @if(session('error'))
-    <div class="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ session('error') }}</span>
-        </div>
-        <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 text-sm font-bold">&times;</button>
-    </div>
-    @endif
 
     <!-- Table -->
     <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
@@ -250,7 +231,11 @@
                                 @endif
                                 @if($rec->estado === 'pendiente')
                                 <form method="POST" action="{{ route('recetas.destroy', $rec) }}" class="inline-flex m-0 p-0"
-                                      onsubmit="return confirm('¿Eliminar la receta #{{ $rec->numero_receta }}?')">
+                                      data-confirm
+                                      data-confirm-title="Eliminar receta #{{ $rec->numero_receta }}"
+                                      data-confirm-body="La receta de &quot;{{ $rec->paciente_nombre }}&quot; será eliminada permanentemente. Solo se pueden eliminar recetas en estado pendiente."
+                                      data-confirm-type="danger"
+                                      data-confirm-ok="Sí, eliminar receta">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs" title="Eliminar">

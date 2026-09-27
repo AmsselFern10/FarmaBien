@@ -212,7 +212,12 @@
                                 @endcan
 
                                 @can('desactivar clientes')
-                                <form method="POST" action="{{ route('clientes.destroy', $cli) }}" class="inline-flex items-center m-0 p-0" onsubmit="return confirm('¿Deseas cambiar el estado de este cliente?');">
+                                <form method="POST" action="{{ route('clientes.destroy', $cli) }}" class="inline-flex items-center m-0 p-0"
+                                      data-confirm
+                                      data-confirm-title="{{ $cli->activo ? 'Desactivar cliente' : 'Activar cliente' }}"
+                                      data-confirm-body="{{ $cli->activo ? '&quot;'.$cli->nombre.'&quot; no podrá registrarse en nuevas ventas. Puedes reactivarlo cuando quieras.' : '&quot;'.$cli->nombre.'&quot; volverá a estar disponible en el sistema.' }}"
+                                      data-confirm-type="{{ $cli->activo ? 'warning' : 'default' }}"
+                                      data-confirm-ok="{{ $cli->activo ? 'Sí, desactivar' : 'Sí, activar' }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 

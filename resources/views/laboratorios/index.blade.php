@@ -199,7 +199,12 @@
                                 @endcan
 
                                 @can('desactivar laboratorios')
-                                <form method="POST" action="{{ route('laboratorios.destroy', $lab) }}" class="inline-flex items-center m-0 p-0" onsubmit="return confirm('¿Deseas cambiar el estado de este laboratorio?');">
+                                <form method="POST" action="{{ route('laboratorios.destroy', $lab) }}" class="inline-flex items-center m-0 p-0"
+                                      data-confirm
+                                      data-confirm-title="{{ $lab->activo ? 'Desactivar laboratorio' : 'Activar laboratorio' }}"
+                                      data-confirm-body="{{ $lab->activo ? '&quot;'.$lab->nombre.'&quot; quedará inactivo. Los productos asociados permanecen sin cambios.' : '&quot;'.$lab->nombre.'&quot; volverá a estar activo en el sistema.' }}"
+                                      data-confirm-type="{{ $lab->activo ? 'warning' : 'default' }}"
+                                      data-confirm-ok="{{ $lab->activo ? 'Sí, desactivar' : 'Sí, activar' }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 

@@ -190,7 +190,8 @@ function farmaNavbarTabs() {
             return window.farmaHasDirtyDraft ? window.farmaHasDirtyDraft(tab.url) : false;
         },
 
-        closeTab(index, event) {
+
+        async closeTab(index, event) {
             event.stopPropagation();
             event.preventDefault();
 
@@ -198,9 +199,13 @@ function farmaNavbarTabs() {
             if (!closed || closed.pinned) return;
 
             if (this.hasDirtyDraft(closed)) {
-                if (!confirm(`La pestaña "${closed.title}" tiene cambios sin guardar. ¿Deseas cerrarla y descartar el borrador?`)) {
-                    return;
-                }
+                const ok = await window.farmaConfirm({
+                    title: 'Cambios sin guardar',
+                    body: `La pestaña "${closed.title}" tiene cambios que no se han guardado. ¿Deseas cerrarla y descartar el borrador?`,
+                    type: 'warning',
+                    ok: 'Sí, descartar y cerrar'
+                });
+                if (!ok) return;
                 sessionStorage.removeItem('farma_draft:' + closed.url.split('?')[0]);
                 try {
                     let dirtyList = JSON.parse(sessionStorage.getItem('farma_dirty_drafts') || '[]');

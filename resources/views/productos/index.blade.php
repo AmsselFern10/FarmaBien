@@ -358,7 +358,12 @@
                         @endcan
 
                         @can('desactivar productos')
-                        <form action="{{ route('productos.destroy', $producto) }}" method="POST" class="inline-flex m-0 p-0" onsubmit="return confirm('¿Confirmas {{ $producto->activo ? 'desactivar' : 'activar' }} este producto?');">
+                        <form action="{{ route('productos.destroy', $producto) }}" method="POST" class="inline-flex m-0 p-0"
+                              data-confirm
+                              data-confirm-title="{{ $producto->activo ? 'Desactivar medicamento' : 'Activar medicamento' }}"
+                              data-confirm-body="{{ $producto->activo ? '&quot;'.$producto->nombre.'&quot; quedará oculto del inventario y no se podrá vender. Puedes reactivarlo cuando quieras.' : '&quot;'.$producto->nombre.'&quot; volverá a estar disponible para ventas e inventario.' }}"
+                              data-confirm-type="{{ $producto->activo ? 'warning' : 'default' }}"
+                              data-confirm-ok="{{ $producto->activo ? 'Sí, desactivar' : 'Sí, activar' }}">
                             @csrf
                             @method('DELETE')
                             <button type="submit" 
@@ -537,7 +542,12 @@
 
                                 @can('desactivar productos')
                                 <!-- Desactivar / Activar -->
-                                <form action="{{ route('productos.destroy', $producto) }}" method="POST" class="inline-flex m-0 p-0" onsubmit="return confirm('¿Confirmas {{ $producto->activo ? 'desactivar' : 'activar' }} este medicamento?');">
+                                <form action="{{ route('productos.destroy', $producto) }}" method="POST" class="inline-flex m-0 p-0"
+                                      data-confirm
+                                      data-confirm-title="{{ $producto->activo ? 'Desactivar medicamento' : 'Activar medicamento' }}"
+                                      data-confirm-body="{{ $producto->activo ? '&quot;'.$producto->nombre.'&quot; quedará oculto del inventario y no podrá venderse. Puedes reactivarlo cuando quieras.' : '&quot;'.$producto->nombre.'&quot; volverá a estar disponible para ventas e inventario.' }}"
+                                      data-confirm-type="{{ $producto->activo ? 'warning' : 'default' }}"
+                                      data-confirm-ok="{{ $producto->activo ? 'Sí, desactivar' : 'Sí, activar' }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" 

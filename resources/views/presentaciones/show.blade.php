@@ -53,7 +53,12 @@
             @endcan
 
             @can('eliminar productos')
-            <form action="{{ route('presentaciones.destroy', $presentacion) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar esta presentación?');" class="inline m-0 p-0">
+            <form action="{{ route('presentaciones.destroy', $presentacion) }}" method="POST" class="inline m-0 p-0"
+                  data-confirm
+                  data-confirm-title="Eliminar presentación"
+                  data-confirm-body="Si &quot;{{ $presentacion->nombre }}&quot; tiene ventas o compras registradas, no se puede eliminar — el sistema mostrará un aviso y la operación quedará cancelada."
+                  data-confirm-type="danger"
+                  data-confirm-ok="Sí, intentar eliminar">
                 @csrf
                 @method('DELETE')
                 <button type="submit" 
