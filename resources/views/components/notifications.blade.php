@@ -92,41 +92,42 @@
         }
     }"
     x-init="
-        /* ── Flash messages de PHP → toasts ─────────────── */
+        /* ── Flash messages de PHP → toasts ─────────────────
+           NOTA: en Alpine.js v3, x-init evalúa con with(componentData),
+           por lo que addToast/showConfirm/resolveConfirm son accesibles
+           directamente como identificadores (NO via this.método).         */
         @if(session('success'))
-            $nextTick(function() { addToast('success', @js(session('success'))); });
+            $nextTick(() => addToast('success', @js(session('success'))));
         @endif
         @if(session('error'))
-            $nextTick(function() { addToast('error', @js(session('error'))); });
+            $nextTick(() => addToast('error', @js(session('error'))));
         @endif
         @if(session('warning'))
-            $nextTick(function() { addToast('warning', @js(session('warning'))); });
+            $nextTick(() => addToast('warning', @js(session('warning'))));
         @endif
         @if(session('info'))
-            $nextTick(function() { addToast('info', @js(session('info'))); });
+            $nextTick(() => addToast('info', @js(session('info'))));
         @endif
 
-        /* ── API global para JS async ─────────────────────── */
-        const _self = this;
-
+        /* ── API global para JS/async externo ──────────────── */
         window.farmaToast = {
-            success : function(msg) { _self.addToast('success', msg); },
-            error   : function(msg) { _self.addToast('error',   msg); },
-            warning : function(msg) { _self.addToast('warning', msg); },
-            info    : function(msg) { _self.addToast('info',    msg); }
+            success : msg => addToast('success', msg),
+            error   : msg => addToast('error',   msg),
+            warning : msg => addToast('warning', msg),
+            info    : msg => addToast('info',    msg)
         };
 
-        window.farmaConfirm = function(opts) {
+        window.farmaConfirm = opts => {
             opts = opts || {};
-            return _self.showConfirm(opts.title, opts.body, opts.type, opts.ok);
+            return showConfirm(opts.title, opts.body, opts.type, opts.ok);
         };
 
-        /* ── Interceptar formularios con data-confirm ─────── */
-        document.addEventListener('submit', async function(e) {
+        /* ── Interceptar formularios con data-confirm ──────── */
+        document.addEventListener('submit', async e => {
             const form = e.target;
             if (!form.hasAttribute('data-confirm')) return;
             e.preventDefault();
-            const confirmed = await _self.showConfirm(
+            const confirmed = await showConfirm(
                 form.dataset.confirmTitle || '¿Confirmar acción?',
                 form.dataset.confirmBody  || 'Esta acción no se puede deshacer.',
                 form.dataset.confirmType  || 'default',
