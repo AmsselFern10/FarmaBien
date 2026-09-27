@@ -190,7 +190,10 @@ class RecetaService
                 'cliente:id,nombre,documento',
             ])
             ->pendientes()
-            ->vigentes();
+            ->vigentes()
+            ->whereHas('detalles', function ($q) {
+                $q->whereRaw('cantidad_recetada > cantidad_dispensada');
+            });
 
         $termino = trim($termino);
         if (!empty($termino)) {

@@ -82,6 +82,70 @@ class VentaService
                 $recetasAsociadas[] = (int) $data['receta_id'];
             }
 
+            // Validación y vinculación de Receta Médica Existente
+            if ($recetaModalidad === 'vinculada' || !empty($data['receta_id'])) {
+                $recetaId = (int) ($data['receta_id'] ?? 0);
+                if ($recetaId <= 0) {
+                    throw new Exception("Modalidad de receta vinculada seleccionada, pero no se especificó ninguna receta médica.");
+                }
+
+                $recetaModel = Receta::with('detalles.producto')->find($recetaId);
+                if (!$recetaModel) {
+                    throw new Exception("La receta médica seleccionada no existe o no fue encontrada en el sistema.");
+                }
+
+                if ($recetaModel->estado === 'anulada') {
+                    throw new Exception("La receta médica #{$recetaModel->numero_receta} se encuentra anulada y no puede utilizarse.");
+                }
+
+                if ($recetaModel->estado === 'dispensada_total') {
+                    throw new Exception("La receta médica #{$recetaModel->numero_receta} ya ha sido dispensada en su totalidad.");
+                }
+
+                if ($recetaModel->estaVencida()) {
+                    throw new Exception("La receta médica #{$recetaModel->numero_receta} venció el {$recetaModel->fecha_vencimiento}.");
+                }
+
+                // Verificar si la receta tiene saldo disponible en al menos un detalle
+                $detallesConSaldo = $recetaModel->detalles->filter(fn($d) => $d->cantidad_recetada > $d->cantidad_dispensada);
+                if ($detallesConSaldo->isEmpty()) {
+                    throw new Exception("La receta médica #{$recetaModel->numero_receta} no cuenta con unidades disponibles para dispensar (ya fue completada).");
+                }
+
+                // Verificar que los medicamentos de la venta que requieren receta estén prescritos en esta receta
+                $hayMedicamentosRx = false;
+                $huboCoincidencia = false;
+
+                foreach ($data['productos'] as &$prodItemRef) {
+                    $pModel = Producto::find($prodItemRef['producto_id']);
+                    $esRx = $pModel && ($pModel->requiere_receta || in_array($pModel->tipo_control, ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente']));
+                    
+                    if ($esRx) {
+                        $hayMedicamentosRx = true;
+                        // Buscar si la receta contiene este producto y tiene saldo
+                        $detalleCoincidente = $recetaModel->detalles->first(function ($d) use ($prodItemRef) {
+                            return $d->producto_id == $prodItemRef['producto_id'] && ($d->cantidad_recetada > $d->cantidad_dispensada);
+                        });
+
+                        if ($detalleCoincidente) {
+                            $huboCoincidencia = true;
+                            if (empty($prodItemRef['receta_detalle_id'])) {
+                                $prodItemRef['receta_detalle_id'] = $detalleCoincidente->id;
+                            }
+                        }
+                    }
+                }
+                unset($prodItemRef);
+
+                if ($hayMedicamentosRx && !$huboCoincidencia) {
+                    throw new Exception("La receta médica #{$recetaModel->numero_receta} no contiene ninguno de los medicamentos bajo receta médica incluidos en el carrito.");
+                }
+
+                if (!in_array($recetaModel->id, $recetasAsociadas)) {
+                    $recetasAsociadas[] = $recetaModel->id;
+                }
+            }
+
             // Quick-Create de Receta Médica desde POS
             if ($recetaModalidad === 'creada' && !empty($data['receta_crear']) && is_array($data['receta_crear'])) {
                 $rcData = $data['receta_crear'];
@@ -251,6 +315,15 @@ class VentaService
             if ($sesionActiva) {
                 app(CajaService::class)->recalcularTotales($sesionActiva);
             }
+
+            // 10. Registrar en el audit log
+            \App\Models\AuditLog::log('ventas', 'realizar', "Venta #{$venta->id} procesada por C\${$totalFinal}", [
+                'venta_id'      => $venta->id,
+                'total'         => $totalFinal,
+                'metodo_pago'   => $metodoPago,
+                'items'         => count($data['productos']),
+                'caja_id'       => $sesionActiva?->caja_id,
+            ]);
 
             return $venta->load([
                 'detalles.producto.laboratorio',

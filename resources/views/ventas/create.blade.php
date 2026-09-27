@@ -466,7 +466,8 @@ function posVentaData() {
             // Validación estricta de Receta Médica si hay medicamentos controlados / Rx
             if (this.tieneProductosRx()) {
                 if (this.recetaTab === 'vincular') {
-                    if (!this.formData.receta_id) return false;
+                    if (!this.formData.receta_id || !this.recetaSeleccionadaObj) return false;
+                    if (!this.recetaCoincideConCarrito(this.recetaSeleccionadaObj)) return false;
                 } else if (this.recetaTab === 'crear') {
                     if (!this.recetaNueva.medico_nombre.trim() || !this.recetaNueva.medico_colegiatura.trim()) {
                         return false;
@@ -481,6 +482,37 @@ function posVentaData() {
             }
 
             return true;
+        },
+
+        // Helper: Verificar si la receta tiene al menos un medicamento con saldo pendiente
+        recetaTieneMedicamentosRxDisponibles(receta) {
+            if (!receta || !receta.detalles || receta.detalles.length === 0) return false;
+            if (receta.estado === 'dispensada_total' || receta.estado === 'anulada') return false;
+            return receta.detalles.some(d => (parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada)) > 0);
+        },
+
+        // Helper: Verificar si la receta prescribe alguno de los medicamentos Rx actualmente en el carrito con saldo
+        recetaCoincideConCarrito(receta) {
+            if (!this.recetaTieneMedicamentosRxDisponibles(receta)) return false;
+            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            if (rxItems.length === 0) return true;
+            return receta.detalles.some(d => {
+                const saldo = (parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada)) > 0;
+                return saldo && rxItems.some(it => it.producto_id == d.producto_id);
+            });
+        },
+
+        // Helper: Obtener resumen de medicamentos de la receta que coinciden con el carrito
+        getMedicamentosCoincidentesTexto(receta) {
+            if (!receta || !receta.detalles) return '';
+            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            const coincidentes = receta.detalles.filter(d => rxItems.some(it => it.producto_id == d.producto_id));
+            if (coincidentes.length === 0) return '';
+            return coincidentes.map(d => {
+                const pNombre = d.producto?.nombre || 'Medicamento';
+                const pend = parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada);
+                return `${pNombre} (${pend}/${d.cantidad_recetada} u. pend.)`;
+            }).join(', ');
         },
 
         // Buscar recetas existentes vía AJAX o listar recientes
@@ -505,6 +537,20 @@ function posVentaData() {
         },
 
         seleccionarReceta(receta) {
+            // 1. Validar que la receta no esté dispensada totalmente o anulada
+            if (!this.recetaTieneMedicamentosRxDisponibles(receta)) {
+                alert(`La receta #${receta.numero_receta} ya ha sido dispensada en su totalidad o no cuenta con saldo disponible.`);
+                return;
+            }
+
+            // 2. Validar que contenga los medicamentos Rx que están en el carrito
+            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            if (rxItems.length > 0 && !this.recetaCoincideConCarrito(receta)) {
+                const nombresRx = rxItems.map(i => i.nombre).join(', ');
+                alert(`No se puede vincular: La receta #${receta.numero_receta} no prescribe ninguno de los medicamentos bajo receta médica agregados al carrito (${nombresRx}). Seleccione una receta que prescriba estos medicamentos.`);
+                return;
+            }
+
             this.formData.receta_id = receta.id;
             this.formData.receta_modalidad = 'vinculada';
             this.recetaSeleccionadaObj = receta;
@@ -1483,7 +1529,16 @@ function posVentaData() {
                             Carrito de Despacho (<span x-text="items.length"></span> ítems)
                         </h3>
                     </div>
-                    <button type="button" @click="limpiarVenta()" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">Vaciar Todo</button>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" 
+                                @click="abrirModalCobro()"
+                                :disabled="items.length === 0"
+                                class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-[11px] font-black rounded-lg shadow-xs transition flex items-center space-x-1 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <span>Cobrar $<span x-text="calcularTotalGeneral()"></span></span>
+                        </button>
+                        <button type="button" @click="limpiarVenta()" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">Vaciar Todo</button>
+                    </div>
                 </div>
 
                 <!-- Lista de Ítems en Carrito con Scroll Interno -->
@@ -1754,18 +1809,35 @@ function posVentaData() {
                                             <span>Recetas Disponibles:</span>
                                             <span class="text-slate-500 font-mono" x-text="recetasEncontradas.length"></span>
                                         </div>
-                                        <div class="overflow-y-auto max-h-36 divide-y divide-slate-100 dark:divide-slate-700 text-xs custom-scrollbar">
+                                        <div class="overflow-y-auto max-h-48 divide-y divide-slate-100 dark:divide-slate-700 text-xs custom-scrollbar">
                                             <template x-for="rec in recetasEncontradas" :key="rec.id">
-                                                <div @click="seleccionarReceta(rec)" class="p-1.5 hover:bg-emerald-50 dark:hover:bg-slate-700/80 cursor-pointer flex items-center justify-between gap-1 transition">
-                                                    <div class="min-w-0 flex-1">
-                                                        <div class="font-bold text-[10px] text-slate-800 dark:text-white truncate" x-text="'#' + rec.numero_receta + ' • ' + rec.paciente_nombre"></div>
-                                                        <div class="text-[9px] text-slate-500 truncate" x-text="'Dr. ' + rec.medico_nombre"></div>
+                                                <div @click="seleccionarReceta(rec)" 
+                                                     :class="recetaCoincideConCarrito(rec) ? 'bg-emerald-50/60 dark:bg-emerald-950/20 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700/80 border-l-4 border-l-transparent opacity-80'"
+                                                     class="p-2 cursor-pointer flex flex-col space-y-1 transition">
+                                                    <div class="flex items-center justify-between gap-1">
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="font-bold text-[10px] text-slate-800 dark:text-white truncate flex items-center space-x-1">
+                                                                <span x-text="'#' + rec.numero_receta"></span>
+                                                                <span>&bull;</span>
+                                                                <span class="truncate font-semibold" x-text="rec.paciente_nombre"></span>
+                                                            </div>
+                                                            <div class="text-[9px] text-slate-500 truncate" x-text="'Dr. ' + rec.medico_nombre + (rec.medico_colegiatura ? ' (Col: ' + rec.medico_colegiatura + ')' : '')"></div>
+                                                        </div>
+                                                        <span :class="recetaCoincideConCarrito(rec) ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+                                                              class="px-2 py-0.5 rounded text-[9px] font-bold shrink-0 shadow-2xs">
+                                                            <span x-show="recetaCoincideConCarrito(rec)">+ Vincular</span>
+                                                            <span x-show="!recetaCoincideConCarrito(rec)">Sin Coincidencia</span>
+                                                        </span>
                                                     </div>
-                                                    <span class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold shrink-0 shadow-2xs">+ Vincular</span>
+                                                    <!-- Lista de medicamentos prescritos con saldo -->
+                                                    <div class="text-[9px] text-slate-600 dark:text-slate-300 flex items-center space-x-1">
+                                                        <span class="font-bold text-slate-400">💊 Prescribe:</span>
+                                                        <span class="truncate font-medium text-emerald-700 dark:text-emerald-300" x-text="getMedicamentosCoincidentesTexto(rec) || (rec.detalles ? rec.detalles.map(d => (d.producto?.nombre || 'Med') + ' (' + (d.cantidad_recetada - d.cantidad_dispensada) + ' u.)').join(', ') : 'Sin detalle')"></span>
+                                                    </div>
                                                 </div>
                                             </template>
                                             <div x-show="recetasEncontradas.length === 0" class="p-2.5 text-center text-[10px] text-slate-400">
-                                                Sin recetas encontradas.
+                                                Sin recetas encontradas con saldo disponible.
                                             </div>
                                         </div>
                                     </div>
