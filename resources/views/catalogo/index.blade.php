@@ -260,8 +260,8 @@
                     
                     {{-- Imagen / Placeholder --}}
                     <div class="w-full h-40 sm:h-44 bg-slate-50 border-b border-slate-100 flex items-center justify-center p-3 relative overflow-hidden">
-                        @if(!empty($producto->imagen) && \Illuminate\Support\Facades\Storage::disk('public')->exists($producto->imagen))
-                            <img src="{{ asset('storage/' . $producto->imagen) }}" 
+                        @if(!empty($producto->imagen) && auth()->check() && \Illuminate\Support\Facades\Storage::disk('private_images')->exists($producto->imagen))
+                            <img src="{{ route('img.serve', ['path' => $producto->imagen]) }}" 
                                  alt="{{ $producto->nombre }}" 
                                  loading="lazy"
                                  decoding="async"

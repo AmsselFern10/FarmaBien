@@ -21,6 +21,17 @@ use App\Http\Controllers\CajaController;
 use App\Http\Controllers\PublicCatalogoController;
 use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\BenchmarkController;
+use App\Http\Controllers\ImagenController;
+
+/*
+|--------------------------------------------------------------------------
+| Imágenes Privadas — solo usuarios autenticados
+|--------------------------------------------------------------------------
+*/
+Route::get('/img/{path}', [ImagenController::class, 'serve'])
+    ->where('path', '.+')
+    ->middleware('auth')
+    ->name('img.serve');
 
 /*
 |--------------------------------------------------------------------------

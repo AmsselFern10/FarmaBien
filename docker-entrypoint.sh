@@ -12,6 +12,7 @@ mkdir -p /var/www/html/storage/framework/sessions \
          /var/www/html/storage/framework/cache/data \
          /var/www/html/storage/logs \
          /var/www/html/storage/app/public \
+         /var/www/html/storage/app/images/productos \
          /var/www/html/bootstrap/cache
 
 # Discover packages now that environment variables are available
@@ -22,6 +23,7 @@ php artisan storage:link || true
 php artisan migrate --force || true
 php artisan db:seed --force || true
 php artisan permission:cache-reset || true
+php artisan imagenes:migrar || true
 
 # Cache configurations and routes
 php artisan config:cache || true

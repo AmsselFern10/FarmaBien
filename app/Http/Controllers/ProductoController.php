@@ -371,15 +371,15 @@ class ProductoController extends Controller
             });
 
             // Limpieza segura de imagen anterior solo tras confirmación exitosa en BD
-            if ($uploadedPath && $oldImagePath && Storage::disk('public')->exists($oldImagePath)) {
-                Storage::disk('public')->delete($oldImagePath);
+            if ($uploadedPath && $oldImagePath && Storage::disk('private_images')->exists($oldImagePath)) {
+                Storage::disk('private_images')->delete($oldImagePath);
             }
 
             return redirect()->route('productos.index')
                 ->with('success', "Medicamento '{$producto->nombre}' actualizado correctamente.");
         } catch (QueryException $qe) {
-            if ($uploadedPath && Storage::disk('public')->exists($uploadedPath)) {
-                Storage::disk('public')->delete($uploadedPath);
+            if ($uploadedPath && Storage::disk('private_images')->exists($uploadedPath)) {
+                Storage::disk('private_images')->delete($uploadedPath);
             }
 
             Log::error('Error de base de datos al actualizar producto', [
@@ -390,8 +390,8 @@ class ProductoController extends Controller
 
             return back()->withInput()->with('error', 'No se pudo actualizar el medicamento debido a un conflicto de unicidad o integridad en la base de datos.');
         } catch (Exception $e) {
-            if ($uploadedPath && Storage::disk('public')->exists($uploadedPath)) {
-                Storage::disk('public')->delete($uploadedPath);
+            if ($uploadedPath && Storage::disk('private_images')->exists($uploadedPath)) {
+                Storage::disk('private_images')->delete($uploadedPath);
             }
 
             Log::error('Error general al actualizar producto', [

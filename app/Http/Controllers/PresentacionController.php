@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PresentacionProducto;
 use App\Models\Producto;
+use App\Models\AuditLog;
 use App\Http\Requests\StorePresentacionRequest;
 use App\Http\Requests\UpdatePresentacionRequest;
 use Illuminate\Http\Request;
@@ -80,6 +81,13 @@ class PresentacionController extends Controller
                     'user_id' => auth()->id(),
                 ]);
 
+                AuditLog::log('presentaciones', 'crear', "Presentación '{$presentacion->nombre}' registrada para producto #{$presentacion->producto_id}", [
+                    'presentacion_id'          => $presentacion->id,
+                    'producto_id'              => $presentacion->producto_id,
+                    'unidades_por_presentacion'=> $presentacion->unidades_por_presentacion,
+                    'precio_venta'             => $presentacion->precio_venta,
+                ]);
+
                 return $presentacion;
             });
 
@@ -145,6 +153,12 @@ class PresentacionController extends Controller
                     'nombre' => $locked->nombre,
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log('presentaciones', 'editar', "Presentación '{$locked->nombre}' actualizada (producto #{$locked->producto_id})", [
+                    'presentacion_id' => $locked->id,
+                    'producto_id'     => $locked->producto_id,
+                    'cambios'         => array_keys($data),
+                ]);
             });
 
             return redirect()->route('presentaciones.show', $presentacion)
@@ -172,12 +186,19 @@ class PresentacionController extends Controller
                 }
 
                 $nombre = $locked->nombre;
+                $productoId = $locked->producto_id;
                 $locked->delete();
 
                 Log::info('Presentación eliminada exitosamente', [
                     'presentacion_id' => $presentacion->id,
                     'nombre' => $nombre,
                     'user_id' => auth()->id(),
+                ]);
+
+                AuditLog::log('presentaciones', 'eliminar', "Presentación '{$nombre}' eliminada (producto #{$productoId})", [
+                    'presentacion_id' => $presentacion->id,
+                    'producto_id'     => $productoId,
+                    'nombre'          => $nombre,
                 ]);
             });
 
@@ -208,6 +229,13 @@ class PresentacionController extends Controller
                     'nuevo_estado' => $nuevoEstado ? 'activada' : 'desactivada',
                     'user_id' => auth()->id(),
                 ]);
+
+                AuditLog::log(
+                    'presentaciones',
+                    $nuevoEstado ? 'activar' : 'desactivar',
+                    "Presentación '{$locked->nombre}' " . ($nuevoEstado ? 'activada' : 'desactivada'),
+                    ['presentacion_id' => $locked->id, 'producto_id' => $locked->producto_id]
+                );
 
                 return $nuevoEstado ? 'activada' : 'desactivada';
             });

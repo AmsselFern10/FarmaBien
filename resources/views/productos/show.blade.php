@@ -70,7 +70,7 @@
             <div class="lg:col-span-3">
                 <div class="relative h-52 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-800/60 flex items-center justify-center p-4 border border-slate-200 dark:border-slate-700 overflow-hidden">
                     @if($producto->imagen)
-                        <img src="{{ asset('storage/' . $producto->imagen) }}" 
+                        <img src="{{ route('img.serve', ['path' => $producto->imagen]) }}" 
                              alt="{{ $producto->nombre }}" 
                              class="w-full h-full object-contain">
                     @else

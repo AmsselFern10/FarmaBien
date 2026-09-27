@@ -310,8 +310,8 @@ class CajaController extends Controller
     {
         $user = auth()->user();
 
-        // Solo el cajero dueño de la sesión o un admin puede cerrarla
-        if ($sesion->user_id !== $user->id && !$user->hasRole('admin')) {
+        // El cajero dueño de la sesión o un administrador / usuario con permiso puede cerrarla
+        if ($sesion->user_id !== $user->id && !$user->hasRole('admin') && !$user->can('cerrar caja')) {
             $errorMsg = 'No tienes permiso para cerrar el turno de otro cajero.';
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $errorMsg], 403);

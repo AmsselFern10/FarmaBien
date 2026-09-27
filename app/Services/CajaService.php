@@ -184,6 +184,17 @@ class CajaService
 
             $montoValido = round($monto, 2);
 
+            // Validar que no se retire más dinero del que realmente hay disponible en caja
+            if ($tipo === 'egreso') {
+                $this->recalcularTotales($sesionBloqueada);
+                $sesionBloqueada->refresh();
+                $efectivoDisponible = (float) $sesionBloqueada->monto_esperado_efectivo;
+
+                if ($montoValido > $efectivoDisponible) {
+                    throw new Exception("Operación rechazada: No se puede retirar un monto ($" . number_format($montoValido, 2) . ") superior al efectivo disponible en la caja ($" . number_format($efectivoDisponible, 2) . ").");
+                }
+            }
+
             $movimiento = MovimientoCaja::create([
                 'sesion_caja_id'         => $sesionBloqueada->id,
                 'user_id'                => $user->id,

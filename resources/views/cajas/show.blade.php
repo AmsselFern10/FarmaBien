@@ -8,6 +8,7 @@
     modalMovimiento: false,
     modalCerrar: {{ request()->boolean('cerrar') ? 'true' : 'false' }},
     tipoMovimiento: 'ingreso',
+    montoMovimiento: '',
     montoFinal: '',
     diferencia: 0,
     montoEsperado: {{ $sesion->monto_esperado_efectivo ?? 0 }},
@@ -17,6 +18,7 @@
     },
     abrirMovimiento(tipo) {
         this.tipoMovimiento = tipo;
+        this.montoMovimiento = '';
         this.modalMovimiento = true;
     }
 }">
@@ -332,13 +334,33 @@
                             class="flex-1 py-2 rounded-xl text-xs font-semibold border transition">Egreso / Retiro</button>
                 </div>
 
+                <!-- Indicador de Efectivo Disponible en caso de Egreso -->
+                <div x-show="tipoMovimiento === 'egreso'" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+                    <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                        <span>Efectivo disponible en caja:</span>
+                        <span class="font-bold text-emerald-600 dark:text-emerald-400 font-mono">${{ number_format($sesion->monto_esperado_efectivo ?? 0, 2) }}</span>
+                    </div>
+                </div>
+
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Monto</label>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Monto <span class="text-rose-500">*</span></label>
                     <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">$</span>
-                        <input type="number" name="monto" step="0.01" min="0.01" required
-                               class="w-full pl-7 rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="0.00">
+                        <input type="number" 
+                               name="monto" 
+                               x-model="montoMovimiento"
+                               step="0.01" 
+                               min="0.01" 
+                               :max="tipoMovimiento === 'egreso' ? montoEsperado : null"
+                               required
+                               class="w-full pl-7 rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 font-bold" placeholder="0.00">
                     </div>
+                </div>
+
+                <!-- Alerta si intenta sustraer más dinero del que hay -->
+                <div x-show="tipoMovimiento === 'egreso' && montoMovimiento !== '' && parseFloat(montoMovimiento) > montoEsperado"
+                     class="p-2 rounded-lg bg-rose-100 dark:bg-rose-950/60 border border-rose-300 text-rose-800 dark:text-rose-200 text-xs font-bold animate-pulse">
+                    ⚠️ No puedes retirar un monto mayor al efectivo disponible en caja (${{ number_format($sesion->monto_esperado_efectivo ?? 0, 2) }}).
                 </div>
 
                 <div>
@@ -355,12 +377,13 @@
 
                 <div class="flex gap-2 pt-1">
                     <button type="button" @click="modalMovimiento = false"
-                            class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                            class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit"
+                            :disabled="tipoMovimiento === 'egreso' && (parseFloat(montoMovimiento) > montoEsperado || montoEsperado <= 0)"
                             :class="tipoMovimiento === 'ingreso' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'"
-                            class="flex-1 py-2 rounded-xl text-white text-xs font-semibold transition shadow-xs">
+                            class="flex-1 py-2 rounded-xl text-white text-xs font-semibold transition shadow-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
                         Registrar Movimiento
                     </button>
                 </div>

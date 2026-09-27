@@ -192,8 +192,58 @@
         this.$watch('formData', () => this.persistirBorrador(), { deep: true });
         this.$watch('items', () => this.persistirBorrador(), { deep: true });
     },
+    // Buscador Dinámico de Medicamentos
+    busquedaProducto: '',
+    busquedaDropdownAbierta: false,
+    filtrarCatalogo() {
+        const q = (this.busquedaProducto || '').trim().toLowerCase();
+        if (!q) return [];
+        return this.catalogo.filter(p => {
+            return (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+                   (p.principio_activo && p.principio_activo.toLowerCase().includes(q)) ||
+                   (p.codigo_barra && p.codigo_barra.toLowerCase().includes(q)) ||
+                   (p.laboratorio && p.laboratorio.toLowerCase().includes(q));
+        }).slice(0, 15);
+    },
+    seleccionarProductoDesdeBuscador(prod) {
+        if (!prod) return;
+        
+        // Si el único ítem existente está completamente vacío, reemplazarlo
+        if (this.items.length === 1 && !this.items[0].producto_id) {
+            this.items[0].producto_id = prod.id;
+            this.items[0].presentacionesDisponibles = prod.presentaciones || [];
+            this.items[0].presentacion_id = '';
+            this.items[0].factor = 1;
+            this.items[0].tipo_presentacion = 'Unidad Base';
+            this.items[0].precio_unitario = prod.precio_compra > 0 ? prod.precio_compra : '';
+        } else {
+            // Agregar de primero (unshift)
+            this.items.unshift({
+                uid: Date.now() + Math.random(),
+                producto_id: prod.id,
+                presentacion_id: '',
+                factor: 1,
+                tipo_presentacion: 'Unidad Base',
+                cantidad: 1,
+                precio_unitario: prod.precio_compra > 0 ? prod.precio_compra : '',
+                numero_lote: '',
+                fecha_vencimiento: '',
+                presentacionesDisponibles: prod.presentaciones || []
+            });
+        }
+
+        this.busquedaProducto = '';
+        this.busquedaDropdownAbierta = false;
+    },
+    procesarEnterBuscador() {
+        const res = this.filtrarCatalogo();
+        if (res.length > 0) {
+            this.seleccionarProductoDesdeBuscador(res[0]);
+        }
+    },
     agregarItem() {
-        this.items.push({
+        // Agregar de primero (unshift)
+        this.items.unshift({
             uid: Date.now() + Math.random(),
             producto_id: '',
             presentacion_id: '',

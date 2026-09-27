@@ -26,7 +26,7 @@ class ImageOptimizerService
         int $quality = 82
     ): string {
         $filename = Str::random(40) . '.webp';
-        $targetDir = Storage::disk('public')->path($directory);
+        $targetDir = Storage::disk('private_images')->path($directory);
 
         if (!file_exists($targetDir)) {
             mkdir($targetDir, 0755, true);
@@ -77,7 +77,7 @@ class ImageOptimizerService
         }
 
         // Fallback: Guardado estándar si no se pudo convertir a WebP
-        return $file->store($directory, 'public');
+        return $file->store($directory, 'private_images');
     }
 
     /**

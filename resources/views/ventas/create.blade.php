@@ -1383,8 +1383,8 @@ function posVentaData() {
     <template x-if="formLayout === 'modern'">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[calc(100vh-8.5rem)] lg:min-h-[580px] animate-fadeIn">
             
-            <!-- Columna Izquierda: Cliente + Buscador & Catálogo de Medicamentos (5 cols) -->
-            <div class="lg:col-span-5 flex flex-col h-full space-y-3 min-h-0">
+            <!-- Columna Izquierda: Cliente + Buscador & Catálogo de Medicamentos (7 cols) -->
+            <div class="lg:col-span-7 flex flex-col h-full space-y-3 min-h-0">
                 
                 <!-- Card 1: Identificación del Cliente (Fijo) -->
                 <div class="shrink-0 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
@@ -1518,8 +1518,8 @@ function posVentaData() {
                 </div>
             </div>
 
-            <!-- Columna Derecha: Carrito de Despacho (7 cols) -->
-            <div class="lg:col-span-7 flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 overflow-hidden">
+            <!-- Columna Derecha: Carrito de Despacho (5 cols) -->
+            <div class="lg:col-span-5 flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md p-4 overflow-hidden">
                 
                 <!-- Header Carrito (Fijo) -->
                 <div class="shrink-0 flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-800">

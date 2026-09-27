@@ -6,6 +6,7 @@ use App\Models\Compra;
 use App\Models\Proveedor;
 use App\Models\Producto;
 use App\Models\Lote;
+use App\Models\AuditLog;
 use App\Services\CompraService;
 use App\Http\Requests\StoreCompraRequest;
 use App\Http\Requests\UpdateCompraRequest;
@@ -79,6 +80,14 @@ class CompraController extends Controller
         try {
             $compra = $this->compraService->registrarCompra($request->validated());
 
+            AuditLog::log('compras', 'registrar', "Compra #{$compra->id} registrada por C\${$compra->total}", [
+                'compra_id'           => $compra->id,
+                'proveedor_id'        => $compra->proveedor_id,
+                'numero_comprobante'  => $compra->numero_comprobante,
+                'total'               => $compra->total,
+                'items'               => $compra->detalles()->count(),
+            ]);
+
             return redirect()->route('compras.show', $compra)
                 ->with('success', "Compra #{$compra->id} registrada exitosamente.");
         } catch (QueryException $e) {
@@ -135,6 +144,12 @@ class CompraController extends Controller
             
             $nuevaCompra = $this->compraService->modificarCompra($compra->id, $data, $motivo);
 
+            AuditLog::log('compras', 'modificar', "Compra #{$compra->id} modificada → nueva versión #{$nuevaCompra->id}", [
+                'compra_original_id' => $compra->id,
+                'compra_nueva_id'    => $nuevaCompra->id,
+                'motivo'             => $motivo,
+            ]);
+
             return redirect()->route('compras.show', $nuevaCompra)
                 ->with('success', "Compra actualizada exitosamente. Se generó la nueva versión #{$nuevaCompra->id}.");
         } catch (QueryException $e) {
@@ -149,7 +164,13 @@ class CompraController extends Controller
     public function anular(AnularCompraRequest $request, Compra $compra)
     {
         try {
-            $this->compraService->anularCompra($compra->id, $request->input('motivo'));
+            $motivo = $request->input('motivo');
+            $this->compraService->anularCompra($compra->id, $motivo);
+
+            AuditLog::log('compras', 'anular', "Compra #{$compra->id} anulada — stock revertido", [
+                'compra_id' => $compra->id,
+                'motivo'    => $motivo,
+            ]);
 
             return redirect()->route('compras.show', $compra)
                 ->with('success', "Compra #{$compra->id} anulada correctamente y stock revertido.");
