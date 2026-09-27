@@ -470,10 +470,19 @@ class FarmaDraftEngine {
             `;
             targetContainer.prepend(indicator);
 
-            document.getElementById('btn-discard-draft')?.addEventListener('click', (e) => {
+            document.getElementById('btn-discard-draft')?.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (confirm('¿Deseas descartar los datos del borrador y reiniciar el formulario?')) {
+                const fn = typeof window.farmaConfirm === 'function'
+                    ? window.farmaConfirm
+                    : opts => Promise.resolve(window.confirm(opts.body || opts.title));
+                const ok = await fn({
+                    title: 'Descartar borrador',
+                    body: '¿Deseas descartar los datos del borrador y reiniciar el formulario? Esta acción no puede deshacerse.',
+                    type: 'warning',
+                    ok: 'Sí, descartar'
+                });
+                if (ok) {
                     this.clearDraft();
                     window.location.reload();
                 }

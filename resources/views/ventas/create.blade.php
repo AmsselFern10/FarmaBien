@@ -165,12 +165,15 @@ function posVentaData() {
         },
 
         persistirBorrador() {
-            if (window.farmaSaveDraft) {
-                window.farmaSaveDraft('{{ request()->getPathInfo() }}', {
-                    formData: this.formData,
-                    items: this.items
-                });
-            }
+            clearTimeout(this._timerDraft);
+            this._timerDraft = setTimeout(() => {
+                if (window.farmaSaveDraft) {
+                    window.farmaSaveDraft('{{ request()->getPathInfo() }}', {
+                        formData: this.formData,
+                        items: this.items
+                    });
+                }
+            }, 400);
         },
 
         // Métodos del Carrito
@@ -878,9 +881,21 @@ function posVentaData() {
                     const hw = JSON.parse(localStorage.getItem('farma_hardware_config') || '{}');
                     const shouldAutoPrint = hw.autoprint !== false;
                     const printUrl = data.ticket_url + (data.ticket_url.includes('?') ? '&' : '?') + (shouldAutoPrint ? 'autoprint=1' : '');
-                    window.open(printUrl, '_blank', 'width=400,height=600');
+                    try {
+                        window.open(printUrl, '_blank', 'noopener,noreferrer,width=420,height=650');
+                    } catch (e) {
+                        console.warn('Ticket popup blocked:', e);
+                    }
                 }
-                window.location.href = '{{ route('ventas.index') }}';
+                // Guardar mensaje de éxito en sessionStorage para mostrarlo en ventas.index
+                const numVenta = data.venta?.id || data.venta?.numero_comprobante || '';
+                sessionStorage.setItem('farma_flash', JSON.stringify({
+                    type: 'success',
+                    message: numVenta
+                        ? `✓ Venta #${numVenta} registrada exitosamente.`
+                        : '✓ Venta registrada exitosamente.'
+                }));
+                window.location.replace('{{ route('ventas.index') }}');
 
             } catch (err) {
                 console.error('Error al cobrar venta:', err);

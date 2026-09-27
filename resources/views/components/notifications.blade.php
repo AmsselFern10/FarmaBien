@@ -109,6 +109,17 @@
             $nextTick(() => addToast('info', @js(session('info'))));
         @endif
 
+        /* ── Flash JS desde sessionStorage (ej: POS tras AJAX redirect) ─
+           Permite que páginas que redirigen via window.location.replace()
+           pasen mensajes de notificación a la siguiente página.           */
+        try {
+            const _jsFlash = JSON.parse(sessionStorage.getItem('farma_flash') || 'null');
+            if (_jsFlash && _jsFlash.type && _jsFlash.message) {
+                sessionStorage.removeItem('farma_flash');
+                $nextTick(() => addToast(_jsFlash.type, _jsFlash.message));
+            }
+        } catch(_e) { sessionStorage.removeItem('farma_flash'); }
+
         /* ── API global para JS/async externo ──────────────── */
         window.farmaToast = {
             success : msg => addToast('success', msg),
