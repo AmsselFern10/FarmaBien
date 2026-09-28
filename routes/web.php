@@ -35,6 +35,16 @@ Route::get('/img/{path}', [ImagenController::class, 'serve'])
 
 /*
 |--------------------------------------------------------------------------
+| Imágenes Públicas de Productos — accesible sin login (solo carpeta productos/)
+| Permite que el catálogo público muestre las fotos de medicamentos.
+|--------------------------------------------------------------------------
+*/
+Route::get('/img-producto/{path}', [ImagenController::class, 'servePublic'])
+    ->where('path', '.+')
+    ->name('img.producto.public');
+
+/*
+|--------------------------------------------------------------------------
 | Rutas Públicas
 |--------------------------------------------------------------------------
 */
@@ -80,6 +90,10 @@ Route::get('/health', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+Route::get('/dashboard/api/metricas', [DashboardController::class, 'metricas'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.api.metricas');
 
 /*
 |--------------------------------------------------------------------------
@@ -194,6 +208,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/productos-bajo-stock', [ReporteController::class, 'productosBajoStock'])->name('productos-bajo-stock');
         Route::get('/clientes', [ReporteController::class, 'clientes'])->name('clientes');
         Route::get('/recetas', [ReporteController::class, 'recetas'])->name('recetas');
+        Route::get('/cajas', [ReporteController::class, 'cajas'])->name('cajas');
+        Route::get('/auditorias', [ReporteController::class, 'auditorias'])->name('auditorias');
     });
 
     /*

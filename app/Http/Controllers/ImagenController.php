@@ -57,6 +57,49 @@ class ImagenController extends Controller
         ]);
     }
 
+    /**
+     * Sirve imágenes de PRODUCTOS sin requerir autenticación.
+     * Solo permite acceder a archivos dentro de la carpeta "productos/".
+     * Usado exclusivamente en el catálogo público.
+     *
+     * @param  string  $path  Ruta relativa (debe comenzar con "productos/")
+     */
+    public function servePublic(string $path): StreamedResponse|\Illuminate\Http\Response
+    {
+        // Seguridad: evitar path traversal
+        $path = ltrim($path, '/');
+        if (str_contains($path, '..')) {
+            abort(403, 'Ruta no permitida.');
+        }
+
+        // Seguridad: solo imágenes de la carpeta productos/
+        if (!str_starts_with($path, 'productos/')) {
+            abort(403, 'Acceso restringido.');
+        }
+
+        $disk = Storage::disk('private_images');
+
+        if (! $disk->exists($path)) {
+            abort(404, 'Imagen no encontrada.');
+        }
+
+        $mimeType = $this->detectMime($path);
+        $size     = $disk->size($path);
+
+        return response()->stream(function () use ($disk, $path) {
+            $stream = $disk->readStream($path);
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }, 200, [
+            'Content-Type'        => $mimeType,
+            'Content-Length'      => $size,
+            'Cache-Control'       => 'public, max-age=86400', // público: 24h en CDN/proxy también
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     private function detectMime(string $path): string
     {
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
