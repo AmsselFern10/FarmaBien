@@ -377,10 +377,17 @@ class FarmaDraftEngine {
             if (!saved) return;
 
             const formData = JSON.parse(saved);
+
+            // Si no hay claves con valor real, no restaurar
+            const hasData = Object.values(formData).some(v =>
+                v !== null && v !== undefined && v !== '' && v !== false
+            );
+            if (!hasData) return;
+
             let restoredCount = 0;
             this.isRestoring = true;
 
-            // 1. Sync with Alpine state
+            // 1. Sync with Alpine reactive state (x-model pages — no tienen 'name')
             if (window.Alpine) {
                 try {
                     const alpineRoots = document.querySelectorAll('[x-data]');
@@ -398,7 +405,7 @@ class FarmaDraftEngine {
                 } catch (e) {}
             }
 
-            // 2. Populate DOM inputs directly
+            // 2. Populate native DOM inputs (tienen name=)
             Object.keys(formData).forEach(name => {
                 const elements = document.querySelectorAll(`[name="${name}"]`);
                 elements.forEach(el => {
@@ -422,9 +429,12 @@ class FarmaDraftEngine {
 
             this.isRestoring = false;
             this.hasRestored = true;
+            this.dirty = true;
 
-            if (restoredCount > 0 && showNotification) {
-                this.dirty = true;
+            // Mostrar banner si existen datos guardados, sin importar restoredCount.
+            // Las páginas Alpine con x-model tienen restoredCount=0 (no usan name=)
+            // pero el borrador SÍ fue restaurado al estado reactivo de Alpine.
+            if (showNotification && hasData) {
                 this.showDraftIndicator(true);
             }
         } catch (e) {
@@ -445,49 +455,61 @@ class FarmaDraftEngine {
             return;
         }
 
-        if (!this.form) this.findForm();
-        const targetContainer = this.form || document.querySelector('main');
-        if (!indicator && targetContainer) {
-            indicator = document.createElement('div');
-            indicator.id = 'farma-draft-indicator';
-            indicator.className = 'mb-4 px-4 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-700/60 flex flex-wrap items-center justify-between gap-3 shadow-xs text-xs animate-in fade-in duration-200';
-            indicator.innerHTML = `
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    </div>
-                    <div>
-                        <div class="font-bold text-emerald-900 dark:text-emerald-200">Borrador recuperado automáticamente</div>
-                        <div class="text-[11px] text-emerald-700 dark:text-emerald-400">Los datos que estabas escribiendo se mantuvieron preservados.</div>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-2 shrink-0">
-                    <button type="button" id="btn-discard-draft" class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition font-semibold flex items-center space-x-1 shadow-2xs cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        <span>Descartar borrador</span>
-                    </button>
-                </div>
-            `;
-            targetContainer.prepend(indicator);
+        if (indicator) return; // ya visible
 
-            document.getElementById('btn-discard-draft')?.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const fn = typeof window.farmaConfirm === 'function'
-                    ? window.farmaConfirm
-                    : opts => Promise.resolve(window.confirm(opts.body || opts.title));
-                const ok = await fn({
-                    title: 'Descartar borrador',
-                    body: '¿Deseas descartar los datos del borrador y reiniciar el formulario? Esta acción no puede deshacerse.',
-                    type: 'warning',
-                    ok: 'Sí, descartar'
-                });
-                if (ok) {
-                    this.clearDraft();
-                    window.location.reload();
-                }
-            });
+        // Buscar el contenedor más apropiado para insertar el banner:
+        // 1. El primer h1/h2 visible de la página (insertar antes)
+        // 2. El contenido principal (.content-wrapper, main > div, etc.)
+        // 3. El form como último recurso
+        const heading = document.querySelector('main h1, main h2, .page-header');
+        const mainContent = document.querySelector('main > div, main > section, .content-wrapper');
+        const targetContainer = mainContent || document.querySelector('main') || this.form || document.body;
+
+        indicator = document.createElement('div');
+        indicator.id = 'farma-draft-indicator';
+        indicator.className = 'mb-4 px-4 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-700/60 flex flex-wrap items-center justify-between gap-3 shadow-xs text-xs animate-in fade-in duration-200';
+        indicator.innerHTML = `
+            <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                </div>
+                <div>
+                    <div class="font-bold text-emerald-900 dark:text-emerald-200">Borrador recuperado automáticamente</div>
+                    <div class="text-[11px] text-emerald-700 dark:text-emerald-400">Los datos que estabas escribiendo se mantuvieron preservados.</div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+                <button type="button" id="btn-discard-draft" class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition font-semibold flex items-center space-x-1 shadow-2xs cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>Descartar borrador</span>
+                </button>
+            </div>
+        `;
+
+        // Insertar antes del heading si existe, sino al inicio del contenedor
+        if (heading && heading.parentNode) {
+            heading.parentNode.insertBefore(indicator, heading);
+        } else {
+            targetContainer.prepend(indicator);
         }
+
+        document.getElementById('btn-discard-draft')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const fn = typeof window.farmaConfirm === 'function'
+                ? window.farmaConfirm
+                : opts => Promise.resolve(window.confirm(opts.body || opts.title));
+            const ok = await fn({
+                title: 'Descartar borrador',
+                body: '¿Deseas descartar los datos del borrador y reiniciar el formulario? Esta acción no puede deshacerse.',
+                type: 'warning',
+                ok: 'Sí, descartar'
+            });
+            if (ok) {
+                this.clearDraft();
+                window.location.reload();
+            }
+        });
     }
 }
 
