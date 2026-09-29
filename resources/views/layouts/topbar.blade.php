@@ -86,9 +86,10 @@ function farmaNavbarTabs() {
         currentTitle: '{{ trim($__env->yieldContent('title', 'FarmaBien')) }}'.replace(' - FarmaBien', '').trim() || 'Dashboard',
 
         navigateToTab(tab) {
-            if (this.isTabActive(tab) || this.navigating) return;
-            this.navigating = true;
-            if (window.farmaNavigate) { window.farmaNavigate(tab.url); } else { window.location.href = tab.url; }
+            if (this.isTabActive(tab)) return;
+            window.farmaNavigate
+                ? window.farmaNavigate(tab.url)
+                : (window.location.href = tab.url);
         },
 
         init() {
@@ -220,7 +221,9 @@ function farmaNavbarTabs() {
 
             if (isActive) {
                 const nextTab = this.tabs[Math.max(0, index - 1)] || this.tabs[0];
-                if (window.farmaNavigate) { window.farmaNavigate(nextTab.url); } else { window.location.href = nextTab.url; }
+                window.farmaNavigate
+                    ? window.farmaNavigate(nextTab.url)
+                    : (window.location.href = nextTab.url);
             }
         }
     };

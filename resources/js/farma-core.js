@@ -77,67 +77,120 @@ window.farmaHasDirtyDraft = function(url) {
 // ==========================================
 class FarmaProgressBar {
     constructor() {
-        this.bar = null;
-        this.timer = null;
-        this.isNavigating = false;
-        this.navTimeout = null;
-        this.lastClickedUrl = null;
-        this.lastClickedTime = 0;
+        this.bar          = null;
+        this.timer        = null;
+        this.navLock      = false;       // true desde el click hasta que la nueva página carga
+        this.navTarget    = null;        // URL hacia donde se está navegando
+        this.navLockTimer = null;        // fallback: libera el lock si la navegación no ocurre
         this.init();
     }
 
     init() {
         if (document.getElementById('farma-progress-bar')) {
             this.bar = document.getElementById('farma-progress-bar');
-            return;
+        } else {
+            const bar = document.createElement('div');
+            bar.id = 'farma-progress-bar';
+            bar.className = 'fixed top-0 left-0 h-[3px] z-[9999] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.9)] pointer-events-none opacity-0';
+            bar.style.cssText = 'width:0%;transition:none';
+            document.body.appendChild(bar);
+            this.bar = bar;
         }
 
-        const bar = document.createElement('div');
-        bar.id = 'farma-progress-bar';
-        bar.className = 'fixed top-0 left-0 h-[3px] z-[9999] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.9)] transition-all duration-200 pointer-events-none opacity-0';
-        bar.style.width = '0%';
-        document.body.appendChild(bar);
-        this.bar = bar;
+        // --- window.farmaNavigate: función global para navegación con transición ---
+        // Todos los elementos del sistema (tabs, sidebar, atajos) deben usarla.
+        window.farmaNavigate = (url) => {
+            if (!url) return;
+            const dest = String(url);
 
-        // Global delegated link navigation with anti-bounce protection
+            // Mismo origen: anti-rebote — ignora clic duplicado al mismo destino
+            try {
+                const destUrl = new URL(dest, window.location.origin);
+                const curPath = window.location.pathname + window.location.search;
+                const destPath = destUrl.pathname + destUrl.search;
+
+                if (destPath === curPath) return;               // ya estamos aquí
+                if (this.navLock && this.navTarget === dest) return; // ya navegando al mismo destino
+            } catch (_) {}
+
+            this.navLock   = true;
+            this.navTarget = dest;
+
+            // Inicia barra de progreso
+            this.start();
+
+            // Animación de salida del contenido (~80ms) antes de redirigir
+            const main = document.querySelector('main.page-fade-in, main');
+            if (main) {
+                main.classList.add('page-navigating-out');
+            }
+
+            // Redirige tras el fade-out. requestAnimationFrame garantiza que el
+            // frame de salida se pintó antes de que el navegador empiece a cargar.
+            setTimeout(() => {
+                window.location.href = dest;
+            }, 90);
+
+            // Fallback: si tras 8s no hubo unload, libera el lock
+            clearTimeout(this.navLockTimer);
+            this.navLockTimer = setTimeout(() => {
+                this.navLock   = false;
+                this.navTarget = null;
+                if (main) main.classList.remove('page-navigating-out');
+                this.finish();
+            }, 8000);
+        };
+
+        // --- Click delegado: intercepta <a> normales y activa farmaNavigate ---
         document.addEventListener('click', (e) => {
-            if (e.defaultPrevented) return;
-            const link = e.target.closest('a');
-            if (!link || !link.href) return;
+            if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+            const link = e.target.closest('a[href]');
+            if (!link) return;
 
             const target = link.getAttribute('target');
-            if (target === '_blank') return;
-            
+            if (target === '_blank' || target === '_parent' || target === '_top') return;
+
             const rawHref = link.getAttribute('href') || '';
-            if (rawHref === '#' || rawHref.startsWith('#') || rawHref.startsWith('javascript:')) return;
-            if (link.pathname === window.location.pathname && link.search === window.location.search && link.hash) return;
+            if (!rawHref || rawHref === '#' || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) return;
 
-            const now = Date.now();
-            const currentOrigin = window.location.origin;
+            // Solo misma origin
+            try {
+                const destUrl = new URL(link.href, window.location.origin);
+                if (destUrl.origin !== window.location.origin) return;
 
-            if (link.href.startsWith(currentOrigin)) {
-                // Anti-bounce debounce: prevent rapid duplicate clicks to identical URL within 400ms
-                if (this.isNavigating && this.lastClickedUrl === link.href && (now - this.lastClickedTime < 400)) {
-                    e.preventDefault();
-                    return;
-                }
+                // Enlace con hash al mismo path (scroll interno)
+                if (destUrl.pathname === window.location.pathname && destUrl.hash) return;
+            } catch (_) { return; }
 
-                this.lastClickedUrl = link.href;
-                this.lastClickedTime = now;
-                this.start();
-            }
+            e.preventDefault();
+            window.farmaNavigate(link.href);
         }, true);
 
+        // --- beforeunload: barra al 95% cuando el browser confirma la salida ---
         window.addEventListener('beforeunload', () => {
-            this.progressTo(95, 100);
+            this.progressTo(95, 80);
         });
 
+        // --- load: completa la barra al llegar la nueva página ---
         window.addEventListener('load', () => {
             this.finish();
         });
 
+        // --- pageshow: maneja BFCache (página restaurada desde caché del browser) ---
         window.addEventListener('pageshow', (event) => {
+            // event.persisted = true → página viene del BFCache
+            this.navLock   = false;
+            this.navTarget = null;
+            clearTimeout(this.navLockTimer);
+
             if (event.persisted) {
+                // Fuerza re-animación de entrada para que no parezca "congelada"
+                const main = document.querySelector('main');
+                if (main) {
+                    main.classList.remove('page-navigating-out', 'page-fade-in');
+                    void main.offsetHeight; // reflow para reiniciar animación
+                    main.classList.add('page-fade-in');
+                }
                 this.finish();
             }
         });
@@ -145,42 +198,47 @@ class FarmaProgressBar {
 
     start() {
         if (!this.bar) return;
-        this.isNavigating = true;
+        // Reset instantáneo sin transición
+        this.bar.style.transition = 'none';
+        this.bar.style.width      = '0%';
+        this.bar.style.opacity    = '1';
 
-        clearTimeout(this.navTimeout);
-        this.navTimeout = setTimeout(() => {
-            this.isNavigating = false;
-        }, 3000);
+        // Siguiente frame: animamos hasta 40%
+        requestAnimationFrame(() => {
+            this.bar.style.transition = 'width 300ms cubic-bezier(0.4,0,0.2,1)';
+            this.bar.style.width      = '40%';
 
-        this.bar.style.transition = 'width 250ms ease-out, opacity 100ms ease-in';
-        this.bar.style.opacity = '1';
-        this.bar.style.width = '35%';
-
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-            if (this.bar && this.isNavigating) this.bar.style.width = '75%';
-        }, 120);
+            clearTimeout(this.timer);
+            this.timer = setTimeout(() => {
+                if (this.bar) {
+                    this.bar.style.transition = 'width 4000ms cubic-bezier(0.1,0,0.3,1)';
+                    this.bar.style.width      = '85%';
+                }
+            }, 320);
+        });
     }
 
     progressTo(percent, duration = 200) {
         if (!this.bar) return;
         this.bar.style.transition = `width ${duration}ms ease-out`;
-        this.bar.style.width = percent + '%';
+        this.bar.style.width      = percent + '%';
     }
 
     finish() {
-        this.isNavigating = false;
-        clearTimeout(this.navTimeout);
+        clearTimeout(this.timer);
         if (!this.bar) return;
-        this.bar.style.transition = 'width 100ms ease-out, opacity 150ms ease-in 100ms';
-        this.bar.style.width = '100%';
+        this.bar.style.transition = 'width 120ms ease-out';
+        this.bar.style.width      = '100%';
         setTimeout(() => {
-            if (this.bar) {
-                this.bar.style.opacity = '0';
-                setTimeout(() => {
-                    if (this.bar) this.bar.style.width = '0%';
-                }, 200);
-            }
+            if (!this.bar) return;
+            this.bar.style.transition = 'opacity 180ms ease-in';
+            this.bar.style.opacity    = '0';
+            setTimeout(() => {
+                if (this.bar) {
+                    this.bar.style.transition = 'none';
+                    this.bar.style.width      = '0%';
+                }
+            }, 200);
         }, 120);
     }
 }

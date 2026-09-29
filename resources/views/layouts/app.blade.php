@@ -99,24 +99,26 @@
             this.posFullscreen = !this.posFullscreen;
         },
         initShortcuts() {
+            const nav = (url) => window.farmaNavigate ? window.farmaNavigate(url) : (window.location.href = url);
+
             window.addEventListener('keydown', (e) => {
                 const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
                 
                 if (e.key === 'F2') {
                     e.preventDefault();
-                    window.location.href = '{{ route('ventas.create') }}';
+                    nav('{{ route('ventas.create') }}');
                 } else if (e.key === 'F4') {
                     e.preventDefault();
-                    window.location.href = '{{ route('compras.create') }}';
+                    nav('{{ route('compras.create') }}');
                 } else if (e.altKey && e.key.toLowerCase() === 'i') {
                     e.preventDefault();
-                    window.location.href = '{{ route('inventario.index') }}';
+                    nav('{{ route('inventario.index') }}');
                 } else if (e.altKey && e.key.toLowerCase() === 'r') {
                     e.preventDefault();
-                    window.location.href = '{{ route('recetas.index') }}';
+                    nav('{{ route('recetas.index') }}');
                 } else if (e.altKey && e.key.toLowerCase() === 'p') {
                     e.preventDefault();
-                    window.location.href = '{{ route('productos.index') }}';
+                    nav('{{ route('productos.index') }}');
                 } else if (e.key === 'F1' || (e.key === '?' && !isInput)) {
                     e.preventDefault();
                     this.showShortcutsModal = !this.showShortcutsModal;
@@ -150,9 +152,6 @@
 
                 <!-- Main Scrollable Area -->
                 <div class="flex-1 overflow-y-auto">
-                    {{-- Sistema unificado de notificaciones (toast + modal de confirmación) --}}
-                    <x-notifications />
-
                     <!-- Page View Content -->
                     <main class="page-fade-in mx-auto w-full transition-all duration-200"
                           :class="posFullscreen ? 'max-w-none px-2 sm:px-4 py-3' : 'max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6'">
@@ -162,6 +161,9 @@
                 </div>
             </div>
         </div>
+
+        {{-- Sistema unificado de notificaciones (toast + modal de confirmación) --}}
+        <x-notifications />
 
         <!-- Global Keyboard Shortcuts Modal -->
         <div x-show="showShortcutsModal" 
