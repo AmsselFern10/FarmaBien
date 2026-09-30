@@ -43,7 +43,7 @@ function presFormEdit() {
 </script>
 @endpush
 @section('content')
-<script>window._presProductos = @json($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());</script>
+<script>window._presProductos = {!! $productosJson !!};</script>
 <div
     x-data="presFormEdit()"
     x-init="init()"

@@ -12,6 +12,10 @@ use App\Models\DetalleVenta;
 use App\Models\Cliente;
 use App\Models\Receta;
 use App\Models\User;
+use App\Models\SesionCaja;
+use App\Models\MovimientoCaja;
+use App\Models\Caja;
+use App\Models\AuditLog;
 use App\Services\InventarioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,14 +32,21 @@ class ReporteController extends Controller
         $this->inventarioService = $inventarioService;
         $this->middleware(function ($request, $next) {
             $user = $request->user();
-            if ($user && $user->canAny(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras'])) {
+            if ($user && $user->canAny(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras', 'ver cajas', 'ver usuarios'])) {
                 return $next($request);
             }
             abort(403, 'No tienes permisos para ver los reportes gerenciales.');
         })->only(['index']);
-        $this->middleware('permission:ver reportes ventas')->only(['ventas', 'productosMasVendidos', 'clientes']);
+        $this->middleware('permission:ver reportes ventas')->only(['ventas', 'productosMasVendidos', 'clientes', 'cajas']);
         $this->middleware('permission:ver reportes compras')->only(['compras', 'recetas']);
         $this->middleware('permission:ver reportes inventario')->only(['inventario', 'productosBajoStock']);
+        $this->middleware(function ($request, $next) {
+            $user = $request->user();
+            if ($user && ($user->hasRole('Admin') || $user->hasRole('Farmaceutico') || $user->can('ver usuarios') || $user->can('ver reportes ventas'))) {
+                return $next($request);
+            }
+            abort(403, 'No tienes permisos para consultar los registros de auditoría del sistema.');
+        })->only(['auditorias']);
     }
 
     /**
@@ -852,6 +863,269 @@ class ReporteController extends Controller
                     $r->fecha_emision ? \Carbon\Carbon::parse($r->fecha_emision)->format('d/m/Y') : '',
                     $r->fecha_vencimiento ? \Carbon\Carbon::parse($r->fecha_vencimiento)->format('d/m/Y') : '',
                     ucfirst($r->estado ?? 'N/A')
+                ], ';');
+            }
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    /**
+     * Reporte Gerencial de Cajas, Turnos, Arqueos y Movimientos
+     */
+    public function cajas(Request $request)
+    {
+        $fechaDesde = $request->input('fecha_desde', now()->startOfMonth()->toDateString());
+        $fechaHasta = $request->input('fecha_hasta', now()->endOfMonth()->toDateString());
+        $cajaId = $request->input('caja_id');
+        $cajeroId = $request->input('cajero_id');
+        $estado = $request->input('estado');
+
+        $query = SesionCaja::with(['caja', 'usuario', 'usuarioCierre', 'movimientos'])
+            ->whereBetween(DB::raw('DATE(fecha_apertura)'), [$fechaDesde, $fechaHasta]);
+
+        if (!empty($cajaId)) {
+            $query->where('caja_id', $cajaId);
+        }
+
+        if (!empty($cajeroId)) {
+            $query->where('user_id', $cajeroId);
+        }
+
+        if (!empty($estado)) {
+            $query->where('estado', $estado);
+        }
+
+        $baseQuery = clone $query;
+        $totalSesiones = (clone $baseQuery)->count();
+        $totalVentasCajas = (clone $baseQuery)->sum('total_ventas');
+        $totalVentasEfectivo = (clone $baseQuery)->sum('total_ventas_efectivo');
+        $totalVentasTarjeta = (clone $baseQuery)->sum('total_ventas_tarjeta');
+        $totalVentasTransferencia = (clone $baseQuery)->sum('total_ventas_transferencia');
+        $totalIngresosManuales = (clone $baseQuery)->sum('total_ingresos_manuales');
+        $totalEgresosManuales = (clone $baseQuery)->sum('total_egresos_manuales');
+        $diferenciaTotal = (clone $baseQuery)->where('estado', 'cerrada')->sum('diferencia_efectivo');
+        $sesionesConDiferencia = (clone $baseQuery)->where('estado', 'cerrada')->where('diferencia_efectivo', '!=', 0)->count();
+
+        // Exportación Excel
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            $sesiones = $query->orderBy('fecha_apertura', 'desc')->get();
+            return $this->responseExcel('reportes.excel.cajas', compact(
+                'sesiones', 'totalSesiones', 'totalVentasCajas', 'totalVentasEfectivo',
+                'totalVentasTarjeta', 'totalVentasTransferencia', 'totalIngresosManuales',
+                'totalEgresosManuales', 'diferenciaTotal', 'sesionesConDiferencia',
+                'fechaDesde', 'fechaHasta', 'cajaId', 'cajeroId', 'estado'
+            ), "reporte_cajas_{$fechaDesde}_al_{$fechaHasta}.xls");
+        }
+
+        // Exportación CSV
+        if ($request->input('export') === 'csv') {
+            return $this->exportarCajasCSV($query->orderBy('fecha_apertura', 'desc')->get(), $fechaDesde, $fechaHasta);
+        }
+
+        // Exportación PDF
+        if ($request->input('export') === 'pdf') {
+            $sesiones = $query->orderBy('fecha_apertura', 'desc')->get();
+            $pdf = Pdf::loadView('reportes.pdf.cajas', compact(
+                'sesiones', 'totalSesiones', 'totalVentasCajas', 'totalVentasEfectivo',
+                'totalVentasTarjeta', 'totalVentasTransferencia', 'totalIngresosManuales',
+                'totalEgresosManuales', 'diferenciaTotal', 'sesionesConDiferencia',
+                'fechaDesde', 'fechaHasta', 'cajaId', 'cajeroId', 'estado'
+            ))->setPaper('letter', 'landscape');
+
+            return $pdf->stream("reporte_cajas_{$fechaDesde}_al_{$fechaHasta}.pdf");
+        }
+
+        $sesiones = $query->orderBy('fecha_apertura', 'desc')->paginate(20)->withQueryString();
+        $cajas = Caja::orderBy('nombre')->get(['id', 'nombre', 'numero']);
+        $cajeros = User::whereHas('sesionesCaja')->orderBy('name')->get(['id', 'name']);
+
+        return view('reportes.cajas', compact(
+            'sesiones',
+            'totalSesiones',
+            'totalVentasCajas',
+            'totalVentasEfectivo',
+            'totalVentasTarjeta',
+            'totalVentasTransferencia',
+            'totalIngresosManuales',
+            'totalEgresosManuales',
+            'diferenciaTotal',
+            'sesionesConDiferencia',
+            'fechaDesde',
+            'fechaHasta',
+            'cajaId',
+            'cajeroId',
+            'estado',
+            'cajas',
+            'cajeros'
+        ));
+    }
+
+    protected function exportarCajasCSV($sesiones, $desde, $hasta): StreamedResponse
+    {
+        $filename = "reporte_cajas_{$desde}_al_{$hasta}.csv";
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($sesiones) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, [
+                'ID Turno', 'Caja', 'Cajero Responsable', 'Fecha Apertura', 'Fecha Cierre',
+                'Monto Inicial ($)', 'Ventas Efectivo ($)', 'Ventas Tarjeta ($)', 'Ventas Transf ($)',
+                'Total Ventas ($)', 'Ingresos Manuales ($)', 'Egresos Manuales ($)',
+                'Efectivo Esperado ($)', 'Efectivo Declarado ($)', 'Diferencia ($)', 'Estado'
+            ], ';');
+
+            foreach ($sesiones as $s) {
+                fputcsv($handle, [
+                    '#' . str_pad($s->id, 5, '0', STR_PAD_LEFT),
+                    $s->caja?->nombre ?? ('Caja #' . ($s->caja?->numero ?? $s->caja_id)),
+                    $s->usuario?->name ?? 'N/A',
+                    $s->fecha_apertura ? $s->fecha_apertura->format('d/m/Y H:i') : 'N/A',
+                    $s->fecha_cierre ? $s->fecha_cierre->format('d/m/Y H:i') : 'En curso',
+                    number_format($s->monto_inicial, 2, '.', ''),
+                    number_format($s->total_ventas_efectivo, 2, '.', ''),
+                    number_format($s->total_ventas_tarjeta, 2, '.', ''),
+                    number_format($s->total_ventas_transferencia, 2, '.', ''),
+                    number_format($s->total_ventas, 2, '.', ''),
+                    number_format($s->total_ingresos_manuales, 2, '.', ''),
+                    number_format($s->total_egresos_manuales, 2, '.', ''),
+                    number_format($s->monto_esperado_efectivo ?? $s->efectivo_esperado_calculado, 2, '.', ''),
+                    number_format($s->monto_final_efectivo ?? 0, 2, '.', ''),
+                    number_format($s->diferencia_efectivo ?? 0, 2, '.', ''),
+                    ucfirst($s->estado)
+                ], ';');
+            }
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    /**
+     * Reporte de Auditoría y Trazabilidad del Sistema (Audit Logs)
+     */
+    public function auditorias(Request $request)
+    {
+        $fechaDesde = $request->input('fecha_desde', now()->subDays(30)->toDateString());
+        $fechaHasta = $request->input('fecha_hasta', now()->toDateString());
+        $modulo = $request->input('modulo');
+        $accion = $request->input('accion');
+        $userId = $request->input('user_id');
+        $buscar = trim($request->input('buscar', ''));
+
+        $query = AuditLog::with('user')
+            ->whereBetween(DB::raw('DATE(created_at)'), [$fechaDesde, $fechaHasta]);
+
+        if (!empty($modulo)) {
+            $query->where('modulo', $modulo);
+        }
+
+        if (!empty($accion)) {
+            $query->where('accion', $accion);
+        }
+
+        if (!empty($userId)) {
+            $query->where('user_id', $userId);
+        }
+
+        if (!empty($buscar)) {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('descripcion', 'like', "%{$buscar}%")
+                  ->orWhere('ip', 'like', "%{$buscar}%")
+                  ->orWhereHas('user', function ($uq) use ($buscar) {
+                      $uq->where('name', 'like', "%{$buscar}%")
+                         ->orWhere('email', 'like', "%{$buscar}%");
+                  });
+            });
+        }
+
+        $baseQuery = clone $query;
+        $totalLogs = (clone $baseQuery)->count();
+        $usuariosActivos = (clone $baseQuery)->distinct('user_id')->count('user_id');
+        $modulosAuditados = (clone $baseQuery)->distinct('modulo')->count('modulo');
+        $accionesCriticas = (clone $baseQuery)->whereIn(DB::raw('UPPER(accion)'), [
+            'ELIMINAR', 'DELETE', 'ANULAR', 'AJUSTE', 'DESACTIVAR', 'UPDATE', 'EDITAR'
+        ])->count();
+
+        // Exportación Excel
+        if (in_array($request->input('export'), ['excel', 'xlsx', 'xls'])) {
+            $logs = $query->orderBy('created_at', 'desc')->get();
+            return $this->responseExcel('reportes.excel.auditorias', compact(
+                'logs', 'totalLogs', 'usuariosActivos', 'modulosAuditados', 'accionesCriticas',
+                'fechaDesde', 'fechaHasta', 'modulo', 'accion', 'userId', 'buscar'
+            ), "reporte_auditoria_{$fechaDesde}_al_{$fechaHasta}.xls");
+        }
+
+        // Exportación CSV
+        if ($request->input('export') === 'csv') {
+            return $this->exportarAuditoriasCSV($query->orderBy('created_at', 'desc')->get(), $fechaDesde, $fechaHasta);
+        }
+
+        // Exportación PDF
+        if ($request->input('export') === 'pdf') {
+            $logs = $query->orderBy('created_at', 'desc')->get();
+            $pdf = Pdf::loadView('reportes.pdf.auditorias', compact(
+                'logs', 'totalLogs', 'usuariosActivos', 'modulosAuditados', 'accionesCriticas',
+                'fechaDesde', 'fechaHasta', 'modulo', 'accion', 'userId', 'buscar'
+            ))->setPaper('letter', 'landscape');
+
+            return $pdf->stream("reporte_auditoria_{$fechaDesde}_al_{$fechaHasta}.pdf");
+        }
+
+        $logs = $query->orderBy('created_at', 'desc')->paginate(30)->withQueryString();
+        $modulos = AuditLog::select('modulo')->distinct()->whereNotNull('modulo')->orderBy('modulo')->pluck('modulo');
+        $acciones = AuditLog::select('accion')->distinct()->whereNotNull('accion')->orderBy('accion')->pluck('accion');
+        $usuarios = User::whereHas('auditLogs')->orWhereIn('id', AuditLog::select('user_id')->distinct())->orderBy('name')->get(['id', 'name', 'email']);
+
+        return view('reportes.auditorias', compact(
+            'logs',
+            'totalLogs',
+            'usuariosActivos',
+            'modulosAuditados',
+            'accionesCriticas',
+            'fechaDesde',
+            'fechaHasta',
+            'modulo',
+            'accion',
+            'userId',
+            'buscar',
+            'modulos',
+            'acciones',
+            'usuarios'
+        ));
+    }
+
+    protected function exportarAuditoriasCSV($logs, $desde, $hasta): StreamedResponse
+    {
+        $filename = "reporte_auditorias_{$desde}_al_{$hasta}.csv";
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($logs) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['ID', 'Fecha y Hora', 'Usuario', 'Email Usuario', 'Módulo', 'Acción', 'Descripción', 'Dirección IP', 'Navegador / User Agent'], ';');
+
+            foreach ($logs as $l) {
+                fputcsv($handle, [
+                    $l->id,
+                    $l->created_at ? $l->created_at->format('d/m/Y H:i:s') : 'N/A',
+                    $l->user?->name ?? 'Sistema / Cron',
+                    $l->user?->email ?? 'N/A',
+                    strtoupper($l->modulo ?? 'GENERAL'),
+                    strtoupper($l->accion ?? 'EVENTO'),
+                    $l->descripcion ?? '',
+                    $l->ip ?? 'N/A',
+                    $l->user_agent ?? ''
                 ], ';');
             }
             fclose($handle);

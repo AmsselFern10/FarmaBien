@@ -66,6 +66,11 @@ class ProveedorController extends Controller
             return $proveedor;
         });
 
+        if ($request->boolean('crear_otro')) {
+            return redirect()->route('proveedores.create')
+                ->with('success', "Proveedor '{$proveedor->nombre}' registrado exitosamente. Listo para registrar el siguiente proveedor.");
+        }
+
         return redirect()->route('proveedores.index')
             ->with('success', "Proveedor '{$proveedor->nombre}' registrado exitosamente.");
     }

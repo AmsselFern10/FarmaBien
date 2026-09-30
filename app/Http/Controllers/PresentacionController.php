@@ -55,7 +55,8 @@ class PresentacionController extends Controller
     public function create()
     {
         $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
-        return view('presentaciones.create', compact('productos'));
+        $productosJson = json_encode($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());
+        return view('presentaciones.create', compact('productos', 'productosJson'));
     }
 
     public function store(StorePresentacionRequest $request)
@@ -90,6 +91,11 @@ class PresentacionController extends Controller
 
                 return $presentacion;
             });
+
+            if ($request->boolean('crear_otro')) {
+                return redirect()->route('presentaciones.create')
+                    ->with('success', "Presentación '{$presentacion->nombre}' creada exitosamente. Listo para registrar la siguiente presentación.");
+            }
 
             return redirect()->route('presentaciones.show', $presentacion)
                 ->with('success', "Presentación '{$presentacion->nombre}' creada exitosamente.");
@@ -128,7 +134,8 @@ class PresentacionController extends Controller
     {
         $presentacion->load('producto');
         $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
-        return view('presentaciones.edit', compact('presentacion', 'productos'));
+        $productosJson = json_encode($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());
+        return view('presentaciones.edit', compact('presentacion', 'productos', 'productosJson'));
     }
 
     public function update(UpdatePresentacionRequest $request, PresentacionProducto $presentacion)

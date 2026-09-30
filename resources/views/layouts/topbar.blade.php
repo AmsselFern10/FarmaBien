@@ -54,9 +54,129 @@
             <span>📅 {{ now()->translatedFormat('d M, Y') }}</span>
         </div>
 
+        <!-- Búsqueda Global Ctrl+K -->
+        <button @click="window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'k', bubbles: true }))"
+                type="button"
+                class="hidden sm:inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition shrink-0"
+                title="Búsqueda global (Ctrl+K)">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <span class="hidden lg:inline">Buscar</span>
+            <kbd class="px-1 py-0.5 text-[9px] font-mono bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-slate-500 dark:text-slate-400">Ctrl+K</kbd>
+        </button>
+
+        <!-- Centro de Notificaciones (Campana) -->
+        <div x-data="farmaCentroNotificaciones()" x-init="init()" class="relative shrink-0">
+            <button @click="toggleOpen()" 
+                    type="button" 
+                    class="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition"
+                    :title="notificaciones.total_count > 0 ? notificaciones.total_count + ' alertas pendientes' : 'Sin notificaciones pendientes'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                
+                <!-- Badge de Contador -->
+                <template x-if="notificaciones.total_count > 0">
+                    <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white shadow-xs animate-pulse"
+                          x-text="notificaciones.total_count > 99 ? '99+' : notificaciones.total_count"></span>
+                </template>
+            </button>
+
+            <!-- Dropdown Panel -->
+            <div x-show="abierto" 
+                 x-cloak
+                 @click.outside="abierto = false"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+                 class="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden select-text">
+                
+                <!-- Dropdown Header -->
+                <div class="px-4 py-3 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-xs text-slate-900 dark:text-white">Centro de Alertas</span>
+                        <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300"
+                              x-text="notificaciones.total_count"></span>
+                    </div>
+                    <button type="button" @click="cargarNotificaciones()" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                        Actualizar
+                    </button>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="flex items-center px-2 py-1.5 border-b border-slate-100 dark:border-slate-800 space-x-1 overflow-x-auto scrollbar-none text-[11px]">
+                    <button type="button" @click="tabActivo = 'todos'"
+                            :class="tabActivo === 'todos' ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'"
+                            class="px-2 py-0.5 rounded-lg whitespace-nowrap transition">
+                        Todos (<span x-text="notificaciones.total_count"></span>)
+                    </button>
+                    <button type="button" @click="tabActivo = 'stock'"
+                            :class="tabActivo === 'stock' ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'"
+                            class="px-2 py-0.5 rounded-lg whitespace-nowrap transition">
+                        Stock (<span x-text="notificaciones.stock_count || 0"></span>)
+                    </button>
+                    <button type="button" @click="tabActivo = 'vencimientos'"
+                            :class="tabActivo === 'vencimientos' ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'"
+                            class="px-2 py-0.5 rounded-lg whitespace-nowrap transition">
+                        Vencimientos (<span x-text="notificaciones.vencimientos_count || 0"></span>)
+                    </button>
+                    <button type="button" @click="tabActivo = 'cuentas_pagar'"
+                            :class="tabActivo === 'cuentas_pagar' ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'"
+                            class="px-2 py-0.5 rounded-lg whitespace-nowrap transition">
+                        CxP (<span x-text="notificaciones.cuentas_pagar_count || 0"></span>)
+                    </button>
+                </div>
+
+                <!-- Notifications List -->
+                <div class="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                    <!-- Loading state -->
+                    <div x-show="cargando" class="p-6 text-center text-xs text-slate-400">
+                        Cargando alertas del sistema...
+                    </div>
+
+                    <!-- Items -->
+                    <template x-for="item in itemsFiltrados()" :key="item.id">
+                        <a :href="item.url" class="flex items-start p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition group">
+                            <!-- Urgency Dot / Icon -->
+                            <div class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mr-2.5"
+                                 :class="item.urgencia === 'critica' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' : (item.urgencia === 'alta' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400')">
+                                <span class="text-xs font-bold" x-text="item.urgencia === 'critica' ? '!' : (item.urgencia === 'alta' ? '⚠️' : 'ℹ️')"></span>
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400" x-text="item.titulo"></p>
+                                </div>
+                                <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2" x-text="item.mensaje"></p>
+                            </div>
+                        </a>
+                    </template>
+
+                    <!-- Empty state -->
+                    <div x-show="!cargando && itemsFiltrados().length === 0" class="p-6 text-center text-xs text-slate-400">
+                        No hay alertas pendientes en esta categoría.
+                    </div>
+                </div>
+
+                <!-- Footer Quick Links -->
+                <div class="px-4 py-2.5 bg-slate-50/50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <a href="{{ route('inventario.alertas') }}" class="font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-600">
+                        Monitor de Inventario
+                    </a>
+                    <a href="{{ route('compras.sugerencias-reorden') }}" class="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                        Reorden Sugerido &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Keyboard Shortcuts Trigger -->
         <button @click="showShortcutsModal = true" 
-                type="button"
+                type="button" 
                 class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition shrink-0"
                 title="Ver atajos de teclado (F1)">
             <span>⌨️</span>
@@ -225,6 +345,80 @@ function farmaNavbarTabs() {
                     ? window.farmaNavigate(nextTab.url)
                     : (window.location.href = nextTab.url);
             }
+        }
+    };
+}
+
+function farmaCentroNotificaciones() {
+    return {
+        abierto: false,
+        cargando: false,
+        tabActivo: 'todos',
+        notificaciones: {
+            total_count: 0,
+            stock: [],
+            stock_count: 0,
+            vencimientos: [],
+            vencimientos_count: 0,
+            cuentas_pagar: [],
+            cuentas_pagar_count: 0,
+            reorden: [],
+            reorden_count: 0
+        },
+
+        init() {
+            this.cargarNotificaciones();
+            // Polling suave cada 45 segundos
+            setInterval(() => {
+                this.cargarNotificaciones(true);
+            }, 45000);
+        },
+
+        toggleOpen() {
+            this.abierto = !this.abierto;
+            if (this.abierto) {
+                this.cargarNotificaciones();
+            }
+        },
+
+        async cargarNotificaciones(silencioso = false) {
+            if (!silencioso) this.cargando = true;
+            try {
+                const res = await fetch('/api/notificaciones/resumen', {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.ok) {
+                    this.notificaciones = await res.json();
+                }
+            } catch (e) {
+                console.error('Error al cargar notificaciones:', e);
+            } finally {
+                this.cargando = false;
+            }
+        },
+
+        itemsFiltrados() {
+            if (this.tabActivo === 'stock') {
+                return this.notificaciones.stock || [];
+            }
+            if (this.tabActivo === 'vencimientos') {
+                return this.notificaciones.vencimientos || [];
+            }
+            if (this.tabActivo === 'cuentas_pagar') {
+                return this.notificaciones.cuentas_pagar || [];
+            }
+            // 'todos'
+            const all = [
+                ...(this.notificaciones.stock || []),
+                ...(this.notificaciones.vencimientos || []),
+                ...(this.notificaciones.cuentas_pagar || []),
+                ...(this.notificaciones.reorden || [])
+            ];
+            // Ordenar: críticas primero
+            return all.sort((a, b) => {
+                const orden = { 'critica': 1, 'alta': 2, 'media': 3, 'baja': 4 };
+                return (orden[a.urgencia] || 5) - (orden[b.urgencia] || 5);
+            });
         }
     };
 }

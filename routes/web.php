@@ -19,9 +19,16 @@ use App\Http\Controllers\PresentacionController;
 use App\Http\Controllers\AjusteController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\PublicCatalogoController;
+use App\Http\Controllers\HistorialPrecioController;
 use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\BenchmarkController;
 use App\Http\Controllers\ImagenController;
+use App\Http\Controllers\BusquedaController;
+use App\Http\Controllers\ControladoController;
+use App\Http\Controllers\DevolucionController;
+use App\Http\Controllers\CuentaPorPagarController;
+use App\Http\Controllers\OrdenCompraController;
+use App\Http\Controllers\NotificacionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -104,6 +111,22 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | BÚSQUEDA GLOBAL
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/busqueda', [BusquedaController::class, 'global'])->name('busqueda.global');
+
+    /*
+    |--------------------------------------------------------------------------
+    | MEDICAMENTOS CONTROLADOS (MINSA Nicaragua)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/controlados/libro', [ControladoController::class, 'libroControl'])->name('controlados.libro');
+    Route::post('/controlados', [ControladoController::class, 'store'])->name('controlados.store');
+    Route::get('/controlados', [ControladoController::class, 'index'])->name('controlados.index');
+
+    /*
+    |--------------------------------------------------------------------------
     | PERFIL DE USUARIO
     |--------------------------------------------------------------------------
     */
@@ -128,22 +151,43 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/recetas/buscar', [RecetaController::class, 'buscarRecetas'])
             ->name('recetas.buscar');
+
+        Route::get('/productos/{producto}/historial-precios', [HistorialPrecioController::class, 'apiHistorialProducto'])
+            ->name('productos.historial-precios');
+
+        Route::get('/notificaciones/resumen', [NotificacionController::class, 'resumen'])
+            ->name('notificaciones.resumen');
     });
 
     /*
     |--------------------------------------------------------------------------
-    | VENTAS - CRUD Y ACCIONES
+    | VENTAS Y DEVOLUCIONES - CRUD Y ACCIONES
     |--------------------------------------------------------------------------
     */
     Route::post('ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
     Route::get('ventas/{venta}/ticket', [VentaController::class, 'ticket'])->name('ventas.ticket');
     Route::resource('ventas', VentaController::class);
 
+    Route::get('devoluciones/{devolucion}/ticket', [DevolucionController::class, 'ticket'])->name('devoluciones.ticket');
+    Route::resource('devoluciones', DevolucionController::class)->except(['edit', 'update', 'destroy']);
+
     /*
     |--------------------------------------------------------------------------
-    | COMPRAS - CRUD Y ACCIONES
+    | COMPRAS, CUENTAS POR PAGAR, ÓRDENES DE COMPRA Y REORDEN
     |--------------------------------------------------------------------------
     */
+    Route::get('compras/cuentas-por-pagar', [CuentaPorPagarController::class, 'index'])->name('cuentas-por-pagar.index');
+    Route::get('compras/cuentas-por-pagar/{compra}', [CuentaPorPagarController::class, 'show'])->name('cuentas-por-pagar.show');
+    Route::post('compras/cuentas-por-pagar/{compra}/abonos', [CuentaPorPagarController::class, 'storeAbono'])->name('cuentas-por-pagar.abonos.store');
+
+    Route::get('compras/ordenes/{ordenes_compra}/imprimir', [OrdenCompraController::class, 'imprimir'])->name('ordenes-compras.imprimir');
+    Route::get('compras/ordenes/{ordenes_compra}/recibir', [OrdenCompraController::class, 'recibirMercancia'])->name('ordenes-compras.recibir');
+    Route::post('compras/ordenes/{ordenes_compra}/cancelar', [OrdenCompraController::class, 'cancelar'])->name('ordenes-compras.cancelar');
+    Route::resource('compras/ordenes', OrdenCompraController::class)->names('ordenes-compras')->parameters(['ordenes' => 'ordenes_compra']);
+
+    Route::get('compras/comparador-precios', [HistorialPrecioController::class, 'comparador'])->name('compras.comparador-precios');
+    Route::post('compras/cotizaciones', [HistorialPrecioController::class, 'storeCotizacion'])->name('compras.cotizaciones.store');
+    Route::get('compras/sugerencias-reorden', [HistorialPrecioController::class, 'sugerenciasReorden'])->name('compras.sugerencias-reorden');
     Route::post('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
     Route::get('compras/{compra}/imprimir', [CompraController::class, 'imprimir'])->name('compras.imprimir');
     Route::get('compras/{compra}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');

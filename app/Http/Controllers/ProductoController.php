@@ -209,6 +209,11 @@ class ProductoController extends Controller
                 return $producto;
             });
 
+            if ($request->boolean('crear_otro')) {
+                return redirect()->route('productos.create')
+                    ->with('success', "Medicamento '{$producto->nombre}' registrado exitosamente. Listo para registrar el siguiente producto.");
+            }
+
             return redirect()->route('productos.index')
                 ->with('success', "Producto '{$producto->nombre}' y sus presentaciones fueron registrados exitosamente.");
         } catch (QueryException $qe) {

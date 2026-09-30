@@ -68,6 +68,11 @@ class UserController extends Controller
             return $user;
         });
 
+        if ($request->boolean('crear_otro')) {
+            return redirect()->route('usuarios.create')
+                ->with('success', "Usuario '{$user->name}' creado exitosamente. Listo para registrar el siguiente usuario.");
+        }
+
         return redirect()->route('usuarios.index')
             ->with('success', "Usuario '{$user->name}' creado exitosamente.");
     }

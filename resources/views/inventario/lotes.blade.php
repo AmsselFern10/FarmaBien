@@ -29,7 +29,7 @@
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                <span>Modo Full</span>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
             <a href="{{ route('inventario.index') }}" 
                class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition">
@@ -49,8 +49,8 @@
     <!-- Filtros -->
     <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
         <form method="GET" action="{{ route('inventario.lotes') }}" class="flex flex-col gap-3">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div class="sm:col-span-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3">
+                <div class="md:col-span-5">
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -62,7 +62,7 @@
                                class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                     </div>
                 </div>
-                <div>
+                <div class="md:col-span-3">
                     <select name="filtro_vencimiento" 
                             onchange="this.form.submit()" 
                             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
@@ -70,6 +70,18 @@
                         <option value="proximos_30" {{ request('filtro_vencimiento')=='proximos_30'?'selected':'' }}>Próximos 30 días</option>
                         <option value="proximos_60" {{ request('filtro_vencimiento')=='proximos_60'?'selected':'' }}>Próximos 60 días</option>
                         <option value="vencidos" {{ request('filtro_vencimiento')=='vencidos'?'selected':'' }}>Vencidos</option>
+                    </select>
+                </div>
+                <div class="md:col-span-4">
+                    <select name="orden" 
+                            onchange="this.form.submit()" 
+                            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                        <option value="vencimiento_asc" {{ request('orden', 'vencimiento_asc')=='vencimiento_asc'?'selected':'' }}>Ordenar: Vencimiento (FEFO - Más Próximo)</option>
+                        <option value="vencimiento_desc" {{ request('orden')=='vencimiento_desc'?'selected':'' }}>Ordenar: Vencimiento (Más Lejano)</option>
+                        <option value="ingreso_desc" {{ request('orden')=='ingreso_desc'?'selected':'' }}>Ordenar: Fecha Entrada (Más Reciente)</option>
+                        <option value="ingreso_asc" {{ request('orden')=='ingreso_asc'?'selected':'' }}>Ordenar: Fecha Entrada (Más Antigua)</option>
+                        <option value="stock_desc" {{ request('orden')=='stock_desc'?'selected':'' }}>Ordenar: Mayor Stock Actual</option>
+                        <option value="stock_asc" {{ request('orden')=='stock_asc'?'selected':'' }}>Ordenar: Menor Stock Actual</option>
                     </select>
                 </div>
             </div>
@@ -80,7 +92,7 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                         <span>Filtrar</span>
                     </button>
-                    @if(request()->hasAny(['buscar', 'filtro_vencimiento']))
+                    @if(request()->hasAny(['buscar', 'filtro_vencimiento', 'orden']))
                     <a href="{{ route('inventario.lotes') }}" 
                        class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center gap-1">
                         <span>Limpiar</span>
@@ -102,6 +114,7 @@
                         <th class="px-5 py-3.5">N° Lote</th>
                         <th class="px-5 py-3.5">Medicamento</th>
                         <th class="px-5 py-3.5">Proveedor</th>
+                        <th class="px-5 py-3.5">F. Entrada</th>
                         <th class="px-5 py-3.5 text-right">Stock Ini.</th>
                         <th class="px-5 py-3.5 text-right">Stock Act.</th>
                         <th class="px-5 py-3.5">Vencimiento</th>
@@ -125,6 +138,9 @@
                             <p class="text-[10px] text-slate-400">{{ $lote->producto->categoria->nombre ?? '' }} · {{ $lote->producto->laboratorio->nombre ?? '' }}</p>
                         </td>
                         <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">{{ $lote->proveedor->nombre ?? '—' }}</td>
+                        <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                            {{ $lote->created_at ? $lote->created_at->format('d/m/Y') : '—' }}
+                        </td>
                         <td class="px-5 py-3.5 text-right font-mono text-slate-500 dark:text-slate-400">{{ number_format($lote->stock_inicial) }}</td>
                         <td class="px-5 py-3.5 text-right">
                             <span class="font-mono font-bold text-slate-900 dark:text-white">{{ number_format($lote->stock_actual) }}</span>

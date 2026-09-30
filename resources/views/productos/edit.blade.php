@@ -26,7 +26,8 @@
         precio_compra: @js(old('precio_compra', $producto->precio_compra ?? '')),
         precio_venta: @js(old('precio_venta', $producto->precio_venta)),
         stock_minimo: @js(old('stock_minimo', $producto->stock_minimo ?? 10)),
-        ubicacion: @js(old('ubicacion', $producto->ubicacion ?? ''))
+        ubicacion: @js(old('ubicacion', $producto->ubicacion ?? '')),
+        nivel_controlado: @js(old('nivel_controlado', $producto->nivel_controlado ?? 0)),
     }) : {
         nombre: @js(old('nombre', $producto->nombre)),
         codigo_barra: @js(old('codigo_barra', $producto->codigo_barra)),
@@ -43,7 +44,8 @@
         precio_compra: @js(old('precio_compra', $producto->precio_compra ?? '')),
         precio_venta: @js(old('precio_venta', $producto->precio_venta)),
         stock_minimo: @js(old('stock_minimo', $producto->stock_minimo ?? 10)),
-        ubicacion: @js(old('ubicacion', $producto->ubicacion ?? ''))
+        ubicacion: @js(old('ubicacion', $producto->ubicacion ?? '')),
+        nivel_controlado: @js(old('nivel_controlado', $producto->nivel_controlado ?? 0)),
     }),
     presentaciones: @js($producto->presentaciones->isNotEmpty() ? $producto->presentaciones->map(function($p) {
         return [
@@ -371,6 +373,31 @@ class="space-y-4 transition-all duration-200">
                                 <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
                                 <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Producto Activo para Venta</span>
                             </label>
+                        </div>
+
+                        {{-- Nivel de Control MINSA --}}
+                        <div class="pt-1">
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                🔴 Control MINSA Nicaragua
+                            </label>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <select name="nivel_controlado" x-model="formData.nivel_controlado"
+                                        class="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-rose-500">
+                                    <option value="0">Sin control (venta libre)</option>
+                                    <option value="1">Nivel I — Control Básico (benzodiacepinas leves)</option>
+                                    <option value="2">Nivel II — Opioide (tramadol, codeína)</option>
+                                    <option value="3">Nivel III — Narcótico (morfina, fentanilo)</option>
+                                </select>
+                                <span x-show="formData.nivel_controlado > 0"
+                                      :class="{
+                                          'bg-amber-100 text-amber-700 border-amber-300': formData.nivel_controlado == 1,
+                                          'bg-orange-100 text-orange-700 border-orange-300': formData.nivel_controlado == 2,
+                                          'bg-rose-100 text-rose-700 border-rose-300': formData.nivel_controlado == 3,
+                                      }"
+                                      class="text-[10px] font-bold px-2 py-0.5 rounded border">
+                                    ⚠ Registro MINSA requerido al vender
+                                </span>
+                            </div>
                         </div>
                     </div>
 

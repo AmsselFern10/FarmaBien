@@ -81,6 +81,11 @@ class ClienteController extends Controller
             ]);
         }
 
+        if ($request->boolean('crear_otro')) {
+            return redirect()->route('clientes.create')
+                ->with('success', "Cliente '{$cliente->nombre}' registrado exitosamente. Listo para registrar el siguiente cliente.");
+        }
+
         return redirect()->route('clientes.index')
             ->with('success', "Cliente '{$cliente->nombre}' registrado exitosamente.");
     }

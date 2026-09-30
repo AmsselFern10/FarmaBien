@@ -11,3 +11,15 @@ if (!function_exists('configuracion')) {
         return Configuracion::get($clave, $default);
     }
 }
+
+if (!function_exists('formato_moneda')) {
+    /**
+     * Helper global para formatear montos en moneda local (Córdoba por defecto)
+     */
+    function formato_moneda(float|int|string|null $monto, int $decimales = 2): string
+    {
+        $simbolo = configuracion('moneda_simbolo', 'C$');
+        return $simbolo . ' ' . number_format((float) ($monto ?? 0), $decimales);
+    }
+}
+

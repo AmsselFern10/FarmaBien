@@ -22,6 +22,85 @@
             })->values()->toArray()
         ];
     });
+
+    $oldProductos = old('productos');
+    $initialItems = [];
+    if (is_array($oldProductos) && count($oldProductos) > 0) {
+        foreach ($oldProductos as $idx => $op) {
+            $prod = $productos->firstWhere('id', $op['producto_id'] ?? null);
+            $presList = [];
+            if ($prod) {
+                $presList = $prod->presentacionesActivas->map(function($pres) {
+                    return [
+                        'id' => $pres->id,
+                        'nombre' => $pres->nombre,
+                        'unidades' => (int)$pres->unidades_por_presentacion,
+                        'precio_compra' => (float)$pres->precio_compra
+                    ];
+                })->values()->toArray();
+            }
+            $selectedPres = $prod && !empty($op['presentacion_id']) ? $prod->presentacionesActivas->firstWhere('id', $op['presentacion_id']) : null;
+
+            $initialItems[] = [
+                'uid' => time() + $idx,
+                'producto_id' => $op['producto_id'] ?? '',
+                'presentacion_id' => $op['presentacion_id'] ?? '',
+                'factor' => $selectedPres ? (int)$selectedPres->unidades_por_presentacion : 1,
+                'tipo_presentacion' => $selectedPres ? $selectedPres->nombre : 'Unidad Base',
+                'cantidad' => $op['cantidad'] ?? 1,
+                'precio_unitario' => $op['precio_unitario'] ?? '',
+                'numero_lote' => $op['numero_lote'] ?? '',
+                'fecha_vencimiento' => $op['fecha_vencimiento'] ?? '',
+                'presentacionesDisponibles' => $presList
+            ];
+        }
+    } elseif (!empty($preloadedItems) && is_array($preloadedItems)) {
+        foreach ($preloadedItems as $idx => $pi) {
+            $prod = $productos->firstWhere('id', $pi['producto_id'] ?? null);
+            $presList = [];
+            if ($prod) {
+                $presList = $prod->presentacionesActivas->map(function($pres) {
+                    return [
+                        'id' => $pres->id,
+                        'nombre' => $pres->nombre,
+                        'unidades' => (int)$pres->unidades_por_presentacion,
+                        'precio_compra' => (float)$pres->precio_compra
+                    ];
+                })->values()->toArray();
+            }
+            $selectedPres = $prod && !empty($pi['presentacion_id']) ? $prod->presentacionesActivas->firstWhere('id', $pi['presentacion_id']) : null;
+
+            $initialItems[] = [
+                'uid' => time() + $idx,
+                'producto_id' => $pi['producto_id'] ?? '',
+                'presentacion_id' => $pi['presentacion_id'] ?? '',
+                'factor' => $selectedPres ? (int)$selectedPres->unidades_por_presentacion : 1,
+                'tipo_presentacion' => $selectedPres ? $selectedPres->nombre : 'Unidad Base',
+                'cantidad' => $pi['cantidad'] ?? 1,
+                'precio_unitario' => $pi['precio_unitario'] ?? ($prod ? (float)$prod->precio_compra : ''),
+                'numero_lote' => $pi['numero_lote'] ?? '',
+                'fecha_vencimiento' => $pi['fecha_vencimiento'] ?? '',
+                'presentacionesDisponibles' => $presList
+            ];
+        }
+    }
+
+    if (empty($initialItems)) {
+        $initialItems = [
+            [
+                'uid' => time(),
+                'producto_id' => '',
+                'presentacion_id' => '',
+                'factor' => 1,
+                'tipo_presentacion' => 'Unidad Base',
+                'cantidad' => 1,
+                'precio_unitario' => '',
+                'numero_lote' => '',
+                'fecha_vencimiento' => '',
+                'presentacionesDisponibles' => []
+            ]
+        ];
+    }
 @endphp
 
 <div x-data="{
@@ -32,30 +111,83 @@
         window.dispatchEvent(new CustomEvent('farma:layout-changed', { detail: { mode } }));
     },
     catalogo: @js($productosCatalogo),
+    proveedores: @js($proveedores ?? []),
+    historialMap: @js($historialMap ?? []),
+    proveedorQuery: '',
+    proveedorDropdownAbierto: false,
+    proveedorSeleccionado() {
+        if (!this.formData.proveedor_id) return null;
+        return this.proveedores.find(p => p.id == this.formData.proveedor_id) || null;
+    },
+    filtrarProveedores() {
+        const q = (this.proveedorQuery || '').trim().toLowerCase();
+        if (!q) return this.proveedores.slice(0, 15);
+        return this.proveedores.filter(p => {
+            return (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+                   (p.ruc && p.ruc.toLowerCase().includes(q)) ||
+                   (p.telefono && p.telefono.toLowerCase().includes(q));
+        }).slice(0, 15);
+    },
+    seleccionarProveedor(prov) {
+        if (!prov) return;
+        this.formData.proveedor_id = prov.id;
+        this.proveedorQuery = '';
+        this.proveedorDropdownAbierto = false;
+    },
+    deseleccionarProveedor() {
+        this.formData.proveedor_id = '';
+        this.proveedorQuery = '';
+        this.proveedorDropdownAbierto = false;
+    },
+    getPrecioAnterior(productoId) {
+        if (!productoId || !this.historialMap[productoId]) return null;
+        const entry = this.historialMap[productoId];
+        const provId = this.formData.proveedor_id;
+        if (provId && entry.proveedores && entry.proveedores[provId]) {
+            return {
+                precio: entry.proveedores[provId].precio_unitario_base,
+                proveedor: this.proveedorSeleccionado()?.nombre || 'Este proveedor',
+                fecha: entry.proveedores[provId].fecha,
+                tipo: entry.proveedores[provId].tipo,
+                esDelProveedorActual: true
+            };
+        }
+        return {
+            precio: entry.ultimo_precio,
+            proveedor: entry.ultimo_proveedor,
+            fecha: entry.ultima_fecha,
+            tipo: 'compra',
+            esDelProveedorActual: false
+        };
+    },
+    getDeltaPrecio(productoId, precioUnitario, factor = 1) {
+        const anterior = this.getPrecioAnterior(productoId);
+        if (!anterior || !precioUnitario || parseFloat(precioUnitario) <= 0) return null;
+        const costoBaseActual = parseFloat(precioUnitario) / Math.max(1, parseInt(factor) || 1);
+        const costoBaseAnterior = parseFloat(anterior.precio);
+        if (costoBaseAnterior <= 0) return null;
+        const diff = costoBaseActual - costoBaseAnterior;
+        const pct = ((diff / costoBaseAnterior) * 100).toFixed(1);
+        return {
+            diff,
+            pct,
+            esAumento: diff > 0.0001,
+            esRebaja: diff < -0.0001,
+            esIgual: Math.abs(diff) <= 0.0001
+        };
+    },
     formData: (window.farmaGetDraft ? window.farmaGetDraft('{{ request()->getPathInfo() }}', {
-        proveedor_id: @js(old('proveedor_id', '')),
+        proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
         fecha: @js(old('fecha', date('Y-m-d')))
     }) : {
-        proveedor_id: @js(old('proveedor_id', '')),
+        proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
         fecha: @js(old('fecha', date('Y-m-d')))
     }),
     guardandoCompra: false,
-    items: [
-        {
-            uid: Date.now(),
-            producto_id: '',
-            presentacion_id: '',
-            factor: 1,
-            tipo_presentacion: 'Unidad Base',
-            cantidad: 1,
-            precio_unitario: '',
-            numero_lote: '',
-            fecha_vencimiento: '',
-            presentacionesDisponibles: []
-        }
-    ],
+    hasOldItems: @js(!empty(old('productos')) || !empty($preloadedItems)),
+    items: @js($initialItems),
     // Modal Nueva Presentación
     modalNuevaPres: false,
     nuevaPresItemIdx: null,
@@ -191,8 +323,67 @@
             });
         }
     },
+    validarYEnviar(e) {
+        if (this.guardandoCompra) {
+            e.preventDefault();
+            return;
+        }
+        if (!this.formData.proveedor_id) {
+            e.preventDefault();
+            if (window.farmaToast) {
+                window.farmaToast.error('Por favor seleccione un proveedor registrado antes de procesar la compra.');
+            } else {
+                alert('Por favor seleccione un proveedor registrado antes de procesar la compra.');
+            }
+            this.proveedorDropdownAbierto = true;
+            return;
+        }
+        if (!this.formData.fecha) {
+            e.preventDefault();
+            if (window.farmaToast) {
+                window.farmaToast.error('Por favor indique la fecha del documento.');
+            } else {
+                alert('Por favor indique la fecha del documento.');
+            }
+            return;
+        }
+        for (let i = 0; i < this.items.length; i++) {
+            const it = this.items[i];
+            if (!it.producto_id) {
+                e.preventDefault();
+                if (window.farmaToast) window.farmaToast.error(`Línea ${i + 1}: Debe seleccionar un medicamento.`);
+                else alert(`Línea ${i + 1}: Debe seleccionar un medicamento.`);
+                return;
+            }
+            if (!it.cantidad || it.cantidad < 1) {
+                e.preventDefault();
+                if (window.farmaToast) window.farmaToast.error(`Línea ${i + 1}: La cantidad debe ser mayor a 0.`);
+                else alert(`Línea ${i + 1}: La cantidad debe ser mayor a 0.`);
+                return;
+            }
+            if (!it.precio_unitario || it.precio_unitario <= 0) {
+                e.preventDefault();
+                if (window.farmaToast) window.farmaToast.error(`Línea ${i + 1}: Debe especificar un precio unitario de compra.`);
+                else alert(`Línea ${i + 1}: Debe especificar un precio unitario de compra.`);
+                return;
+            }
+            if (!it.numero_lote || it.numero_lote.trim() === '') {
+                e.preventDefault();
+                if (window.farmaToast) window.farmaToast.error(`Línea ${i + 1}: Debe ingresar el número de lote.`);
+                else alert(`Línea ${i + 1}: Debe ingresar el número de lote.`);
+                return;
+            }
+            if (!it.fecha_vencimiento) {
+                e.preventDefault();
+                if (window.farmaToast) window.farmaToast.error(`Línea ${i + 1}: Debe indicar la fecha de vencimiento del lote.`);
+                else alert(`Línea ${i + 1}: Debe indicar la fecha de vencimiento del lote.`);
+                return;
+            }
+        }
+        this.guardandoCompra = true;
+    },
     init() {
-        if (this.formData && this.formData.savedItems && this.formData.savedItems.length > 0) {
+        if (!this.hasOldItems && this.items.length === 1 && !this.items[0].producto_id && this.formData && this.formData.savedItems && this.formData.savedItems.length > 0) {
             this.items = this.formData.savedItems;
         }
         this.$watch('formData', () => this.persistirBorrador(), { deep: true });
@@ -382,7 +573,7 @@ class="space-y-4 transition-all duration-200">
     </div>
 
     <!-- Main Form -->
-    <form action="{{ route('compras.store') }}" method="POST" id="formCompra" @submit="if(guardandoCompra) { $event.preventDefault(); return; } guardandoCompra = true;">
+    <form action="{{ route('compras.store') }}" method="POST" id="formCompra" @submit="validarYEnviar($event)">
         @csrf
 
         <!-- Error Alert -->
@@ -441,21 +632,62 @@ class="space-y-4 transition-all duration-200">
 
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                             <!-- Proveedor (Col 5) -->
-                            <div class="sm:col-span-5">
+                            <div class="sm:col-span-5 relative z-30" @click.outside="proveedorDropdownAbierto = false">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     Proveedor <span class="text-rose-500">*</span>
                                 </label>
-                                <select name="proveedor_id" 
-                                        x-model="formData.proveedor_id" 
-                                        required
-                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
-                                    <option value="">Seleccione Proveedor...</option>
-                                    @foreach($proveedores as $prov)
-                                        <option value="{{ $prov->id }}">
-                                            {{ $prov->nombre }} {{ $prov->ruc ? "({$prov->ruc})" : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <input type="hidden" name="proveedor_id" :value="formData.proveedor_id" required>
+                                
+                                <template x-if="proveedorSeleccionado()">
+                                    <div class="flex items-center justify-between px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-lg text-xs">
+                                        <div class="flex items-center space-x-1.5 min-w-0">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                            <span class="font-bold text-emerald-900 dark:text-emerald-200 truncate" x-text="proveedorSeleccionado().nombre"></span>
+                                            <span class="text-[10px] text-emerald-700 dark:text-emerald-300 font-mono" x-show="proveedorSeleccionado().ruc" x-text="'(' + proveedorSeleccionado().ruc + ')'"></span>
+                                        </div>
+                                        <button type="button" @click="deseleccionarProveedor()" class="ml-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-0.5" title="Cambiar proveedor">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    </div>
+                                </template>
+
+                                <template x-if="!proveedorSeleccionado()">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               x-model="proveedorQuery" 
+                                               @focus="proveedorDropdownAbierto = true"
+                                               @input="proveedorDropdownAbierto = true"
+                                               @keydown.enter.prevent="if (filtrarProveedores().length > 0) seleccionarProveedor(filtrarProveedores()[0])"
+                                               placeholder="Buscar proveedor o RUC..."
+                                               class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500">
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-slate-400">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Dropdown predictivo -->
+                                <div x-show="proveedorDropdownAbierto && !proveedorSeleccionado()" 
+                                     x-transition
+                                     class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xl max-h-52 overflow-y-auto">
+                                    <template x-for="prov in filtrarProveedores()" :key="prov.id">
+                                        <button type="button" 
+                                                @click="seleccionarProveedor(prov)"
+                                                class="w-full px-2.5 py-1.5 text-left hover:bg-emerald-50 dark:hover:bg-slate-700/60 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/40 last:border-0 transition-colors">
+                                            <div class="min-w-0">
+                                                <div class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="prov.nombre"></div>
+                                                <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center space-x-2">
+                                                    <span x-show="prov.ruc" x-text="'RUC: ' + prov.ruc"></span>
+                                                    <span x-show="prov.telefono" x-text="'Tel: ' + prov.telefono"></span>
+                                                </div>
+                                            </div>
+                                            <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1.5">Elegir →</span>
+                                        </button>
+                                    </template>
+                                    <div x-show="filtrarProveedores().length === 0" class="px-3 py-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                                        No se encontró proveedor
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- N° Comprobante (Col 4) -->
@@ -513,34 +745,78 @@ class="space-y-4 transition-all duration-200">
 
                 <!-- Panel 3: Desglose de Fármacos, Presentaciones y Lotes -->
                 <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
-                    <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 shrink-0">
                             <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                             <span>2. Desglose de Medicamentos, Presentaciones y Lotes</span>
                         </div>
 
-                        <button type="button" 
-                                @click="agregarItem()" 
-                                class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            <span>Agregar Fármaco / Lote</span>
-                        </button>
+                        <!-- Buscador Dinámico de Fármacos (Como en Ventas) -->
+                        <div class="flex items-center space-x-2 flex-1 max-w-lg">
+                            <div class="relative flex-1" @click.outside="busquedaDropdownAbierta = false">
+                                <div class="relative">
+                                    <input type="text"
+                                           id="compraBuscador"
+                                           x-model="busquedaProducto"
+                                           @focus="busquedaDropdownAbierta = true"
+                                           @input="busquedaDropdownAbierta = true"
+                                           @keydown.enter.prevent="procesarEnterBuscador()"
+                                           @keydown.escape="busquedaDropdownAbierta = false"
+                                           placeholder="🔍 Buscar por código, principio activo o nombre... [F3]"
+                                           class="w-full pl-8 pr-10 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-emerald-500 font-medium">
+                                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    <span class="absolute right-2 top-1.5 px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-[9px] font-mono text-slate-500 font-bold border border-slate-200 dark:border-slate-600 pointer-events-none">F3</span>
+                                </div>
+
+                                <!-- Dropdown flotante de resultados -->
+                                <div x-show="busquedaDropdownAbierta && filtrarCatalogo().length > 0"
+                                     x-cloak
+                                     class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
+                                    <template x-for="p in filtrarCatalogo()" :key="p.id">
+                                        <button type="button" 
+                                                @click="seleccionarProductoDesdeBuscador(p)"
+                                                class="w-full px-3 py-2 text-left hover:bg-emerald-50 dark:hover:bg-slate-800/80 flex items-center justify-between transition cursor-pointer group">
+                                            <div class="flex items-center space-x-2 min-w-0">
+                                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                                <div class="truncate">
+                                                    <span class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400" x-text="p.nombre"></span>
+                                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                                                        <span x-show="p.principio_activo" x-text="p.principio_activo"></span>
+                                                        <span x-show="p.codigo_barra" class="font-mono text-slate-400" x-text="'• ' + p.codigo_barra"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right shrink-0 pl-2">
+                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
+                                            </div>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <button type="button" 
+                                    @click="agregarItem()" 
+                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 shrink-0 cursor-pointer">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span>+ Fila Manual</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Tabla de Lotes -->
-                    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
+                    <!-- Tabla de Lotes con scroll interno (máx ~5 items antes de scrollear) -->
+                    <div class="overflow-x-auto overflow-y-auto max-h-[340px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 custom-scrollbar">
                         <table class="w-full text-left text-xs border-collapse min-w-[850px]">
-                            <thead>
-                                <tr class="bg-slate-100/90 dark:bg-slate-700/80 text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
-                                    <th class="py-2 px-2 text-center w-8">#</th>
-                                    <th class="py-2 px-3 min-w-[200px]">Medicamento / Fármaco</th>
-                                    <th class="py-2 px-3 min-w-[190px]">Presentación</th>
-                                    <th class="py-2 px-2 text-center w-20">Cant.</th>
-                                    <th class="py-2 px-2 text-right w-24">P. Compra ($)</th>
-                                    <th class="py-2 px-2 w-28">N° Lote</th>
-                                    <th class="py-2 px-2 w-32">F. Vencimiento</th>
-                                    <th class="py-2 px-3 text-right w-24">Subtotal</th>
-                                    <th class="py-2 px-2 text-center w-8"></th>
+                            <thead class="sticky top-0 z-10 bg-slate-100 dark:bg-slate-700 shadow-2xs">
+                                <tr class="text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+                                    <th class="py-2.5 px-2 text-center w-8">#</th>
+                                    <th class="py-2.5 px-3 min-w-[200px]">Medicamento / Fármaco</th>
+                                    <th class="py-2.5 px-3 min-w-[190px]">Presentación</th>
+                                    <th class="py-2.5 px-2 text-center w-20">Cant.</th>
+                                    <th class="py-2.5 px-2 text-right w-24">P. Compra ($)</th>
+                                    <th class="py-2.5 px-2 w-28">N° Lote</th>
+                                    <th class="py-2.5 px-2 w-32">F. Vencimiento</th>
+                                    <th class="py-2.5 px-3 text-right w-24">Subtotal</th>
+                                    <th class="py-2.5 px-2 text-center w-8"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
@@ -602,13 +878,32 @@ class="space-y-4 transition-all duration-200">
                                         <!-- Precio Compra -->
                                         <td class="py-2 px-2">
                                             <input type="number" 
-                                                   step="0.01" 
+                                                   step="0.0001" 
                                                    min="0" 
                                                    :name="'productos[' + idx + '][precio_unitario]'" 
                                                    x-model="item.precio_unitario" 
                                                    required
                                                    placeholder="0.00"
                                                    class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-right focus:ring-1 focus:ring-emerald-500">
+                                            
+                                            <!-- Badge Precio Anterior & Variación -->
+                                            <div class="mt-1 flex flex-col items-end gap-0.5" x-show="item.producto_id && getPrecioAnterior(item.producto_id)">
+                                                <span class="text-[10px] text-slate-400" :title="'Proveedor: ' + (getPrecioAnterior(item.producto_id)?.proveedor || '') + ' (' + (getPrecioAnterior(item.producto_id)?.fecha || '') + ')'">
+                                                    Ant: $<span x-text="(getPrecioAnterior(item.producto_id)?.precio || 0).toFixed(2)"></span>
+                                                </span>
+                                                <template x-if="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor)">
+                                                    <span class="text-[9px] font-extrabold px-1 rounded inline-flex items-center"
+                                                          :class="{
+                                                              'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento,
+                                                              'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja,
+                                                              'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esIgual
+                                                          }">
+                                                        <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento">↑ +</span>
+                                                        <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja">↓ </span>
+                                                        <span x-text="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).pct + '%'"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
                                         </td>
 
                                         <!-- N° Lote -->
@@ -654,11 +949,20 @@ class="space-y-4 transition-all duration-200">
                 <!-- Footer / Toolbar Inferior -->
                 <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-slate-400 text-[11px]">
                     <span>Los datos se sincronizan automáticamente en borrador temporal.</span>
-                    <button type="submit" 
-                            class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Guardar Compra</span>
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                            <input type="checkbox" name="crear_otro" value="1"
+                                   {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>Guardar y registrar otra</span>
+                        </label>
+                        <button type="submit" 
+                                :disabled="guardandoCompra"
+                                class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span x-text="guardandoCompra ? 'Guardando...' : 'Guardar Compra'">Guardar Compra</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>
@@ -671,8 +975,8 @@ class="space-y-4 transition-all duration-200">
             <div class="space-y-5 animate-fadeIn">
                 
                 <!-- Tarjeta 1: Datos del Comprobante y Proveedor -->
-                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
-                    <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md">
+                    <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2 rounded-t-2xl">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                             Datos de la Factura y Proveedor
@@ -682,21 +986,62 @@ class="space-y-4 transition-all duration-200">
                     <div class="p-5 space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- Proveedor -->
-                            <div>
+                            <div class="relative z-30" @click.outside="proveedorDropdownAbierto = false">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                                     Proveedor Registrado <span class="text-rose-500">*</span>
                                 </label>
-                                <select name="proveedor_id" 
-                                        x-model="formData.proveedor_id" 
-                                        required
-                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
-                                    <option value="">-- Seleccionar Proveedor --</option>
-                                    @foreach($proveedores as $prov)
-                                        <option value="{{ $prov->id }}">
-                                            {{ $prov->nombre }} {{ $prov->ruc ? "• RUC: {$prov->ruc}" : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <input type="hidden" name="proveedor_id" :value="formData.proveedor_id" required>
+                                
+                                <template x-if="proveedorSeleccionado()">
+                                    <div class="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs shadow-2xs">
+                                        <div class="flex items-center space-x-2 min-w-0">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                            <span class="font-bold text-emerald-950 dark:text-emerald-200 truncate" x-text="proveedorSeleccionado().nombre"></span>
+                                            <span class="text-[11px] text-emerald-700 dark:text-emerald-300 font-mono" x-show="proveedorSeleccionado().ruc" x-text="'• RUC: ' + proveedorSeleccionado().ruc"></span>
+                                        </div>
+                                        <button type="button" @click="deseleccionarProveedor()" class="ml-2 px-2 py-0.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded-lg transition" title="Cambiar proveedor">
+                                            Cambiar
+                                        </button>
+                                    </div>
+                                </template>
+
+                                <template x-if="!proveedorSeleccionado()">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               x-model="proveedorQuery" 
+                                               @focus="proveedorDropdownAbierto = true"
+                                               @input="proveedorDropdownAbierto = true"
+                                               @keydown.enter.prevent="if (filtrarProveedores().length > 0) seleccionarProveedor(filtrarProveedores()[0])"
+                                               placeholder="Buscar proveedor por nombre o RUC..."
+                                               class="w-full pl-9 pr-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Dropdown predictivo -->
+                                <div x-show="proveedorDropdownAbierto && !proveedorSeleccionado()" 
+                                     x-transition
+                                     class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl max-h-56 overflow-y-auto">
+                                    <template x-for="prov in filtrarProveedores()" :key="prov.id">
+                                        <button type="button" 
+                                                @click="seleccionarProveedor(prov)"
+                                                class="w-full px-3.5 py-2.5 text-left hover:bg-emerald-50 dark:hover:bg-slate-700/60 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/40 last:border-0 transition-colors">
+                                            <div class="min-w-0">
+                                                <div class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="prov.nombre"></div>
+                                                <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center space-x-2 mt-0.5">
+                                                    <span x-show="prov.ruc" x-text="'RUC: ' + prov.ruc"></span>
+                                                    <span x-show="prov.telefono" x-text="'• Tel: ' + prov.telefono"></span>
+                                                </div>
+                                            </div>
+                                            <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">Seleccionar →</span>
+                                        </button>
+                                    </template>
+                                    <div x-show="filtrarProveedores().length === 0" class="px-4 py-3 text-center text-xs text-slate-500 dark:text-slate-400">
+                                        No se encontró ningún proveedor con "<span x-text="proveedorQuery" class="font-medium"></span>"
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Número Comprobante -->
@@ -728,23 +1073,66 @@ class="space-y-4 transition-all duration-200">
 
                 <!-- Tarjeta 2: Ingreso de Medicamentos y Lotes -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
-                    <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
+                    <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2 shrink-0">
                             <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                                 Medicamentos, Presentaciones y Lotes
                             </h2>
                         </div>
 
-                        <button type="button" 
-                                @click="agregarItem()" 
-                                class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            <span>Agregar Fármaco / Lote</span>
-                        </button>
+                        <!-- Buscador Dinámico de Fármacos en Modo Moderno -->
+                        <div class="flex items-center space-x-2 flex-1 max-w-lg">
+                            <div class="relative flex-1" @click.outside="busquedaDropdownAbierta = false">
+                                <div class="relative">
+                                    <input type="text"
+                                           x-model="busquedaProducto"
+                                           @focus="busquedaDropdownAbierta = true"
+                                           @input="busquedaDropdownAbierta = true"
+                                           @keydown.enter.prevent="procesarEnterBuscador()"
+                                           @keydown.escape="busquedaDropdownAbierta = false"
+                                           placeholder="🔍 Buscar por código, principio activo o nombre... [F3]"
+                                           class="w-full pl-8 pr-10 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs font-medium">
+                                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    <span class="absolute right-2 top-1.5 px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-[9px] font-mono text-slate-500 font-bold border border-slate-200 dark:border-slate-600 pointer-events-none">F3</span>
+                                </div>
+
+                                <!-- Dropdown flotante de resultados -->
+                                <div x-show="busquedaDropdownAbierta && filtrarCatalogo().length > 0"
+                                     x-cloak
+                                     class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
+                                    <template x-for="p in filtrarCatalogo()" :key="p.id">
+                                        <button type="button" 
+                                                @click="seleccionarProductoDesdeBuscador(p)"
+                                                class="w-full px-3.5 py-2 text-left hover:bg-emerald-50 dark:hover:bg-slate-800/80 flex items-center justify-between transition cursor-pointer group">
+                                            <div class="flex items-center space-x-2 min-w-0">
+                                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                                <div class="truncate">
+                                                    <span class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400" x-text="p.nombre"></span>
+                                                    <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                                                        <span x-show="p.principio_activo" x-text="p.principio_activo"></span>
+                                                        <span x-show="p.codigo_barra" class="font-mono text-slate-400" x-text="'• ' + p.codigo_barra"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right shrink-0 pl-2">
+                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
+                                            </div>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <button type="button" 
+                                    @click="agregarItem()" 
+                                    class="inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span>+ Fila</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="p-5 space-y-4">
+                    <div class="p-5 space-y-4 max-h-[580px] overflow-y-auto custom-scrollbar">
                         <template x-for="(item, idx) in items" :key="item.uid">
                             <div class="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 space-y-3 transition">
                                 <div class="flex items-center justify-between">
@@ -817,27 +1205,52 @@ class="space-y-4 transition-all duration-200">
                                             Cantidad <span class="text-rose-500">*</span>
                                         </label>
                                         <input type="number" 
-                                               :name="'productos[' + idx + '][cantidad_presentaciones]'" 
-                                               x-model.number="item.cantidad" 
-                                               min="1" 
-                                               required
-                                               placeholder="1"
-                                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500">
+                                                :name="'productos[' + idx + '][cantidad_presentaciones]'" 
+                                                x-model.number="item.cantidad" 
+                                                min="1" 
+                                                required
+                                                placeholder="1"
+                                                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500">
                                     </div>
 
                                     <!-- Precio Unitario -->
                                     <div class="md:col-span-3">
-                                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Precio Unit. ($) <span class="text-rose-500">*</span>
-                                        </label>
-                                        <input type="number" 
-                                               step="0.01" 
-                                               min="0" 
-                                               :name="'productos[' + idx + '][precio_unitario]'" 
-                                               x-model="item.precio_unitario" 
-                                               required
-                                               placeholder="0.00"
-                                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold text-right focus:ring-2 focus:ring-emerald-500">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                                Precio Unit. ($) <span class="text-rose-500">*</span>
+                                            </label>
+                                            <template x-if="item.producto_id && getPrecioAnterior(item.producto_id)">
+                                                <span class="text-[10px] text-slate-400" :title="'Proveedor: ' + (getPrecioAnterior(item.producto_id)?.proveedor || '') + ' (' + (getPrecioAnterior(item.producto_id)?.fecha || '') + ')'">
+                                                    Ant: $<span x-text="(getPrecioAnterior(item.producto_id)?.precio || 0).toFixed(2)"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                        <div class="relative">
+                                            <input type="number" 
+                                                   step="0.0001" 
+                                                   min="0" 
+                                                   :name="'productos[' + idx + '][precio_unitario]'" 
+                                                   x-model="item.precio_unitario" 
+                                                   required
+                                                   placeholder="0.00"
+                                                   class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold text-right focus:ring-2 focus:ring-emerald-500">
+                                        </div>
+                                        <template x-if="item.producto_id && getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor)">
+                                            <div class="mt-1 flex items-center justify-end space-x-1">
+                                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded inline-flex items-center"
+                                                      :class="{
+                                                          'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento,
+                                                          'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja,
+                                                          'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esIgual
+                                                      }">
+                                                    <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento">↑ +</span>
+                                                    <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja">↓ </span>
+                                                    <span x-text="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).pct + '%'"></span>
+                                                    <span class="ml-1" x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento">más caro</span>
+                                                    <span class="ml-1" x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja">más barato</span>
+                                                </span>
+                                            </div>
+                                        </template>
                                     </div>
 
                                     <!-- N° Lote -->
@@ -846,11 +1259,11 @@ class="space-y-4 transition-all duration-200">
                                             Número de Lote de Fabricación <span class="text-rose-500">*</span>
                                         </label>
                                         <input type="text" 
-                                               :name="'productos[' + idx + '][numero_lote]'" 
-                                               x-model="item.numero_lote" 
-                                               required
-                                               placeholder="Ej: LOTE-A9842"
-                                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white uppercase font-mono focus:ring-2 focus:ring-emerald-500">
+                                                :name="'productos[' + idx + '][numero_lote]'" 
+                                                x-model="item.numero_lote" 
+                                                required
+                                                placeholder="Ej: LOTE-A9842"
+                                                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white uppercase font-mono focus:ring-2 focus:ring-emerald-500">
                                     </div>
 
                                     <!-- Fecha Vencimiento -->
@@ -859,10 +1272,10 @@ class="space-y-4 transition-all duration-200">
                                             Fecha de Vencimiento <span class="text-rose-500">*</span>
                                         </label>
                                         <input type="date" 
-                                               :name="'productos[' + idx + '][fecha_vencimiento]'" 
-                                               x-model="item.fecha_vencimiento" 
-                                               required
-                                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                                :name="'productos[' + idx + '][fecha_vencimiento]'" 
+                                                x-model="item.fecha_vencimiento" 
+                                                required
+                                                class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
                                     </div>
                                 </div>
                             </div>
@@ -870,8 +1283,8 @@ class="space-y-4 transition-all duration-200">
                     </div>
                 </div>
 
-                <!-- Tarjeta 3: Totales y Acciones (Light Mode Blanco) -->
-                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-300 dark:border-slate-800 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+                <!-- Tarjeta 3: Totales y Acciones Sticky Bottom -->
+                <div class="sticky bottom-3 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-300 dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="flex items-center space-x-6 text-xs text-slate-600 dark:text-slate-300">
                         <div>
                             <span class="block text-slate-400 text-[11px]">Total de Líneas:</span>
@@ -889,17 +1302,25 @@ class="space-y-4 transition-all duration-200">
                         </div>
                     </div>
 
-                    <div class="flex items-center space-x-3 w-full md:w-auto">
-                        <a href="{{ route('compras.index') }}" 
-                           class="flex-1 md:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center">
-                            Cancelar
-                        </a>
-                        <button type="submit" 
-                                :disabled="guardandoCompra"
-                                class="flex-1 md:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            <span x-text="guardandoCompra ? 'Guardando...' : 'Guardar Compra e Ingresar Lotes'">Guardar Compra e Ingresar Lotes</span>
-                        </button>
+                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium self-start sm:self-auto">
+                            <input type="checkbox" name="crear_otro" value="1"
+                                   {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>Guardar y registrar otra</span>
+                        </label>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <a href="{{ route('compras.index') }}" 
+                               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center">
+                                Cancelar
+                            </a>
+                            <button type="submit" 
+                                    :disabled="guardandoCompra"
+                                    class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span x-text="guardandoCompra ? 'Guardando...' : 'Guardar Compra e Ingresar Lotes'">Guardar Compra e Ingresar Lotes</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

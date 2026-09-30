@@ -165,6 +165,11 @@ class PromocionController extends Controller
                 return $promo;
             });
 
+            if ($request->boolean('crear_otro')) {
+                return redirect()->route('promociones.create')
+                    ->with('success', "Promoción '{$promocion->nombre}' configurada y activada exitosamente.");
+            }
+
             return redirect()->route('promociones.index')
                 ->with('success', "Promoción '{$promocion->nombre}' configurada y activada exitosamente.");
         } catch (QueryException $qe) {

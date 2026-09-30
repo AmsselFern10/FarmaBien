@@ -78,6 +78,11 @@ class LaboratorioController extends Controller
                 return $laboratorio;
             });
 
+            if ($request->boolean('crear_otro')) {
+                return redirect()->route('laboratorios.create')
+                    ->with('success', "Laboratorio '{$laboratorio->nombre}' registrado correctamente. Listo para registrar el siguiente laboratorio.");
+            }
+
             return redirect()->route('laboratorios.index')
                 ->with('success', "Laboratorio '{$laboratorio->nombre}' registrado correctamente.");
         } catch (QueryException $qe) {

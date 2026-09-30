@@ -207,7 +207,18 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
                 <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Medicamentos Bajo Stock Mínimo</h3>
             </div>
-            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 border border-indigo-200 dark:border-indigo-800">{{ $bajoStockCount }}</span>
+            <div class="flex items-center space-x-2">
+                @can('registrar compras')
+                @if($bajoStockCount > 0)
+                <a href="{{ route('compras.sugerencias-reorden') }}" 
+                   class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-xs font-semibold transition shadow-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Reorden Inteligente</span>
+                </a>
+                @endif
+                @endcan
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 border border-indigo-200 dark:border-indigo-800">{{ $bajoStockCount }}</span>
+            </div>
         </div>
         @if($bajoStockCount > 0)
         <div class="overflow-x-auto">

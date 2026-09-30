@@ -31,6 +31,7 @@ class StoreProductoRequest extends FormRequest
             'imagen' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'requiere_receta' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
+            'nivel_controlado' => ['nullable', 'integer', 'min:0', 'max:3'],
             'presentaciones' => ['nullable', 'array'],
             'presentaciones.*.id' => ['nullable', 'integer'],
             'presentaciones.*.nombre' => ['nullable', 'string', 'max:100'],

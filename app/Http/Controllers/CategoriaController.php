@@ -82,6 +82,11 @@ class CategoriaController extends Controller
                 return $categoria;
             });
 
+            if ($request->boolean('crear_otro')) {
+                return redirect()->route('categorias.create')
+                    ->with('success', "Categoría '{$categoria->nombre}' creada exitosamente. Listo para registrar la siguiente categoría.");
+            }
+
             return redirect()->route('categorias.index')
                 ->with('success', "Categoría '{$categoria->nombre}' creada exitosamente.");
         } catch (QueryException $qe) {

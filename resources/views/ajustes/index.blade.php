@@ -144,7 +144,11 @@
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">Ajustes y Configuración</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Datos fiscales de la farmacia, preferencias de interfaz y control de módulos.
+                @if($isAdmin ?? false)
+                    Datos fiscales de la farmacia, preferencias de interfaz y control de módulos.
+                @else
+                    Preferencias personales de interfaz visual y configuración de hardware y periféricos locales.
+                @endif
             </p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
@@ -167,6 +171,7 @@
     {{-- Tabs --}}
     <div class="border-b border-slate-200 dark:border-slate-800">
         <nav class="flex space-x-0 overflow-x-auto scrollbar-none" aria-label="Ajustes tabs">
+            @if($isAdmin ?? false)
             <button @click="activeTab = 'empresa'" type="button"
                     :class="activeTab === 'empresa'
                         ? 'border-b-2 border-indigo-600 text-indigo-700 dark:text-indigo-400 font-semibold'
@@ -175,6 +180,7 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                 <span>Datos del Local</span>
             </button>
+            @endif
             <button @click="activeTab = 'interfaz'" type="button"
                     :class="activeTab === 'interfaz'
                         ? 'border-b-2 border-indigo-600 text-indigo-700 dark:text-indigo-400 font-semibold'
@@ -183,6 +189,7 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/></svg>
                 <span>Preferencias de Interfaz</span>
             </button>
+            @if($isAdmin ?? false)
             <button @click="activeTab = 'modulos'" type="button"
                     :class="activeTab === 'modulos'
                         ? 'border-b-2 border-indigo-600 text-indigo-700 dark:text-indigo-400 font-semibold'
@@ -191,6 +198,7 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                 <span>Control de Módulos</span>
             </button>
+            @endif
             <button @click="activeTab = 'hardware'" type="button"
                     :class="activeTab === 'hardware'
                         ? 'border-b-2 border-indigo-600 text-indigo-700 dark:text-indigo-400 font-semibold'
@@ -208,6 +216,7 @@
         <input type="hidden" name="tab" :value="activeTab">
 
         {{-- TAB 1: DATOS DEL LOCAL --}}
+        @if($isAdmin ?? false)
         <div x-show="activeTab === 'empresa'" x-cloak class="space-y-4">
             <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5">
                 <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 mb-4">
@@ -327,6 +336,7 @@
                 </button>
             </div>
         </div>
+        @endif
 
         {{-- TAB 2: PREFERENCIAS DE INTERFAZ --}}
         <div x-show="activeTab === 'interfaz'" x-cloak class="space-y-4">
@@ -415,6 +425,34 @@
                 </div>
             </div>
 
+            {{-- Flujo de Trabajo y Registro Continuo --}}
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5">
+                <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 mb-4">
+                    Flujo de Trabajo y Registro Continuo
+                </h2>
+                <div class="space-y-3 max-w-xl">
+                    <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition">
+                        <input type="checkbox" name="interfaz_mantener_en_crear" value="1"
+                               {{ ($configs['interfaz_mantener_en_crear']['valor'] ?? '0') == '1' ? 'checked' : '' }}
+                               class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">Permanecer en pantalla de creación al guardar</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Al registrar productos, clientes, proveedores, compras o recetas, el formulario se limpiará automáticamente mostrando el mensaje de éxito y manteniéndolo en la misma pantalla para seguir registrando sin redirigir al index.</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition">
+                        <input type="checkbox" name="pos_modo_continuo" value="1"
+                               {{ ($configs['pos_modo_continuo']['valor'] ?? '1') == '1' ? 'checked' : '' }}
+                               class="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">Modo Continuo en Terminal Punto de Venta (POS)</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Al cobrar una venta en el POS, el sistema limpiará el carrito y mantendrá la terminal lista para atender inmediatamente al siguiente cliente sin redirigir al listado de ventas.</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <div class="flex justify-end">
                 <button type="submit"
                         class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-xs transition">
@@ -424,6 +462,7 @@
         </div>
 
         {{-- TAB 3: CONTROL DE MÓDULOS --}}
+        @if($isAdmin ?? false)
         <div x-show="activeTab === 'modulos'" x-cloak class="space-y-4">
             <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5">
                 <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 mb-4">
@@ -491,6 +530,7 @@
                 </button>
             </div>
         </div>
+        @endif
 
         {{-- TAB 4: HARDWARE Y PERIFÉRICOS --}}
         <div x-show="activeTab === 'hardware'" x-cloak class="space-y-4">

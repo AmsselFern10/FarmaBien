@@ -23,16 +23,13 @@
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Registro y control de recetas médicas y dispensación de medicamentos con Rx.</p>
         </div>
         <div class="flex items-center gap-2.5 shrink-0">
-            <button @click="toggleFullScreen()"
-                    type="button"
-                    class="inline-flex items-center space-x-2 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl shadow-xs transition">
-                <svg x-show="!isFullScreen" class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-                </svg>
-                <svg x-show="isFullScreen" class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-                <span x-text="isFullScreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            <!-- Botón Modo Full -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
             @can('registrar recetas')
             <a href="{{ route('recetas.create') }}"
@@ -96,17 +93,24 @@
                            placeholder="Buscar por N° receta, paciente o médico..."
                            class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                 </div>
-                <select name="estado" onchange="this.form.submit()" class="w-full md:w-48 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                <select name="estado" onchange="this.form.submit()" class="w-full md:w-44 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                     <option value="">Estado: Todos</option>
                     <option value="pendiente" {{ request('estado') === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
                     <option value="dispensada_parcial" {{ request('estado') === 'dispensada_parcial' ? 'selected' : '' }}>Dispensada Parcial</option>
                     <option value="dispensada_total" {{ request('estado') === 'dispensada_total' ? 'selected' : '' }}>Dispensada Total</option>
                     <option value="anulada" {{ request('estado') === 'anulada' ? 'selected' : '' }}>Anulada</option>
                 </select>
-                <select name="tipo_receta" onchange="this.form.submit()" class="w-full md:w-40 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                <select name="tipo_receta" onchange="this.form.submit()" class="w-full md:w-36 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                     <option value="">Tipo: Todos</option>
                     <option value="simple" {{ request('tipo_receta') === 'simple' ? 'selected' : '' }}>Simple</option>
                     <option value="retenida" {{ request('tipo_receta') === 'retenida' ? 'selected' : '' }}>Retenida</option>
+                </select>
+                <select name="orden" onchange="this.form.submit()" class="w-full md:w-48 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                    <option value="fecha_emision_desc" {{ request('orden', 'fecha_emision_desc') === 'fecha_emision_desc' ? 'selected' : '' }}>Emisión: Más reciente</option>
+                    <option value="fecha_emision_asc" {{ request('orden') === 'fecha_emision_asc' ? 'selected' : '' }}>Emisión: Más antigua</option>
+                    <option value="vencimiento_asc" {{ request('orden') === 'vencimiento_asc' ? 'selected' : '' }}>Vencimiento: Más próximo</option>
+                    <option value="vencimiento_desc" {{ request('orden') === 'vencimiento_desc' ? 'selected' : '' }}>Vencimiento: Más lejano</option>
+                    <option value="paciente_asc" {{ request('orden') === 'paciente_asc' ? 'selected' : '' }}>Paciente: A-Z</option>
                 </select>
             </div>
             <div class="flex flex-col md:flex-row gap-3 items-center">
@@ -121,7 +125,7 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                         <span>Filtrar</span>
                     </button>
-                    @if(request()->anyFilled(['buscar','estado','tipo_receta','fecha_desde','fecha_hasta']))
+                    @if(request()->anyFilled(['buscar','estado','tipo_receta','orden','fecha_desde','fecha_hasta']))
                     <a href="{{ route('recetas.index') }}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center gap-1">
                         <span>Limpiar</span>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>

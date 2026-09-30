@@ -9,6 +9,7 @@ use App\Models\Producto;
 use App\Models\PresentacionProducto;
 use App\Models\MovimientoInventario;
 use App\Models\Proveedor;
+use App\Models\HistorialPrecio;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
@@ -34,16 +35,28 @@ class CompraService
                 throw new Exception("El proveedor '{$proveedor->nombre}' se encuentra inactivo.");
             }
 
+            $condicionPago = $data['condicion_pago'] ?? 'contado';
+            $diasCredito = $condicionPago === 'credito' ? (int) ($data['dias_credito'] ?? 30) : 0;
+            $fechaCompra = !empty($data['fecha']) ? \Carbon\Carbon::parse($data['fecha']) : now();
+            $fechaVencimientoPago = $condicionPago === 'credito'
+                ? (!empty($data['fecha_vencimiento_pago']) ? \Carbon\Carbon::parse($data['fecha_vencimiento_pago']) : (clone $fechaCompra)->addDays($diasCredito))
+                : null;
+
             // 1. Crear cabecera de la compra
             $compra = Compra::create([
-                'proveedor_id'       => $proveedor->id,
-                'user_id'            => Auth::id() ?? 1,
-                'numero_comprobante' => $data['numero_comprobante'] ?? null,
-                'subtotal'           => 0,
-                'impuesto'           => 0,
-                'total'              => 0,
-                'estado'             => 'recibida',
-                'fecha'              => $data['fecha'] ?? now(),
+                'proveedor_id'           => $proveedor->id,
+                'user_id'                => Auth::id() ?? 1,
+                'numero_comprobante'     => $data['numero_comprobante'] ?? null,
+                'subtotal'               => 0,
+                'impuesto'               => 0,
+                'total'                  => 0,
+                'condicion_pago'         => $condicionPago,
+                'dias_credito'           => $diasCredito,
+                'fecha_vencimiento_pago' => $fechaVencimientoPago,
+                'saldo_pendiente'        => 0,
+                'estado_pago'            => $condicionPago === 'credito' ? 'pendiente' : 'pagado',
+                'estado'                 => 'recibida',
+                'fecha'                  => $fechaCompra,
             ]);
 
             $totalAcumulado = 0;
@@ -54,11 +67,12 @@ class CompraService
                 $totalAcumulado += $subtotalItem;
             }
 
-            // 3. Actualizar importes totales
+            // 3. Actualizar importes totales y saldo pendiente
             $totalFinal = round($totalAcumulado, 2);
             $compra->update([
-                'subtotal' => $totalFinal,
-                'total'    => $totalFinal,
+                'subtotal'        => $totalFinal,
+                'total'           => $totalFinal,
+                'saldo_pendiente' => $condicionPago === 'credito' ? $totalFinal : 0,
             ]);
 
             return $compra->load([
@@ -202,7 +216,22 @@ class CompraService
             'fecha_movimiento' => now(),
         ]);
 
-        // 4. Actualizar precio de compra de referencia en el producto
+        // 4. Registrar en Historial de Precios por Proveedor
+        HistorialPrecio::create([
+            'producto_id'               => $producto->id,
+            'proveedor_id'              => $compra->proveedor_id,
+            'compra_id'                 => $compra->id,
+            'presentacion_id'           => $presentacionId,
+            'tipo_presentacion'         => $tipoPresentacion,
+            'unidades_por_presentacion' => $unidadesPorPresentacion,
+            'precio_compra'             => $precioPresentacion,
+            'precio_unitario_base'      => $costoUnitarioBase,
+            'tipo'                      => 'compra',
+            'fecha'                     => $compra->fecha ?? now(),
+            'observaciones'             => "Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) - Lote {$numeroLote}",
+        ]);
+
+        // 5. Actualizar precio de compra de referencia en el producto
         $producto->update(['precio_compra' => $costoUnitarioBase]);
 
         return $subtotal;
@@ -327,6 +356,9 @@ class CompraService
                     'fecha_movimiento' => now(),
                 ]);
             }
+
+            // Remover del historial de precios los registros generados por esta compra anulada
+            HistorialPrecio::where('compra_id', $compra->id)->delete();
 
             $compra->update([
                 'estado'           => 'anulada',

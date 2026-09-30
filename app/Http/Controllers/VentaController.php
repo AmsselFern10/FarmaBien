@@ -64,7 +64,24 @@ class VentaController extends Controller
             $query->whereDate('fecha', '<=', $request->input('fecha_hasta'));
         }
 
-        $ventas = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $orden = $request->input('orden', 'fecha_desc');
+        switch ($orden) {
+            case 'fecha_asc':
+                $query->orderBy('fecha', 'asc')->orderBy('id', 'asc');
+                break;
+            case 'total_desc':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'total_asc':
+                $query->orderBy('total', 'asc');
+                break;
+            case 'fecha_desc':
+            default:
+                $query->orderBy('fecha', 'desc')->orderBy('id', 'desc');
+                break;
+        }
+
+        $ventas = $query->paginate(15)->withQueryString();
 
         $stats = [
             'total' => Venta::count(),
@@ -129,10 +146,12 @@ class VentaController extends Controller
 
             if ($request->wantsJson()) {
                 return response()->json([
-                    'success' => true,
-                    'venta' => $venta,
-                    'ticket_url' => route('ventas.ticket', $venta),
-                    'message' => 'Venta procesada con éxito.'
+                    'success'      => true,
+                    'venta'        => $venta,
+                    'ticket_url'   => route('ventas.ticket', $venta),
+                    'redirect_url' => route('ventas.index'),
+                    'pos_continuo' => (bool) configuracion('pos_modo_continuo', false),
+                    'message'      => 'Venta procesada con éxito.'
                 ]);
             }
 

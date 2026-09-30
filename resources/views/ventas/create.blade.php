@@ -51,6 +51,13 @@ function posVentaData() {
         modalInfoProducto: false,
         modalNuevoCliente: false,
         modalErrorRed: false,
+        modalControlados: false,
+        controlData: {
+            paciente_nombre: '', paciente_cedula: '', paciente_edad: '',
+            medico_nombre: '', medico_cedula: '', medico_num_registro: '', diagnostico: ''
+        },
+        controlVentaId: null,
+        guardandoControlados: false,
         productoInfo: null,
         procesandoVenta: false,
         reintentandoCobro: false,
@@ -104,6 +111,16 @@ function posVentaData() {
                                 window.farmaDraftEngine.showDraftIndicator(true);
                             }
                         });
+                    }
+                }
+
+                // Auto-agregar producto si viene por parámetro de URL (ej. desde Catálogo o Ficha)
+                const urlParams = new URLSearchParams(window.location.search);
+                const prodId = urlParams.get('producto_id') || urlParams.get('agregar_id');
+                if (prodId) {
+                    const prod = this.catalogo.find(p => p.id == prodId);
+                    if (prod) {
+                        this.agregarAlCarrito(prod);
                     }
                 }
             } catch (e) {}
@@ -887,15 +904,81 @@ function posVentaData() {
                         console.warn('Ticket popup blocked:', e);
                     }
                 }
-                // Guardar mensaje de éxito en sessionStorage para mostrarlo en ventas.index
+                // Guardar / Notificar mensaje de éxito
                 const numVenta = data.venta?.id || data.venta?.numero_comprobante || '';
-                sessionStorage.setItem('farma_flash', JSON.stringify({
-                    type: 'success',
-                    message: numVenta
-                        ? `✓ Venta #${numVenta} registrada exitosamente.`
-                        : '✓ Venta registrada exitosamente.'
-                }));
-                window.location.replace('{{ route('ventas.index') }}');
+                const successMessage = numVenta
+                    ? `✓ Venta #${numVenta} registrada exitosamente.`
+                    : '✓ Venta registrada exitosamente.';
+
+                const posContinuo = typeof data.pos_continuo === 'boolean'
+                    ? data.pos_continuo
+                    : @js((bool)configuracion('pos_modo_continuo', false));
+
+                // ── Si hay controlados → abrir modal MINSA antes de continuar ──
+                if (this.tieneControlados()) {
+                    this.controlVentaId = data.venta?.id || null;
+                    this._posVentaExitoContinuo = posContinuo;
+                    this._posRedirectUrl = data.redirect_url || '{{ route('ventas.index') }}';
+                    if (window.farmaToast) window.farmaToast.info(`Venta #${data.venta?.id} completada. Complete los datos MINSA.`);
+                    this.modalCobro = false;
+                    this.modalControlados = true;
+                    return; // guardarRegistrosControlados() continúa el flujo
+                }
+
+                if (posContinuo) {
+                    // Limpiar carrito y resetear formulario para la siguiente venta
+                    this.items = [];
+                    this.formData.cliente_id = '';
+                    this.formData.monto_recibido = '';
+                    this.formData.descuento = 0;
+                    this.formData.porcentaje_descuento = 0;
+                    this.formData.observaciones = '';
+                    this.formData.referencia_pago = '';
+                    this.formData.receta_id = null;
+                    this.formData.receta_modalidad = 'sin_receta';
+                    this.formData.receta_omision_motivo = '';
+                    this.recetaSeleccionadaObj = null;
+                    this.recetaNueva = {
+                        medico_nombre: '',
+                        medico_colegiatura: '',
+                        medico_especialidad: 'Medicina General',
+                        paciente_nombre: '',
+                        paciente_documento: '',
+                        numero_receta: ''
+                    };
+                    this.recetaOmisionConfirmada = false;
+                    this.busqueda = '';
+
+                    if (window.farmaToast) {
+                        window.farmaToast.success(`${successMessage} Terminal lista para el siguiente cliente.`);
+                    } else {
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: { message: `${successMessage} Terminal lista para el siguiente cliente.`, type: 'success' }
+                        }));
+                    }
+
+                    this.$nextTick(() => {
+                        const buscador = document.getElementById('posBuscador');
+                        if (buscador) {
+                            buscador.focus();
+                            buscador.select();
+                        }
+                    });
+                } else {
+                    const flashPayload = JSON.stringify({
+                        type: 'success',
+                        message: successMessage
+                    });
+                    try {
+                        localStorage.setItem('farma_flash', flashPayload);
+                    } catch (e) {}
+                    try {
+                        sessionStorage.setItem('farma_flash', flashPayload);
+                    } catch (e) {}
+
+                    const destino = data.redirect_url || '{{ route('ventas.index') }}';
+                    window.location.href = destino;
+                }
 
             } catch (err) {
                 console.error('Error al cobrar venta:', err);
@@ -925,6 +1008,80 @@ function posVentaData() {
             this.reintentandoCobro = true;
             this.modalErrorRed = false;
             await this.procesarVentaFinal();
+        },
+
+        // ────────────────────────────────────────────────────────────────────
+        // MEDICAMENTOS CONTROLADOS — MINSA
+        // ────────────────────────────────────────────────────────────────────
+        tieneControlados() {
+            return this.items.some(it => it.nivel_controlado && parseInt(it.nivel_controlado) > 0);
+        },
+
+        async guardarRegistrosControlados() {
+            if (this.guardandoControlados) return;
+            this.guardandoControlados = true;
+            try {
+                const registros = this.items
+                    .filter(it => it.nivel_controlado && parseInt(it.nivel_controlado) > 0)
+                    .map(it => ({
+                        producto_id: it.id,
+                        lote_id: it.lote_id || null,
+                        nivel_controlado: parseInt(it.nivel_controlado),
+                        cantidad: this.calcularUnidadesBase(it),
+                        unidad: 'unidad',
+                        ...this.controlData
+                    }));
+
+                const res = await fetch('{{ route('controlados.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        venta_id: this.controlVentaId,
+                        registros
+                    })
+                });
+
+                if (!res.ok) throw new Error('Error al guardar registros MINSA');
+
+                this.modalControlados = false;
+                if (window.farmaToast) window.farmaToast.success('Registros MINSA guardados correctamente.');
+
+                // Continuar con el flujo normal post-venta
+                this._posVentaExitoContinuo
+                    ? this._resetearPOS()
+                    : window.farmaNavigate(this._posRedirectUrl || '{{ route('ventas.index') }}');
+
+            } catch (e) {
+                if (window.farmaToast) window.farmaToast.error('Error al guardar los datos MINSA: ' + e.message);
+            } finally {
+                this.guardandoControlados = false;
+            }
+        },
+
+        _resetearPOS() {
+            this.items = [];
+            this.formData.cliente_id = '';
+            this.formData.monto_recibido = '';
+            this.formData.descuento = 0;
+            this.formData.porcentaje_descuento = 0;
+            this.formData.observaciones = '';
+            this.formData.referencia_pago = '';
+            this.formData.receta_id = null;
+            this.formData.receta_modalidad = 'sin_receta';
+            this.formData.receta_omision_motivo = '';
+            this.recetaSeleccionadaObj = null;
+            this.recetaNueva = { medico_nombre:'', medico_colegiatura:'', medico_especialidad:'Medicina General', paciente_nombre:'', paciente_documento:'', numero_receta:'' };
+            this.recetaOmisionConfirmada = false;
+            this.busqueda = '';
+            this.controlData = { paciente_nombre:'', paciente_cedula:'', paciente_edad:'', medico_nombre:'', medico_cedula:'', medico_num_registro:'', diagnostico:'' };
+            this.$nextTick(() => {
+                const buscador = document.getElementById('posBuscador') || document.getElementById('posBuscadorModern');
+                if (buscador) { buscador.focus(); buscador.select(); }
+            });
         }
     };
 }
@@ -966,7 +1123,7 @@ function posVentaData() {
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span>Caja: {{ $sesionActivaCaja->caja->nombre }}</span>
                         <span class="font-mono opacity-60">|</span>
-                        <span>Turno Abierto (${{ number_format($sesionActivaCaja->monto_esperado_efectivo, 2) }})</span>
+                        <span>Turno Abierto ({{ formato_moneda($sesionActivaCaja->monto_esperado_efectivo) }})</span>
                     </a>
                 @else
                     <a href="{{ route('cajas.index') }}"
@@ -1924,26 +2081,30 @@ function posVentaData() {
                             <button type="button" 
                                     @click="formData.metodo_pago = 'efectivo'"
                                     :class="formData.metodo_pago === 'efectivo' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
-                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
-                                <span>💵</span> <span>Efectivo</span>
+                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                <span>Efectivo</span>
                             </button>
                             <button type="button" 
                                     @click="formData.metodo_pago = 'tarjeta'"
                                     :class="formData.metodo_pago === 'tarjeta' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
-                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
-                                <span>💳</span> <span>Tarjeta</span>
+                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                <span>Tarjeta</span>
                             </button>
                             <button type="button" 
                                     @click="formData.metodo_pago = 'transferencia'"
                                     :class="formData.metodo_pago === 'transferencia' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
-                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
-                                <span>📱</span> <span>Transferencia</span>
+                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                <span>Transferencia</span>
                             </button>
                             <button type="button" 
                                     @click="formData.metodo_pago = 'mixto'"
                                     :class="formData.metodo_pago === 'mixto' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
-                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1 cursor-pointer">
-                                <span>🔄</span> <span>Mixto</span>
+                                    class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                <span>Mixto</span>
                             </button>
                         </div>
                     </div>
@@ -1953,7 +2114,7 @@ function posVentaData() {
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-0.5">
-                                    Monto Recibido ($) <span class="text-rose-500">*</span>
+                                    Monto Recibido (C$) <span class="text-rose-500">*</span>
                                 </label>
                                 <input type="number" 
                                        id="posMontoRecibidoInput"
@@ -1966,42 +2127,64 @@ function posVentaData() {
                             </div>
                             <div>
                                 <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-0.5">
-                                    Cambio / Vuelto ($)
+                                    Cambio / Vuelto (C$)
                                 </label>
                                 <div class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border-2 border-emerald-500/80 rounded-lg text-lg font-black text-emerald-600 dark:text-emerald-400 text-right" 
-                                     x-text="'$' + calcularVuelto()"></div>
+                                     x-text="'C$ ' + calcularVuelto()"></div>
                             </div>
                         </div>
 
                         <!-- Alerta si falta dinero -->
                         <div x-show="formData.monto_recibido !== '' && parseFloat(formData.monto_recibido) < parseFloat(calcularTotalGeneral())" 
-                             class="p-2 rounded-lg bg-rose-100 dark:bg-rose-950/60 border border-rose-300 text-rose-800 dark:text-rose-200 text-[11px] font-bold flex items-center space-x-1 animate-pulse">
-                            <span>⚠️ Dinero insuficiente: Faltan $<span x-text="calcularFaltanteEfectivo()"></span></span>
+                             class="p-2 rounded-lg bg-rose-100 dark:bg-rose-950/60 border border-rose-300 text-rose-800 dark:text-rose-200 text-[11px] font-bold flex items-center space-x-1.5 animate-pulse">
+                            <svg class="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <span>Dinero insuficiente: Faltan C$<span x-text="calcularFaltanteEfectivo()"></span></span>
                         </div>
 
-                        <!-- Denominaciones Rápidas -->
+                        <!-- Denominaciones Rápidas en Córdobas -->
                         <div class="space-y-1 pt-1">
                             <span class="text-[10px] text-slate-500 font-bold block">Acceso Rápido:</span>
-                            <div class="grid grid-cols-3 gap-1">
+                            <div class="grid grid-cols-4 gap-1">
                                 <button type="button" @click="setMontoRecibido(calcularTotalGeneral())" class="py-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[11px] font-black hover:bg-emerald-200 transition cursor-pointer">Exacto</button>
-                                <button type="button" @click="setMontoRecibido(5)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$5</button>
-                                <button type="button" @click="setMontoRecibido(10)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$10</button>
-                                <button type="button" @click="setMontoRecibido(20)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$20</button>
-                                <button type="button" @click="setMontoRecibido(50)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$50</button>
-                                <button type="button" @click="setMontoRecibido(100)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">$100</button>
+                                <button type="button" @click="setMontoRecibido(20)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">C$20</button>
+                                <button type="button" @click="setMontoRecibido(50)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">C$50</button>
+                                <button type="button" @click="setMontoRecibido(100)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">C$100</button>
+                                <button type="button" @click="setMontoRecibido(200)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">C$200</button>
+                                <button type="button" @click="setMontoRecibido(500)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">C$500</button>
+                                <button type="button" @click="setMontoRecibido(1000)" class="py-1 rounded bg-white dark:bg-slate-700 border text-[11px] font-bold hover:bg-slate-100 transition cursor-pointer">C$1,000</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Referencia de Pago (Para Tarjeta / Transferencia) -->
-                    <div x-show="formData.metodo_pago !== 'efectivo'">
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            N° de Operación / Referencia POS
-                        </label>
-                        <input type="text" 
-                               x-model="formData.referencia_pago"
-                               placeholder="Ej: OP-98342 o Código de Aprobación..."
-                               class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-medium">
+                    <!-- Campos Específicos para Tarjeta / Transferencia (Banco + Referencia) -->
+                    <div x-show="formData.metodo_pago === 'tarjeta' || formData.metodo_pago === 'transferencia'" class="space-y-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                Banco / Terminal POS
+                            </label>
+                            <select x-model="formData.banco"
+                                    class="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-emerald-500 focus:border-emerald-500">
+                                <option value="">— Seleccionar Banco / Plataforma —</option>
+                                <option value="LAFISE">Banco LAFISE Bancentro</option>
+                                <option value="Banpro">Banpro Grupo Promerica</option>
+                                <option value="BAC">BAC Credomatic</option>
+                                <option value="Ficohsa">Banco Ficohsa Nicaragua</option>
+                                <option value="Avanz">Banco Avanz</option>
+                                <option value="BDF">Banco de Finanzas (BDF)</option>
+                                <option value="Billetera Móvil">Billetera Móvil / Kash / Tigo Money</option>
+                                <option value="Otro">Otro Banco / Terminal</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                N° de Operación / Código de Aprobación
+                            </label>
+                            <input type="text" 
+                                   x-model="formData.referencia_pago"
+                                   placeholder="Ej: OP-98342 o Ref. de Transferencia..."
+                                   class="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-medium">
+                        </div>
                     </div>
                 </div>
 
@@ -2010,7 +2193,7 @@ function posVentaData() {
                 <!-- ======================================================= -->
                 <div class="lg:col-span-4 bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col space-y-2 min-h-0">
                     <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase pb-1 border-b border-slate-200 dark:border-slate-800 shrink-0">
-                        <span>🧾 Vista Previa de Ticket</span>
+                        <span>Vista Previa de Ticket</span>
                         <span class="text-[9px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 px-1.5 py-0.2 rounded font-mono">80mm ESC/POS</span>
                     </div>
 
@@ -2483,6 +2666,111 @@ function posVentaData() {
                         <svg x-show="reintentandoCobro || procesandoVenta" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                         <svg x-show="!reintentandoCobro && !procesandoVenta" class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                         <span x-text="reintentandoCobro || procesandoVenta ? 'Reintentando...' : 'Reintentar Cobro Ahora'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ─── MODAL MEDICAMENTOS CONTROLADOS MINSA ─── --}}
+    <div x-show="modalControlados"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4"
+         style="display:none;">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-rose-400 dark:border-rose-700 shadow-2xl max-w-xl w-full overflow-hidden">
+            {{-- Header --}}
+            <div class="px-6 py-4 bg-rose-600 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                    <span class="text-2xl">🔴</span>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white leading-tight">Registro Obligatorio MINSA</h3>
+                    <p class="text-rose-200 text-xs">Medicamentos controlados — Venta #<span x-text="controlVentaId"></span></p>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-4">
+                {{-- Productos controlados en la venta --}}
+                <div class="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3">
+                    <p class="text-xs font-bold text-rose-700 dark:text-rose-400 mb-2">Medicamentos a registrar:</p>
+                    <template x-for="it in items.filter(i => i.nivel_controlado && parseInt(i.nivel_controlado) > 0)" :key="it.id">
+                        <div class="flex items-center gap-2 py-1 border-b border-rose-100 dark:border-rose-900 last:border-0">
+                            <span class="text-xs font-medium text-slate-800 dark:text-slate-200" x-text="it.nombre"></span>
+                            <span :class="{
+                                'bg-amber-100 text-amber-700': it.nivel_controlado == 1,
+                                'bg-orange-100 text-orange-700': it.nivel_controlado == 2,
+                                'bg-rose-100 text-rose-700': it.nivel_controlado == 3,
+                            }" class="text-[9px] font-bold px-1.5 py-0.5 rounded ml-auto"
+                            x-text="['','Nivel I','Nivel II','Nivel III'][it.nivel_controlado] || ''"></span>
+                        </div>
+                    </template>
+                </div>
+
+                {{-- Datos del paciente --}}
+                <div class="space-y-3">
+                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Datos del Paciente</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre completo <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="controlData.paciente_nombre" placeholder="Nombre del paciente"
+                                   class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Edad</label>
+                            <input type="number" x-model="controlData.paciente_edad" placeholder="Años" min="0" max="120"
+                                   class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Cédula de identidad</label>
+                        <input type="text" x-model="controlData.paciente_cedula" placeholder="Ej. 001-010190-0000A"
+                               class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+                    </div>
+                </div>
+
+                {{-- Datos del médico --}}
+                <div class="space-y-3">
+                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Médico Prescriptor</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre del médico <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="controlData.medico_nombre" placeholder="Dr./Dra. nombre completo"
+                                   class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">No. Registro MINSA</label>
+                            <input type="text" x-model="controlData.medico_num_registro" placeholder="Ej. MINSA-12345"
+                                   class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Diagnóstico / Indicación</label>
+                        <input type="text" x-model="controlData.diagnostico" placeholder="Diagnóstico o indicación terapéutica..."
+                               class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                <p class="text-[11px] text-slate-400 leading-tight max-w-[200px]">
+                    Requerido por ley MINSA. La venta ya fue registrada.
+                </p>
+                <div class="flex items-center gap-2">
+                    <button type="button"
+                            @click="guardarRegistrosControlados()"
+                            :disabled="!controlData.paciente_nombre.trim() || !controlData.medico_nombre.trim() || guardandoControlados"
+                            class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition inline-flex items-center gap-2">
+                        <svg x-show="guardandoControlados" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span x-text="guardandoControlados ? 'Guardando...' : 'Guardar Registro MINSA'"></span>
                     </button>
                 </div>
             </div>

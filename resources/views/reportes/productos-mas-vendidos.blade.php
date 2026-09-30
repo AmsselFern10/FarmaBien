@@ -91,7 +91,7 @@
     @php $top1=$ranking->first(); $totalU=$ranking->sum('total_unidades_vendidas'); $totalI=$ranking->sum('total_ingresos'); $maxU=$ranking->max('total_unidades_vendidas')?:1; @endphp
     <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
-            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">🥇 Producto #1</p><p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate max-w-[150px]">{{ $top1?->nombre ?? '—' }}</p><p class="text-[10px] text-slate-400 mt-0.5">{{ $top1 ? number_format($top1->total_unidades_vendidas).' unidades' : 'Sin datos' }}</p></div>
+            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Producto #1</p><p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate max-w-[150px]">{{ $top1?->nombre ?? '—' }}</p><p class="text-[10px] text-slate-400 mt-0.5">{{ $top1 ? number_format($top1->total_unidades_vendidas).' unidades' : 'Sin datos' }}</p></div>
             <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">

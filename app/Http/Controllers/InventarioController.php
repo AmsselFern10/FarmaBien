@@ -94,7 +94,30 @@ class InventarioController extends Controller
             }
         }
 
-        $lotes = $query->orderBy('fecha_vencimiento', 'asc')->paginate(15)->withQueryString();
+        $orden = $request->input('orden', 'vencimiento_asc');
+        switch ($orden) {
+            case 'vencimiento_desc':
+                $query->orderBy('fecha_vencimiento', 'desc');
+                break;
+            case 'ingreso_desc':
+                $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+                break;
+            case 'ingreso_asc':
+                $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
+                break;
+            case 'stock_desc':
+                $query->orderBy('stock_actual', 'desc');
+                break;
+            case 'stock_asc':
+                $query->orderBy('stock_actual', 'asc');
+                break;
+            case 'vencimiento_asc':
+            default:
+                $query->orderBy('fecha_vencimiento', 'asc');
+                break;
+        }
+
+        $lotes = $query->paginate(15)->withQueryString();
 
         return view('inventario.lotes', compact('lotes'));
     }

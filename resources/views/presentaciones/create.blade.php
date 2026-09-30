@@ -34,7 +34,7 @@ function presForm() {
 </script>
 @endpush
 @section('content')
-<script>window._presProductos = @json($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());</script>
+<script>window._presProductos = {!! $productosJson !!};</script>
 <div
     x-data="presForm()"
     x-init="init()"
@@ -187,10 +187,18 @@ function presForm() {
     {{-- Footer Compacto --}}
     <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
         <span class="text-[11px]">Los datos se sincronizan automaticamente en borrador temporal.</span>
-        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition flex items-center space-x-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <span>Guardar Presentacion</span>
-        </button>
+        <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                <input type="checkbox" name="crear_otro" value="1"
+                       {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                <span>Guardar y crear otro</span>
+            </label>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition flex items-center space-x-1.5 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Presentacion</span>
+            </button>
+        </div>
     </div>
 </div>
 </template>
@@ -287,10 +295,18 @@ function presForm() {
     {{-- Sticky Footer --}}
     <div class="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-lg z-20 flex items-center justify-between rounded-b-2xl">
         <a href="{{ route('presentaciones.index') }}" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl transition">Cancelar</a>
-        <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-sm transition inline-flex items-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <span>Guardar Presentacion</span>
-        </button>
+        <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                <input type="checkbox" name="crear_otro" value="1"
+                       {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                <span>Guardar y crear otro</span>
+            </label>
+            <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-sm transition inline-flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Presentacion</span>
+            </button>
+        </div>
     </div>
 </div>
 </template>

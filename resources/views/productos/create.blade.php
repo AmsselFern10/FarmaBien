@@ -26,7 +26,8 @@
         precio_compra: @js(old('precio_compra', '')),
         precio_venta: @js(old('precio_venta', '')),
         stock_minimo: @js(old('stock_minimo', 10)),
-        ubicacion: @js(old('ubicacion', ''))
+        ubicacion: @js(old('ubicacion', '')),
+        nivel_controlado: @js(old('nivel_controlado', 0)),
     }) : {
         nombre: @js(old('nombre', '')),
         codigo_barra: @js(old('codigo_barra', '')),
@@ -43,7 +44,8 @@
         precio_compra: @js(old('precio_compra', '')),
         precio_venta: @js(old('precio_venta', '')),
         stock_minimo: @js(old('stock_minimo', 10)),
-        ubicacion: @js(old('ubicacion', ''))
+        ubicacion: @js(old('ubicacion', '')),
+        nivel_controlado: @js(old('nivel_controlado', 0)),
     }),
     presentaciones: [
         { nombre: 'Unidad Base (Pastilla / Ampolla)', unidades_por_presentacion: 1, precio_compra: '', precio_venta: '', codigo_barras: '', es_unidad_base: true }
@@ -358,6 +360,31 @@ class="space-y-4 transition-all duration-200">
                                 <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Producto Activo para Venta</span>
                             </label>
                         </div>
+
+                        {{-- Nivel de Control MINSA --}}
+                        <div class="pt-1">
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                🔴 Control MINSA Nicaragua
+                            </label>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <select name="nivel_controlado" x-model="formData.nivel_controlado"
+                                        class="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-rose-500">
+                                    <option value="0">Sin control (venta libre)</option>
+                                    <option value="1">Nivel I — Control Básico (benzodiacepinas leves)</option>
+                                    <option value="2">Nivel II — Opioide (tramadol, codeína)</option>
+                                    <option value="3">Nivel III — Narcótico (morfina, fentanilo)</option>
+                                </select>
+                                <span x-show="formData.nivel_controlado > 0"
+                                      :class="{
+                                          'bg-amber-100 text-amber-700 border-amber-300': formData.nivel_controlado == 1,
+                                          'bg-orange-100 text-orange-700 border-orange-300': formData.nivel_controlado == 2,
+                                          'bg-rose-100 text-rose-700 border-rose-300': formData.nivel_controlado == 3,
+                                      }"
+                                      class="text-[10px] font-bold px-2 py-0.5 rounded border">
+                                    ⚠ Registro MINSA requerido al vender
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Panel 2: Precios, Stock, Presentaciones & Foto -->
@@ -497,12 +524,20 @@ class="space-y-4 transition-all duration-200">
 
                 <!-- Footer Compacto -->
                 <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
-                    <span class="text-[11px]">Los datos se sincronizan automáticamente en borrador temporal.</span>
-                    <button type="submit" 
-                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition flex items-center space-x-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Guardar Medicamento</span>
-                    </button>
+                    <span class="text-[11px] text-slate-500">Los datos se sincronizan automáticamente en borrador temporal.</span>
+                    <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                            <input type="checkbox" name="crear_otro" value="1"
+                                   {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>Guardar y crear otro</span>
+                        </label>
+                        <button type="submit" 
+                                class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition flex items-center space-x-1.5 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Guardar Medicamento</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>
@@ -979,11 +1014,19 @@ class="space-y-4 transition-all duration-200">
                         Cancelar
                     </a>
 
-                    <button type="submit" 
-                            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5 cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Guardar Medicamento</span>
-                    </button>
+                    <div class="flex items-center gap-4">
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                            <input type="checkbox" name="crear_otro" value="1"
+                                   {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>Guardar y continuar registrando</span>
+                        </label>
+                        <button type="submit" 
+                                class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Guardar Medicamento</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>

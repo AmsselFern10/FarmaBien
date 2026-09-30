@@ -61,6 +61,11 @@ class User extends Authenticatable
         return $this->hasMany(MovimientoCaja::class, 'user_id');
     }
 
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'user_id');
+    }
+
     /**
      * Obtener la sesión de caja actualmente abierta para este usuario
      */

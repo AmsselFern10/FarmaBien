@@ -11,8 +11,7 @@ class AjusteController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:ver ajustes')->only(['index']);
-        $this->middleware('permission:editar ajustes')->only(['update', 'toggleCatalogo']);
+        // Todos los usuarios autenticados pueden ingresar a ver/configurar sus preferencias de interfaz y hardware
     }
 
     /**
@@ -20,10 +19,19 @@ class AjusteController extends Controller
      */
     public function index(Request $request)
     {
-        $tab = $request->input('tab', 'empresa');
+        $user = auth()->user();
+        $isAdmin = $user && ($user->hasRole('Admin') || $user->can('editar ajustes') || $user->can('ver ajustes'));
+
+        $defaultTab = $isAdmin ? 'empresa' : 'interfaz';
+        $tab = $request->input('tab', $defaultTab);
+
+        if (!$isAdmin && in_array($tab, ['empresa', 'modulos'])) {
+            $tab = 'interfaz';
+        }
+
         $configs = Configuracion::allAsAssoc();
 
-        return view('ajustes.index', compact('configs', 'tab'));
+        return view('ajustes.index', compact('configs', 'tab', 'isAdmin'));
     }
 
     /**
@@ -31,6 +39,15 @@ class AjusteController extends Controller
      */
     public function update(Request $request)
     {
+        $user = auth()->user();
+        $isAdmin = $user && ($user->hasRole('Admin') || $user->can('editar ajustes'));
+
+        $defaultTab = $isAdmin ? 'empresa' : 'interfaz';
+        $tab = $request->input('tab', $defaultTab);
+
+        if (!$isAdmin && in_array($tab, ['empresa', 'modulos'])) {
+            abort(403, 'No tiene permisos para modificar la información fiscal del local o el control de módulos.');
+        }
         $request->validate([
             'empresa_nombre'                     => ['nullable', 'string', 'max:100'],
             'empresa_razon_social'               => ['nullable', 'string', 'max:150'],
@@ -46,6 +63,8 @@ class AjusteController extends Controller
             'interfaz_modo_oscuro_default'       => ['nullable', 'string', 'in:light,dark,system'],
             'interfaz_vista_formularios_default' => ['nullable', 'string', 'in:modern,compact'],
             'interfaz_registros_por_pagina'      => ['nullable', 'integer', 'min:10', 'max:100'],
+            'interfaz_mantener_en_crear'         => ['nullable', 'boolean'],
+            'pos_modo_continuo'                  => ['nullable', 'boolean'],
             'catalogo_publico_activo'            => ['nullable', 'boolean'],
             'catalogo_publico_mostrar_precios'   => ['nullable', 'boolean'],
             'catalogo_publico_mostrar_stock'     => ['nullable', 'boolean'],
@@ -77,7 +96,7 @@ class AjusteController extends Controller
         }
 
         // Empresa
-        if ($tab === 'empresa' || $request->has('empresa_nombre')) {
+        if ($tab === 'empresa') {
             if ($request->has('empresa_nombre')) Configuracion::set('empresa_nombre', $request->input('empresa_nombre'), 'empresa');
             if ($request->has('empresa_razon_social')) Configuracion::set('empresa_razon_social', $request->input('empresa_razon_social'), 'empresa');
             if ($request->has('empresa_ruc')) Configuracion::set('empresa_ruc', $request->input('empresa_ruc'), 'empresa');
@@ -91,14 +110,16 @@ class AjusteController extends Controller
         }
 
         // Interfaz
-        if ($tab === 'interfaz' || $request->has('interfaz_modo_oscuro_default') || $request->has('interfaz_vista_formularios_default')) {
+        if ($tab === 'interfaz') {
             if ($request->has('interfaz_modo_oscuro_default')) Configuracion::set('interfaz_modo_oscuro_default', $request->input('interfaz_modo_oscuro_default'), 'interfaz');
             if ($request->has('interfaz_vista_formularios_default')) Configuracion::set('interfaz_vista_formularios_default', $request->input('interfaz_vista_formularios_default'), 'interfaz');
             if ($request->has('interfaz_registros_por_pagina')) Configuracion::set('interfaz_registros_por_pagina', $request->input('interfaz_registros_por_pagina'), 'interfaz', 'integer');
+            Configuracion::set('interfaz_mantener_en_crear', $request->boolean('interfaz_mantener_en_crear'), 'interfaz', 'boolean', 'Mantenerse en pantalla de creación para registrar múltiples registros seguidos sin redirigir al index');
+            Configuracion::set('pos_modo_continuo', $request->boolean('pos_modo_continuo'), 'interfaz', 'boolean', 'En el POS, permanecer en la pantalla tras registrar venta para el siguiente cliente en vez de redirigir');
         }
 
         // Módulos
-        if ($tab === 'modulos' || $request->has('modulo_cajas_estricto') || $request->has('catalogo_publico_activo')) {
+        if ($tab === 'modulos') {
             Configuracion::set('catalogo_publico_activo', $request->boolean('catalogo_publico_activo'), 'modulos', 'boolean');
             Configuracion::set('catalogo_publico_mostrar_precios', $request->boolean('catalogo_publico_mostrar_precios'), 'modulos', 'boolean');
             Configuracion::set('catalogo_publico_mostrar_stock', $request->boolean('catalogo_publico_mostrar_stock'), 'modulos', 'boolean');
@@ -106,7 +127,7 @@ class AjusteController extends Controller
         }
 
         // Hardware & Periféricos
-        if ($tab === 'hardware' || $request->has('impresora_tipo')) {
+        if ($tab === 'hardware') {
             if ($request->has('impresora_tipo')) Configuracion::set('impresora_tipo', $request->input('impresora_tipo'), 'hardware');
             if ($request->has('impresora_ip')) Configuracion::set('impresora_ip', $request->input('impresora_ip'), 'hardware');
             if ($request->has('impresora_puerto')) Configuracion::set('impresora_puerto', $request->input('impresora_puerto', '9100'), 'hardware', 'integer');
@@ -148,6 +169,11 @@ class AjusteController extends Controller
      */
     public function toggleCatalogo(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || (!$user->hasRole('Admin') && !$user->can('editar ajustes'))) {
+            abort(403, 'No tiene permisos para modificar el catálogo público.');
+        }
+
         $actual = Configuracion::get('catalogo_publico_activo', true);
         $nuevo = !$actual;
 

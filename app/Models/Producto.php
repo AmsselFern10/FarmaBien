@@ -31,6 +31,7 @@ class Producto extends Model
         'ubicacion',
         'requiere_receta',
         'activo',
+        'nivel_controlado',
     ];
 
     protected $casts = [
@@ -65,6 +66,11 @@ class Producto extends Model
     public function lotes(): HasMany
     {
         return $this->hasMany(Lote::class);
+    }
+
+    public function lotesActivos(): HasMany
+    {
+        return $this->hasMany(Lote::class)->where('activo', true);
     }
 
     public function movimientos(): HasMany

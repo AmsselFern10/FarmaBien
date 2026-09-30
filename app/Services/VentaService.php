@@ -681,7 +681,8 @@ class VentaService
                 'imagen',
                 'categoria_id',
                 'laboratorio_id',
-                'activo'
+                'activo',
+                'nivel_controlado'
             ])
             ->with([
                 'categoria:id,nombre',

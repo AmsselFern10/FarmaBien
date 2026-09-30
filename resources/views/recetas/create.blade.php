@@ -12,9 +12,69 @@ function recetaForm() {
         },
         detalles: [],
         productos: [],
+        clientes: [],
+        medicos: [],
+        formData: {
+            cliente_id: @js(old('cliente_id', '')),
+            paciente_nombre: @js(old('paciente_nombre', '')),
+            paciente_documento: @js(old('paciente_documento', '')),
+            paciente_edad: @js(old('paciente_edad', '')),
+            medico_nombre: @js(old('medico_nombre', '')),
+            medico_colegiatura: @js(old('medico_colegiatura', '')),
+            medico_especialidad: @js(old('medico_especialidad', '')),
+            institucion_salud: @js(old('institucion_salud', '')),
+            numero_receta: @js(old('numero_receta', '')),
+            tipo_receta: @js(old('tipo_receta', 'simple')),
+            fecha_emision: @js(old('fecha_emision', now()->toDateString())),
+            fecha_vencimiento: @js(old('fecha_vencimiento', '')),
+            observaciones: @js(old('observaciones', ''))
+        },
+        showPacienteDropdown: false,
+        showMedicoDropdown: false,
         init() {
             this.productos = window._rxProductos || [];
+            this.clientes = window._rxClientes || [];
+            this.medicos = window._rxMedicos || [];
             this.agregarDetalle();
+        },
+        filtrarPacientes() {
+            const q = (this.formData.paciente_nombre || '').toLowerCase().trim();
+            if (!q) return this.clientes.slice(0, 8);
+            return this.clientes.filter(c => 
+                (c.nombre && c.nombre.toLowerCase().includes(q)) || 
+                (c.documento && c.documento.toLowerCase().includes(q))
+            ).slice(0, 10);
+        },
+        seleccionarPaciente(c) {
+            this.formData.cliente_id = c.id;
+            this.formData.paciente_nombre = c.nombre;
+            this.formData.paciente_documento = c.documento || '';
+            this.showPacienteDropdown = false;
+        },
+        onClienteSelectChange(val) {
+            this.formData.cliente_id = val;
+            if (val) {
+                const found = this.clientes.find(c => String(c.id) === String(val));
+                if (found) {
+                    this.formData.paciente_nombre = found.nombre;
+                    this.formData.paciente_documento = found.documento || '';
+                }
+            }
+        },
+        filtrarMedicos() {
+            const q = (this.formData.medico_nombre || '').toLowerCase().trim();
+            if (!q) return this.medicos.slice(0, 8);
+            return this.medicos.filter(m => 
+                (m.medico_nombre && m.medico_nombre.toLowerCase().includes(q)) || 
+                (m.medico_colegiatura && m.medico_colegiatura.toLowerCase().includes(q))
+            ).slice(0, 10);
+        },
+        seleccionarMedico(m) {
+            this.formData.medico_nombre = m.medico_nombre;
+            this.formData.medico_colegiatura = m.medico_colegiatura || '';
+            this.formData.medico_especialidad = m.medico_especialidad || '';
+            this.formData.institucion_salud = m.institucion_salud || '';
+            this.showMedicoDropdown = false;
         },
         agregarDetalle() {
             this.detalles.push({ producto_id: '', producto_nombre: '', cantidad_recetada: 1, posologia: '', query: '', filtrados: [], open: false });
@@ -38,13 +98,36 @@ function recetaForm() {
             this.detalles[idx].query = '';
             this.detalles[idx].filtrados = [];
         },
-        limpiar() { this.detalles = []; this.agregarDetalle(); if (window.farmaClearDraft) window.farmaClearDraft(window.location.pathname); }
+        limpiar() { 
+            this.formData = {
+                cliente_id: '',
+                paciente_nombre: '',
+                paciente_documento: '',
+                paciente_edad: '',
+                medico_nombre: '',
+                medico_colegiatura: '',
+                medico_especialidad: '',
+                institucion_salud: '',
+                numero_receta: '',
+                tipo_receta: 'simple',
+                fecha_emision: '{{ now()->toDateString() }}',
+                fecha_vencimiento: '',
+                observaciones: ''
+            };
+            this.detalles = []; 
+            this.agregarDetalle(); 
+            if (window.farmaClearDraft) window.farmaClearDraft(window.location.pathname); 
+        }
     };
 }
 </script>
 @endpush
 @section('content')
-<script>window._rxProductos = @json($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());</script>
+<script>
+window._rxProductos = {!! $productosJson !!};
+window._rxClientes = {!! $clientesJson !!};
+window._rxMedicos = {!! $medicosJson !!};
+</script>
 <div
     x-data="recetaForm()"
     x-init="init()"
@@ -118,34 +201,83 @@ function recetaForm() {
                 <span>Paciente y Medico Prescriptor</span>
             </div>
             <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Cliente Registrado</label>
-                <select name="cliente_id" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                    <option value="">-- Sin cliente --</option>
-                    @foreach($clientes as $cli)<option value="{{ $cli->id }}" {{ old('cliente_id')==$cli->id?'selected':'' }}>{{ $cli->nombre }}</option>@endforeach
+                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Cliente Registrado (Opcional)</label>
+                <select name="cliente_id" x-model="formData.cliente_id" @change="onClienteSelectChange($event.target.value)" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <option value="">-- Sin cliente seleccionado --</option>
+                    <template x-for="cli in clientes" :key="cli.id">
+                        <option :value="cli.id" :selected="String(cli.id) === String(formData.cliente_id)" x-text="cli.nombre + (cli.documento ? ' (' + cli.documento + ')' : '')"></option>
+                    </template>
                 </select>
             </div>
-            <div>
-                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre del Paciente <span class="text-rose-500">*</span></label>
-                <input type="text" name="paciente_nombre" value="{{ old('paciente_nombre') }}" required placeholder="Nombre completo del paciente..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+            <div class="relative" @click.outside="showPacienteDropdown = false">
+                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Nombre del Paciente <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" 
+                       name="paciente_nombre" 
+                       x-model="formData.paciente_nombre" 
+                       @focus="showPacienteDropdown = true" 
+                       @input="showPacienteDropdown = true" 
+                       @keydown.escape="showPacienteDropdown = false" 
+                       required 
+                       placeholder="Escriba el nombre o busque cliente..." 
+                       class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                <div x-show="showPacienteDropdown && filtrarPacientes().length > 0" 
+                     x-cloak 
+                     class="absolute z-50 w-full mt-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    <template x-for="c in filtrarPacientes()" :key="c.id">
+                        <button type="button" 
+                                @click="seleccionarPaciente(c)" 
+                                class="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 dark:hover:bg-slate-700 flex items-center justify-between transition cursor-pointer">
+                            <span class="font-medium text-slate-900 dark:text-white truncate" x-text="c.nombre"></span>
+                            <span class="text-[10px] text-slate-400 font-mono shrink-0 ml-2" x-text="c.documento ? 'Doc: ' + c.documento : 'Cliente'"></span>
+                        </button>
+                    </template>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">DNI / Documento</label>
-                    <input type="text" name="paciente_documento" value="{{ old('paciente_documento') }}" placeholder="DNI..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <input type="text" name="paciente_documento" x-model="formData.paciente_documento" placeholder="DNI..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                 </div>
                 <div>
                     <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Edad</label>
-                    <input type="number" name="paciente_edad" value="{{ old('paciente_edad') }}" min="0" max="130" placeholder="Anos" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <input type="number" name="paciente_edad" x-model="formData.paciente_edad" min="0" max="130" placeholder="Años" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                 </div>
             </div>
             <div class="border-t border-slate-200/60 dark:border-slate-700/60 pt-2 space-y-2">
-                <div class="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Medico</div>
-                <input type="text" name="medico_nombre" value="{{ old('medico_nombre') }}" required placeholder="Dr. Nombre Completo..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" name="medico_colegiatura" value="{{ old('medico_colegiatura') }}" required placeholder="CMP-12345" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                    <input type="text" name="medico_especialidad" value="{{ old('medico_especialidad') }}" placeholder="Especialidad..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                <div class="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Médico Prescriptor (Sugerencias al escribir)</div>
+                <div class="relative" @click.outside="showMedicoDropdown = false">
+                    <input type="text" 
+                           name="medico_nombre" 
+                           x-model="formData.medico_nombre" 
+                           @focus="showMedicoDropdown = true" 
+                           @input="showMedicoDropdown = true" 
+                           @keydown.escape="showMedicoDropdown = false" 
+                           required 
+                           placeholder="Dr. Nombre Completo..." 
+                           class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <div x-show="showMedicoDropdown && filtrarMedicos().length > 0" 
+                         x-cloak 
+                         class="absolute z-50 w-full mt-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        <template x-for="m in filtrarMedicos()" :key="m.medico_nombre">
+                            <button type="button" 
+                                    @click="seleccionarMedico(m)" 
+                                    class="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 dark:hover:bg-slate-700 flex items-center justify-between transition cursor-pointer">
+                                <div>
+                                    <span class="font-medium text-slate-900 dark:text-white block" x-text="m.medico_nombre"></span>
+                                    <span class="text-[10px] text-slate-400" x-text="m.medico_especialidad || 'Médico'"></span>
+                                </div>
+                                <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono shrink-0 ml-2" x-text="m.medico_colegiatura"></span>
+                            </button>
+                        </template>
+                    </div>
                 </div>
-                <input type="text" name="institucion_salud" value="{{ old('institucion_salud') }}" placeholder="Hospital / Clinica..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" name="medico_colegiatura" x-model="formData.medico_colegiatura" required placeholder="Colegiatura / CMP" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <input type="text" name="medico_especialidad" x-model="formData.medico_especialidad" placeholder="Especialidad..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                </div>
+                <input type="text" name="institucion_salud" x-model="formData.institucion_salud" placeholder="Hospital / Clínica..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
             </div>
         </div>
 
@@ -157,23 +289,23 @@ function recetaForm() {
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">N Receta <span class="text-rose-500">*</span></label>
-                    <input type="text" name="numero_receta" value="{{ old('numero_receta') }}" required placeholder="RX-001..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">N° Receta <span class="text-rose-500">*</span></label>
+                    <input type="text" name="numero_receta" x-model="formData.numero_receta" required placeholder="RX-001..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                 </div>
                 <div>
                     <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo <span class="text-rose-500">*</span></label>
-                    <select name="tipo_receta" required class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                        <option value="simple" {{ old('tipo_receta','simple')==='simple'?'selected':'' }}>Simple</option>
-                        <option value="retenida" {{ old('tipo_receta')==='retenida'?'selected':'' }}>Retenida</option>
+                    <select name="tipo_receta" x-model="formData.tipo_receta" required class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                        <option value="simple">Simple</option>
+                        <option value="retenida">Retenida</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha Emision <span class="text-rose-500">*</span></label>
-                    <input type="date" name="fecha_emision" value="{{ old('fecha_emision', now()->toDateString()) }}" required class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha Emisión <span class="text-rose-500">*</span></label>
+                    <input type="date" name="fecha_emision" x-model="formData.fecha_emision" required class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                 </div>
                 <div>
                     <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Vencimiento</label>
-                    <input type="date" name="fecha_vencimiento" value="{{ old('fecha_vencimiento') }}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    <input type="date" name="fecha_vencimiento" x-model="formData.fecha_vencimiento" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                 </div>
             </div>
             {{-- Medicamentos list --}}
@@ -224,10 +356,18 @@ function recetaForm() {
     {{-- Footer Compacto --}}
     <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
         <span class="text-[11px]">Los datos se sincronizan automaticamente en borrador temporal.</span>
-        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition flex items-center space-x-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <span>Registrar Receta Medica</span>
-        </button>
+        <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                <input type="checkbox" name="crear_otro" value="1"
+                       {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                <span>Guardar y crear otra</span>
+            </label>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition flex items-center space-x-1.5 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Registrar Receta Medica</span>
+            </button>
+        </div>
     </div>
 </div>
 </template>
@@ -240,47 +380,94 @@ function recetaForm() {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="md:col-span-2">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Cliente Registrado <span class="text-slate-400 font-normal">(Opcional)</span></label>
-                <select name="cliente_id" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <select name="cliente_id" x-model="formData.cliente_id" @change="onClienteSelectChange($event.target.value)" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
                     <option value="">-- Sin cliente registrado --</option>
-                    @foreach($clientes as $cli)<option value="{{ $cli->id }}" {{ old('cliente_id')==$cli->id?'selected':'' }}>{{ $cli->nombre }}</option>@endforeach
+                    <template x-for="cli in clientes" :key="cli.id">
+                        <option :value="cli.id" :selected="String(cli.id) === String(formData.cliente_id)" x-text="cli.nombre + (cli.documento ? ' (' + cli.documento + ')' : '')"></option>
+                    </template>
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nombre del Paciente <span class="text-rose-500">*</span></label>
-                <input type="text" name="paciente_nombre" value="{{ old('paciente_nombre') }}" required placeholder="Nombre completo del paciente..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('paciente_nombre') border-rose-500 @enderror">
+            <div class="relative" @click.outside="showPacienteDropdown = false">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Nombre del Paciente <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" 
+                       name="paciente_nombre" 
+                       x-model="formData.paciente_nombre" 
+                       @focus="showPacienteDropdown = true" 
+                       @input="showPacienteDropdown = true" 
+                       @keydown.escape="showPacienteDropdown = false" 
+                       required 
+                       placeholder="Escriba el nombre o busque en clientes..." 
+                       class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('paciente_nombre') border-rose-500 @enderror">
+                <div x-show="showPacienteDropdown && filtrarPacientes().length > 0" 
+                     x-cloak 
+                     class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-56 overflow-y-auto">
+                    <template x-for="c in filtrarPacientes()" :key="c.id">
+                        <button type="button" 
+                                @click="seleccionarPaciente(c)" 
+                                class="w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 dark:hover:bg-slate-700 flex items-center justify-between transition cursor-pointer">
+                            <span class="font-medium text-slate-900 dark:text-white" x-text="c.nombre"></span>
+                            <span class="text-xs text-slate-400 font-mono" x-text="c.documento ? 'Doc: ' + c.documento : 'Cliente'"></span>
+                        </button>
+                    </template>
+                </div>
                 @error('paciente_nombre')<p class="text-rose-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">N Documento / DNI</label>
-                <input type="text" name="paciente_documento" value="{{ old('paciente_documento') }}" placeholder="DNI, Pasaporte..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">N° Documento / DNI</label>
+                <input type="text" name="paciente_documento" x-model="formData.paciente_documento" placeholder="DNI, Pasaporte..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Edad</label>
-                <input type="number" name="paciente_edad" value="{{ old('paciente_edad') }}" min="0" max="130" placeholder="Anos" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <input type="number" name="paciente_edad" x-model="formData.paciente_edad" min="0" max="130" placeholder="Años" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
         </div>
     </div>
     {{-- Medico --}}
     <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-        <div class="border-b border-slate-100 dark:border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-indigo-500"></span><span>Medico Prescriptor</span></h3></div>
+        <div class="border-b border-slate-100 dark:border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-indigo-500"></span><span>Médico Prescriptor (Sugerencias al escribir)</span></h3></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nombre del Medico <span class="text-rose-500">*</span></label>
-                <input type="text" name="medico_nombre" value="{{ old('medico_nombre') }}" required placeholder="Dr. Juan Perez Lopez..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('medico_nombre') border-rose-500 @enderror">
+            <div class="relative" @click.outside="showMedicoDropdown = false">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nombre del Médico <span class="text-rose-500">*</span></label>
+                <input type="text" 
+                       name="medico_nombre" 
+                       x-model="formData.medico_nombre" 
+                       @focus="showMedicoDropdown = true" 
+                       @input="showMedicoDropdown = true" 
+                       @keydown.escape="showMedicoDropdown = false" 
+                       required 
+                       placeholder="Dr. Juan Pérez López..." 
+                       class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('medico_nombre') border-rose-500 @enderror">
+                <div x-show="showMedicoDropdown && filtrarMedicos().length > 0" 
+                     x-cloak 
+                     class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-56 overflow-y-auto">
+                    <template x-for="m in filtrarMedicos()" :key="m.medico_nombre">
+                        <button type="button" 
+                                @click="seleccionarMedico(m)" 
+                                class="w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 dark:hover:bg-slate-700 flex items-center justify-between transition cursor-pointer">
+                            <div>
+                                <span class="font-medium text-slate-900 dark:text-white block" x-text="m.medico_nombre"></span>
+                                <span class="text-xs text-slate-400" x-text="m.medico_especialidad || 'Médico'"></span>
+                            </div>
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-mono" x-text="m.medico_colegiatura"></span>
+                        </button>
+                    </template>
+                </div>
                 @error('medico_nombre')<p class="text-rose-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">N Colegiatura / CMP <span class="text-rose-500">*</span></label>
-                <input type="text" name="medico_colegiatura" value="{{ old('medico_colegiatura') }}" required placeholder="CMP-12345..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('medico_colegiatura') border-rose-500 @enderror">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">N° Colegiatura / CMP <span class="text-rose-500">*</span></label>
+                <input type="text" name="medico_colegiatura" x-model="formData.medico_colegiatura" required placeholder="CMP-12345..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('medico_colegiatura') border-rose-500 @enderror">
                 @error('medico_colegiatura')<p class="text-rose-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Especialidad</label>
-                <input type="text" name="medico_especialidad" value="{{ old('medico_especialidad') }}" placeholder="Cardiologia, Medicina General..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <input type="text" name="medico_especialidad" x-model="formData.medico_especialidad" placeholder="Cardiología, Medicina General..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Institucion de Salud</label>
-                <input type="text" name="institucion_salud" value="{{ old('institucion_salud') }}" placeholder="Hospital, Clinica..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Institución de Salud</label>
+                <input type="text" name="institucion_salud" x-model="formData.institucion_salud" placeholder="Hospital, Clínica..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
         </div>
     </div>
@@ -289,24 +476,24 @@ function recetaForm() {
         <div class="border-b border-slate-100 dark:border-slate-800 pb-3"><h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Datos de la Receta</span></h3></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">N de Receta <span class="text-rose-500">*</span></label>
-                <input type="text" name="numero_receta" value="{{ old('numero_receta') }}" required placeholder="RX-2024-001..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('numero_receta') border-rose-500 @enderror">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">N° de Receta <span class="text-rose-500">*</span></label>
+                <input type="text" name="numero_receta" x-model="formData.numero_receta" required placeholder="RX-2024-001..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('numero_receta') border-rose-500 @enderror">
                 @error('numero_receta')<p class="text-rose-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tipo de Receta <span class="text-rose-500">*</span></label>
-                <select name="tipo_receta" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
-                    <option value="simple" {{ old('tipo_receta','simple')==='simple'?'selected':'' }}>Simple</option>
-                    <option value="retenida" {{ old('tipo_receta')==='retenida'?'selected':'' }}>Retenida (queda en farmacia)</option>
+                <select name="tipo_receta" x-model="formData.tipo_receta" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                    <option value="simple">Simple</option>
+                    <option value="retenida">Retenida (queda en farmacia)</option>
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Fecha de Emision <span class="text-rose-500">*</span></label>
-                <input type="date" name="fecha_emision" value="{{ old('fecha_emision', now()->toDateString()) }}" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('fecha_emision') border-rose-500 @enderror">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Fecha de Emisión <span class="text-rose-500">*</span></label>
+                <input type="date" name="fecha_emision" x-model="formData.fecha_emision" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('fecha_emision') border-rose-500 @enderror">
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Fecha de Vencimiento</label>
-                <input type="date" name="fecha_vencimiento" value="{{ old('fecha_vencimiento') }}" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
+                <input type="date" name="fecha_vencimiento" x-model="formData.fecha_vencimiento" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
             </div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Adjunto (PDF o Imagen)</label>
@@ -315,7 +502,7 @@ function recetaForm() {
             </div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Observaciones</label>
-                <textarea name="observaciones" rows="2" placeholder="Notas adicionales..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">{{ old('observaciones') }}</textarea>
+                <textarea name="observaciones" x-model="formData.observaciones" rows="2" placeholder="Notas adicionales..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition"></textarea>
             </div>
         </div>
     </div>
@@ -373,10 +560,18 @@ function recetaForm() {
     {{-- Sticky Footer --}}
     <div class="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-lg z-20 flex items-center justify-between rounded-b-2xl">
         <a href="{{ route('recetas.index') }}" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl transition">Cancelar</a>
-        <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-sm transition inline-flex items-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <span>Registrar Receta Medica</span>
-        </button>
+        <div class="flex items-center gap-4">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                <input type="checkbox" name="crear_otro" value="1"
+                       {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                <span>Guardar y crear otra</span>
+            </label>
+            <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-sm transition inline-flex items-center space-x-2 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Registrar Receta Medica</span>
+            </button>
+        </div>
     </div>
 </div>
 </template>

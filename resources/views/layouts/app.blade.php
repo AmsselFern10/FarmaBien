@@ -103,7 +103,13 @@
 
             window.addEventListener('keydown', (e) => {
                 const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-                
+
+                // Ctrl+K / Cmd+K — Búsqueda global (tiene prioridad sobre el resto)
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    return; // Lo maneja el componente farmaGlobalSearch directamente
+                }
+
                 if (e.key === 'F2') {
                     e.preventDefault();
                     nav('{{ route('ventas.create') }}');
@@ -164,6 +170,9 @@
 
         {{-- Sistema unificado de notificaciones (toast + modal de confirmación) --}}
         <x-notifications />
+
+        {{-- Búsqueda Global — Ctrl+K --}}
+        <x-busqueda-global />
 
         <!-- Global Keyboard Shortcuts Modal -->
         <div x-show="showShortcutsModal" 

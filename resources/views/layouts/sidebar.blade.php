@@ -3,7 +3,7 @@
        :class="sidebarCollapsed ? 'w-16' : 'w-64'"
        x-data="{
            openMenus: {
-               operaciones: {{ request()->routeIs('ventas.*') || request()->routeIs('compras.*') || request()->routeIs('recetas.*') || request()->routeIs('cajas.*') ? 'true' : 'false' }},
+               operaciones: {{ request()->routeIs('ventas.*') || request()->routeIs('devoluciones.*') || request()->routeIs('compras.*') || request()->routeIs('cuentas-por-pagar.*') || request()->routeIs('ordenes-compras.*') || request()->routeIs('recetas.*') || request()->routeIs('cajas.*') || request()->routeIs('controlados.*') ? 'true' : 'false' }},
                inventario: {{ request()->routeIs('inventario.*') ? 'true' : 'false' }},
                catalogos: {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') ? 'true' : 'false' }},
                administracion: {{ request()->routeIs('reportes.*') || request()->routeIs('usuarios.*') || request()->routeIs('admin.*') || request()->routeIs('ajustes.*') ? 'true' : 'false' }}
@@ -111,6 +111,12 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('ventas.index') || request()->routeIs('ventas.show') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Historial Ventas</span>
                 </a>
+
+                <a href="{{ route('devoluciones.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('devoluciones.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('devoluciones.*') ? '!bg-emerald-400' : '' }}"></span>
+                    <span>Devoluciones</span>
+                </a>
                 @endcanany
 
                 @can('ver cajas')
@@ -123,12 +129,36 @@
 
                 @can('ver compras')
                 <a href="{{ route('compras.index') }}" 
-                   class="flex items-center justify-between px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('compras.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                   class="flex items-center justify-between px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('compras.index') || request()->routeIs('compras.create') || request()->routeIs('compras.show') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <div class="flex items-center">
-                        <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('compras.*') ? '!bg-emerald-400' : '' }}"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('compras.index') || request()->routeIs('compras.create') || request()->routeIs('compras.show') ? '!bg-emerald-400' : '' }}"></span>
                         <span>Compras & Lotes</span>
                     </div>
                     <kbd class="px-1 py-0.2 text-[9px] font-mono bg-slate-800 text-slate-400 rounded">F4</kbd>
+                </a>
+
+                <a href="{{ route('cuentas-por-pagar.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('cuentas-por-pagar.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('cuentas-por-pagar.*') ? '!bg-emerald-400' : '' }}"></span>
+                    <span>Cuentas por Pagar</span>
+                </a>
+
+                <a href="{{ route('ordenes-compras.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('ordenes-compras.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('ordenes-compras.*') ? '!bg-emerald-400' : '' }}"></span>
+                    <span>Órdenes de Compra</span>
+                </a>
+
+                <a href="{{ route('compras.comparador-precios') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('compras.comparador-precios') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('compras.comparador-precios') ? '!bg-emerald-400' : '' }}"></span>
+                    <span>Comparador Precios</span>
+                </a>
+
+                <a href="{{ route('compras.sugerencias-reorden') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('compras.sugerencias-reorden') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('compras.sugerencias-reorden') ? '!bg-emerald-400' : '' }}"></span>
+                    <span>Reorden Inteligente</span>
                 </a>
                 @endcan
 
@@ -139,6 +169,16 @@
                     <span>Recetas Médicas</span>
                 </a>
                 @endcan
+
+                {{-- Medicamentos Controlados MINSA --}}
+                <a href="{{ route('controlados.index') }}" 
+                   class="flex items-center justify-between px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('controlados.*') ? 'bg-rose-600/20 text-rose-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <div class="flex items-center">
+                        <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('controlados.*') ? 'bg-rose-400' : 'bg-slate-500' }} mr-2"></span>
+                        <span>Med. Controlados</span>
+                    </div>
+                    <span class="text-[8px] font-bold px-1 py-0.5 rounded bg-rose-900/60 text-rose-300 border border-rose-800 leading-none">MINSA</span>
+                </a>
             </div>
         </div>
         @endcanany
@@ -240,10 +280,7 @@
                 <a href="{{ route('promociones.index') }}" 
                    class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('promociones.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('promociones.*') ? '!bg-emerald-400' : '' }}"></span>
-                    <span class="flex items-center space-x-1.5">
-                        <span>Promociones & Descuentos</span>
-                        <span class="text-[9px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-400 font-bold">Ofertas</span>
-                    </span>
+                    <span>Promociones & Descuentos</span>
                 </a>
                 @endcan
 
@@ -290,12 +327,12 @@
         </div>
         @endcanany
 
-        <!-- Accordion 4: Administración y Reportes -->
-        @canany(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras', 'ver usuarios', 'ver ajustes'])
+        <!-- Accordion 4: Administración y Preferencias -->
+        @if(auth()->check())
         <div class="space-y-1">
             <button @click="toggleMenu('administracion')" 
                     type="button" 
-                    title="Administración y Reportes"
+                    title="Administración y Preferencias"
                     class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition {{ request()->routeIs('reportes.*') || request()->routeIs('usuarios.*') || request()->routeIs('admin.*') || request()->routeIs('ajustes.*') ? 'text-slate-200 bg-slate-800/40' : '' }}">
                 <div class="flex items-center min-w-0">
                     <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,16 +369,14 @@
                 </a>
                 @endrole
 
-                @can('ver ajustes')
                 <a href="{{ route('ajustes.index') }}" 
                    class="flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition {{ request()->routeIs('ajustes.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('ajustes.*') ? '!bg-emerald-400' : '' }}"></span>
-                    <span>Ajustes del Sistema</span>
+                    <span>Ajustes & Preferencias</span>
                 </a>
-                @endcan
             </div>
         </div>
-        @endcanany
+        @endif
 
     </div>
 

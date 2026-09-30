@@ -12,6 +12,20 @@ class ConfiguracionSeeder extends Seeder
         $configuraciones = [
             // Empresa / Local
             [
+                'clave'       => 'moneda_simbolo',
+                'valor'       => 'C$',
+                'tipo'        => 'string',
+                'grupo'       => 'empresa',
+                'descripcion' => 'Símbolo de la moneda oficial (Córdoba - C$)',
+            ],
+            [
+                'clave'       => 'moneda_nombre',
+                'valor'       => 'Córdoba (NIO)',
+                'tipo'        => 'string',
+                'grupo'       => 'empresa',
+                'descripcion' => 'Nombre de la moneda',
+            ],
+            [
                 'clave'       => 'empresa_nombre',
                 'valor'       => 'FARMABIEN NICARAGUA',
                 'tipo'        => 'string',

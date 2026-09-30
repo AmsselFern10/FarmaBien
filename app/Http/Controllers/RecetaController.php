@@ -123,14 +123,42 @@ class RecetaController extends Controller
             $query->whereDate('fecha_emision', '<=', $request->input('fecha_hasta'));
         }
 
-        $recetas = $query->orderBy('fecha_emision', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $orden = $request->input('orden', 'fecha_emision_desc');
+        switch ($orden) {
+            case 'fecha_emision_asc':
+                $query->orderBy('fecha_emision', 'asc')->orderBy('id', 'asc');
+                break;
+            case 'vencimiento_asc':
+                $query->orderBy('fecha_vencimiento', 'asc');
+                break;
+            case 'vencimiento_desc':
+                $query->orderBy('fecha_vencimiento', 'desc');
+                break;
+            case 'paciente_asc':
+                $query->orderBy('paciente_nombre', 'asc');
+                break;
+            case 'fecha_emision_desc':
+            default:
+                $query->orderBy('fecha_emision', 'desc')->orderBy('id', 'desc');
+                break;
+        }
+
+        $recetas = $query->paginate(15)->withQueryString();
 
         return view('recetas.index', compact('recetas'));
     }
 
     public function create()
     {
-        $clientes = Cliente::select(['id', 'nombre', 'documento'])->activos()->orderBy('nombre')->get();
+        $clientes = Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->get();
+        $medicos = Receta::select(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+            ->whereNotNull('medico_nombre')
+            ->where('medico_nombre', '!=', '')
+            ->groupBy(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+            ->orderBy('medico_nombre')
+            ->take(60)
+            ->get();
+
         $productos = Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
             ->with('laboratorio:id,nombre')
             ->conReceta()
@@ -138,7 +166,16 @@ class RecetaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('recetas.create', compact('clientes', 'productos'));
+        $productosJson = json_encode($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());
+        $clientesJson = json_encode($clientes->map(fn($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'documento' => $c->documento ?? ''])->values());
+        $medicosJson = json_encode($medicos->map(fn($m) => [
+            'medico_nombre' => $m->medico_nombre,
+            'medico_colegiatura' => $m->medico_colegiatura ?? '',
+            'medico_especialidad' => $m->medico_especialidad ?? '',
+            'institucion_salud' => $m->institucion_salud ?? ''
+        ])->values());
+
+        return view('recetas.create', compact('clientes', 'medicos', 'productos', 'productosJson', 'clientesJson', 'medicosJson'));
     }
 
     public function store(StoreRecetaRequest $request)
@@ -170,6 +207,11 @@ class RecetaController extends Controller
                 ]);
             }
 
+            if ($request->boolean('crear_otro')) {
+                return redirect()->route('recetas.create')
+                    ->with('success', "Receta médica #{$receta->numero_receta} registrada exitosamente. Listo para registrar la siguiente receta.");
+            }
+
             return redirect()->route('recetas.show', $receta)
                 ->with('success', "Receta médica #{$receta->numero_receta} registrada exitosamente.");
         } catch (Exception $e) {
@@ -195,7 +237,15 @@ class RecetaController extends Controller
 
     public function edit(Receta $receta)
     {
-        $clientes = Cliente::select(['id', 'nombre', 'documento'])->activos()->orderBy('nombre')->get();
+        $clientes = Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->get();
+        $medicos = Receta::select(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+            ->whereNotNull('medico_nombre')
+            ->where('medico_nombre', '!=', '')
+            ->groupBy(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+            ->orderBy('medico_nombre')
+            ->take(60)
+            ->get();
+
         $productos = Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
             ->with('laboratorio:id,nombre')
             ->conReceta()
@@ -205,7 +255,41 @@ class RecetaController extends Controller
 
         $receta->load(['detalles.producto', 'cliente']);
 
-        return view('recetas.edit', compact('receta', 'clientes', 'productos'));
+        $detallesArray = $receta->detalles->map(function ($d) {
+            return [
+                'producto_id'       => $d->producto_id,
+                'producto_nombre'   => $d->producto ? $d->producto->nombre : '',
+                'cantidad_recetada' => (int) $d->cantidad_recetada,
+                'posologia'         => $d->posologia ?? '',
+                'query'             => '',
+                'filtrados'         => [],
+                'open'              => false
+            ];
+        })->values()->toArray();
+
+        if (empty($detallesArray)) {
+            $detallesArray = [[
+                'producto_id'       => '',
+                'producto_nombre'   => '',
+                'cantidad_recetada' => 1,
+                'posologia'         => '',
+                'query'             => '',
+                'filtrados'         => [],
+                'open'              => false
+            ]];
+        }
+
+        $detallesJson = json_encode($detallesArray);
+        $productosJson = json_encode($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());
+        $clientesJson = json_encode($clientes->map(fn($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'documento' => $c->documento ?? ''])->values());
+        $medicosJson = json_encode($medicos->map(fn($m) => [
+            'medico_nombre' => $m->medico_nombre,
+            'medico_colegiatura' => $m->medico_colegiatura ?? '',
+            'medico_especialidad' => $m->medico_especialidad ?? '',
+            'institucion_salud' => $m->institucion_salud ?? ''
+        ])->values());
+
+        return view('recetas.edit', compact('receta', 'clientes', 'medicos', 'productos', 'detallesJson', 'productosJson', 'clientesJson', 'medicosJson'));
     }
 
     public function update(UpdateRecetaRequest $request, Receta $receta)

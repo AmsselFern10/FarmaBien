@@ -55,14 +55,31 @@ class CompraController extends Controller
             $query->whereDate('fecha', '<=', $request->input('fecha_hasta'));
         }
 
-        $compras = $query->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $orden = $request->input('orden', 'fecha_desc');
+        switch ($orden) {
+            case 'fecha_asc':
+                $query->orderBy('fecha', 'asc')->orderBy('id', 'asc');
+                break;
+            case 'total_desc':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'total_asc':
+                $query->orderBy('total', 'asc');
+                break;
+            case 'fecha_desc':
+            default:
+                $query->orderBy('fecha', 'desc')->orderBy('id', 'desc');
+                break;
+        }
+
+        $compras = $query->paginate(15)->withQueryString();
 
         return view('compras.index', compact('compras'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $proveedores = Proveedor::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
+        $proveedores = Proveedor::select(['id', 'nombre', 'ruc', 'telefono'])->activos()->orderBy('nombre')->get();
         $productos = Producto::select(['id', 'nombre', 'codigo_barra', 'principio_activo', 'laboratorio_id', 'precio_compra'])
             ->with([
                 'presentacionesActivas:id,producto_id,nombre,unidades_por_presentacion,precio_compra',
@@ -72,7 +89,70 @@ class CompraController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('compras.create', compact('proveedores', 'productos'));
+        $preloadedProveedorId = $request->input('proveedor_id', '');
+        $preloadedItems = [];
+
+        if ($request->filled('items')) {
+            $rawItems = $request->input('items');
+            if (is_string($rawItems)) {
+                $decoded = json_decode($rawItems, true);
+                if (is_array($decoded)) {
+                    $preloadedItems = $decoded;
+                }
+            } elseif (is_array($rawItems)) {
+                $preloadedItems = $rawItems;
+            }
+        } elseif ($request->filled('producto_id')) {
+            $preloadedItems = [
+                [
+                    'producto_id'     => $request->input('producto_id'),
+                    'presentacion_id' => $request->input('presentacion_id', ''),
+                    'cantidad'        => $request->input('cantidad', 10),
+                    'precio_unitario' => $request->input('precio_unitario', ''),
+                    'numero_lote'     => '',
+                    'fecha_vencimiento' => '',
+                ]
+            ];
+        }
+
+        // Obtener los precios históricos más recientes agrupados por producto y proveedor
+        $historialRaw = \App\Models\HistorialPrecio::with('proveedor:id,nombre')
+            ->orderBy('fecha', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $historialMap = [];
+        foreach ($historialRaw as $h) {
+            $pId = $h->producto_id;
+            $prId = $h->proveedor_id;
+            if (!isset($historialMap[$pId])) {
+                $historialMap[$pId] = [
+                    'proveedores'      => [],
+                    'ultimo_precio'    => (float)$h->precio_unitario_base,
+                    'ultimo_proveedor' => $h->proveedor->nombre ?? 'N/A',
+                    'ultima_fecha'     => $h->fecha->format('d/m/Y'),
+                    'mejor_precio'     => (float)$h->precio_unitario_base,
+                    'mejor_proveedor'  => $h->proveedor->nombre ?? 'N/A',
+                ];
+            }
+
+            if (!isset($historialMap[$pId]['proveedores'][$prId])) {
+                $historialMap[$pId]['proveedores'][$prId] = [
+                    'precio_compra'        => (float)$h->precio_compra,
+                    'precio_unitario_base' => (float)$h->precio_unitario_base,
+                    'tipo_presentacion'    => $h->tipo_presentacion,
+                    'fecha'                => $h->fecha->format('d/m/Y'),
+                    'tipo'                 => $h->tipo,
+                ];
+            }
+
+            if ((float)$h->precio_unitario_base < $historialMap[$pId]['mejor_precio']) {
+                $historialMap[$pId]['mejor_precio'] = (float)$h->precio_unitario_base;
+                $historialMap[$pId]['mejor_proveedor'] = $h->proveedor->nombre ?? 'N/A';
+            }
+        }
+
+        return view('compras.create', compact('proveedores', 'productos', 'preloadedProveedorId', 'preloadedItems', 'historialMap'));
     }
 
     public function store(StoreCompraRequest $request)
@@ -87,6 +167,11 @@ class CompraController extends Controller
                 'total'               => $compra->total,
                 'items'               => $compra->detalles()->count(),
             ]);
+
+            if ($request->boolean('crear_otro')) {
+                return redirect()->route('compras.create')
+                    ->with('success', "Compra #{$compra->id} registrada exitosamente. Listo para registrar la siguiente factura.");
+            }
 
             return redirect()->route('compras.show', $compra)
                 ->with('success', "Compra #{$compra->id} registrada exitosamente.");

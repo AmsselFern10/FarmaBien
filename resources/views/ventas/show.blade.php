@@ -63,6 +63,16 @@
                 <span>Imprimir Ticket</span>
             </a>
 
+            @if($venta->estado === 'completada' && !$venta->reemplazada_por)
+                @can('realizar ventas')
+                <a href="{{ route('devoluciones.create', ['venta_id' => $venta->id]) }}" 
+                   class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-800 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l3-3m-3 3l3 3m5 4v1a3 3 0 003 3h4"/></svg>
+                    <span>Procesar Devolución</span>
+                </a>
+                @endcan
+            @endif
+
             <!-- Modificar -->
             @if($venta->puedeModificarse())
                 @can('anular ventas')
@@ -320,6 +330,55 @@
             </table>
         </div>
     </div>
+
+    <!-- Devoluciones Asociadas -->
+    @if($venta->devoluciones && $venta->devoluciones->count() > 0)
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900/60 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <h3 class="text-xs font-bold text-rose-900 dark:text-rose-200 uppercase tracking-wider">
+                    Devoluciones Procesadas sobre esta Venta
+                </h3>
+            </div>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300">
+                {{ $venta->devoluciones->count() }} devolución(es)
+            </span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                        <th class="py-2.5 px-3">N° Devolución</th>
+                        <th class="py-2.5 px-3">Fecha</th>
+                        <th class="py-2.5 px-3">Tipo / Motivo</th>
+                        <th class="py-2.5 px-3">Método Reembolso</th>
+                        <th class="py-2.5 px-3 text-right">Monto Reembolsado</th>
+                        <th class="py-2.5 px-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    @foreach($venta->devoluciones as $dev)
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                        <td class="py-2.5 px-3 font-bold text-slate-900 dark:text-white">{{ $dev->numero_devolucion }}</td>
+                        <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">{{ $dev->fecha->format('d/m/Y H:i') }}</td>
+                        <td class="py-2.5 px-3 capitalize">
+                            <span class="font-semibold">{{ $dev->tipo }}</span> — {{ str_replace('_', ' ', $dev->motivo) }}
+                        </td>
+                        <td class="py-2.5 px-3 capitalize">{{ $dev->metodo_reembolso }} {{ $dev->banco ? '('.$dev->banco.')' : '' }}</td>
+                        <td class="py-2.5 px-3 text-right font-black text-rose-600 dark:text-rose-400">{{ formato_moneda($dev->monto_total) }}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            <a href="{{ route('devoluciones.show', $dev) }}" class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline">
+                                Ver Detalle
+                            </a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 
     <!-- Observaciones -->
     @if($venta->observaciones)

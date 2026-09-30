@@ -126,7 +126,7 @@
                         </x-slot>
                         <x-slot name="content">
                             @role('Admin')<x-dropdown-link :href="route('usuarios.index')">👥 Usuarios & Roles</x-dropdown-link>@endrole
-                            @can('ver ajustes')<x-dropdown-link :href="route('ajustes.index')">⚙️ Ajustes & Configuración</x-dropdown-link>@endcan
+                            <x-dropdown-link :href="route('ajustes.index')">⚙️ Ajustes & Configuración</x-dropdown-link>
                             @if(configuracion('catalogo_publico_activo', true))
                                 <x-dropdown-link :href="route('catalogo.publico')" target="_blank">🌐 Catálogo Público</x-dropdown-link>
                             @endif
@@ -231,7 +231,7 @@
         @can('ver laboratorios')<x-responsive-nav-link :href="route('laboratorios.index')" :active="request()->routeIs('laboratorios.*')">🔬 Laboratorios</x-responsive-nav-link>@endcan
         @can('ver reportes ventas')<x-responsive-nav-link :href="route('reportes.index')" :active="request()->routeIs('reportes.*')">📈 Reportes Gerenciales</x-responsive-nav-link>@endcan
         @role('Admin')<x-responsive-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">👥 Usuarios & Roles</x-responsive-nav-link>@endrole
-        @can('ver ajustes')<x-responsive-nav-link :href="route('ajustes.index')" :active="request()->routeIs('ajustes.*')">⚙️ Ajustes & Configuración</x-responsive-nav-link>@endcan
+        <x-responsive-nav-link :href="route('ajustes.index')" :active="request()->routeIs('ajustes.*')">⚙️ Ajustes & Configuración</x-responsive-nav-link>
 
         <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
             <div class="font-bold text-slate-800 dark:text-slate-200">{{ Auth::user()->name }} ({{ Auth::user()->roles->first()?->name }})</div>

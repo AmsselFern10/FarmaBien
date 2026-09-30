@@ -91,10 +91,18 @@
         {{-- Footer --}}
         <div class="flex items-center justify-between gap-3">
             <a href="{{ route('usuarios.index') }}" class="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl transition">Cancelar</a>
-            <button type="submit" class="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <span>Crear Usuario</span>
-            </button>
+            <div class="flex items-center gap-3">
+                <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
+                    <input type="checkbox" name="crear_otro" value="1"
+                           {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
+                           class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <span>Guardar y crear otro</span>
+                </label>
+                <button type="submit" class="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Crear Usuario</span>
+                </button>
+            </div>
         </div>
     </form>
 </div>

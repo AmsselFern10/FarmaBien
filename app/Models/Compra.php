@@ -17,6 +17,11 @@ class Compra extends Model
         'subtotal',
         'impuesto',
         'total',
+        'condicion_pago',
+        'dias_credito',
+        'fecha_vencimiento_pago',
+        'saldo_pendiente',
+        'estado_pago',
         'estado',
         'fecha',
         'fecha_anulacion',
@@ -30,6 +35,8 @@ class Compra extends Model
         'subtotal' => 'decimal:2',
         'impuesto' => 'decimal:2',
         'total' => 'decimal:2',
+        'saldo_pendiente' => 'decimal:2',
+        'fecha_vencimiento_pago' => 'date',
         'fecha' => 'datetime',
         'fecha_anulacion' => 'datetime',
     ];
@@ -58,6 +65,16 @@ class Compra extends Model
     public function lotes(): HasMany
     {
         return $this->hasMany(Lote::class);
+    }
+
+    public function pagos(): HasMany
+    {
+        return $this->hasMany(PagoCuentaPorPagar::class, 'compra_id');
+    }
+
+    public function ordenCompra(): HasMany
+    {
+        return $this->hasMany(OrdenCompra::class, 'compra_id');
     }
 
     public function compraOriginal(): BelongsTo

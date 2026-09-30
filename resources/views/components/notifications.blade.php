@@ -43,7 +43,9 @@
 
         /* ── Toast API ─────────────────────────────────────── */
         addToast(type, message, duration) {
-            duration = duration || (type === 'error' ? 6000 : type === 'warning' ? 5000 : 4000);
+            if (typeof duration !== 'number' || duration <= 0 || isNaN(duration)) {
+                duration = (type === 'error' ? 6000 : type === 'warning' ? 5000 : 4000);
+            }
             const id = Date.now() + Math.random();
             this.toasts.push({ id, type, message, progress: 100, visible: true });
             const steps = 60;
@@ -89,13 +91,28 @@
                 this.dlg._resolve(result);
                 this.dlg._resolve = null;
             }
+        },
+
+        checkStorageFlash() {
+            try {
+                const rawFlash = localStorage.getItem('farma_flash') || sessionStorage.getItem('farma_flash');
+                if (rawFlash) {
+                    localStorage.removeItem('farma_flash');
+                    sessionStorage.removeItem('farma_flash');
+                    const _jsFlash = JSON.parse(rawFlash);
+                    if (_jsFlash && _jsFlash.message) {
+                        this.addToast(_jsFlash.type || 'success', _jsFlash.message);
+                    }
+                }
+            } catch(e) {
+                try { localStorage.removeItem('farma_flash'); } catch(e) {}
+                try { sessionStorage.removeItem('farma_flash'); } catch(e) {}
+            }
         }
     }"
+    @notify.window="addToast($event.detail.type || 'info', $event.detail.message, $event.detail.duration)"
     x-init="
-        /* ── Flash messages de PHP → toasts ─────────────────
-           NOTA: en Alpine.js v3, x-init evalúa con with(componentData),
-           por lo que addToast/showConfirm/resolveConfirm son accesibles
-           directamente como identificadores (NO via this.método).         */
+        /* ── Flash messages de PHP → toasts ───────────────── */
         @if(session('success'))
             $nextTick(() => addToast('success', @js(session('success'))));
         @endif
@@ -109,23 +126,14 @@
             $nextTick(() => addToast('info', @js(session('info'))));
         @endif
 
-        /* ── Flash JS desde sessionStorage (ej: POS tras AJAX redirect) ─
-           Permite que páginas que redirigen via window.location.replace()
-           pasen mensajes de notificación a la siguiente página.           */
-        try {
-            const _jsFlash = JSON.parse(sessionStorage.getItem('farma_flash') || 'null');
-            if (_jsFlash && _jsFlash.type && _jsFlash.message) {
-                sessionStorage.removeItem('farma_flash');
-                $nextTick(() => addToast(_jsFlash.type, _jsFlash.message));
-            }
-        } catch(_e) { sessionStorage.removeItem('farma_flash'); }
+        $nextTick(() => checkStorageFlash());
 
         /* ── API global para JS/async externo ──────────────── */
         window.farmaToast = {
-            success : msg => addToast('success', msg),
-            error   : msg => addToast('error',   msg),
-            warning : msg => addToast('warning', msg),
-            info    : msg => addToast('info',    msg)
+            success : (msg, dur) => window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: msg, duration: dur } })),
+            error   : (msg, dur) => window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error',   message: msg, duration: dur } })),
+            warning : (msg, dur) => window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'warning', message: msg, duration: dur } })),
+            info    : (msg, dur) => window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'info',    message: msg, duration: dur } }))
         };
 
         window.farmaConfirm = opts => {
@@ -152,8 +160,8 @@
 
     {{-- ═══════════════════════  TOAST STACK  ═══════════════════════ --}}
     <div
-        class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 items-end pointer-events-none"
-        style="max-width:400px;width:calc(100vw - 2rem)"
+        class="fixed top-5 right-5 z-[99999] flex flex-col gap-2.5 items-end pointer-events-none"
+        style="max-width:420px;width:calc(100vw - 2.5rem)"
     >
         <template x-for="toast in toasts" :key="toast.id">
             <div

@@ -169,15 +169,29 @@
                             {{ $pres->codigo_barras ?? '—' }}
                         </td>
                         <td class="px-5 py-3.5 text-center">
+                            @canany(['editar productos', 'editar presentaciones'])
+                            <form method="POST" action="{{ route('presentaciones.toggle-activo', $pres) }}" class="inline-block m-0 p-0">
+                                @csrf
+                                <button type="submit" 
+                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition cursor-pointer {{ $pres->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                                        title="Clic para {{ $pres->activo ? 'desactivar' : 'activar' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full mr-1.5 {{ $pres->activo ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
+                                    {{ $pres->activo ? 'Activa' : 'Inactiva' }}
+                                </button>
+                            </form>
+                            @else
                             @if($pres->activo)
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-emerald-500"></span>
                                 Activa
                             </span>
                             @else
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-slate-400"></span>
                                 Inactiva
                             </span>
                             @endif
+                            @endcanany
                         </td>
                         <td class="px-5 py-3.5 text-center whitespace-nowrap">
                             <div class="inline-flex items-center justify-center gap-1.5">
@@ -189,13 +203,26 @@
                                 </a>
                                 @endcan
 
-                                @can('editar productos')
+                                @canany(['editar productos', 'editar presentaciones'])
                                 <a href="{{ route('presentaciones.edit', $pres) }}"
                                    class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs"
                                    title="Editar Presentación">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </a>
-                                @endcan
+
+                                <form method="POST" action="{{ route('presentaciones.toggle-activo', $pres) }}" class="inline-flex m-0 p-0">
+                                    @csrf
+                                    <button type="submit" 
+                                            class="w-8 h-8 rounded-lg {{ $pres->activo ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60' }} inline-flex items-center justify-center transition shadow-2xs cursor-pointer"
+                                            title="{{ $pres->activo ? 'Desactivar Presentación' : 'Activar Presentación' }}">
+                                        @if($pres->activo)
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        @else
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        @endif
+                                    </button>
+                                </form>
+                                @endcanany
 
                                 @can('eliminar productos')
                                 <form action="{{ route('presentaciones.destroy', $pres) }}" method="POST" class="inline-flex items-center m-0 p-0"
