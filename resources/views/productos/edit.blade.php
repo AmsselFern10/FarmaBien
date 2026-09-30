@@ -325,7 +325,7 @@ class="space-y-4 transition-all duration-200">
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     Régimen de Venta <span class="text-rose-500">*</span>
@@ -336,18 +336,32 @@ class="space-y-4 transition-all duration-200">
                                         class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                                     <option value="venta_libre">Venta Libre (OTC)</option>
                                     <option value="receta_medica">Receta Médica Simple</option>
-                                    <option value="receta_retenida">Psicotrópico / Controlado</option>
+                                    <option value="receta_retenida">Psicotrópico / Retenida</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-purple-700 dark:text-purple-400 mb-1">
+                                    Control Sanitario MINSA
+                                </label>
+                                <select name="nivel_controlado" 
+                                        x-model="formData.nivel_controlado"
+                                        class="w-full px-2.5 py-1.5 bg-purple-50/50 dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-lg text-xs text-purple-950 dark:text-purple-200 font-bold focus:ring-1 focus:ring-purple-500">
+                                    <option value="0">0 - No Controlado</option>
+                                    <option value="1">1 - Psicotrópico (Nivel I)</option>
+                                    <option value="2">2 - Estupefaciente (Nivel II)</option>
+                                    <option value="3">3 - Alto Control (Nivel III)</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Reg. Sanitario (DIGEMID)
+                                    Reg. Sanitario (MINSA)
                                 </label>
                                 <input type="text" 
                                        name="registro_sanitario" 
                                        x-model="formData.registro_sanitario"
-                                       placeholder="EE-12345" 
+                                       placeholder="MINSA / Reg. Sanitario" 
                                        class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                             </div>
                         </div>
@@ -679,7 +693,7 @@ class="space-y-4 transition-all duration-200">
                     </div>
 
                     <div class="p-5 space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             <!-- Categoría -->
                             <div>
                                 <label for="categoria_id_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
@@ -729,6 +743,22 @@ class="space-y-4 transition-all duration-200">
                                 </select>
                             </div>
 
+                            <!-- Control MINSA -->
+                            <div>
+                                <label for="nivel_controlado_mod" class="block text-xs font-bold text-purple-700 dark:text-purple-400 mb-1.5">
+                                    Fiscalización MINSA
+                                </label>
+                                <select name="nivel_controlado" 
+                                        id="nivel_controlado_mod" 
+                                        x-model="formData.nivel_controlado"
+                                        class="w-full px-3.5 py-2 bg-purple-50/50 dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-xl text-xs text-purple-950 dark:text-purple-200 font-bold focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition shadow-2xs">
+                                    <option value="0">0 - No Controlado</option>
+                                    <option value="1">1 - Psicotrópico (Nivel I)</option>
+                                    <option value="2">2 - Estupefaciente (Nivel II)</option>
+                                    <option value="3">3 - Alto Control (Nivel III)</option>
+                                </select>
+                            </div>
+
                             <!-- Registro Sanitario -->
                             <div>
                                 <label for="registro_sanitario_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
@@ -738,7 +768,7 @@ class="space-y-4 transition-all duration-200">
                                        name="registro_sanitario" 
                                        id="registro_sanitario_mod" 
                                        x-model="formData.registro_sanitario"
-                                       placeholder="EE-12345 / DIGEMID" 
+                                       placeholder="MINSA / Reg. Sanitario" 
                                        class="w-full px-3.5 py-2 font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
                             </div>
                         </div>

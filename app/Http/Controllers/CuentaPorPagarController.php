@@ -100,4 +100,40 @@ class CuentaPorPagarController extends Controller
             return back()->withInput()->with('error', $e->getMessage());
         }
     }
+
+    public function storeDirecta(Request $request)
+    {
+        $validated = $request->validate([
+            'proveedor_id'           => 'required|exists:proveedores,id',
+            'numero_comprobante'     => 'required|string|max:50',
+            'fecha'                  => 'required|date',
+            'total'                  => 'required|numeric|min:0.01',
+            'dias_credito'           => 'required|integer|min:1|max:365',
+            'fecha_vencimiento_pago' => 'required|date',
+            'concepto'               => 'nullable|string|max:100',
+        ]);
+
+        $numComp = $validated['numero_comprobante'];
+        if (!empty($validated['concepto'])) {
+            $numComp = substr($validated['numero_comprobante'] . ' (' . $validated['concepto'] . ')', 0, 50);
+        }
+
+        $compra = Compra::create([
+            'proveedor_id'           => $validated['proveedor_id'],
+            'user_id'                => auth()->id(),
+            'numero_comprobante'     => $numComp,
+            'subtotal'               => $validated['total'],
+            'impuesto'               => 0,
+            'total'                  => $validated['total'],
+            'condicion_pago'         => 'credito',
+            'dias_credito'           => $validated['dias_credito'],
+            'fecha_vencimiento_pago' => $validated['fecha_vencimiento_pago'],
+            'saldo_pendiente'        => $validated['total'],
+            'estado_pago'            => 'pendiente',
+            'estado'                 => 'recibida',
+            'fecha'                  => $validated['fecha'],
+        ]);
+
+        return back()->with('success', "Cuenta por pagar {$compra->numero_comprobante} por " . formato_moneda($compra->total) . " registrada exitosamente.");
+    }
 }

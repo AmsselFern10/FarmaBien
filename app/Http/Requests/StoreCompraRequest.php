@@ -17,6 +17,9 @@ class StoreCompraRequest extends FormRequest
             'proveedor_id'                        => ['required', 'integer', 'exists:proveedores,id'],
             'numero_comprobante'                  => ['nullable', 'string', 'max:50'],
             'fecha'                               => ['required', 'date'],
+            'condicion_pago'                      => ['nullable', 'string', 'in:contado,credito'],
+            'dias_credito'                        => ['nullable', 'integer', 'min:0', 'max:365'],
+            'fecha_vencimiento_pago'              => ['nullable', 'date'],
             'productos'                           => ['required', 'array', 'min:1'],
             'productos.*.producto_id'             => ['required', 'integer', 'exists:productos,id'],
             'productos.*.presentacion_id'         => ['nullable', 'integer', 'exists:presentaciones_producto,id'],
@@ -34,6 +37,7 @@ class StoreCompraRequest extends FormRequest
             'proveedor_id.required'                  => 'Debes seleccionar un proveedor válido.',
             'proveedor_id.exists'                    => 'El proveedor seleccionado no existe.',
             'fecha.required'                         => 'La fecha de la compra es obligatoria.',
+            'condicion_pago.in'                      => 'La condición de pago debe ser Contado o Crédito.',
             'productos.required'                     => 'Debes registrar al menos un producto en la compra.',
             'productos.min'                          => 'Debes registrar al menos un producto en la compra.',
             'productos.*.producto_id.required'       => 'El producto es obligatorio en cada línea.',
@@ -49,9 +53,12 @@ class StoreCompraRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'numero_comprobante' => $this->filled('numero_comprobante') ? trim($this->input('numero_comprobante')) : null,
-            'proveedor_id'       => $this->filled('proveedor_id') ? (int) $this->input('proveedor_id') : null,
-            'fecha'              => $this->filled('fecha') ? trim($this->input('fecha')) : now()->toDateString(),
+            'numero_comprobante'     => $this->filled('numero_comprobante') ? trim($this->input('numero_comprobante')) : null,
+            'proveedor_id'           => $this->filled('proveedor_id') ? (int) $this->input('proveedor_id') : null,
+            'fecha'                  => $this->filled('fecha') ? trim($this->input('fecha')) : now()->toDateString(),
+            'condicion_pago'         => $this->filled('condicion_pago') ? trim($this->input('condicion_pago')) : 'contado',
+            'dias_credito'           => $this->filled('dias_credito') ? (int) $this->input('dias_credito') : 0,
+            'fecha_vencimiento_pago' => $this->filled('fecha_vencimiento_pago') ? trim($this->input('fecha_vencimiento_pago')) : null,
         ]);
     }
 }

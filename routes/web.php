@@ -177,6 +177,7 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::get('compras/cuentas-por-pagar', [CuentaPorPagarController::class, 'index'])->name('cuentas-por-pagar.index');
+    Route::post('compras/cuentas-por-pagar/directa', [CuentaPorPagarController::class, 'storeDirecta'])->name('cuentas-por-pagar.directa.store');
     Route::get('compras/cuentas-por-pagar/{compra}', [CuentaPorPagarController::class, 'show'])->name('cuentas-por-pagar.show');
     Route::post('compras/cuentas-por-pagar/{compra}/abonos', [CuentaPorPagarController::class, 'storeAbono'])->name('cuentas-por-pagar.abonos.store');
 

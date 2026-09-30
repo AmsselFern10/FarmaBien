@@ -66,6 +66,7 @@ class DevolucionController extends Controller
     {
         $venta = null;
         $detallesDisponibles = [];
+        $ventasRecientes = collect();
 
         if ($request->filled('venta_id')) {
             $venta = Venta::with(['detalles.producto', 'detalles.lote', 'detalles.presentacion', 'cliente', 'usuario', 'devoluciones.detalles'])
@@ -92,9 +93,30 @@ class DevolucionController extends Controller
                     'cantidad_disponible' => max(0, $disponible),
                 ];
             }
+        } else {
+            // Cargar ventas recientes elegibles para devolución (últimos 45 días)
+            $queryVentas = Venta::with(['cliente', 'usuario', 'detalles.producto'])
+                ->where('estado', 'completada')
+                ->where('fecha', '>=', now()->subDays(45))
+                ->orderBy('fecha', 'desc');
+
+            if ($request->filled('buscar_venta')) {
+                $b = trim($request->input('buscar_venta'));
+                $queryVentas->where(function ($q) use ($b) {
+                    $q->where('id', $b)
+                      ->orWhere('numero_comprobante', 'like', "%{$b}%")
+                      ->orWhereHas('cliente', function ($qc) use ($b) {
+                          $qc->where('nombre', 'like', "%{$b}%")
+                             ->orWhere('telefono', 'like', "%{$b}%")
+                             ->orWhere('cedula', 'like', "%{$b}%");
+                      });
+                });
+            }
+
+            $ventasRecientes = $queryVentas->take(20)->get();
         }
 
-        return view('devoluciones.create', compact('venta', 'detallesDisponibles'));
+        return view('devoluciones.create', compact('venta', 'detallesDisponibles', 'ventasRecientes'));
     }
 
     public function store(Request $request)

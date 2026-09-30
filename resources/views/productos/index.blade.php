@@ -153,6 +153,7 @@
                         <option value="venta_libre" {{ request('tipo_control') == 'venta_libre' ? 'selected' : '' }}>Venta Libre</option>
                         <option value="receta_medica" {{ request('tipo_control') == 'receta_medica' ? 'selected' : '' }}>Con Receta</option>
                         <option value="receta_retenida" {{ request('tipo_control') == 'receta_retenida' ? 'selected' : '' }}>Receta Retenida</option>
+                        <option value="controlados" {{ request('tipo_control') == 'controlados' ? 'selected' : '' }}>🚨 Controlados (MINSA)</option>
                     </select>
                 </div>
             </div>
@@ -242,9 +243,24 @@
                         </div>
                     @endif
 
-                    <!-- Badges Top Left: Receta & Promo -->
-                    <div class="absolute top-2.5 left-2.5 flex flex-col gap-1">
-                        @if($producto->requiere_receta)
+                    <!-- Badges Top Left: Receta, Controlado & Promo -->
+                    <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
+                        @if(($producto->nivel_controlado ?? 0) > 0)
+                            @if($producto->nivel_controlado == 1)
+                                <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-600 text-white shadow-xs" title="Psicotrópico - Fiscalizado MINSA">
+                                    <span>Nivel I (Psicotrópico)</span>
+                                </span>
+                            @elseif($producto->nivel_controlado == 2)
+                                <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-700 text-white shadow-xs" title="Estupefaciente - Fiscalizado MINSA">
+                                    <span>Nivel II (Estupefaciente)</span>
+                                </span>
+                            @elseif($producto->nivel_controlado == 3)
+                                <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-700 text-white shadow-xs" title="Alto Control - Fiscalizado MINSA">
+                                    <span>Nivel III (Alto Control)</span>
+                                </span>
+                            @endif
+                        @endif
+                        @if($producto->requiere_receta && ($producto->nivel_controlado ?? 0) == 0)
                         <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
                             <span>Rx Receta</span>
                         </span>
@@ -471,7 +487,21 @@
 
                         <!-- Control / Receta -->
                         <td class="py-3 px-4 text-center whitespace-nowrap">
-                            @if($producto->requiere_receta)
+                            @if(($producto->nivel_controlado ?? 0) > 0)
+                                @if($producto->nivel_controlado == 1)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800" title="Psicotrópico - Fiscalizado MINSA">
+                                        Nivel I (Psicotrópico)
+                                    </span>
+                                @elseif($producto->nivel_controlado == 2)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" title="Estupefaciente - Fiscalizado MINSA">
+                                        Nivel II (Estupefaciente)
+                                    </span>
+                                @elseif($producto->nivel_controlado == 3)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800" title="Alto Control - Fiscalizado MINSA">
+                                        Nivel III (Alto Control)
+                                    </span>
+                                @endif
+                            @elseif($producto->requiere_receta)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                                     Con Receta
                                 </span>

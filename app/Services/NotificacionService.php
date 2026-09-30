@@ -49,12 +49,18 @@ class NotificacionService
      */
     protected function getStockAlerts(): array
     {
-        $productos = Producto::select('id', 'nombre', 'stock_minimo')
-            ->activos()
-            ->withSum(['lotes as stock_total' => function ($q) {
-                $q->where('activo', true)->where('stock_actual', '>', 0);
-            }], 'stock_actual')
-            ->havingRaw('COALESCE(stock_total, 0) <= stock_minimo')
+        $productos = DB::table('productos as p')
+            ->select('p.id', 'p.nombre', 'p.stock_minimo',
+                DB::raw('COALESCE(SUM(l.stock_actual), 0) as stock_total'))
+            ->leftJoin('lotes as l', function ($join) {
+                $join->on('p.id', '=', 'l.producto_id')
+                     ->where('l.activo', '=', 1)
+                     ->where('l.stock_actual', '>', 0);
+            })
+            ->where('p.activo', true)
+            ->whereNull('p.deleted_at')
+            ->groupBy('p.id', 'p.nombre', 'p.stock_minimo')
+            ->havingRaw('COALESCE(SUM(l.stock_actual), 0) <= p.stock_minimo')
             ->orderBy('stock_total', 'asc')
             ->limit(10)
             ->get();

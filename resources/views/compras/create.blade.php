@@ -179,12 +179,36 @@
     formData: (window.farmaGetDraft ? window.farmaGetDraft('{{ request()->getPathInfo() }}', {
         proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
-        fecha: @js(old('fecha', date('Y-m-d')))
+        fecha: @js(old('fecha', date('Y-m-d'))),
+        condicion_pago: @js(old('condicion_pago', 'contado')),
+        dias_credito: @js(old('dias_credito', 30)),
+        fecha_vencimiento_pago: @js(old('fecha_vencimiento_pago', ''))
     }) : {
         proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
-        fecha: @js(old('fecha', date('Y-m-d')))
+        fecha: @js(old('fecha', date('Y-m-d'))),
+        condicion_pago: @js(old('condicion_pago', 'contado')),
+        dias_credito: @js(old('dias_credito', 30)),
+        fecha_vencimiento_pago: @js(old('fecha_vencimiento_pago', ''))
     }),
+    setDiasCredito(dias) {
+        this.formData.dias_credito = dias;
+        this.calcularFechaVencimientoPago();
+    },
+    calcularFechaVencimientoPago() {
+        if (this.formData.condicion_pago !== 'credito') {
+            this.formData.fecha_vencimiento_pago = '';
+            return;
+        }
+        const fechaStr = this.formData.fecha || '{{ date('Y-m-d') }}';
+        const d = new Date(fechaStr + 'T00:00:00');
+        const dias = parseInt(this.formData.dias_credito) || 0;
+        d.setDate(d.getDate() + dias);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        this.formData.fecha_vencimiento_pago = `${yyyy}-${mm}-${dd}`;
+    },
     guardandoCompra: false,
     hasOldItems: @js(!empty(old('productos')) || !empty($preloadedItems)),
     items: @js($initialItems),
@@ -631,8 +655,8 @@ class="space-y-4 transition-all duration-200">
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-                            <!-- Proveedor (Col 5) -->
-                            <div class="sm:col-span-5 relative z-30" @click.outside="proveedorDropdownAbierto = false">
+                            <!-- Proveedor (Col 4) -->
+                            <div class="sm:col-span-4 relative z-30" @click.outside="proveedorDropdownAbierto = false">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     Proveedor <span class="text-rose-500">*</span>
                                 </label>
@@ -690,8 +714,8 @@ class="space-y-4 transition-all duration-200">
                                 </div>
                             </div>
 
-                            <!-- N° Comprobante (Col 4) -->
-                            <div class="sm:col-span-4">
+                            <!-- N° Comprobante (Col 3) -->
+                            <div class="sm:col-span-3">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     N° Factura / Boleta
                                 </label>
@@ -702,16 +726,49 @@ class="space-y-4 transition-all duration-200">
                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 font-mono">
                             </div>
 
-                            <!-- Fecha Documento (Col 3) -->
-                            <div class="sm:col-span-3">
+                            <!-- Fecha Documento (Col 2) -->
+                            <div class="sm:col-span-2">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Fecha Documento <span class="text-rose-500">*</span>
+                                    Fecha <span class="text-rose-500">*</span>
                                 </label>
                                 <input type="date" 
                                        name="fecha" 
                                        x-model="formData.fecha" 
+                                       @change="calcularFechaVencimientoPago()"
                                        required
                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                            </div>
+
+                            <!-- Condición de Pago (Col 3) -->
+                            <div class="sm:col-span-3">
+                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                    Condición de Pago
+                                </label>
+                                <select name="condicion_pago" 
+                                        x-model="formData.condicion_pago" 
+                                        @change="calcularFechaVencimientoPago()"
+                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                                    <option value="contado">Contado (Pagada)</option>
+                                    <option value="credito">Crédito (Cuentas por Pagar)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Fila Condicional de Crédito -->
+                        <div x-show="formData.condicion_pago === 'credito'" x-transition class="pt-2 border-t border-slate-200/70 dark:border-slate-700/70 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+                            <div class="sm:col-span-6 flex items-center gap-1.5">
+                                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 shrink-0">Días Crédito:</span>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="setDiasCredito(15)" :class="formData.dias_credito == 15 ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="px-2 py-0.5 rounded text-[10px] font-bold">15d</button>
+                                    <button type="button" @click="setDiasCredito(30)" :class="formData.dias_credito == 30 ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="px-2 py-0.5 rounded text-[10px] font-bold">30d</button>
+                                    <button type="button" @click="setDiasCredito(45)" :class="formData.dias_credito == 45 ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="px-2 py-0.5 rounded text-[10px] font-bold">45d</button>
+                                    <button type="button" @click="setDiasCredito(60)" :class="formData.dias_credito == 60 ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="px-2 py-0.5 rounded text-[10px] font-bold">60d</button>
+                                </div>
+                                <input type="number" name="dias_credito" x-model="formData.dias_credito" @input="calcularFechaVencimientoPago()" min="1" max="365" class="w-14 px-1.5 py-0.5 text-center text-xs font-bold rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            </div>
+                            <div class="sm:col-span-6 flex items-center gap-2">
+                                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 shrink-0">Vencimiento CxP:</span>
+                                <input type="date" name="fecha_vencimiento_pago" x-model="formData.fecha_vencimiento_pago" class="w-full px-2 py-1 text-xs font-bold rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400">
                             </div>
                         </div>
                     </div>
@@ -736,8 +793,8 @@ class="space-y-4 transition-all duration-200">
 
                         <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
                             <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Liquidado:</span>
-                            <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                                $<span x-text="calcularTotalGeneral()"></span>
+                            <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+                                C$ <span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
                     </div>
@@ -889,7 +946,7 @@ class="space-y-4 transition-all duration-200">
                                             <!-- Badge Precio Anterior & Variación -->
                                             <div class="mt-1 flex flex-col items-end gap-0.5" x-show="item.producto_id && getPrecioAnterior(item.producto_id)">
                                                 <span class="text-[10px] text-slate-400" :title="'Proveedor: ' + (getPrecioAnterior(item.producto_id)?.proveedor || '') + ' (' + (getPrecioAnterior(item.producto_id)?.fecha || '') + ')'">
-                                                    Ant: $<span x-text="(getPrecioAnterior(item.producto_id)?.precio || 0).toFixed(2)"></span>
+                                                    Ant: C$<span x-text="(getPrecioAnterior(item.producto_id)?.precio || 0).toFixed(2)"></span>
                                                 </span>
                                                 <template x-if="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor)">
                                                     <span class="text-[9px] font-extrabold px-1 rounded inline-flex items-center"
@@ -927,7 +984,7 @@ class="space-y-4 transition-all duration-200">
 
                                         <!-- Subtotal -->
                                         <td class="py-2 px-3 text-right font-bold text-slate-900 dark:text-white">
-                                            $<span x-text="calcularSubtotal(item)"></span>
+                                            C$<span x-text="calcularSubtotal(item)"></span>
                                         </td>
 
                                         <!-- Botón Eliminar Fila -->
@@ -984,9 +1041,9 @@ class="space-y-4 transition-all duration-200">
                     </div>
 
                     <div class="p-5 space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <!-- Proveedor -->
-                            <div class="relative z-30" @click.outside="proveedorDropdownAbierto = false">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <!-- Proveedor (Col 4) -->
+                            <div class="md:col-span-4 relative z-30" @click.outside="proveedorDropdownAbierto = false">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                                     Proveedor Registrado <span class="text-rose-500">*</span>
                                 </label>
@@ -1044,28 +1101,64 @@ class="space-y-4 transition-all duration-200">
                                 </div>
                             </div>
 
-                            <!-- Número Comprobante -->
-                            <div>
+                            <!-- Número Comprobante (Col 3) -->
+                            <div class="md:col-span-3">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Número de Comprobante / Factura
+                                    Número de Factura / Boleta
                                 </label>
                                 <input type="text" 
                                        name="numero_comprobante" 
                                        x-model="formData.numero_comprobante" 
                                        placeholder="Ej: F001-0004523"
-                                       class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
+                                       class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs font-mono">
                             </div>
 
-                            <!-- Fecha -->
-                            <div>
+                            <!-- Fecha (Col 2) -->
+                            <div class="md:col-span-2">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Fecha de Recepción / Emisión <span class="text-rose-500">*</span>
+                                    Fecha Emisión <span class="text-rose-500">*</span>
                                 </label>
                                 <input type="date" 
                                        name="fecha" 
                                        x-model="formData.fecha" 
+                                       @change="calcularFechaVencimientoPago()"
                                        required
                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
+                            </div>
+
+                            <!-- Condición de Pago (Col 3) -->
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                                    Condición de Pago <span class="text-rose-500">*</span>
+                                </label>
+                                <select name="condicion_pago" 
+                                        x-model="formData.condicion_pago" 
+                                        @change="calcularFechaVencimientoPago()"
+                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
+                                    <option value="contado">Contado (Pagado Inmediato)</option>
+                                    <option value="credito">Crédito (Cuentas por Pagar)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Opciones de Crédito Expandidas -->
+                        <div x-show="formData.condicion_pago === 'credito'" x-transition class="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                            <div class="sm:col-span-6 flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-bold text-amber-900 dark:text-amber-300">Plazo de Crédito:</span>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="setDiasCredito(15)" :class="formData.dias_credito == 15 ? 'bg-amber-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">15 días</button>
+                                    <button type="button" @click="setDiasCredito(30)" :class="formData.dias_credito == 30 ? 'bg-amber-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">30 días</button>
+                                    <button type="button" @click="setDiasCredito(45)" :class="formData.dias_credito == 45 ? 'bg-amber-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">45 días</button>
+                                    <button type="button" @click="setDiasCredito(60)" :class="formData.dias_credito == 60 ? 'bg-amber-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">60 días</button>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" name="dias_credito" x-model="formData.dias_credito" @input="calcularFechaVencimientoPago()" min="1" max="365" class="w-16 px-2 py-1 text-center text-xs font-bold rounded-lg border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                                    <span class="text-xs text-amber-800 dark:text-amber-400 font-semibold">días</span>
+                                </div>
+                            </div>
+                            <div class="sm:col-span-6 flex items-center justify-end gap-2">
+                                <span class="text-xs font-bold text-amber-900 dark:text-amber-300">Vence en Cuentas por Pagar:</span>
+                                <input type="date" name="fecha_vencimiento_pago" x-model="formData.fecha_vencimiento_pago" class="px-3 py-1.5 text-xs font-bold rounded-xl border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-amber-900 dark:text-amber-200">
                             </div>
                         </div>
                     </div>
@@ -1116,7 +1209,7 @@ class="space-y-4 transition-all duration-200">
                                                 </div>
                                             </div>
                                             <div class="text-right shrink-0 pl-2">
-                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
+                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'C$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
                                             </div>
                                         </button>
                                     </template>
@@ -1143,7 +1236,7 @@ class="space-y-4 transition-all duration-200">
 
                                     <div class="flex items-center space-x-3">
                                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                            Subtotal: <span class="text-emerald-600 dark:text-emerald-400 text-sm">$<span x-text="calcularSubtotal(item)"></span></span>
+                                            Subtotal: <span class="text-emerald-600 dark:text-emerald-400 text-sm">C$<span x-text="calcularSubtotal(item)"></span></span>
                                         </div>
                                         <button type="button" 
                                                 @click="eliminarItem(idx)" 
@@ -1217,11 +1310,11 @@ class="space-y-4 transition-all duration-200">
                                     <div class="md:col-span-3">
                                         <div class="flex items-center justify-between mb-1">
                                             <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                                                Precio Unit. ($) <span class="text-rose-500">*</span>
+                                                Precio Unit. (C$) <span class="text-rose-500">*</span>
                                             </label>
                                             <template x-if="item.producto_id && getPrecioAnterior(item.producto_id)">
                                                 <span class="text-[10px] text-slate-400" :title="'Proveedor: ' + (getPrecioAnterior(item.producto_id)?.proveedor || '') + ' (' + (getPrecioAnterior(item.producto_id)?.fecha || '') + ')'">
-                                                    Ant: $<span x-text="(getPrecioAnterior(item.producto_id)?.precio || 0).toFixed(2)"></span>
+                                                    Ant: C$<span x-text="(getPrecioAnterior(item.producto_id)?.precio || 0).toFixed(2)"></span>
                                                 </span>
                                             </template>
                                         </div>
@@ -1297,7 +1390,7 @@ class="space-y-4 transition-all duration-200">
                         <div>
                             <span class="block text-slate-400 text-[11px]">Monto Total:</span>
                             <span class="font-extrabold text-emerald-600 dark:text-emerald-400 text-xl">
-                                $<span x-text="calcularTotalGeneral()"></span>
+                                C$<span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
                     </div>
@@ -1397,7 +1490,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Precio Compra -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            Precio de Compra ($)
+                            Precio de Compra (C$)
                         </label>
                         <input type="number" 
                                step="0.01" 
@@ -1410,7 +1503,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Precio Venta -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            Precio de Venta ($)
+                            Precio de Venta (C$)
                         </label>
                         <input type="number" 
                                step="0.01" 

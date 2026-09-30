@@ -17,15 +17,29 @@
     <!-- Header & Quick Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-wrap items-center gap-2">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>{{ $producto->nombre }}</span>
                 </h1>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $producto->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
                     {{ $producto->activo ? 'Activo' : 'Inactivo' }}
                 </span>
-                @if($producto->requiere_receta)
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
+                @if(($producto->nivel_controlado ?? 0) > 0)
+                    @if($producto->nivel_controlado == 1)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-600 text-white shadow-xs">
+                        🚨 Nivel I (Psicotrópico - MINSA)
+                    </span>
+                    @elseif($producto->nivel_controlado == 2)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-700 text-white shadow-xs">
+                        🚨 Nivel II (Estupefaciente - MINSA)
+                    </span>
+                    @elseif($producto->nivel_controlado == 3)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-700 text-white shadow-xs">
+                        🚨 Nivel III (Alto Control - MINSA)
+                    </span>
+                    @endif
+                @elseif($producto->requiere_receta)
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
                     Rx Receta Obligatoria
                 </span>
                 @endif
@@ -72,6 +86,39 @@
             @endcan
         </div>
     </div>
+
+    @if(($producto->nivel_controlado ?? 0) > 0)
+    <!-- Banner Regulatorio MINSA -->
+    <div class="rounded-2xl p-4 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-start space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h3 class="text-xs font-bold text-purple-950 dark:text-purple-200">
+                        Medicamento Bajo Fiscalización Sanitaria Oficial (MINSA)
+                    </h3>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100 uppercase">
+                        @if($producto->nivel_controlado == 1) Nivel I - Psicotrópico
+                        @elseif($producto->nivel_controlado == 2) Nivel II - Estupefaciente
+                        @elseif($producto->nivel_controlado == 3) Nivel III - Alto Control
+                        @endif
+                    </span>
+                </div>
+                <p class="text-xs text-purple-800 dark:text-purple-300 mt-0.5">
+                    Toda dispensación en caja POS requiere retención obligatoria de receta médica, datos completos del paciente y registro profesional MINSA del médico.
+                </p>
+            </div>
+        </div>
+        <div class="shrink-0 flex items-center gap-2">
+            <a href="{{ route('controlados.libro') }}" class="px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-2xs transition flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <span>Libro de Control</span>
+            </a>
+        </div>
+    </div>
+    @endif
 
     <!-- SECCIÓN IDENTIFICACIÓN Y CÓDIGO DE BARRAS -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 overflow-hidden">

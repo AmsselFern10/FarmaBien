@@ -64,7 +64,12 @@ class ProductoController extends Controller
         }
 
         if ($request->filled('tipo_control')) {
-            $query->where('tipo_control', $request->input('tipo_control'));
+            $tipoControl = $request->input('tipo_control');
+            if ($tipoControl === 'controlados') {
+                $query->where('nivel_controlado', '>', 0);
+            } else {
+                $query->where('tipo_control', $tipoControl);
+            }
         }
 
         if ($request->boolean('bajo_stock')) {
