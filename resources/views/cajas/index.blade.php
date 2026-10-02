@@ -48,13 +48,13 @@
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
             <a href="{{ route('cajas.sesiones') }}"
-               class="px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+               class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-950 dark:text-indigo-200 text-xs font-bold border border-indigo-200 dark:border-indigo-800 transition shrink-0 shadow-2xs">
+                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>Historial de Turnos</span>
             </a>
             @can('crear cajas')
             <button type="button" @click="modalNuevaCaja = true"
-                    class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+                    class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5 cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Nueva Caja</span>
             </button>
@@ -62,16 +62,14 @@
         </div>
     </div>
 
-
-
     {{-- Sesión activa del usuario actual --}}
     @if($sesionUsuario)
     <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
             <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
             <div>
-                <p class="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Tienes un turno abierto en <span class="font-bold">{{ $sesionUsuario->caja->nombre }}</span></p>
-                <p class="text-[11px] text-emerald-700 dark:text-emerald-400">Efectivo esperado: ${{ number_format($sesionUsuario->monto_esperado_efectivo, 2) }} · Apertura: {{ $sesionUsuario->fecha_apertura->format('H:i') }}</p>
+                <p class="text-xs font-bold text-emerald-950 dark:text-emerald-300">Tienes un turno abierto en <span class="font-black">{{ $sesionUsuario->caja->nombre }}</span></p>
+                <p class="text-[11px] text-emerald-900 dark:text-emerald-400">Efectivo esperado: C$ {{ number_format($sesionUsuario->monto_esperado_efectivo, 2) }} · Apertura: {{ $sesionUsuario->fecha_apertura->format('H:i') }}</p>
             </div>
         </div>
         <a href="{{ route('cajas.show', $sesionUsuario) }}"
@@ -96,7 +94,7 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Turnos Abiertos</p>
-                <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ $cajasAbiertas }}</p>
+                <p class="text-lg font-bold text-emerald-950 dark:text-emerald-300 mt-0.5">{{ $cajasAbiertas }}</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -116,7 +114,7 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Efectivo en Cajas</p>
-                <p class="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">${{ number_format($efectivoTotalCajas, 2) }}</p>
+                <p class="text-lg font-bold text-amber-950 dark:text-amber-300 mt-0.5">C$ {{ number_format($efectivoTotalCajas, 2) }}</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -175,66 +173,71 @@
                         <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{{ $caja->ubicacion ?? '—' }}</td>
                         <td class="px-4 py-3">
                             @if($caja->sesionActiva)
-                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                     Turno Abierto
                                 </span>
                             @else
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Sin Turno</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Sin Turno</span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
                             @if($caja->sesionActiva)
-                                <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 font-mono">${{ number_format($caja->sesionActiva->monto_esperado_efectivo, 2) }}</span>
+                                <span class="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono">C$ {{ number_format($caja->sesionActiva->monto_esperado_efectivo, 2) }}</span>
                             @else
                                 <span class="text-xs text-slate-400">—</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                        <td class="px-4 py-3 text-xs font-medium text-slate-700 dark:text-slate-300">
                             {{ $caja->sesionActiva?->usuario?->name ?? '—' }}
                         </td>
                         <td class="px-4 py-3 text-center">
                             @if($caja->activo)
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300">Activa</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">Activa</span>
                             @else
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300">Inactiva</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">Inactiva</span>
                             @endif
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-1.5 flex-wrap">
                                 @if($caja->sesionActiva)
+                                    @php
+                                        $esAdminCajas = auth()->user()->hasRole(['Admin', 'admin']) || auth()->user()->can('administrar cajas');
+                                        $esDuenio = $caja->sesionActiva->user_id === auth()->id();
+                                    @endphp
+
                                     {{-- Ver Arqueo: solo el dueño de la sesión O admin --}}
-                                    @if($caja->sesionActiva->user_id === auth()->id() || auth()->user()->hasRole('admin'))
+                                    @if($esDuenio || $esAdminCajas)
                                         <a href="{{ route('cajas.show', $caja->sesionActiva) }}"
-                                           class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
+                                           class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold transition inline-flex items-center gap-1 shadow-2xs"
                                            title="Ver detalle de ventas, movimientos y arqueo">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             <span>Ver Arqueo</span>
                                         </a>
                                     @endif
 
                                     {{-- Cerrar: dueño de la sesión O admin (cerrar turno de otro) --}}
                                     @can('cerrar caja')
-                                    @if($caja->sesionActiva->user_id === auth()->id())
+                                    @if($esDuenio)
                                         <a href="{{ route('cajas.show', ['sesion' => $caja->sesionActiva, 'cerrar' => 1]) }}"
-                                           class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-[11px] font-semibold transition inline-flex items-center gap-1"
+                                           class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-[11px] font-bold transition inline-flex items-center gap-1 shadow-2xs"
                                            title="Cerrar mi turno y realizar arqueo">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <svg class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                             <span>Cerrar Turno</span>
                                         </a>
-                                    @elseif(auth()->user()->hasRole('admin'))
+                                    @elseif($esAdminCajas)
                                         <a href="{{ route('cajas.show', ['sesion' => $caja->sesionActiva, 'cerrar' => 1]) }}"
-                                           class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold transition inline-flex items-center gap-1 shadow-2xs"
+                                           class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-[11px] font-bold transition inline-flex items-center gap-1 shadow-2xs"
                                            title="Cerrar el turno de {{ $caja->sesionActiva->usuario?->name }} como Administrador">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <svg class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                             <span>Cerrar Turno (Admin)</span>
                                         </a>
                                     @endif
                                     @endcan
 
                                     {{-- Indicador para otros usuarios: caja ocupada por otro cajero --}}
-                                    @if($caja->sesionActiva->user_id !== auth()->id() && !auth()->user()->hasRole('admin'))
-                                        <span class="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-200 dark:border-amber-800"
+                                    @if(!$esDuenio && !$esAdminCajas)
+                                        <span class="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800"
                                               title="Turno abierto por {{ $caja->sesionActiva->usuario?->name }}">
                                             En uso · {{ Str::words($caja->sesionActiva->usuario?->name ?? '', 1, '') }}
                                         </span>
@@ -249,10 +252,6 @@
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                                     <span>Abrir Turno</span>
                                                 </button>
-                                            @else
-                                                <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[10px] font-medium" title="Ya tienes el turno #{{ $sesionUsuario->id }} abierto en {{ $sesionUsuario->caja->nombre }}">
-                                                    Turno activo en otra caja
-                                                </span>
                                             @endif
                                         @endcan
                                     @endif
@@ -315,146 +314,149 @@
     </div>
 
     {{-- Modal: Nueva Caja --}}
-    <div x-show="modalNuevaCaja" x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
-         @click.self="modalNuevaCaja = false">
-        <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nueva Caja</h3>
-                <button @click="modalNuevaCaja = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+    <template x-teleport="body">
+        <div x-show="modalNuevaCaja" x-cloak
+             @keydown.escape.window="modalNuevaCaja = false"
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+             @click.self="modalNuevaCaja = false">
+            <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nueva Caja</h3>
+                    <button @click="modalNuevaCaja = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Cerrar">✕</button>
+                </div>
+                <form method="POST" action="{{ route('cajas.store') }}" class="space-y-4">
+                    @csrf
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre de la Caja <span class="text-rose-500">*</span></label>
+                            <input type="text" name="nombre" required maxlength="100" value="{{ old('nombre') }}"
+                                   class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Ej: Caja Principal, Caja 2...">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Código Identificador <span class="text-rose-500">*</span></label>
+                            <input type="text" name="codigo" required maxlength="50" value="{{ old('codigo') }}"
+                                   class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 font-mono" placeholder="Ej: CAJA-01">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Ubicación</label>
+                            <input type="text" name="ubicacion" maxlength="100" value="{{ old('ubicacion') }}"
+                                   class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Mostrador, Farmacia...">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Descripción (opcional)</label>
+                            <textarea name="descripcion" rows="2" maxlength="255"
+                                      class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">{{ old('descripcion') }}</textarea>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" @click="modalNuevaCaja = false"
+                                class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
+                            Registrar Caja
+                        </button>
+                    </div>
+                </form>
             </div>
-            <form method="POST" action="{{ route('cajas.store') }}" class="space-y-4">
-                @csrf
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre de la Caja <span class="text-rose-500">*</span></label>
-                        <input type="text" name="nombre" required maxlength="100" value="{{ old('nombre') }}"
-                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Ej: Caja Principal, Caja 2...">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Código Identificador <span class="text-rose-500">*</span></label>
-                        <input type="text" name="codigo" required maxlength="50" value="{{ old('codigo') }}"
-                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 font-mono" placeholder="Ej: CAJA-01">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Ubicación</label>
-                        <input type="text" name="ubicacion" maxlength="100" value="{{ old('ubicacion') }}"
-                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="Mostrador, Farmacia...">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Descripción (opcional)</label>
-                        <textarea name="descripcion" rows="2" maxlength="255"
-                                  class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">{{ old('descripcion') }}</textarea>
-                    </div>
-                </div>
-                <div class="flex gap-2 pt-1">
-                    <button type="button" @click="modalNuevaCaja = false"
-                            class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
-                        Registrar Caja
-                    </button>
-                </div>
-            </form>
         </div>
-    </div>
+    </template>
 
     {{-- Modal: Editar Caja --}}
-    <div x-show="modalEditarCaja" x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
-         @click.self="modalEditarCaja = false">
-        <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Editar Caja</h3>
-                <button @click="modalEditarCaja = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+    <template x-teleport="body">
+        <div x-show="modalEditarCaja" x-cloak
+             @keydown.escape.window="modalEditarCaja = false"
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+             @click.self="modalEditarCaja = false">
+            <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Editar Caja</h3>
+                    <button @click="modalEditarCaja = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Cerrar">✕</button>
+                </div>
+                <form method="POST" :action="`/cajas/${cajaEdit.id}`" class="space-y-4">
+                    @csrf @method('PUT')
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre de la Caja <span class="text-rose-500">*</span></label>
+                            <input type="text" name="nombre" required maxlength="100" x-model="cajaEdit.nombre"
+                                   class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Código <span class="text-rose-500">*</span></label>
+                            <input type="text" name="codigo" required maxlength="50" x-model="cajaEdit.codigo"
+                                   class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Ubicación</label>
+                            <input type="text" name="ubicacion" maxlength="100" x-model="cajaEdit.ubicacion"
+                                   class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
+                            <textarea name="descripcion" rows="2" maxlength="255" x-model="cajaEdit.descripcion"
+                                      class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" @click="modalEditarCaja = false"
+                                class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
             </div>
-            <form method="POST" :action="`/cajas/${cajaEdit.id}`" class="space-y-4">
-                @csrf @method('PUT')
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre de la Caja <span class="text-rose-500">*</span></label>
-                        <input type="text" name="nombre" required maxlength="100" x-model="cajaEdit.nombre"
-                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Código <span class="text-rose-500">*</span></label>
-                        <input type="text" name="codigo" required maxlength="50" x-model="cajaEdit.codigo"
-                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Ubicación</label>
-                        <input type="text" name="ubicacion" maxlength="100" x-model="cajaEdit.ubicacion"
-                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
-                        <textarea name="descripcion" rows="2" maxlength="255" x-model="cajaEdit.descripcion"
-                                  class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500"></textarea>
-                    </div>
-                </div>
-                <div class="flex gap-2 pt-1">
-                    <button type="button" @click="modalEditarCaja = false"
-                            class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
-                        Guardar Cambios
-                    </button>
-                </div>
-            </form>
         </div>
-    </div>
+    </template>
 
     {{-- Modal: Abrir Turno --}}
-    <div x-show="modalAbrirTurno" x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
-         @click.self="modalAbrirTurno = false">
-        <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Abrir Turno</h3>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" x-text="cajaAbrir.nombre"></p>
-                </div>
-                <button @click="modalAbrirTurno = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <form method="POST" :action="`/cajas/${cajaAbrir.id}/abrir`" class="space-y-4">
-                @csrf
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Fondo Inicial de Apertura <span class="text-rose-500">*</span></label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">$</span>
-                        <input type="number" name="monto_inicial" step="0.01" min="0" required
-                               class="w-full pl-7 rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="0.00">
+    <template x-teleport="body">
+        <div x-show="modalAbrirTurno" x-cloak
+             @keydown.escape.window="modalAbrirTurno = false"
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+             @click.self="modalAbrirTurno = false">
+            <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-5">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Abrir Turno</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" x-text="cajaAbrir.nombre"></p>
                     </div>
+                    <button @click="modalAbrirTurno = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Cerrar">✕</button>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones de Apertura (opcional)</label>
-                    <textarea name="observaciones_apertura" rows="2" maxlength="255"
-                              class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500"
-                              placeholder="Notas sobre la apertura del turno..."></textarea>
-                </div>
-                <div class="flex gap-2 pt-1">
-                    <button type="button" @click="modalAbrirTurno = false"
-                            class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
-                        Abrir Turno
-                    </button>
-                </div>
-            </form>
+                <form method="POST" :action="`/cajas/${cajaAbrir.id}/abrir`" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Fondo Inicial de Apertura <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">C$</span>
+                            <input type="number" name="monto_inicial" step="0.01" min="0" required
+                                   class="w-full pl-9 rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones de Apertura (opcional)</label>
+                        <textarea name="observaciones_apertura" rows="2" maxlength="255"
+                                  class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                                  placeholder="Notas sobre la apertura del turno..."></textarea>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" @click="modalAbrirTurno = false"
+                                class="flex-1 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
+                            Abrir Turno
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+    </template>
 
 </div>
 @endsection

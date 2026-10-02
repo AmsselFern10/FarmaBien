@@ -3,76 +3,146 @@
 @section('content')
 @php
 $estadoMap = [
-    'pendiente'          => ['label'=>'Pendiente',              'badge'=>'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
-    'dispensada_parcial' => ['label'=>'Parcialmente Dispensada','badge'=>'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'],
-    'dispensada_total'   => ['label'=>'Dispensada Total',       'badge'=>'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'],
-    'anulada'            => ['label'=>'Anulada',                'badge'=>'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'],
+    'pendiente'          => ['label'=>'Pendiente',              'badge'=>'bg-amber-50 dark:bg-amber-950/60 text-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
+    'dispensada_parcial' => ['label'=>'Parcialmente Dispensada','badge'=>'bg-blue-50 dark:bg-blue-950/60 text-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800'],
+    'dispensada_total'   => ['label'=>'Dispensada Total',       'badge'=>'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'],
+    'anulada'            => ['label'=>'Anulada',                'badge'=>'bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-800'],
 ];
-$st      = $estadoMap[$receta->estado ?? 'pendiente'] ?? ['label'=>$receta->estado,'badge'=>'bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200'];
+$st      = $estadoMap[$receta->estado ?? 'pendiente'] ?? ['label'=>$receta->estado,'badge'=>'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border-slate-200 dark:border-slate-700'];
 $vencida = $receta->estaVencida();
 @endphp
 
 <div class="max-w-6xl mx-auto space-y-6">
 
     {{-- ── Header ── --}}
-    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 border-b border-slate-300/80 dark:border-slate-800">
         <div>
-            <div class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
-                <a href="{{ route('recetas.index') }}" class="hover:text-emerald-600 transition">Recetas Medicas</a>
-                <span>/</span>
-                <span class="font-medium text-slate-700 dark:text-slate-300">Receta #{{ $receta->numero_receta }}</span>
-            </div>
+            <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mb-0.5">
+                <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 transition">Inicio</a>
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ route('recetas.index') }}" class="hover:text-emerald-600 transition">Recetas Médicas</a>
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="font-semibold text-slate-800 dark:text-slate-200">Receta #{{ $receta->numero_receta }}</span>
+            </nav>
             <div class="flex items-center gap-3 flex-wrap">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white">
                     Receta #{{ $receta->numero_receta }}
                 </h1>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border {{ $st['badge'] }}">{{ $st['label'] }}</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $st['badge'] }}">{{ $st['label'] }}</span>
                 @if($vencida)
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                    <svg class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     Vencida
                 </span>
                 @endif
             </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- 1. Botón Volver / Precedente (Primero de izquierda a derecha en la barra de acciones) -->
+            <a href="{{ route('recetas.index') }}"
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition shrink-0 shadow-2xs">
+                <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Recetas</span>
+            </a>
+
+            <!-- 2. Botón Modo Full Screen -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
+
+            <!-- 3. Botón Editar (Secundario Pastel) -->
             @can('registrar recetas')
             <a href="{{ route('recetas.edit', $receta) }}"
-               class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                Editar
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-xs font-semibold rounded-xl shadow-2xs transition">
+                <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                <span>Editar</span>
             </a>
             @endcan
-            <a href="{{ route('recetas.index') }}"
-               class="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition">
-                &larr; Volver
+
+            <!-- 4. Botón Dispensar en POS (Primario - Extrema Derecha) -->
+            @if($receta->estado !== 'dispensada_total' && $receta->estado !== 'anulada')
+            <a href="{{ route('ventas.create', ['receta_id' => $receta->id]) }}"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span>Dispensar en POS</span>
             </a>
+            @endif
         </div>
     </div>
 
-
+    @php
+    $totalRecetado = (int) $receta->detalles->sum('cantidad_recetada');
+    $totalDispensado = (int) $receta->detalles->sum('cantidad_dispensada');
+    $totalPendiente = max(0, $totalRecetado - $totalDispensado);
+    $detallesPendientes = $receta->detalles->filter(fn($d) => $d->pendiente_dispensar > 0);
+    $detallesCompletados = $receta->detalles->filter(fn($d) => $d->pendiente_dispensar == 0);
+    @endphp
 
     {{-- ── Metric Cards ── --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">N° Receta</p>
+            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">N° Receta</p>
             <p class="text-sm font-mono font-bold text-slate-900 dark:text-white mt-1">{{ $receta->numero_receta }}</p>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Tipo de Receta</p>
-            <p class="text-xs font-bold text-slate-900 dark:text-white mt-1 capitalize">{{ str_replace('_',' ',$receta->tipo_receta ?? '—') }}</p>
+            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estado Expediente</p>
+            <p class="text-xs font-bold text-slate-900 dark:text-white mt-1">{{ $st['label'] }}</p>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Medicamentos</p>
-            <p class="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ $receta->detalles->count() }} items</p>
+            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Balance Dispensación</p>
+            <p class="text-xs font-bold text-slate-900 dark:text-white mt-1">
+                Dispensado: <span class="text-emerald-700 dark:text-emerald-400 font-extrabold">{{ $totalDispensado }}</span> / {{ $totalRecetado }} u.
+            </p>
+            <p class="text-[11px] font-extrabold {{ $totalPendiente > 0 ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400' }} mt-0.5">
+                Pendiente: {{ $totalPendiente }} u. {{ $detallesPendientes->count() > 0 ? '('.$detallesPendientes->count().' fármaco(s))' : '' }}
+            </p>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Vence</p>
-            <p class="text-xs font-bold mt-1 {{ $vencida ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white' }}">
-                {{ $receta->fecha_vencimiento?->format('d/m/Y') ?? 'Sin limite' }}
+            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vence</p>
+            <p class="text-xs font-bold mt-1 {{ $vencida ? 'text-rose-950 dark:text-rose-300' : 'text-slate-900 dark:text-white' }}">
+                {{ $receta->fecha_vencimiento?->format('d/m/Y') ?? 'Sin límite' }}
             </p>
         </div>
     </div>
+
+    @if($receta->estado === 'dispensada_parcial')
+    <div class="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-xs space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 text-blue-950 dark:text-blue-200">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <p class="font-bold">
+                        Receta Parcialmente Dispensada &bull; Saldo pendiente: <span class="font-black underline">{{ $totalPendiente }} unidades</span>
+                        <span class="text-blue-700 dark:text-blue-300 font-normal">({{ $detallesPendientes->count() }} de {{ $receta->detalles->count() }} medicamentos con saldo restante)</span>
+                    </p>
+                    <p class="text-[11px] text-blue-800 dark:text-blue-300">A continuación se desglosa el balance individual de cada fármaco prescrito:</p>
+                </div>
+            </div>
+            <a href="{{ route('ventas.create', ['receta_id' => $receta->id]) }}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition shrink-0 shadow-xs">
+                <span>Dispensar Restante en POS</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+
+        {{-- Chips con desglose rápido de fármacos con saldo pendiente --}}
+        @if($detallesPendientes->isNotEmpty())
+        <div class="pt-2 border-t border-blue-200/60 dark:border-blue-800/60 flex items-center gap-2 flex-wrap">
+            <span class="text-[11px] font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider">Fármacos con saldo:</span>
+            @foreach($detallesPendientes as $dp)
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 text-xs shadow-2xs">
+                <span class="font-bold text-slate-800 dark:text-slate-200">{{ $dp->producto->nombre ?? $dp->nombre_medicamento }}:</span>
+                <span class="font-extrabold text-blue-700 dark:text-blue-400 font-mono">{{ $dp->pendiente_dispensar }} u. pendientes</span>
+                <span class="text-[10px] text-slate-400 font-mono">({{ $dp->cantidad_dispensada }}/{{ $dp->cantidad_recetada }} u.)</span>
+            </span>
+            @endforeach
+        </div>
+        @endif
+    </div>
+    @endif
 
     {{-- ── Main layout: 2/3 left · 1/3 right ── --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -109,13 +179,13 @@ $vencida = $receta->estaVencida();
                 <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
                         <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-                        Medico Tratante
+                        Médico Tratante
                     </h3>
                     <dl class="space-y-2.5 text-xs">
                         <div><dt class="text-slate-400">Nombre</dt><dd class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ $receta->medico_nombre ?? '—' }}</dd></div>
                         <div><dt class="text-slate-400">Colegiatura</dt><dd class="font-mono font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ $receta->medico_colegiatura ?? '—' }}</dd></div>
                         <div><dt class="text-slate-400">Especialidad</dt><dd class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ $receta->medico_especialidad ?? '—' }}</dd></div>
-                        <div><dt class="text-slate-400">Institucion</dt><dd class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ $receta->institucion_salud ?? '—' }}</dd></div>
+                        <div><dt class="text-slate-400">Institución</dt><dd class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">{{ $receta->institucion_salud ?? '—' }}</dd></div>
                     </dl>
                 </div>
             </div>
@@ -125,11 +195,16 @@ $vencida = $receta->estaVencida();
                 <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
                     <h3 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                         <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                        Medicamentos Prescritos
+                        <span>Medicamentos Prescritos & Control de Saldos</span>
                     </h3>
-                    <span class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                        {{ $receta->detalles->count() }} items
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                            {{ $receta->detalles->count() }} fármacos
+                        </span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full {{ $totalPendiente > 0 ? 'bg-amber-50 text-amber-950 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800' : 'bg-emerald-50 text-emerald-950 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' }} border">
+                            {{ $totalDispensado }} / {{ $totalRecetado }} u.
+                        </span>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs">
@@ -137,13 +212,15 @@ $vencida = $receta->estaVencida();
                             <tr>
                                 <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">#</th>
                                 <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Medicamento</th>
-                                <th class="text-center px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cant.</th>
-                                <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Posologia / Instrucciones</th>
+                                <th class="text-center px-4 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Prescrito</th>
+                                <th class="text-center px-4 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Dispensado</th>
+                                <th class="text-center px-4 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Saldo Pendiente</th>
+                                <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Posología / Instrucciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             @forelse($receta->detalles as $i => $det)
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition {{ $det->pendiente_dispensar > 0 ? 'bg-amber-50/20 dark:bg-amber-950/10' : '' }}">
                                 <td class="px-5 py-3 text-slate-400 font-mono">{{ $i+1 }}</td>
                                 <td class="px-5 py-3 font-semibold text-slate-900 dark:text-slate-200">
                                     {{ $det->producto->nombre ?? $det->nombre_medicamento ?? '—' }}
@@ -151,12 +228,28 @@ $vencida = $receta->estaVencida();
                                     <span class="ml-1 text-slate-400 font-normal">{{ $det->producto->concentracion }}</span>
                                     @endif
                                 </td>
-                                <td class="px-5 py-3 text-center font-bold text-slate-700 dark:text-slate-300">{{ $det->cantidad_recetada }}</td>
+                                <td class="px-4 py-3 text-center font-bold text-slate-900 dark:text-white font-mono">
+                                    {{ $det->cantidad_recetada }} u.
+                                </td>
+                                <td class="px-4 py-3 text-center font-bold font-mono {{ $det->cantidad_dispensada > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400' }}">
+                                    {{ $det->cantidad_dispensada }} u.
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    @if($det->pendiente_dispensar > 0)
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                            {{ $det->pendiente_dispensar }} u. pendientes
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                            ✓ Despachado (100%)
+                                        </span>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3 text-slate-500 dark:text-slate-400 italic">{{ $det->posologia ?? '—' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="px-5 py-10 text-center text-slate-400">Sin medicamentos registrados en esta receta.</td>
+                                <td colspan="6" class="px-5 py-10 text-center text-slate-400">Sin medicamentos registrados en esta receta.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -208,10 +301,6 @@ $vencida = $receta->estaVencida();
                             {{ $receta->fecha_vencimiento?->format('d/m/Y') ?? 'Sin limite' }}
                             @if($vencida) <span class="text-rose-400">(vencida)</span>@endif
                         </dd>
-                    </div>
-                    <div>
-                        <dt class="text-slate-400 mb-0.5">Tipo</dt>
-                        <dd class="font-semibold text-slate-800 dark:text-slate-200 capitalize">{{ str_replace('_',' ',$receta->tipo_receta ?? '—') }}</dd>
                     </div>
                     <div>
                         <dt class="text-slate-400 mb-0.5">Creada</dt>

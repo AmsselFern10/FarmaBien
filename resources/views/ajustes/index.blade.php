@@ -858,23 +858,24 @@
     </form>
 
     <!-- Modal de Prueba de Impresión de Ticket Térmico -->
-    <div x-show="modalTicketTest" 
-         x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
-         @keydown.escape.window="modalTicketTest = false"
-         @click.self="modalTicketTest = false">
-        <div @click.stop
-             x-transition:enter="ease-out duration-200"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-sm border border-slate-300 dark:border-slate-800 my-auto">
+    <template x-teleport="body">
+        <div x-show="modalTicketTest" 
+             x-cloak
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto"
+             @keydown.escape.window="modalTicketTest = false"
+             @click.self="modalTicketTest = false">
+            <div @click.stop
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-sm border border-slate-300 dark:border-slate-800 my-auto">
             
             <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
                     <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Prueba de Impresión Térmica</h3>
                 </div>
-                <button type="button" @click="modalTicketTest = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                <button type="button" @click="modalTicketTest = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Cerrar">✕</button>
             </div>
 
             <div class="p-4 bg-slate-100 dark:bg-slate-950 flex justify-center">
@@ -922,6 +923,7 @@
             </div>
         </div>
     </div>
+    </template>
 
 </div>
 @endsection

@@ -8,19 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('productos', function (Blueprint $table) {
-            // 0 = sin control, 1 = Nivel I (básico/controlado), 2 = Nivel II (opioides), 3 = Nivel III (narcóticos)
-            $table->tinyInteger('nivel_controlado')->unsigned()->default(0)->after('requiere_receta')
-                  ->comment('0=libre,1=nivel I,2=nivel II opioides,3=nivel III narcóticos');
-            $table->index('nivel_controlado', 'idx_productos_nivel_controlado');
-        });
+        // No-op: Se unifica la clasificación sanitaria en tipo_control ('venta_libre', 'controlado')
     }
 
     public function down(): void
     {
-        Schema::table('productos', function (Blueprint $table) {
-            $table->dropIndex('idx_productos_nivel_controlado');
-            $table->dropColumn('nivel_controlado');
-        });
+        // No-op
     }
 };

@@ -8,18 +8,20 @@
     x-cloak>
 
     {{-- Overlay + Modal --}}
-    <div x-show="open"
-         x-transition:enter="transition ease-out duration-150"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-100"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-[10000] flex items-start justify-center pt-[10vh] px-4"
-         @click.self="close()">
+    <template x-teleport="body">
+        <div x-show="open"
+             x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-[10000] flex items-start justify-center pt-[10vh] px-4 overflow-y-auto"
+             @click.self="close()">
 
-        {{-- Backdrop --}}
-        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
+            {{-- Backdrop --}}
+            <div class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm"></div>
 
         {{-- Panel --}}
         <div x-show="open"
@@ -114,13 +116,9 @@
                                         <p class="text-xs text-slate-400 truncate" x-text="item.subtitulo"></p>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <template x-if="item.nivel_controlado > 0">
-                                            <span :class="{
-                                                'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400': item.nivel_controlado === 1,
-                                                'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400': item.nivel_controlado === 2,
-                                                'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400': item.nivel_controlado === 3,
-                                            }" class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
-                                                Niv.<span x-text="item.nivel_controlado"></span>
+                                        <template x-if="item.es_controlado || item.tipo_control === 'controlado'">
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 uppercase tracking-wide">
+                                                Controlado
                                             </span>
                                         </template>
                                         <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">C$ <span x-text="item.precio"></span></span>
@@ -198,6 +196,7 @@
             </div>
         </div>
     </div>
+    </template>
 </div>
 
 <script>

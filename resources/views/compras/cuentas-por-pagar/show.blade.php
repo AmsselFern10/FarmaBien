@@ -20,7 +20,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ $compra->saldo_pendiente <= 0 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300' }}">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ $compra->saldo_pendiente <= 0 ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800' }}">
                     {{ $compra->saldo_pendiente <= 0 ? 'PAGADA TOTALMENTE' : 'SALDO PENDIENTE' }}
                 </span>
                 <span class="text-xs text-slate-500 font-medium">Crédito a {{ $compra->dias_credito }} días</span>
@@ -31,46 +31,48 @@
             <p class="text-xs text-slate-500">Proveedor: <span class="font-bold text-slate-700 dark:text-slate-300">{{ $compra->proveedor->nombre ?? $compra->proveedor->nombre_empresa }}</span></p>
         </div>
         <div class="flex items-center gap-2">
+            <!-- Navigation Button First -->
+            <a href="{{ route('cuentas-por-pagar.index') }}" 
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 shadow-xs transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Cuentas por Pagar</span>
+            </a>
             @if($compra->saldo_pendiente > 0)
             <button type="button" @click="modalAbono = true" 
-                    class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition">
+                    class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-sm transition">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Registrar Abono
             </button>
             @endif
-            <a href="{{ route('cuentas-por-pagar.index') }}" 
-               class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 shadow-xs transition">
-                Volver
-            </a>
         </div>
     </div>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-            <span class="text-xs font-medium text-slate-500">Total Factura</span>
+            <span class="text-xs font-semibold text-slate-900 dark:text-slate-300">Total Factura</span>
             <p class="text-xl font-black text-slate-900 dark:text-white mt-1">{{ formato_moneda($compra->total) }}</p>
             <p class="text-[11px] text-slate-400 mt-0.5">Emisión: {{ $compra->fecha->format('d/m/Y') }}</p>
         </div>
 
         <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-            <span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">Total Abonado</span>
-            <p class="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ formato_moneda($compra->total - $compra->saldo_pendiente) }}</p>
+            <span class="text-xs font-semibold text-slate-900 dark:text-slate-300">Total Abonado</span>
+            <p class="text-xl font-black text-emerald-900 dark:text-emerald-400 mt-1">{{ formato_moneda($compra->total - $compra->saldo_pendiente) }}</p>
             <p class="text-[11px] text-slate-400 mt-0.5">{{ $compra->pagos->count() }} pago(s) realizados</p>
         </div>
 
         <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/40 shadow-xs">
-            <span class="text-xs font-medium text-rose-600 dark:text-rose-400">Saldo Restante</span>
-            <p class="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{{ formato_moneda($compra->saldo_pendiente) }}</p>
+            <span class="text-xs font-semibold text-slate-900 dark:text-slate-300">Saldo Restante</span>
+            <p class="text-xl font-black text-rose-900 dark:text-rose-400 mt-1">{{ formato_moneda($compra->saldo_pendiente) }}</p>
             <p class="text-[11px] text-slate-400 mt-0.5">Pendiente por liquidar</p>
         </div>
 
         <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-            <span class="text-xs font-medium text-slate-500">Fecha Vencimiento</span>
+            <span class="text-xs font-semibold text-slate-900 dark:text-slate-300">Fecha Vencimiento</span>
             <p class="text-base font-bold text-slate-900 dark:text-white mt-1">{{ $compra->fecha_vencimiento_pago ? $compra->fecha_vencimiento_pago->format('d/m/Y') : 'N/A' }}</p>
             @if($compra->saldo_pendiente > 0 && $compra->fecha_vencimiento_pago)
                 @php $dias = (int) now()->startOfDay()->diffInDays($compra->fecha_vencimiento_pago->startOfDay(), false); @endphp
-                <p class="text-[11px] font-semibold {{ $dias < 0 ? 'text-rose-500' : 'text-slate-400' }} mt-0.5">
+                <p class="text-[11px] font-semibold {{ $dias < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400' }} mt-0.5">
                     {{ $dias < 0 ? 'Vencida hace ' . abs($dias) . ' días' : 'Faltan ' . $dias . ' días' }}
                 </p>
             @endif
@@ -156,15 +158,16 @@
     </div>
 
     <!-- Modal Registrar Abono -->
+    <template x-teleport="body">
     <div x-show="modalAbono" 
          x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity"
+         class="fixed inset-0 z-[9999] p-3 sm:p-6 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm transition-opacity overflow-y-auto"
          @keydown.escape.window="modalAbono = false">
         
-        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar my-auto"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl my-auto flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden"
              @click.outside="modalAbono = false">
             
-            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -174,88 +177,92 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[280px]">{{ $compra->proveedor->nombre ?? $compra->proveedor->nombre_empresa }} ({{ $compra->numero_comprobante }})</p>
                     </div>
                 </div>
-                <button type="button" @click="modalAbono = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base font-bold p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">✕</button>
+                <button type="button" @click="modalAbono = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Cerrar">✕</button>
             </div>
 
-            <form action="{{ route('cuentas-por-pagar.abonos.store', $compra) }}" method="POST" class="space-y-4">
+            <form action="{{ route('cuentas-por-pagar.abonos.store', $compra) }}" method="POST" class="flex flex-col flex-1 overflow-hidden">
                 @csrf
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Monto a Abonar (C$) <span class="text-rose-500">*</span></label>
-                    <input type="number" 
-                           name="monto" 
-                           x-model="montoAbono" 
-                           step="0.01" 
-                           min="0.01" 
-                           max="{{ $compra->saldo_pendiente }}" 
-                           required 
-                           class="w-full px-3.5 py-2 text-sm font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                
+                <div class="space-y-4 py-3 overflow-y-auto pr-1 flex-1 custom-scrollbar">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Forma de Pago <span class="text-rose-500">*</span></label>
-                        <select name="metodo_pago" x-model="metodoPago" required 
-                                class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                            <option value="transferencia">Transferencia Bancaria</option>
-                            <option value="efectivo">Efectivo</option>
-                            <option value="cheque">Cheque</option>
-                            <option value="otro">Otro</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Monto a Abonar (C$) <span class="text-rose-500">*</span></label>
+                        <input type="number" 
+                               name="monto" 
+                               x-model="montoAbono" 
+                               step="0.01" 
+                               min="0.01" 
+                               max="{{ $compra->saldo_pendiente }}" 
+                               required 
+                               class="w-full px-3.5 py-2 text-sm font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Forma de Pago <span class="text-rose-500">*</span></label>
+                            <select name="metodo_pago" x-model="metodoPago" required 
+                                    class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                <option value="transferencia">Transferencia Bancaria</option>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha de Pago</label>
+                            <input type="date" name="fecha_pago" value="{{ now()->toDateString() }}" 
+                                   class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+
+                    <div x-show="metodoPago === 'transferencia' || metodoPago === 'cheque'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Banco</label>
+                            <select name="banco" class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                <option value="">Seleccione Banco...</option>
+                                <option value="BAC Credomatic">BAC Credomatic</option>
+                                <option value="Banco LAFISE Bancentro">Banco LAFISE Bancentro</option>
+                                <option value="Banpro Grupo Promerica">Banpro Grupo Promerica</option>
+                                <option value="Banco Ficohsa">Banco Ficohsa</option>
+                                <option value="Banco Avanz">Banco Avanz</option>
+                                <option value="Banco BDF">Banco BDF</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">N° Referencia / Cheque</label>
+                            <input type="text" name="numero_referencia" placeholder="Ej: TR-00192" 
+                                   class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                        </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha de Pago</label>
-                        <input type="date" name="fecha_pago" value="{{ now()->toDateString() }}" 
-                               class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                        <textarea name="observaciones" rows="2" placeholder="Nota opcional sobre el abono..." 
+                                  class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"></textarea>
+                    </div>
+
+                    <div x-show="metodoPago === 'efectivo'" class="pt-1">
+                        <label class="inline-flex items-center text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                            <input type="checkbox" name="registrar_en_caja" value="1" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
+                            Registrar egreso automáticamente en la caja activa del turno
+                        </label>
                     </div>
                 </div>
 
-                <div x-show="metodoPago === 'transferencia' || metodoPago === 'cheque'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Banco</label>
-                        <select name="banco" class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                            <option value="">Seleccione Banco...</option>
-                            <option value="BAC Credomatic">BAC Credomatic</option>
-                            <option value="Banco LAFISE Bancentro">Banco LAFISE Bancentro</option>
-                            <option value="Banpro Grupo Promerica">Banpro Grupo Promerica</option>
-                            <option value="Banco Ficohsa">Banco Ficohsa</option>
-                            <option value="Banco Avanz">Banco Avanz</option>
-                            <option value="Banco BDF">Banco BDF</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">N° Referencia / Cheque</label>
-                        <input type="text" name="numero_referencia" placeholder="Ej: TR-00192" 
-                               class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
-                    <textarea name="observaciones" rows="2" placeholder="Nota opcional sobre el abono..." 
-                              class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"></textarea>
-                </div>
-
-                <div x-show="metodoPago === 'efectivo'" class="pt-1">
-                    <label class="inline-flex items-center text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
-                        <input type="checkbox" name="registrar_en_caja" value="1" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
-                        Registrar egreso automáticamente en la caja activa del turno
-                    </label>
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
                     <button type="button" @click="modalAbono = false" 
-                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" 
-                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition">
+                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition cursor-pointer">
                         Guardar Abono
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    </template>
 </div>
 @endsection

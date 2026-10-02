@@ -52,6 +52,9 @@ function posVentaData() {
         modalNuevoCliente: false,
         modalErrorRed: false,
         modalControlados: false,
+        modalCargarReceta: false,
+        modalStockInsuficiente: false,
+        stockInsuficienteData: { itemIdx: null, nombre: '', loteActual: '', stockActual: 0, solicitado: 0, lotesAlternos: [] },
         controlData: {
             paciente_nombre: '', paciente_cedula: '', paciente_edad: '',
             medico_nombre: '', medico_cedula: '', medico_num_registro: '', diagnostico: ''
@@ -66,8 +69,8 @@ function posVentaData() {
         errorMsg: '',
         idempotencyKey: localStorage.getItem('farma_pos_idempotency') || ('fb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)),
 
-        // Recetas en Modal Cobro
-        recetaTab: 'vincular', // 'vincular', 'crear', 'omitir'
+        // Recetas / Controlados en Modal Cobro
+        recetaTab: 'datos', // 'datos' (Ingreso directo MINSA), 'vincular' (Receta del expediente), 'omitir' (Dispensación justificada)
         recetaBusqueda: '',
         recetasRecientes: @js($recetasRecientes ?? []),
         recetasEncontradas: @js($recetasRecientes ?? []),
@@ -121,6 +124,25 @@ function posVentaData() {
                     const prod = this.catalogo.find(p => p.id == prodId);
                     if (prod) {
                         this.agregarAlCarrito(prod);
+                    }
+                }
+
+                // Auto-vincular y cargar receta si viene por parámetro de URL (ej. desde /recetas o /ventas)
+                const recetaIdParam = urlParams.get('receta_id') || urlParams.get('cargar_receta');
+                if (recetaIdParam) {
+                    const rObj = this.recetasRecientes.find(r => r.id == recetaIdParam || r.numero_receta == recetaIdParam);
+                    if (rObj) {
+                        this.importarRecetaAlCarrito(rObj);
+                    } else {
+                        fetch(`{{ route('api.recetas.buscar') }}?q=${encodeURIComponent(recetaIdParam)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data && data.length > 0) {
+                                    const match = data.find(r => r.id == recetaIdParam || r.numero_receta == recetaIdParam) || data[0];
+                                    this.importarRecetaAlCarrito(match);
+                                }
+                            })
+                            .catch(err => console.error('Error cargando receta por URL:', err));
                     }
                 }
             } catch (e) {}
@@ -242,6 +264,7 @@ function posVentaData() {
 
             this.items.unshift({
                 uid: Date.now() + Math.random().toString(36).substr(2, 5),
+                id: producto.id,
                 producto_id: producto.id,
                 nombre: producto.nombre,
                 principio_activo: producto.principio_activo || '',
@@ -249,7 +272,7 @@ function posVentaData() {
                 laboratorio: producto.laboratorio?.nombre || '',
                 ubicacion: producto.ubicacion || 'Sin asignar',
                 requiere_receta: !!producto.requiere_receta,
-                tipo_control: producto.tipo_control || 'ninguno',
+                tipo_control: producto.tipo_control || 'venta_libre',
                 promocion_activa: producto.promocion_activa || null,
                 lotesDisponibles: producto.lotes,
                 lote_id: loteDefault.id,
@@ -277,13 +300,15 @@ function posVentaData() {
             const prod = this.catalogo.find(p => p.id == item.producto_id);
             if (!prod) return;
 
+            item.id = prod.id;
+            item.producto_id = prod.id;
             item.nombre = prod.nombre;
             item.principio_activo = prod.principio_activo || '';
             item.concentracion = prod.concentracion || '';
             item.laboratorio = prod.laboratorio?.nombre || '';
             item.ubicacion = prod.ubicacion || 'Sin asignar';
             item.requiere_receta = !!prod.requiere_receta;
-            item.tipo_control = prod.tipo_control || 'ninguno';
+            item.tipo_control = prod.tipo_control || 'venta_libre';
             item.promocion_activa = prod.promocion_activa || null;
             item.lotesDisponibles = prod.lotes || [];
             
@@ -341,6 +366,16 @@ function posVentaData() {
             this.items.splice(idx, 1);
         },
 
+        cambiarLoteDesdeModal(lote) {
+            const idx = this.stockInsuficienteData.itemIdx;
+            if (idx === null || !this.items[idx]) { this.modalStockInsuficiente = false; return; }
+            this.items[idx].lote_id = lote.id;
+            this.items[idx].lote_obj = lote;
+            this.modalStockInsuficiente = false;
+            // Reintentar cobrar después de cambiar el lote
+            this.$nextTick(() => this.procesarVentaFinal());
+        },
+
         async limpiarVenta() {
             if (this.items.length > 0) {
                 const ok = await window.farmaConfirm({
@@ -362,8 +397,13 @@ function posVentaData() {
             this.formData.receta_id = null;
             this.formData.receta_omision_motivo = '';
             this.formData.observaciones = '';
+            this.controlData = {
+                paciente_nombre: '', paciente_cedula: '', paciente_edad: '',
+                medico_nombre: '', medico_cedula: '', medico_num_registro: '', diagnostico: ''
+            };
             this.recetaSeleccionadaObj = null;
             this.recetaOmisionConfirmada = false;
+            this.recetaMixtaGestionSeparada = false;
             this.errorMsg = '';
             if (window.farmaClearDraft) {
                 window.farmaClearDraft('{{ request()->getPathInfo() }}');
@@ -444,16 +484,32 @@ function posVentaData() {
             this.formData.monto_recibido = parseFloat(monto).toFixed(2);
         },
 
+        tieneControlados() {
+            return this.items.some(it => it.tipo_control === 'controlado' || !!it.requiere_receta);
+        },
+
+        getControladosCount() {
+            return this.items.filter(it => it.tipo_control === 'controlado' || !!it.requiere_receta).length;
+        },
+
+        tieneProductosRxSimple() {
+            return false;
+        },
+
+        getProductosRxSimpleCount() {
+            return 0;
+        },
+
         tieneProductosRx() {
-            return this.items.some(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            return this.tieneControlados();
         },
 
         getProductosRxCount() {
-            return this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control)).length;
+            return this.getControladosCount();
         },
 
         getProductosRxSummary() {
-            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            const rxItems = this.items.filter(it => it.tipo_control === 'controlado' || !!it.requiere_receta);
             if (rxItems.length === 0) return 'Ninguno';
             return rxItems.map(it => {
                 const uBase = this.calcularUnidadesBase(it);
@@ -473,7 +529,7 @@ function posVentaData() {
             return cl && cl.documento ? cl.documento : 'Sin Documento';
         },
 
-        // Validación global infalible para habilitar/deshabilitar botón de cobro
+        // Validación global para habilitar/deshabilitar botón de cobro
         esValidoCobro() {
             if (this.items.length === 0) return false;
 
@@ -489,20 +545,15 @@ function posVentaData() {
                 }
             }
 
-            // Validación estricta de Receta Médica si hay medicamentos controlados / Rx
-            if (this.tieneProductosRx()) {
-                if (this.recetaTab === 'vincular') {
-                    if (!this.formData.receta_id || !this.recetaSeleccionadaObj) return false;
-                    if (!this.recetaCoincideConCarrito(this.recetaSeleccionadaObj)) return false;
-                } else if (this.recetaTab === 'crear') {
-                    if (!this.recetaNueva.medico_nombre.trim() || !this.recetaNueva.medico_colegiatura.trim()) {
-                        return false;
-                    }
-                } else if (this.recetaTab === 'omitir') {
-                    if (!this.recetaOmisionConfirmada || !this.formData.receta_omision_motivo || this.formData.receta_omision_motivo.trim().length < 5) {
-                        return false;
-                    }
-                } else {
+            // Si hay medicamentos CONTROLADOS / CON RECETA:
+            // Se valida que se hayan completado datos de médico/paciente, vinculado una receta o confirmado omisión
+            if (this.tieneControlados()) {
+                const tieneMedico = this.controlData.medico_nombre && this.controlData.medico_nombre.trim().length >= 2;
+                const tienePaciente = this.controlData.paciente_nombre && this.controlData.paciente_nombre.trim().length >= 2;
+                const tieneReceta = this.formData.receta_id && this.recetaSeleccionadaObj;
+                const tieneOmision = (this.recetaOmisionConfirmada || (this.formData.receta_omision_motivo && this.formData.receta_omision_motivo.trim().length >= 3));
+
+                if (!tieneMedico && !tienePaciente && !tieneReceta && !tieneOmision) {
                     return false;
                 }
             }
@@ -520,7 +571,7 @@ function posVentaData() {
         // Helper: Verificar si la receta prescribe alguno de los medicamentos Rx actualmente en el carrito con saldo
         recetaCoincideConCarrito(receta) {
             if (!this.recetaTieneMedicamentosRxDisponibles(receta)) return false;
-            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            const rxItems = this.items.filter(it => it.tipo_control === 'controlado' || !!it.requiere_receta);
             if (rxItems.length === 0) return true;
             return receta.detalles.some(d => {
                 const saldo = (parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada)) > 0;
@@ -531,7 +582,7 @@ function posVentaData() {
         // Helper: Obtener resumen de medicamentos de la receta que coinciden con el carrito
         getMedicamentosCoincidentesTexto(receta) {
             if (!receta || !receta.detalles) return '';
-            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            const rxItems = this.items.filter(it => it.tipo_control === 'controlado' || !!it.requiere_receta);
             const coincidentes = receta.detalles.filter(d => rxItems.some(it => it.producto_id == d.producto_id));
             if (coincidentes.length === 0) return '';
             return coincidentes.map(d => {
@@ -562,6 +613,85 @@ function posVentaData() {
             }
         },
 
+        async importarRecetaAlCarrito(receta) {
+            if (!receta) return;
+            
+            // 1. Validar si tiene saldo disponible
+            if (!this.recetaTieneMedicamentosRxDisponibles(receta)) {
+                alert(`La receta #${receta.numero_receta} ya ha sido dispensada en su totalidad o no cuenta con saldo pendiente.`);
+                return;
+            }
+
+            // 2. Sincronizar cliente
+            if (receta.cliente_id) {
+                this.formData.cliente_id = receta.cliente_id;
+            }
+
+            // 3. Pre-llenar datos del médico y paciente para control MINSA y modal de cobro
+            this.controlData = {
+                paciente_nombre: receta.paciente_nombre || (receta.cliente ? receta.cliente.nombre : ''),
+                paciente_cedula: receta.paciente_documento || (receta.cliente ? receta.cliente.documento : ''),
+                paciente_edad: receta.paciente_edad || '',
+                medico_nombre: receta.medico_nombre || '',
+                medico_cedula: '',
+                medico_num_registro: receta.medico_colegiatura || '',
+                diagnostico: 'Tratamiento prescrito en Receta #' + receta.numero_receta
+            };
+
+            this.formData.receta_id = receta.id;
+            this.formData.receta_modalidad = 'vinculada';
+            this.recetaSeleccionadaObj = receta;
+            this.recetaTab = 'vincular';
+
+            // 4. Cargar cada medicamento prescrito con su saldo pendiente en el carrito
+            let cargadosCount = 0;
+            if (receta.detalles && Array.isArray(receta.detalles)) {
+                for (let d of receta.detalles) {
+                    const cantPend = parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada || 0);
+                    if (cantPend <= 0) continue;
+
+                    let prod = this.catalogo.find(p => p.id == d.producto_id);
+                    if (!prod) {
+                        try {
+                            const res = await fetch(`{{ route('api.productos.buscar') }}?q=${encodeURIComponent(d.producto?.nombre || d.producto_id)}&limit=1`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data && data.length > 0) {
+                                    prod = data.find(p => p.id == d.producto_id) || data[0];
+                                    if (prod && !this.catalogo.some(p => p.id === prod.id)) {
+                                        this.catalogo.unshift(prod);
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error al cargar medicamento de receta:', e);
+                        }
+                    }
+
+                    if (prod) {
+                        this.agregarAlCarrito(prod);
+                        const itemIdx = this.items.findIndex(it => it.producto_id == prod.id);
+                        if (itemIdx !== -1) {
+                            this.items[itemIdx].cantidad = cantPend;
+                            this.items[itemIdx].receta_detalle_id = d.id;
+                            this.items[itemIdx].receta_max_cantidad = cantPend;
+                        }
+                        cargadosCount++;
+                    }
+                }
+            }
+
+            this.modalCargarReceta = false;
+            this.recetaDropdownAbierto = false;
+
+            const msg = `✓ Receta #${receta.numero_receta} vinculada: ${cargadosCount} medicamento(s) cargados en carrito con datos del paciente/médico listos para cobro.`;
+            if (window.farmaToast) {
+                window.farmaToast.success(msg, 'Receta Vinculada');
+            } else {
+                alert(msg);
+            }
+        },
+
         seleccionarReceta(receta) {
             // 1. Validar que la receta no esté dispensada totalmente o anulada
             if (!this.recetaTieneMedicamentosRxDisponibles(receta)) {
@@ -570,7 +700,7 @@ function posVentaData() {
             }
 
             // 2. Validar que contenga los medicamentos Rx que están en el carrito
-            const rxItems = this.items.filter(it => it.requiere_receta || ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente'].includes(it.tipo_control));
+            const rxItems = this.items.filter(it => it.tipo_control === 'controlado' || it.requiere_receta);
             if (rxItems.length > 0 && !this.recetaCoincideConCarrito(receta)) {
                 const nombresRx = rxItems.map(i => i.nombre).join(', ');
                 alert(`No se puede vincular: La receta #${receta.numero_receta} no prescribe ninguno de los medicamentos bajo receta médica agregados al carrito (${nombresRx}). Seleccione una receta que prescriba estos medicamentos.`);
@@ -582,6 +712,32 @@ function posVentaData() {
             this.recetaSeleccionadaObj = receta;
             this.recetaDropdownAbierto = false;
             this.recetaBusqueda = '';
+
+            // Vincular detalles de la receta a los items del carrito
+            for (let it of this.items) {
+                const d = receta.detalles?.find(det => det.producto_id == it.producto_id);
+                if (d) {
+                    const saldo = parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada || 0);
+                    it.receta_detalle_id = d.id;
+                    it.receta_max_cantidad = saldo;
+                }
+            }
+
+            // Sincronizar automáticamente datos con el panel MINSA si hay productos controlados
+            if (this.tieneControlados()) {
+                if (receta.paciente_nombre && (!this.controlData.paciente_nombre || this.controlData.paciente_nombre === 'PÚBLICO GENERAL')) {
+                    this.controlData.paciente_nombre = receta.paciente_nombre;
+                }
+                if (receta.paciente_documento && (!this.controlData.paciente_cedula || this.controlData.paciente_cedula === 'Sin Documento')) {
+                    this.controlData.paciente_cedula = receta.paciente_documento;
+                }
+                if (receta.medico_nombre && !this.controlData.medico_nombre) {
+                    this.controlData.medico_nombre = receta.medico_nombre;
+                }
+                if (receta.medico_colegiatura && !this.controlData.medico_num_registro) {
+                    this.controlData.medico_num_registro = receta.medico_colegiatura;
+                }
+            }
         },
 
         deseleccionarReceta() {
@@ -590,6 +746,10 @@ function posVentaData() {
             this.recetaSeleccionadaObj = null;
             this.recetasEncontradas = this.recetasRecientes;
             this.recetaBusqueda = '';
+            for (let it of this.items) {
+                delete it.receta_detalle_id;
+                delete it.receta_max_cantidad;
+            }
         },
 
         // Preparar y abrir Modal Cobro
@@ -599,17 +759,19 @@ function posVentaData() {
                 return;
             }
 
-            // Pre-llenar datos del paciente en la receta si hay cliente seleccionado
+            // Pre-llenar datos del paciente en la receta y en el panel MINSA si hay cliente seleccionado
             if (this.formData.cliente_id) {
                 const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
                 if (cl) {
+                    if (!this.controlData.paciente_nombre) this.controlData.paciente_nombre = cl.nombre;
+                    if (!this.controlData.paciente_cedula) this.controlData.paciente_cedula = cl.documento || '';
                     this.recetaNueva.paciente_nombre = cl.nombre;
                     this.recetaNueva.paciente_documento = cl.documento || '';
                 }
             }
 
-            // Si hay productos Rx y no se ha seleccionado modalidad, sugerir vincular
-            if (this.tieneProductosRx() && this.formData.receta_modalidad === 'sin_receta') {
+            // Si hay productos Rx simples y no se ha seleccionado modalidad, sugerir vincular
+            if (this.tieneProductosRxSimple() && this.formData.receta_modalidad === 'sin_receta') {
                 this.recetaTab = 'vincular';
             }
 
@@ -780,12 +942,41 @@ function posVentaData() {
                 return;
             }
 
-            // Validar stocks
-            for (let it of this.items) {
+            // Validar stocks — si falla, abrir modal con lotes alternos
+            for (let [idx, it] of this.items.entries()) {
                 const uTotales = this.calcularUnidadesBase(it);
                 if (it.lote_obj && it.lote_obj.stock_actual < uTotales) {
-                    alert(`Stock insuficiente en el lote ${it.lote_obj.numero_lote} de ${it.nombre}. Disponible: ${it.lote_obj.stock_actual} unid., Solicitado: ${uTotales} unid.`);
+                    // Encontrar lotes alternos con stock suficiente
+                    const lotesAlternos = (it.lotesDisponibles || []).filter(l =>
+                        l.id !== it.lote_id && l.stock_actual >= uTotales
+                    );
+                    this.stockInsuficienteData = {
+                        itemIdx: idx,
+                        nombre: it.nombre,
+                        loteActual: it.lote_obj.numero_lote,
+                        stockActual: it.lote_obj.stock_actual,
+                        solicitado: uTotales,
+                        lotesAlternos: lotesAlternos
+                    };
+                    this.modalStockInsuficiente = true;
                     return;
+                }
+            }
+
+            // Validar límites de receta médica si hay receta vinculada
+            if (this.formData.receta_id && this.recetaSeleccionadaObj) {
+                for (let it of this.items) {
+                    if (it.tipo_control === 'controlado' || it.requiere_receta) {
+                        const d = this.recetaSeleccionadaObj.detalles?.find(det => det.producto_id == it.producto_id);
+                        if (d) {
+                            const saldo = parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada || 0);
+                            const uSolicitadas = this.calcularUnidadesBase(it);
+                            if (uSolicitadas > saldo) {
+                                alert(`La cantidad solicitada para "${it.nombre}" (${uSolicitadas} unidades) excede la dosis restante disponible en la receta médica #${this.recetaSeleccionadaObj.numero_receta} (${saldo} unidades disponibles).`);
+                                return;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -793,29 +984,30 @@ function posVentaData() {
             this.errorMsg = '';
 
             try {
-                // Definir modalidad de receta médica
+                // Definir modalidad de receta médica para fármacos controlados / bajo receta
                 let modalidadReceta = 'sin_receta';
                 let recetaId = null;
                 let recetaCrearPayload = null;
                 let recetaOmisionMotivo = null;
 
-                if (this.tieneProductosRx()) {
-                    if (this.recetaTab === 'vincular') {
+                if (this.tieneControlados()) {
+                    if (this.recetaTab === 'vincular' && this.recetaSeleccionadaObj) {
                         modalidadReceta = 'vinculada';
-                        recetaId = this.formData.receta_id;
-                    } else if (this.recetaTab === 'crear') {
+                        recetaId = this.recetaSeleccionadaObj.id;
+                    } else if (this.recetaTab === 'omitir' || this.recetaOmisionConfirmada || (this.formData.receta_omision_motivo && this.formData.receta_omision_motivo.trim().length > 0)) {
+                        modalidadReceta = 'omitida';
+                        recetaOmisionMotivo = this.formData.receta_omision_motivo || 'Dispensación justificada en mostrador';
+                    } else {
                         modalidadReceta = 'creada';
                         recetaCrearPayload = {
-                            medico_nombre: this.recetaNueva.medico_nombre,
-                            medico_colegiatura: this.recetaNueva.medico_colegiatura,
-                            medico_especialidad: this.recetaNueva.medico_especialidad || 'Medicina General',
-                            paciente_nombre: this.recetaNueva.paciente_nombre || this.getClienteNombre(),
-                            paciente_documento: this.recetaNueva.paciente_documento || this.getClienteDocumento(),
-                            numero_receta: this.recetaNueva.numero_receta || null
+                            medico_nombre: this.controlData.medico_nombre,
+                            medico_colegiatura: this.controlData.medico_num_registro,
+                            medico_especialidad: 'Medicina General',
+                            paciente_nombre: this.controlData.paciente_nombre || this.getClienteNombre(),
+                            paciente_documento: this.controlData.paciente_cedula || this.getClienteDocumento(),
+                            paciente_edad: this.controlData.paciente_edad ? parseInt(this.controlData.paciente_edad) : null,
+                            numero_receta: null
                         };
-                    } else if (this.recetaTab === 'omitir') {
-                        modalidadReceta = 'omitida';
-                        recetaOmisionMotivo = this.formData.receta_omision_motivo;
                     }
                 }
 
@@ -835,11 +1027,21 @@ function posVentaData() {
                     receta_id: (modalidadReceta === 'vinculada' && recetaId && !isNaN(recetaId)) ? parseInt(recetaId) : null,
                     receta_crear: recetaCrearPayload,
                     receta_omision_motivo: recetaOmisionMotivo,
+                    controlados_data: this.tieneControlados() ? {
+                        paciente_nombre: this.controlData.paciente_nombre ? this.controlData.paciente_nombre.trim() : this.getClienteNombre(),
+                        paciente_cedula: this.controlData.paciente_cedula ? this.controlData.paciente_cedula.trim() : this.getClienteDocumento(),
+                        paciente_edad: this.controlData.paciente_edad ? parseInt(this.controlData.paciente_edad) : null,
+                        medico_nombre: this.controlData.medico_nombre ? this.controlData.medico_nombre.trim() : '',
+                        medico_cedula: this.controlData.medico_cedula ? this.controlData.medico_cedula.trim() : null,
+                        medico_num_registro: this.controlData.medico_num_registro ? this.controlData.medico_num_registro.trim() : '',
+                        diagnostico: this.controlData.diagnostico ? this.controlData.diagnostico.trim() : 'Tratamiento prescrito'
+                    } : null,
                     observaciones: this.formData.observaciones ? this.formData.observaciones.trim() : null,
                     productos: this.items.map(it => ({
                         producto_id: parseInt(it.producto_id),
                         lote_id: parseInt(it.lote_id),
                         presentacion_id: (it.presentacion_id && !isNaN(it.presentacion_id)) ? parseInt(it.presentacion_id) : null,
+                        receta_detalle_id: (it.receta_detalle_id && !isNaN(it.receta_detalle_id)) ? parseInt(it.receta_detalle_id) : null,
                         cantidad: parseInt(it.cantidad) || 1,
                         factor: parseInt(it.factor) || 1,
                         precio_unitario: parseFloat(it.precio_unitario) || 0,
@@ -907,23 +1109,12 @@ function posVentaData() {
                 // Guardar / Notificar mensaje de éxito
                 const numVenta = data.venta?.id || data.venta?.numero_comprobante || '';
                 const successMessage = numVenta
-                    ? `✓ Venta #${numVenta} registrada exitosamente.`
+                    ? `✓ Venta #${numVenta} registrada exitosamente${this.tieneControlados() ? ' (Asentada en Libro MINSA)' : ''}.`
                     : '✓ Venta registrada exitosamente.';
 
                 const posContinuo = typeof data.pos_continuo === 'boolean'
                     ? data.pos_continuo
                     : @js((bool)configuracion('pos_modo_continuo', false));
-
-                // ── Si hay controlados → abrir modal MINSA antes de continuar ──
-                if (this.tieneControlados()) {
-                    this.controlVentaId = data.venta?.id || null;
-                    this._posVentaExitoContinuo = posContinuo;
-                    this._posRedirectUrl = data.redirect_url || '{{ route('ventas.index') }}';
-                    if (window.farmaToast) window.farmaToast.info(`Venta #${data.venta?.id} completada. Complete los datos MINSA.`);
-                    this.modalCobro = false;
-                    this.modalControlados = true;
-                    return; // guardarRegistrosControlados() continúa el flujo
-                }
 
                 if (posContinuo) {
                     // Limpiar carrito y resetear formulario para la siguiente venta
@@ -937,6 +1128,10 @@ function posVentaData() {
                     this.formData.receta_id = null;
                     this.formData.receta_modalidad = 'sin_receta';
                     this.formData.receta_omision_motivo = '';
+                    this.controlData = {
+                        paciente_nombre: '', paciente_cedula: '', paciente_edad: '',
+                        medico_nombre: '', medico_cedula: '', medico_num_registro: '', diagnostico: ''
+                    };
                     this.recetaSeleccionadaObj = null;
                     this.recetaNueva = {
                         medico_nombre: '',
@@ -1011,22 +1206,17 @@ function posVentaData() {
         },
 
         // ────────────────────────────────────────────────────────────────────
-        // MEDICAMENTOS CONTROLADOS — MINSA
+        // MEDICAMENTOS CONTROLADOS — MINSA (POST-PROCESAMIENTO SI REQUERIDO)
         // ────────────────────────────────────────────────────────────────────
-        tieneControlados() {
-            return this.items.some(it => it.nivel_controlado && parseInt(it.nivel_controlado) > 0);
-        },
-
         async guardarRegistrosControlados() {
             if (this.guardandoControlados) return;
             this.guardandoControlados = true;
             try {
                 const registros = this.items
-                    .filter(it => it.nivel_controlado && parseInt(it.nivel_controlado) > 0)
+                    .filter(it => it.tipo_control === 'controlado' || it.requiere_receta)
                     .map(it => ({
                         producto_id: it.id,
                         lote_id: it.lote_id || null,
-                        nivel_controlado: parseInt(it.nivel_controlado),
                         cantidad: this.calcularUnidadesBase(it),
                         unidad: 'unidad',
                         ...this.controlData
@@ -1092,7 +1282,8 @@ function posVentaData() {
          if ($event.key === 'F3') { $event.preventDefault(); (document.getElementById('posBuscador') || document.getElementById('posBuscadorModern'))?.focus(); }
          if ($event.key === 'F4' && items.length > 0) { $event.preventDefault(); abrirModalCobro(); }
          if ($event.key === 'F7' && items.length > 0) { $event.preventDefault(); modalTicketPreview = true; }
-         if ($event.key === 'Escape' && !modalCobro && !modalTicketPreview && !modalInfoProducto && !modalNuevoCliente) { limpiarVenta(); }
+         if ($event.key === 'F8') { $event.preventDefault(); modalCargarReceta = true; }
+         if ($event.key === 'Escape' && !modalCobro && !modalTicketPreview && !modalInfoProducto && !modalNuevoCliente && !modalCargarReceta) { limpiarVenta(); }
      "
      class="space-y-4">
 
@@ -1136,8 +1327,15 @@ function posVentaData() {
             </div>
         </div>
 
-        <div class="flex items-center space-x-2 self-start sm:self-auto">
-            <!-- Modo Full Screen (Ocultar Barras) -->
+        <div class="flex items-center space-x-2 self-start sm:self-auto flex-wrap">
+            <!-- 1. Botón Volver / Precedente -->
+            <a href="{{ route('ventas.index') }}" 
+               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Ventas</span>
+            </a>
+
+            <!-- 2. Modo Full Screen (Ocultar Barras) -->
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
@@ -1146,29 +1344,32 @@ function posVentaData() {
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
-            <!-- Mode Switcher -->
+            <!-- 3. Botón Cargar Receta (F8) -->
+            <button type="button" 
+                    @click="modalCargarReceta = true"
+                    title="Buscar y Cargar Receta Médica al Carrito (F8)"
+                    class="px-2.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-300 dark:border-purple-800 text-purple-800 dark:text-purple-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Receta (F8)</span>
+            </button>
+
+            <!-- 4. Mode Switcher -->
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
                         :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                    <span>Moderna (Touch)</span>
+                    <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
                         :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span>Compacta (ERP)</span>
+                    <span>Compacta</span>
                 </button>
             </div>
-
-            <a href="{{ route('ventas.index') }}" 
-               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
-            </a>
         </div>
     </div>
 
@@ -1192,7 +1393,7 @@ function posVentaData() {
                 <div class="flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
                     <span class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">TERMINAL POS DE VENTA RÁPIDA</span>
-                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold hidden sm:inline">F3 = Buscar | F4 = Cobrar | F7 = Ticket | Esc = Limpiar</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold hidden sm:inline">F3 = Buscar | F4 = Cobrar | F7 = Ticket | F8 = Receta | Esc = Limpiar</span>
                 </div>
 
                 <div class="flex items-center space-x-2">
@@ -1206,7 +1407,7 @@ function posVentaData() {
                             :disabled="items.length === 0"
                             class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                        <span>Cobrar (F4) &bull; $<span x-text="calcularTotalGeneral()"></span></span>
+                        <span>Cobrar (F4) &bull; C$ <span x-text="calcularTotalGeneral()"></span></span>
                     </button>
                 </div>
             </div>
@@ -1286,7 +1487,7 @@ function posVentaData() {
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <span class="font-extrabold text-xs text-slate-900 dark:text-white" x-text="'$' + parseFloat(prod.precio_venta).toFixed(2)"></span>
+                                        <span class="font-extrabold text-xs text-slate-900 dark:text-white font-mono" x-text="'C$ ' + parseFloat(prod.precio_venta).toFixed(2)"></span>
                                     </div>
                                 </div>
                             </template>
@@ -1307,7 +1508,7 @@ function posVentaData() {
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div>
                             <span class="text-[10px] font-semibold text-slate-500 block">Subtotal Bruto:</span>
-                            <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="'$' + calcularSubtotalGeneral()"></span>
+                            <span class="font-bold text-slate-900 dark:text-white text-sm font-mono" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                         </div>
 
                         <!-- Selector de Descuento (Porcentaje o Monto) -->
@@ -1322,7 +1523,7 @@ function posVentaData() {
                                     <button type="button" 
                                             @click="formData.tipo_descuento = 'monto'" 
                                             :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
-                                            class="px-1.5 py-0.2">$</button>
+                                            class="px-1.5 py-0.2">C$</button>
                                 </div>
                             </div>
                             
@@ -1340,7 +1541,7 @@ function posVentaData() {
                             </template>
                             <template x-if="formData.tipo_descuento === 'monto'">
                                 <div class="flex items-center space-x-1">
-                                    <span class="text-xs font-bold text-slate-500">$</span>
+                                    <span class="text-xs font-bold text-slate-500">C$</span>
                                     <input type="number" 
                                            step="0.10" 
                                            min="0" 
@@ -1349,8 +1550,8 @@ function posVentaData() {
                                            class="w-full px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-rose-600 text-right">
                                 </div>
                             </template>
-                            <span class="text-[9px] text-rose-500 font-semibold block text-right mt-0.5" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
-                                Descuenta: -$<span x-text="calcularDescuentoGeneralMonto()"></span>
+                            <span class="text-[9px] text-rose-500 font-semibold block text-right mt-0.5 font-mono" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
+                                Descuenta: -C$ <span x-text="calcularDescuentoGeneralMonto()"></span>
                             </span>
                         </div>
                     </div>
@@ -1358,8 +1559,8 @@ function posVentaData() {
                     <!-- Total Gigante -->
                     <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
                         <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total a Pagar:</span>
-                        <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                            $<span x-text="calcularTotalGeneral()"></span>
+                        <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                            C$ <span x-text="calcularTotalGeneral()"></span>
                         </span>
                     </div>
                 </div>
@@ -1415,13 +1616,14 @@ function posVentaData() {
                                             </select>
                                             <span x-show="item.promocion_activa" 
                                                   :title="item.promocion_activa?.nombre"
-                                                  class="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500 text-white shrink-0 shadow-2xs animate-pulse"
-                                                  x-text="'🔥 ' + (item.promocion_activa?.badge_texto || 'PROMO')">
+                                                  class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500 text-white shrink-0 shadow-2xs">
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                                <span x-text="item.promocion_activa?.badge_texto || 'PROMO'"></span>
                                             </span>
-                                            <span x-show="item.requiere_receta" 
-                                                  title="Requiere Receta Médica" 
-                                                  class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500 text-white shrink-0">
-                                                Rx
+                                            <span x-show="item.tipo_control === 'controlado' || item.requiere_receta" 
+                                                  title="Medicamento Controlado / Con Receta Médica" 
+                                                  class="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-700 text-white shrink-0 shadow-2xs">
+                                                Controlado / Rx
                                             </span>
                                         </div>
                                     </td>
@@ -1437,8 +1639,9 @@ function posVentaData() {
                                         </select>
                                         <!-- Badge de Equivalencia en Unidades -->
                                         <div class="mt-1 flex items-center space-x-1.5">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
-                                                📦 <span x-text="item.cantidad"></span> <span x-text="item.presentacion_nombre || 'Unidad'"></span> = <strong class="ml-1 text-emerald-900 dark:text-emerald-200" x-text="'-' + calcularUnidadesBase(item) + ' unidades base'"></strong>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                                                <svg class="w-3 h-3 text-emerald-700 dark:text-emerald-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                                <span><span x-text="item.cantidad"></span> <span x-text="item.presentacion_nombre || 'Unidad'"></span> = <strong class="ml-1 text-emerald-900 dark:text-emerald-200" x-text="'-' + calcularUnidadesBase(item) + ' unidades base'"></strong></span>
                                             </span>
                                         </div>
                                     </td>
@@ -1452,8 +1655,9 @@ function posVentaData() {
                                                 <option :value="l.id" x-text="l.numero_lote + ' (Stock: ' + l.stock_actual + ' u. | Vence: ' + (l.fecha_vencimiento ? l.fecha_vencimiento.substring(0, 10) : 'N/A') + ')'"></option>
                                             </template>
                                         </select>
-                                        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                            📍 Ubicación: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="item.ubicacion"></span>
+                                        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+                                            <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            <span>Ubicación: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="item.ubicacion"></span></span>
                                         </div>
                                     </td>
 
@@ -1497,8 +1701,8 @@ function posVentaData() {
                                     </td>
 
                                     <!-- Subtotal -->
-                                    <td class="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white">
-                                        $<span x-text="calcularSubtotal(item)"></span>
+                                    <td class="py-2.5 px-3 text-right font-black text-slate-900 dark:text-white font-mono">
+                                        C$ <span x-text="calcularSubtotal(item)"></span>
                                     </td>
 
                                     <!-- Botón Eliminar Fila -->
@@ -1525,11 +1729,15 @@ function posVentaData() {
             <!-- Footer / Toolbar Inferior -->
             <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-slate-400 text-[11px]">
                 <div class="flex items-center space-x-2">
-                    <span x-show="tieneProductosRx()" class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-bold flex items-center space-x-1.5 border border-amber-300 dark:border-amber-700">
-                        <span>⚠️</span>
-                        <span>Requiere Receta Médica: <strong x-text="getProductosRxCount()"></strong> medicamento(s)</span>
+                    <span x-show="tieneControlados()" class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 font-bold flex items-center space-x-1.5 border border-rose-300 dark:border-rose-700">
+                        <svg class="w-3.5 h-3.5 text-rose-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Control MINSA (Receta Retenida): <strong x-text="getControladosCount()"></strong> medicamento(s)</span>
                     </span>
-                    <span x-show="!tieneProductosRx()" class="text-slate-500 dark:text-slate-400">Venta libre lista para despacho.</span>
+                    <span x-show="tieneProductosRxSimple()" class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 font-bold flex items-center space-x-1.5 border border-amber-300 dark:border-amber-700">
+                        <svg class="w-3.5 h-3.5 text-amber-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Receta Estándar: <strong x-text="getProductosRxSimpleCount()"></strong> medicamento(s)</span>
+                    </span>
+                    <span x-show="!tieneControlados() && !tieneProductosRxSimple()" class="text-slate-500 dark:text-slate-400">Venta libre lista para despacho.</span>
                 </div>
                 <div class="flex items-center space-x-2">
                     <button type="button" 
@@ -1544,7 +1752,7 @@ function posVentaData() {
                             :disabled="items.length === 0"
                             class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                        <span>Cobrar Venta (F4) &bull; $<span x-text="calcularTotalGeneral()"></span></span>
+                        <span>Cobrar Venta (F4) &bull; C$ <span x-text="calcularTotalGeneral()"></span></span>
                     </button>
                 </div>
             </div>
@@ -1649,11 +1857,15 @@ function posVentaData() {
                                         <div class="min-w-0 flex-1">
                                             <h4 class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-emerald-600 transition truncate" x-text="prod.nombre"></h4>
                                             <template x-if="prod.promocion_activa">
-                                                <span class="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-500 text-white shadow-2xs animate-pulse" x-text="'🔥 ' + (prod.promocion_activa.badge_texto || 'OFERTA')"></span>
+                                                <span class="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500 text-white shadow-2xs">
+                                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                                    <span x-text="prod.promocion_activa.badge_texto || 'PROMO'"></span>
+                                                </span>
                                             </template>
                                         </div>
                                         <div class="flex items-center space-x-1 shrink-0">
-                                            <span x-show="prod.requiere_receta" class="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-500 text-white">Rx</span>
+                                            <span x-show="prod.tipo_control === 'controlado' || prod.requiere_receta" 
+                                                  class="text-[9px] px-1.5 py-0.5 rounded font-black bg-purple-700 text-white shadow-2xs">Controlado / Rx</span>
                                             
                                             <button type="button" 
                                                     @click.stop="abrirInfoProducto(prod)"
@@ -1666,7 +1878,7 @@ function posVentaData() {
                                     <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1" x-text="prod.principio_activo || 'Fórmula general'"></p>
                                     
                                     <div class="mt-1 flex items-center space-x-1 text-[10px] text-slate-600 dark:text-slate-400">
-                                        <span>📍</span>
+                                        <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                         <span class="font-medium text-slate-700 dark:text-slate-300" x-text="prod.ubicacion || 'Sin estante'"></span>
                                     </div>
                                 </div>
@@ -1675,7 +1887,7 @@ function posVentaData() {
                                     <span class="text-[10px] font-semibold text-slate-500">
                                         Lote FEFO: <span class="text-emerald-600 font-bold" x-text="prod.lotes && prod.lotes[0] ? prod.lotes[0].stock_actual + ' u.' : '0'"></span>
                                     </span>
-                                    <span class="text-xs font-black text-slate-900 dark:text-white" x-text="'$' + parseFloat(prod.precio_venta).toFixed(2)"></span>
+                                    <span class="text-xs font-black text-slate-900 dark:text-white" x-text="'C$ ' + parseFloat(prod.precio_venta).toFixed(2)"></span>
                                 </div>
                             </div>
                         </template>
@@ -1713,7 +1925,7 @@ function posVentaData() {
                                 :disabled="items.length === 0"
                                 class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-[11px] font-black rounded-lg shadow-xs transition flex items-center space-x-1 cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                            <span>Cobrar $<span x-text="calcularTotalGeneral()"></span></span>
+                            <span>Cobrar C$<span x-text="calcularTotalGeneral()"></span></span>
                         </button>
                         <button type="button" @click="limpiarVenta()" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">Vaciar Todo</button>
                     </div>
@@ -1729,14 +1941,17 @@ function posVentaData() {
                                     <div class="font-bold text-xs text-slate-900 dark:text-white flex items-center space-x-1.5">
                                         <span class="truncate" x-text="item.nombre"></span>
                                         <span x-show="item.promocion_activa" 
-                                              class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-500 text-white shrink-0 shadow-2xs animate-pulse"
-                                              x-text="'🔥 ' + (item.promocion_activa?.badge_texto || 'PROMO')"></span>
-                                        <span x-show="item.requiere_receta" class="text-[9px] px-1 py-0.2 rounded font-bold bg-amber-500 text-white shrink-0">Rx</span>
+                                              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500 text-white shrink-0 shadow-2xs">
+                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                            <span x-text="item.promocion_activa?.badge_texto || 'PROMO'"></span>
+                                        </span>
+                                        <span x-show="item.tipo_control === 'controlado' || item.requiere_receta" 
+                                              class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-700 text-white shrink-0 shadow-2xs">Controlado / Rx</span>
                                     </div>
                                     <div class="text-[10px] text-slate-500 truncate" x-text="item.principio_activo"></div>
                                 </div>
                                 <div class="flex items-center space-x-2 shrink-0">
-                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300" x-text="'$' + parseFloat(item.precio_unitario).toFixed(2) + '/u'"></span>
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300" x-text="'C$ ' + parseFloat(item.precio_unitario).toFixed(2) + '/u'"></span>
                                     <button type="button" @click="eliminarItem(idx)" class="text-slate-400 hover:text-rose-600 text-sm font-bold transition p-0.5 cursor-pointer">&times;</button>
                                 </div>
                             </div>
@@ -1751,8 +1966,9 @@ function posVentaData() {
                                             <option :value="pres.id" x-text="pres.nombre + ' (' + pres.unidades + ' unid. c/u)'"></option>
                                         </template>
                                     </select>
-                                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-                                        📦 Equivale a <span x-text="calcularUnidadesBase(item)"></span> unidades base
+                                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                        <span>Equivale a <span x-text="calcularUnidadesBase(item)"></span> unidades base</span>
                                     </div>
                                 </div>
 
@@ -1795,14 +2011,17 @@ function posVentaData() {
 
                                 <!-- Subtotal por Fila -->
                                 <div class="text-right">
-                                    <span class="font-black text-xs text-slate-900 dark:text-white" x-text="'$' + calcularSubtotal(item)"></span>
+                                    <span class="font-black text-xs text-slate-900 dark:text-white" x-text="'C$ ' + calcularSubtotal(item)"></span>
                                 </div>
                             </div>
                         </div>
                     </template>
 
                     <div x-show="items.length === 0" class="py-12 text-center text-slate-400 text-xs">
-                        🛒 El carrito está vacío. Seleccione medicamentos del catálogo para comenzar.
+                        <div class="flex flex-col items-center justify-center space-y-2">
+                            <svg class="w-8 h-8 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                            <span>El carrito está vacío. Seleccione medicamentos del catálogo para comenzar.</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1810,7 +2029,7 @@ function posVentaData() {
                 <div class="shrink-0 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 bg-white dark:bg-slate-900">
                     <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300">
                         <span>Subtotal Bruto:</span>
-                        <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
+                        <span class="font-bold" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                     </div>
 
                     <!-- Descuento Global Configurable -->
@@ -1819,11 +2038,11 @@ function posVentaData() {
                             <span>Descuento Global:</span>
                             <div class="inline-flex rounded border border-slate-300 dark:border-slate-700 text-[10px]">
                                 <button type="button" @click="formData.tipo_descuento = 'porcentaje'" :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">%</button>
-                                <button type="button" @click="formData.tipo_descuento = 'monto'" :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">$</button>
+                                <button type="button" @click="formData.tipo_descuento = 'monto'" :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">C$</button>
                             </div>
                         </div>
                         <div class="flex items-center space-x-1">
-                            <span class="text-rose-600 font-bold">-$</span>
+                            <span class="text-rose-600 font-bold">-C$</span>
                             <span class="text-rose-600 font-bold" x-text="calcularDescuentoGeneralMonto()"></span>
                             <input type="number" 
                                    :step="formData.tipo_descuento === 'porcentaje' ? 1 : 0.10" 
@@ -1832,13 +2051,13 @@ function posVentaData() {
                                    x-model="formData[formData.tipo_descuento === 'porcentaje' ? 'porcentaje_descuento' : 'descuento']" 
                                    @focus="$event.target.select()"
                                    class="w-16 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-rose-600 text-right">
-                            <span class="text-xs font-bold" x-text="formData.tipo_descuento === 'porcentaje' ? '%' : '$'"></span>
+                            <span class="text-xs font-bold" x-text="formData.tipo_descuento === 'porcentaje' ? '%' : 'C$'"></span>
                         </div>
                     </div>
 
                     <div class="flex justify-between text-base font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
                         <span>Total a Pagar:</span>
-                        <span class="text-2xl text-emerald-600 dark:text-emerald-400" x-text="'$' + calcularTotalGeneral()"></span>
+                        <span class="text-2xl text-emerald-600 dark:text-emerald-400" x-text="'C$ ' + calcularTotalGeneral()"></span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-1.5">
@@ -1865,22 +2084,20 @@ function posVentaData() {
     <!-- ============================================================== -->
     <!-- MODAL DE COBRO INTEGRADO: EFECTIVO ESTRICTO + RECETAS RX       -->
     <!-- ============================================================== -->
-    <!-- ============================================================== -->
-    <!-- MODAL DE COBRO INTEGRADO: 3 COLUMNAS ULTRA-ERGONÓMICO           -->
-    <!-- ============================================================== -->
-    <div x-show="modalCobro" 
-         x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto" 
-         aria-labelledby="modal-cobro-title" 
-         role="dialog" 
-         aria-modal="true"
-         @keydown.escape.window="modalCobro = false"
-         @click.self="modalCobro = false">
-        <div @click.stop
-             x-transition:enter="ease-out duration-200"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             class="bg-white dark:bg-slate-900 rounded-2xl text-left shadow-2xl transform transition-all w-full max-w-6xl border border-slate-300 dark:border-slate-800 my-auto flex flex-col max-h-[92vh]">
+    <template x-teleport="body">
+        <div x-show="modalCobro" 
+             x-cloak
+             class="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-sm" 
+             aria-labelledby="modal-cobro-title" 
+             role="dialog" 
+             aria-modal="true"
+             @keydown.escape.window="modalCobro = false"
+             @click.self="modalCobro = false">
+            <div @click.stop
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 class="bg-white dark:bg-slate-900 rounded-2xl text-left shadow-2xl transform transition-all w-full max-w-6xl border border-slate-300 dark:border-slate-800 my-auto flex flex-col max-h-[92vh]">
             
             <!-- Modal Header -->
             <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
@@ -1890,7 +2107,7 @@ function posVentaData() {
                         Cobro & Emisión de Comprobante
                     </h3>
                 </div>
-                <button type="button" @click="modalCobro = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 cursor-pointer">&times;</button>
+                <button type="button" @click="modalCobro = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-lg">&times;</button>
             </div>
 
             <!-- Modal Body: 3 Columnas en Desktop (Todo visible sin scroll) -->
@@ -1905,46 +2122,102 @@ function posVentaData() {
                     <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-center shrink-0">
                         <span class="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Total a Cobrar</span>
                         <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                            $<span x-text="calcularTotalGeneral()"></span>
+                            C$<span x-text="calcularTotalGeneral()"></span>
                         </span>
                         <div class="text-[10px] text-slate-500 mt-0.5" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
-                            (Subtotal: $<span x-text="calcularSubtotalGeneral()"></span> &bull; Desc: -$<span x-text="calcularDescuentoGeneralMonto()"></span>)
+                            (Subtotal: C$<span x-text="calcularSubtotalGeneral()"></span> &bull; Desc: -C$<span x-text="calcularDescuentoGeneralMonto()"></span>)
                         </div>
                     </div>
 
-                    <!-- REGLA DE RECETA (Rx) SI APLICA -->
-                    <div x-show="tieneProductosRx()" class="p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 space-y-2 flex-1 min-h-0 flex flex-col">
-                        <div class="flex items-center justify-between border-b border-amber-200 dark:border-amber-800/60 pb-1.5 shrink-0">
+                    <!-- CASO 1: MEDICAMENTOS CONTROLADOS / CON RECETA MÉDICA (MINSA) -->
+                    <div x-show="tieneControlados()" class="p-3.5 rounded-xl bg-purple-50/95 dark:bg-purple-950/40 border-2 border-purple-500 dark:border-purple-700 space-y-2.5 flex-1 min-h-0 flex flex-col animate-fadeIn">
+                        <div class="flex items-center justify-between border-b border-purple-200 dark:border-purple-800/80 pb-1.5 shrink-0">
                             <div class="flex items-center space-x-1.5">
-                                <span class="px-1.5 py-0.2 rounded bg-amber-500 text-white text-[9px] font-black uppercase">Requisito Rx</span>
-                                <h4 class="text-xs font-black text-amber-950 dark:text-amber-200">Dispensación Asistida</h4>
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-ping"></span>
+                                <span class="px-1.5 py-0.2 rounded bg-purple-700 text-white text-[9px] font-black uppercase">MINSA / Receta</span>
+                                <h4 class="text-xs font-black text-purple-950 dark:text-purple-200">Control de Prescripción</h4>
                             </div>
-                            <span class="text-[10px] text-amber-700 dark:text-amber-400 font-bold">Obligatorio</span>
+                            <span class="text-[10px] text-purple-700 dark:text-purple-300 font-bold" x-text="getControladosCount() + ' ítem(s)'"></span>
                         </div>
 
-                        <!-- Selector de Opciones: Vincular / Crear / Omitir -->
-                        <div class="grid grid-cols-3 gap-1 p-0.5 bg-amber-100/80 dark:bg-amber-900/50 rounded-lg shrink-0">
+                        <!-- Selector de Opciones: Datos MINSA / Vincular Expediente / Omitir -->
+                        <div class="grid grid-cols-3 gap-1 p-0.5 bg-purple-100/80 dark:bg-purple-900/50 rounded-lg shrink-0">
                             <button type="button" 
-                                    @click="recetaTab = 'vincular'; formData.receta_modalidad = 'vinculada';"
-                                    :class="recetaTab === 'vincular' ? 'bg-white dark:bg-slate-800 text-amber-900 dark:text-white font-black shadow-xs' : 'text-amber-800 dark:text-amber-300 font-semibold'"
+                                    @click="recetaTab = 'datos'; formData.receta_modalidad = 'creada';"
+                                    :class="recetaTab === 'datos' ? 'bg-white dark:bg-slate-800 text-purple-950 dark:text-white font-black shadow-xs' : 'text-purple-900 dark:text-purple-300 font-semibold'"
                                     class="py-1 px-1 text-[10px] rounded transition flex items-center justify-center space-x-1 cursor-pointer">
-                                <span>🔗</span> <span>Vincular</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <span>1. Datos</span>
                             </button>
                             <button type="button" 
-                                    @click="recetaTab = 'crear'; formData.receta_modalidad = 'creada';"
-                                    :class="recetaTab === 'crear' ? 'bg-white dark:bg-slate-800 text-amber-900 dark:text-white font-black shadow-xs' : 'text-amber-800 dark:text-amber-300 font-semibold'"
+                                    @click="recetaTab = 'vincular'; formData.receta_modalidad = 'vinculada';"
+                                    :class="recetaTab === 'vincular' ? 'bg-white dark:bg-slate-800 text-purple-950 dark:text-white font-black shadow-xs' : 'text-purple-900 dark:text-purple-300 font-semibold'"
                                     class="py-1 px-1 text-[10px] rounded transition flex items-center justify-center space-x-1 cursor-pointer">
-                                <span>➕</span> <span>Crear</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                <span>2. Vincular</span>
                             </button>
                             <button type="button" 
                                     @click="recetaTab = 'omitir'; formData.receta_modalidad = 'omitida';"
-                                    :class="recetaTab === 'omitir' ? 'bg-white dark:bg-slate-800 text-amber-900 dark:text-white font-black shadow-xs' : 'text-amber-800 dark:text-amber-300 font-semibold'"
+                                    :class="recetaTab === 'omitir' ? 'bg-white dark:bg-slate-800 text-purple-950 dark:text-white font-black shadow-xs' : 'text-purple-900 dark:text-purple-300 font-semibold'"
                                     class="py-1 px-1 text-[10px] rounded transition flex items-center justify-center space-x-1 cursor-pointer">
-                                <span>🚫</span> <span>Omitir</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                <span>3. Omitir</span>
                             </button>
                         </div>
 
-                        <!-- Opción A: Vincular Receta -->
+                        <!-- Opción 1: Datos Directos MINSA -->
+                        <div x-show="recetaTab === 'datos'" class="space-y-2 text-xs overflow-y-auto pr-1 custom-scrollbar flex-1 min-h-0">
+                            <!-- Datos del Paciente -->
+                            <div class="p-2 bg-white/90 dark:bg-slate-800/90 rounded-lg border border-purple-200 dark:border-purple-800 space-y-1.5">
+                                <span class="text-[10px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">1. Paciente</span>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Nombre Completo <span class="text-rose-500">*</span></label>
+                                    <input type="text" x-model="controlData.paciente_nombre" placeholder="Nombre completo del paciente"
+                                           class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-1 focus:ring-purple-500">
+                                </div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Cédula / ID</label>
+                                        <input type="text" x-model="controlData.paciente_cedula" placeholder="Ej: 001-010190-0000A"
+                                               class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono focus:ring-1 focus:ring-purple-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Edad</label>
+                                        <input type="number" min="0" max="120" x-model="controlData.paciente_edad" placeholder="Años"
+                                               class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-purple-500">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Datos del Médico Prescriptor -->
+                            <div class="p-2 bg-white/90 dark:bg-slate-800/90 rounded-lg border border-purple-200 dark:border-purple-800 space-y-1.5">
+                                <span class="text-[10px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">2. Médico Prescriptor</span>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Dr(a). Nombre Completo <span class="text-rose-500">*</span></label>
+                                    <input type="text" x-model="controlData.medico_nombre" placeholder="Dr. Nombre y Apellidos"
+                                           class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-1 focus:ring-purple-500">
+                                </div>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">N° Registro MINSA <span class="text-rose-500">*</span></label>
+                                        <input type="text" x-model="controlData.medico_num_registro" placeholder="Ej: MINSA-12345"
+                                               class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-purple-700 dark:text-purple-300 focus:ring-1 focus:ring-purple-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Cédula Médico</label>
+                                        <input type="text" x-model="controlData.medico_cedula" placeholder="Opcional"
+                                               class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-purple-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Diagnóstico / Indicación</label>
+                                    <input type="text" x-model="controlData.diagnostico" placeholder="Tratamiento prescrito..."
+                                           class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-purple-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opción 2: Vincular Receta del Expediente Clínico -->
                         <div x-show="recetaTab === 'vincular'" class="space-y-2 flex-1 min-h-0 flex flex-col">
                             <!-- Si ya está seleccionada -->
                             <template x-if="recetaSeleccionadaObj">
@@ -1956,13 +2229,19 @@ function posVentaData() {
                                                 #<span x-text="recetaSeleccionadaObj.numero_receta"></span>
                                             </span>
                                         </div>
-                                        <button type="button" @click="deseleccionarReceta()" class="text-[10px] text-rose-600 hover:underline font-bold cursor-pointer">✕ Cambiar</button>
+                                        <button type="button" @click="deseleccionarReceta()" class="text-[10px] text-rose-600 hover:underline font-bold cursor-pointer inline-flex items-center gap-0.5">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <span>Cambiar</span>
+                                        </button>
                                     </div>
                                     <div class="text-[11px] space-y-0.5 text-slate-700 dark:text-slate-300">
                                         <div>Pac: <strong x-text="recetaSeleccionadaObj.paciente_nombre"></strong></div>
                                         <div class="text-[10px] text-slate-500">Dr. <span x-text="recetaSeleccionadaObj.medico_nombre"></span> (Col: <span x-text="recetaSeleccionadaObj.medico_colegiatura || 'S/N'"></span>)</div>
                                     </div>
-                                    <div class="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold">✓ Receta vinculada correctamente</div>
+                                    <div class="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        <span>Receta vinculada correctamente</span>
+                                    </div>
                                 </div>
                             </template>
 
@@ -1975,22 +2254,22 @@ function posVentaData() {
                                                x-model="recetaBusqueda" 
                                                @input.debounce.250ms="buscarRecetasAsync()"
                                                placeholder="Buscar paciente o N° folio..." 
-                                               class="w-full pl-7 pr-6 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400">
-                                        <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-amber-600">
+                                               class="w-full pl-7 pr-6 py-1 bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400">
+                                        <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-purple-600">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                         </div>
                                     </div>
 
                                     <!-- Lista con scroll interno -->
-                                    <div class="border border-amber-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden flex-1 min-h-0 flex flex-col">
-                                        <div class="px-2 py-1 bg-amber-100/60 dark:bg-slate-750 text-[10px] font-bold text-slate-700 dark:text-slate-300 flex justify-between shrink-0">
+                                    <div class="border border-purple-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden flex-1 min-h-0 flex flex-col">
+                                        <div class="px-2 py-1 bg-purple-100/60 dark:bg-slate-750 text-[10px] font-bold text-slate-700 dark:text-slate-300 flex justify-between shrink-0">
                                             <span>Recetas Disponibles:</span>
                                             <span class="text-slate-500 font-mono" x-text="recetasEncontradas.length"></span>
                                         </div>
                                         <div class="overflow-y-auto max-h-48 divide-y divide-slate-100 dark:divide-slate-700 text-xs custom-scrollbar">
                                             <template x-for="rec in recetasEncontradas" :key="rec.id">
                                                 <div @click="seleccionarReceta(rec)" 
-                                                     :class="recetaCoincideConCarrito(rec) ? 'bg-emerald-50/60 dark:bg-emerald-950/20 hover:bg-emerald-100/80 border-l-4 border-l-emerald-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700/80 border-l-4 border-l-transparent opacity-80'"
+                                                     :class="recetaCoincideConCarrito(rec) ? 'bg-purple-50/60 dark:bg-purple-950/20 hover:bg-purple-100/80 border-l-4 border-l-purple-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700/80 border-l-4 border-l-transparent opacity-80'"
                                                      class="p-2 cursor-pointer flex flex-col space-y-1 transition">
                                                     <div class="flex items-center justify-between gap-1">
                                                         <div class="min-w-0 flex-1">
@@ -2001,7 +2280,7 @@ function posVentaData() {
                                                             </div>
                                                             <div class="text-[9px] text-slate-500 truncate" x-text="'Dr. ' + rec.medico_nombre + (rec.medico_colegiatura ? ' (Col: ' + rec.medico_colegiatura + ')' : '')"></div>
                                                         </div>
-                                                        <span :class="recetaCoincideConCarrito(rec) ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+                                                        <span :class="recetaCoincideConCarrito(rec) ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
                                                               class="px-2 py-0.5 rounded text-[9px] font-bold shrink-0 shadow-2xs">
                                                             <span x-show="recetaCoincideConCarrito(rec)">+ Vincular</span>
                                                             <span x-show="!recetaCoincideConCarrito(rec)">Sin Coincidencia</span>
@@ -2009,8 +2288,11 @@ function posVentaData() {
                                                     </div>
                                                     <!-- Lista de medicamentos prescritos con saldo -->
                                                     <div class="text-[9px] text-slate-600 dark:text-slate-300 flex items-center space-x-1">
-                                                        <span class="font-bold text-slate-400">💊 Prescribe:</span>
-                                                        <span class="truncate font-medium text-emerald-700 dark:text-emerald-300" x-text="getMedicamentosCoincidentesTexto(rec) || (rec.detalles ? rec.detalles.map(d => (d.producto?.nombre || 'Med') + ' (' + (d.cantidad_recetada - d.cantidad_dispensada) + ' u.)').join(', ') : 'Sin detalle')"></span>
+                                                        <span class="font-bold text-slate-400 flex items-center gap-1">
+                                                            <svg class="w-3 h-3 text-slate-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                                                            <span>Prescribe:</span>
+                                                        </span>
+                                                        <span class="truncate font-medium text-purple-700 dark:text-purple-300" x-text="getMedicamentosCoincidentesTexto(rec) || (rec.detalles ? rec.detalles.map(d => (d.producto?.nombre || 'Med') + ' (' + (d.cantidad_recetada - d.cantidad_dispensada) + ' u.)').join(', ') : 'Sin detalle')"></span>
                                                     </div>
                                                 </div>
                                             </template>
@@ -2023,43 +2305,27 @@ function posVentaData() {
                             </template>
                         </div>
 
-                        <!-- Opción B: Crear Nueva Receta -->
-                        <div x-show="recetaTab === 'crear'" class="space-y-1.5 text-xs">
-                            <div>
-                                <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Médico <span class="text-rose-500">*</span></label>
-                                <input type="text" x-model="recetaNueva.medico_nombre" placeholder="Dr. Nombre Completo" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs font-medium">
-                            </div>
-                            <div>
-                                <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Cédula / CMP <span class="text-rose-500">*</span></label>
-                                <input type="text" x-model="recetaNueva.medico_colegiatura" placeholder="CMP-12345 o Cédula" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs font-medium">
-                            </div>
-                            <div>
-                                <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Paciente</label>
-                                <input type="text" x-model="recetaNueva.paciente_nombre" placeholder="Nombre del Paciente" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs">
-                            </div>
-                        </div>
-
-                        <!-- Opción C: Omitir Receta -->
-                        <div x-show="recetaTab === 'omitir'" class="space-y-1.5 text-xs bg-amber-100/50 dark:bg-amber-950/60 p-2 rounded-xl border border-amber-300">
-                            <label class="flex items-start space-x-1.5 text-[10px] text-amber-900 dark:text-amber-200 cursor-pointer">
+                        <!-- Opción 3: Omitir Receta con Justificación -->
+                        <div x-show="recetaTab === 'omitir'" class="space-y-2 text-xs bg-amber-50 dark:bg-amber-950/60 p-3 rounded-xl border border-amber-300 dark:border-amber-700">
+                            <label class="flex items-start space-x-2 text-[11px] text-amber-900 dark:text-amber-200 cursor-pointer">
                                 <input type="checkbox" x-model="recetaOmisionConfirmada" class="mt-0.5 rounded border-amber-400 text-amber-600">
-                                <span class="font-bold">Autorizo despacho sin receta física.</span>
+                                <span class="font-bold">Autorizo despacho justificado sin receta física.</span>
                             </label>
                             <div>
-                                <label class="block text-[9px] font-bold text-amber-900 dark:text-amber-300 mb-0.5">Motivo <span class="text-rose-500">*</span></label>
-                                <input type="text" x-model="formData.receta_omision_motivo" placeholder="Ej: Tratamiento crónico validado" class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-amber-400 rounded-lg text-xs">
+                                <label class="block text-[9px] font-bold text-amber-900 dark:text-amber-300 mb-0.5">Motivo de Omisión (MINSA) <span class="text-rose-500">*</span></label>
+                                <input type="text" x-model="formData.receta_omision_motivo" placeholder="Ej: Tratamiento crónico / Urgencia médica" class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-amber-400 rounded-lg text-xs">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Si NO hay productos Rx -->
-                    <div x-show="!tieneProductosRx()" class="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-slate-800/50 border border-emerald-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+                    <!-- CASO 2: VENTA LIBRE (SIN PRODUCTOS CONTROLADOS) -->
+                    <div x-show="!tieneControlados()" class="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-slate-800/50 border border-emerald-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
                         <div class="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                            <span>✓</span>
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             <span>Venta Libre (Sin Requisito Rx)</span>
                         </div>
                         <p class="text-[10px] text-slate-500 dark:text-slate-400">
-                            No se detectaron medicamentos con restricción. Puede registrar el cobro de inmediato.
+                            No se detectaron medicamentos fiscalizados o con receta obligatoria. Puede registrar el cobro de inmediato.
                         </p>
                         <div class="text-[11px] text-slate-700 dark:text-slate-300 pt-1">
                             Cliente: <strong x-text="getClienteNombre()"></strong>
@@ -2086,21 +2352,21 @@ function posVentaData() {
                                 <span>Efectivo</span>
                             </button>
                             <button type="button" 
-                                    @click="formData.metodo_pago = 'tarjeta'"
+                                    @click="formData.metodo_pago = 'tarjeta'; formData.monto_recibido = calcularTotalGeneral();"
                                     :class="formData.metodo_pago === 'tarjeta' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
                                     class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                                 <span>Tarjeta</span>
                             </button>
                             <button type="button" 
-                                    @click="formData.metodo_pago = 'transferencia'"
+                                    @click="formData.metodo_pago = 'transferencia'; formData.monto_recibido = calcularTotalGeneral();"
                                     :class="formData.metodo_pago === 'transferencia' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
                                     class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                 <span>Transferencia</span>
                             </button>
                             <button type="button" 
-                                    @click="formData.metodo_pago = 'mixto'"
+                                    @click="formData.metodo_pago = 'mixto'; formData.monto_recibido = calcularTotalGeneral();"
                                     :class="formData.metodo_pago === 'mixto' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'"
                                     class="py-2 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
@@ -2248,8 +2514,8 @@ function posVentaData() {
                                             <div class="font-bold" x-text="item.nombre"></div>
                                             <div class="text-[7px] text-slate-500" x-text="(item.presentacion_nombre || 'Unidad') + ' x' + item.cantidad"></div>
                                         </td>
-                                        <td class="py-0.5 text-right" x-text="'$' + parseFloat(item.precio_unitario).toFixed(2)"></td>
-                                        <td class="py-0.5 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
+                                        <td class="py-0.5 text-right" x-text="'C$ ' + parseFloat(item.precio_unitario).toFixed(2)"></td>
+                                        <td class="py-0.5 text-right font-bold" x-text="'C$ ' + calcularSubtotal(item)"></td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -2260,23 +2526,23 @@ function posVentaData() {
                         <div class="space-y-0.5 text-right">
                             <div class="flex justify-between">
                                 <span>SUBTOTAL:</span>
-                                <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
+                                <span class="font-bold" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                             </div>
                             <div class="flex justify-between text-rose-600" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
                                 <span>DESCUENTO:</span>
-                                <span class="font-bold" x-text="'-$' + calcularDescuentoGeneralMonto()"></span>
+                                <span class="font-bold" x-text="'-C$ ' + calcularDescuentoGeneralMonto()"></span>
                             </div>
                             <div class="flex justify-between font-extrabold text-xs border-t border-slate-300 pt-0.5">
                                 <span>TOTAL:</span>
-                                <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
+                                <span class="text-emerald-700" x-text="'C$ ' + calcularTotalGeneral()"></span>
                             </div>
                             <div class="flex justify-between text-[8px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
                                 <span>RECIBIDO:</span>
-                                <span x-text="'$' + parseFloat(formData.monto_recibido).toFixed(2)"></span>
+                                <span x-text="'C$ ' + parseFloat(formData.monto_recibido).toFixed(2)"></span>
                             </div>
                             <div class="flex justify-between text-[8px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
                                 <span>CAMBIO:</span>
-                                <span class="font-bold text-emerald-700" x-text="'$' + calcularVuelto()"></span>
+                                <span class="font-bold text-emerald-700" x-text="'C$ ' + calcularVuelto()"></span>
                             </div>
                         </div>
 
@@ -2291,12 +2557,12 @@ function posVentaData() {
             <!-- Modal Footer -->
             <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0 rounded-b-2xl">
                 <div>
-                    <span x-show="!esValidoCobro()" class="text-xs text-rose-600 font-bold flex items-center space-x-1">
-                        <span>⚠️</span>
+                    <span x-show="!esValidoCobro()" class="text-xs text-rose-600 font-bold flex items-center space-x-1.5">
+                        <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         <span x-show="formData.metodo_pago === 'efectivo' && (!formData.monto_recibido || parseFloat(formData.monto_recibido) < parseFloat(calcularTotalGeneral()))">Ingrese un monto recibido válido</span>
-                        <span x-show="tieneProductosRx() && !formData.receta_id && recetaTab === 'vincular'">Vincule una receta para continuar</span>
-                        <span x-show="tieneProductosRx() && recetaTab === 'crear' && (!recetaNueva.medico_nombre || !recetaNueva.medico_colegiatura)">Complete los datos del médico</span>
-                        <span x-show="tieneProductosRx() && recetaTab === 'omitir' && (!recetaOmisionConfirmada || !formData.receta_omision_motivo)">Confirme la justificación de omisión</span>
+                        <span x-show="tieneControlados() && recetaTab === 'datos' && (!controlData.paciente_nombre || !controlData.medico_nombre)">Complete los datos del paciente y médico prescriptor</span>
+                        <span x-show="tieneControlados() && recetaTab === 'vincular' && !formData.receta_id">Seleccione una receta clínica para vincular</span>
+                        <span x-show="tieneControlados() && recetaTab === 'omitir' && (!recetaOmisionConfirmada || !formData.receta_omision_motivo)">Confirme el motivo de omisión justificada</span>
                     </span>
                 </div>
 
@@ -2304,7 +2570,7 @@ function posVentaData() {
                     <button type="button" 
                             @click="modalCobro = false" 
                             class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
-                        Volver
+                        Cancelar
                     </button>
                     <button type="button" 
                             @click="procesarVentaFinal()"
@@ -2317,14 +2583,16 @@ function posVentaData() {
             </div>
         </div>
     </div>
+    </template>
 
 
     <!-- ============================================================== -->
     <!-- MODAL 2: VISTA PREVIA DEDICADA DE TICKET TÉRMICO (MODAL F7)   -->
     <!-- ============================================================== -->
+    <template x-teleport="body">
     <div x-show="modalTicketPreview" 
-         x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         x-cloak
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
          @keydown.escape.window="modalTicketPreview = false"
          @click.self="modalTicketPreview = false">
         <div @click.stop
@@ -2338,7 +2606,7 @@ function posVentaData() {
                     <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-xs"></span>
                     <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Vista Previa de Impresión Térmica</h3>
                 </div>
-                <button type="button" @click="modalTicketPreview = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                <button type="button" @click="modalTicketPreview = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-lg">&times;</button>
             </div>
 
             <div class="p-5 bg-slate-100 dark:bg-slate-950 flex justify-center">
@@ -2374,9 +2642,9 @@ function posVentaData() {
                                 <tr class="border-b border-slate-100">
                                     <td class="py-1">
                                         <div class="font-bold" x-text="item.nombre"></div>
-                                        <div class="text-[9px] text-slate-500" x-text="(item.presentacion_nombre || 'Unidad') + ' x' + item.cantidad + ' ($' + parseFloat(item.precio_unitario).toFixed(2) + ')'"></div>
+                                        <div class="text-[9px] text-slate-500" x-text="(item.presentacion_nombre || 'Unidad') + ' x' + item.cantidad + ' (C$ ' + parseFloat(item.precio_unitario).toFixed(2) + ')'"></div>
                                     </td>
-                                    <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
+                                    <td class="py-1 text-right font-bold" x-text="'C$ ' + calcularSubtotal(item)"></td>
                                 </tr>
                             </template>
                             <tr x-show="items.length === 0">
@@ -2392,15 +2660,15 @@ function posVentaData() {
                     <div class="space-y-0.5 text-right text-[11px]">
                         <div class="flex justify-between">
                             <span>SUBTOTAL:</span>
-                            <span class="font-bold" x-text="'$' + calcularSubtotalGeneral()"></span>
+                            <span class="font-bold" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                         </div>
                         <div class="flex justify-between text-rose-600" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
                             <span>DESCUENTO:</span>
-                            <span class="font-bold" x-text="'-$' + calcularDescuentoGeneralMonto()"></span>
+                            <span class="font-bold" x-text="'-C$ ' + calcularDescuentoGeneralMonto()"></span>
                         </div>
                         <div class="flex justify-between font-black text-sm border-t border-slate-300 pt-1">
                             <span>TOTAL:</span>
-                            <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
+                            <span class="text-emerald-700" x-text="'C$ ' + calcularTotalGeneral()"></span>
                         </div>
                     </div>
 
@@ -2421,14 +2689,16 @@ function posVentaData() {
             </div>
         </div>
     </div>
+    </template>
 
 
     <!-- ============================================================== -->
     <!-- MODAL 3: INFORMACIÓN DE PRODUCTO & DESGLOSE DE LOTES / UBICACIÓN -->
     <!-- ============================================================== -->
+    <template x-teleport="body">
     <div x-show="modalInfoProducto" 
-         x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         x-cloak
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
          @keydown.escape.window="modalInfoProducto = false"
          @click.self="modalInfoProducto = false">
         <div @click.stop
@@ -2450,14 +2720,14 @@ function posVentaData() {
                                 <p class="text-[11px] text-slate-500" x-text="productoInfo.principio_activo || 'Sin principio activo'"></p>
                             </div>
                         </div>
-                        <button type="button" @click="modalInfoProducto = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                        <button type="button" @click="modalInfoProducto = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-lg">&times;</button>
                     </div>
 
                     <div class="p-6 space-y-4">
                         <!-- Ubicación Física Destacada -->
                         <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
                             <div class="flex items-center space-x-2">
-                                <span class="text-lg">📍</span>
+                                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 <div>
                                     <span class="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-300 block">Ubicación Física en Farmacia:</span>
                                     <span class="text-xs font-black text-emerald-900 dark:text-emerald-200" x-text="productoInfo.ubicacion || 'Sin estantería asignada'"></span>
@@ -2531,14 +2801,16 @@ function posVentaData() {
             </template>
         </div>
     </div>
+    </template>
 
 
     <!-- ============================================================== -->
     <!-- MODAL 4: REGISTRAR NUEVO CLIENTE RÁPIDO                        -->
     <!-- ============================================================== -->
+    <template x-teleport="body">
     <div x-show="modalNuevoCliente" 
-         x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         x-cloak
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
          @keydown.escape.window="modalNuevoCliente = false"
          @click.self="modalNuevoCliente = false">
         <div @click.stop
@@ -2554,7 +2826,7 @@ function posVentaData() {
                     </div>
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente Rápido</h3>
                 </div>
-                <button type="button" @click="modalNuevoCliente = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                <button type="button" @click="modalNuevoCliente = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-lg">&times;</button>
             </div>
 
             <div class="p-6 space-y-3">
@@ -2616,18 +2888,20 @@ function posVentaData() {
             </div>
         </div>
     </div>
+    </template>
 
     <!-- MODAL DE RESILIENCIA DE RED Y REINTENTO SEGURO (ANTI-PARPADEO WI-FI) -->
+    <template x-teleport="body">
     <div x-show="modalErrorRed" 
+         x-cloak
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4"
-         style="display: none;">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-amber-300 dark:border-amber-700/80 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+         class="fixed inset-0 z-[9999] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-amber-300 dark:border-amber-700/80 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto">
             <div class="p-6 text-center">
                 <div class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 mx-auto flex items-center justify-center mb-4 ring-8 ring-amber-50 dark:ring-amber-950/30">
                     <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -2671,22 +2945,24 @@ function posVentaData() {
             </div>
         </div>
     </div>
+    </template>
 
     {{-- ─── MODAL MEDICAMENTOS CONTROLADOS MINSA ─── --}}
+    <template x-teleport="body">
     <div x-show="modalControlados"
+         x-cloak
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4"
-         style="display:none;">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-rose-400 dark:border-rose-700 shadow-2xl max-w-xl w-full overflow-hidden">
+         class="fixed inset-0 z-[9999] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-rose-400 dark:border-rose-700 shadow-2xl max-w-xl w-full overflow-hidden my-auto">
             {{-- Header --}}
             <div class="px-6 py-4 bg-rose-600 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                    <span class="text-2xl">🔴</span>
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
                 <div>
                     <h3 class="text-base font-extrabold text-white leading-tight">Registro Obligatorio MINSA</h3>
@@ -2697,16 +2973,13 @@ function posVentaData() {
             <div class="p-6 space-y-4">
                 {{-- Productos controlados en la venta --}}
                 <div class="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3">
-                    <p class="text-xs font-bold text-rose-700 dark:text-rose-400 mb-2">Medicamentos a registrar:</p>
-                    <template x-for="it in items.filter(i => i.nivel_controlado && parseInt(i.nivel_controlado) > 0)" :key="it.id">
-                        <div class="flex items-center gap-2 py-1 border-b border-rose-100 dark:border-rose-900 last:border-0">
+                    <p class="text-xs font-bold text-purple-700 dark:text-purple-400 mb-2">Medicamentos a registrar:</p>
+                    <template x-for="it in items.filter(i => i.tipo_control === 'controlado' || i.requiere_receta)" :key="it.id || it.uid">
+                        <div class="flex items-center gap-2 py-1 border-b border-purple-100 dark:border-purple-900 last:border-0">
                             <span class="text-xs font-medium text-slate-800 dark:text-slate-200" x-text="it.nombre"></span>
-                            <span :class="{
-                                'bg-amber-100 text-amber-700': it.nivel_controlado == 1,
-                                'bg-orange-100 text-orange-700': it.nivel_controlado == 2,
-                                'bg-rose-100 text-rose-700': it.nivel_controlado == 3,
-                            }" class="text-[9px] font-bold px-1.5 py-0.5 rounded ml-auto"
-                            x-text="['','Nivel I','Nivel II','Nivel III'][it.nivel_controlado] || ''"></span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ml-auto bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300">
+                                Controlado / Rx
+                            </span>
                         </div>
                     </template>
                 </div>
@@ -2765,7 +3038,7 @@ function posVentaData() {
                     <button type="button"
                             @click="guardarRegistrosControlados()"
                             :disabled="!controlData.paciente_nombre.trim() || !controlData.medico_nombre.trim() || guardandoControlados"
-                            class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition inline-flex items-center gap-2">
+                            class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition inline-flex items-center gap-2 cursor-pointer">
                         <svg x-show="guardandoControlados" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -2776,6 +3049,213 @@ function posVentaData() {
             </div>
         </div>
     </div>
+    </template>
+
+    <!-- ============================================================== -->
+    <!-- MODAL: BUSCAR Y CARGAR RECETA MÉDICA DIRECTAMENTE (F8)         -->
+    <!-- ============================================================== -->
+    <template x-teleport="body">
+    <div x-show="modalCargarReceta" 
+         x-cloak
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
+         @keydown.escape.window="modalCargarReceta = false"
+         @click.self="modalCargarReceta = false">
+        <div @click.stop
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-purple-200 dark:border-slate-800 my-auto flex flex-col max-h-[90vh]">
+            
+            <!-- Header -->
+            <div class="px-5 py-3.5 border-b border-purple-100 dark:border-slate-800 flex items-center justify-between bg-purple-50/80 dark:bg-slate-800/60 shrink-0">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>Vincular y Cargar Receta Médica</span>
+                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-300">F8</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Busca una receta clínica y auto-rellena el carrito con los medicamentos y datos del médico/paciente.</p>
+                    </div>
+                </div>
+                <button type="button" @click="modalCargarReceta = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-lg cursor-pointer">&times;</button>
+            </div>
+
+            <!-- Body: Search bar & recipe list -->
+            <div class="p-4 space-y-3 flex-1 overflow-y-auto">
+                <!-- Search Input -->
+                <div class="relative">
+                    <input type="text"
+                           x-model="recetaBusqueda"
+                           @input.debounce.300ms="buscarRecetasAsync()"
+                           placeholder="Buscar por N° Receta, Paciente, Cédula o Médico prescriptor..."
+                           class="w-full pl-9 pr-24 py-2 bg-slate-50 dark:bg-slate-800 border border-purple-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-purple-500 font-medium">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-purple-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+                        <span x-show="buscandoRecetas" class="text-[10px] text-purple-600 font-bold animate-pulse mr-1">Buscando...</span>
+                        <button type="button" 
+                                @click="recetaBusqueda = ''; buscarRecetasAsync();"
+                                x-show="recetaBusqueda.length > 0" 
+                                class="text-slate-400 hover:text-slate-600 text-xs font-bold mr-1 cursor-pointer">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Recetas List -->
+                <div class="space-y-2">
+                    <template x-for="rec in recetasEncontradas" :key="rec.id">
+                        <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 hover:border-purple-400 dark:hover:border-purple-600 shadow-xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="min-w-0 flex-1 space-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-mono font-black text-xs text-purple-700 dark:text-purple-400" x-text="'#' + rec.numero_receta"></span>
+                                    <span class="text-slate-300 dark:text-slate-600">&bull;</span>
+                                    <span class="font-bold text-xs text-slate-900 dark:text-white" x-text="rec.paciente_nombre"></span>
+                                    <span x-show="rec.paciente_documento" class="text-[10px] text-slate-500 font-mono" x-text="'(' + rec.paciente_documento + ')'"></span>
+                                </div>
+                                <div class="text-[11px] text-slate-600 dark:text-slate-300">
+                                    <span>Dr. <strong x-text="rec.medico_nombre"></strong></span>
+                                    <span x-show="rec.medico_colegiatura" class="text-slate-500" x-text="' &bull; Reg: ' + rec.medico_colegiatura"></span>
+                                    <span x-show="rec.medico_especialidad" class="text-slate-500" x-text="' (' + rec.medico_especialidad + ')'"></span>
+                                </div>
+                                <div class="text-[10px] text-purple-800 dark:text-purple-300 font-medium bg-purple-50 dark:bg-purple-950/40 px-2 py-1 rounded-lg border border-purple-100 dark:border-purple-900/60">
+                                    <span class="font-bold">Medicamentos prescritos:</span>
+                                    <span x-text="rec.detalles ? rec.detalles.map(d => (d.producto?.nombre || 'Medicamento') + ' [' + (d.cantidad_recetada - d.cantidad_dispensada) + ' u. pend.]').join(', ') : 'Sin detalle'"></span>
+                                </div>
+                            </div>
+                            <button type="button" 
+                                    @click="importarRecetaAlCarrito(rec)"
+                                    class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-1.5 shrink-0 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                <span>Cargar al Carrito</span>
+                            </button>
+                        </div>
+                    </template>
+                    <div x-show="!buscandoRecetas && recetasEncontradas.length === 0" class="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                        No se encontraron recetas médicas vigentes con saldo pendiente para el criterio de búsqueda.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between shrink-0">
+                <a href="{{ route('recetas.create') }}" target="_blank" class="text-xs text-purple-600 dark:text-purple-400 font-bold hover:underline flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span>Registrar nueva receta en expediente</span>
+                </a>
+                <button type="button" @click="modalCargarReceta = false" class="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    </template>
+
+
+    {{-- ═══ Modal: Stock Insuficiente — Lote Alterno ═══ --}}
+    <template x-teleport="body">
+    <div x-show="modalStockInsuficiente" x-cloak
+         class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
+         @keydown.escape.window="modalStockInsuficiente = false">
+        <div @click.stop x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl border border-slate-300 dark:border-slate-800 overflow-hidden">
+
+            {{-- Header --}}
+            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Stock insuficiente en lote</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400" x-text="stockInsuficienteData.nombre"></p>
+                    </div>
+                </div>
+                <button @click="modalStockInsuficiente = false"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    &times;
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="px-5 py-4 space-y-4">
+                {{-- Info del lote actual --}}
+                <div class="bg-rose-50 dark:bg-rose-950/40 rounded-xl p-3.5 border border-rose-200 dark:border-rose-800 text-xs space-y-1.5">
+                    <div class="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Lote actual sin suficiente stock
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-[11px]">
+                        <div class="bg-white/60 dark:bg-slate-900/40 rounded-lg p-2 text-center">
+                            <div class="font-mono font-bold text-slate-800 dark:text-slate-200 truncate" x-text="stockInsuficienteData.loteActual"></div>
+                            <div class="text-slate-500 dark:text-slate-400 mt-0.5">Lote</div>
+                        </div>
+                        <div class="bg-white/60 dark:bg-slate-900/40 rounded-lg p-2 text-center">
+                            <div class="font-bold text-rose-600 dark:text-rose-400" x-text="stockInsuficienteData.stockActual + ' u.'"></div>
+                            <div class="text-slate-500 dark:text-slate-400 mt-0.5">Disponible</div>
+                        </div>
+                        <div class="bg-white/60 dark:bg-slate-900/40 rounded-lg p-2 text-center">
+                            <div class="font-bold text-amber-700 dark:text-amber-400" x-text="stockInsuficienteData.solicitado + ' u.'"></div>
+                            <div class="text-slate-500 dark:text-slate-400 mt-0.5">Solicitado</div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Lotes alternos --}}
+                <div>
+                    <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                        Lotes disponibles con stock suficiente
+                    </p>
+
+                    <template x-if="stockInsuficienteData.lotesAlternos.length > 0">
+                        <div class="space-y-2">
+                            <template x-for="lote in stockInsuficienteData.lotesAlternos" :key="lote.id">
+                                <button type="button" @click="cambiarLoteDesdeModal(lote)"
+                                        class="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 rounded-xl transition group text-left">
+                                    <div class="text-xs">
+                                        <span class="font-bold text-slate-900 dark:text-white font-mono" x-text="lote.numero_lote"></span>
+                                        <span x-show="lote.fecha_vencimiento" class="text-slate-500 dark:text-slate-400 ml-2 text-[10px]"
+                                              x-text="'Vence: ' + (lote.fecha_vencimiento || '')"></span>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+                                              x-text="lote.stock_actual + ' u. disp.'"></span>
+                                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template x-if="stockInsuficienteData.lotesAlternos.length === 0">
+                        <div class="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-center text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/>
+                            </svg>
+                            <p class="font-semibold text-slate-600 dark:text-slate-300">Sin lotes alternos disponibles</p>
+                            <p class="text-[10px] mt-1">No hay otro lote con suficiente stock para esta cantidad.<br>Reduce la cantidad solicitada o espera una reposición.</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex justify-end">
+                <button type="button" @click="modalStockInsuficiente = false"
+                        class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    Ajustar cantidad manualmente
+                </button>
+            </div>
+        </div>
+    </div>
+    </template>
 
 </div>
 @endsection

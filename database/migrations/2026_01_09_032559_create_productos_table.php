@@ -25,7 +25,7 @@ return new class extends Migration
             $table->foreignId('laboratorio_id')->nullable()->constrained('laboratorios')->nullOnDelete();
             
             $table->string('registro_sanitario', 100)->nullable();
-            $table->enum('tipo_control', ['venta_libre', 'receta_medica', 'receta_retenida'])->default('venta_libre');
+            $table->enum('tipo_control', ['venta_libre', 'controlado'])->default('venta_libre');
             
             $table->decimal('precio_compra', 10, 2)->default(0);
             $table->decimal('precio_venta', 10, 2);

@@ -136,8 +136,8 @@
     <div class="info-grid">
         <div class="card">
             <h4>DATOS DEL PROVEEDOR</h4>
-            <div><strong>Empresa:</strong> {{ $orden->proveedor->nombre_empresa }}</div>
-            <div><strong>Contacto:</strong> {{ $orden->proveedor->nombre_contacto ?? 'Atención a Ventas' }}</div>
+            <div><strong>Empresa:</strong> {{ $orden->proveedor->nombre ?? $orden->proveedor->nombre_empresa }}</div>
+            <div><strong>Contacto:</strong> {{ $orden->proveedor->contacto ?? $orden->proveedor->nombre_contacto ?? 'Atención a Ventas' }}</div>
             <div><strong>Teléfono:</strong> {{ $orden->proveedor->telefono ?? 'N/A' }}</div>
             <div><strong>Email:</strong> {{ $orden->proveedor->email ?? 'N/A' }}</div>
         </div>

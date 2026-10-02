@@ -101,6 +101,30 @@ class InventarioService
                 'fecha_movimiento' => now(),
             ]);
 
+            // Asentar en Libro Oficial MINSA si el producto es controlado
+            if ($producto->esControlado()) {
+                $tipoMovCtrl = $diferencia > 0
+                    ? \App\Models\RegistroVentaControlado::TIPO_AJUSTE_INGRESO
+                    : \App\Models\RegistroVentaControlado::TIPO_AJUSTE_EGRESO;
+
+                $motivoTexto = $diferencia > 0
+                    ? "Ajuste Físico Positivo (+) [{$subtipo}]: " . trim($data['motivo'])
+                    : "Baja por Ajuste Físico (-) [{$subtipo}]: " . trim($data['motivo']);
+
+                \App\Models\RegistroVentaControlado::create([
+                    'tipo_movimiento'          => $tipoMovCtrl,
+                    'movimiento_inventario_id' => $movimiento->id,
+                    'producto_id'              => $producto->id,
+                    'lote_id'                  => $lote->id,
+                    'nivel_controlado'         => 1,
+                    'paciente_nombre'          => 'Regencia Farmacéutica / Auditoría',
+                    'motivo_omision'           => $motivoTexto,
+                    'cantidad'                 => abs($diferencia),
+                    'unidad'                   => 'unidad',
+                    'user_id'                  => $userId,
+                ]);
+            }
+
             Log::info('Ajuste de inventario procesado en Kardex', [
                 'movimiento_id'   => $movimiento->id,
                 'lote_id'         => $lote->id,

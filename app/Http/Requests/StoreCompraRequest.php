@@ -15,6 +15,7 @@ class StoreCompraRequest extends FormRequest
     {
         return [
             'proveedor_id'                        => ['required', 'integer', 'exists:proveedores,id'],
+            'orden_compra_id'                     => ['nullable', 'integer', 'exists:ordenes_compras,id'],
             'numero_comprobante'                  => ['nullable', 'string', 'max:50'],
             'fecha'                               => ['required', 'date'],
             'condicion_pago'                      => ['nullable', 'string', 'in:contado,credito'],

@@ -24,24 +24,14 @@
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $producto->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
                     {{ $producto->activo ? 'Activo' : 'Inactivo' }}
                 </span>
-                @if(($producto->nivel_controlado ?? 0) > 0)
-                    @if($producto->nivel_controlado == 1)
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-600 text-white shadow-xs">
-                        🚨 Nivel I (Psicotrópico - MINSA)
+                @if($producto->esControlado())
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-700 text-white shadow-xs">
+                        🟣 Controlado / Con Receta (MINSA)
                     </span>
-                    @elseif($producto->nivel_controlado == 2)
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-700 text-white shadow-xs">
-                        🚨 Nivel II (Estupefaciente - MINSA)
+                @else
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-xs">
+                        🟢 Venta Libre (OTC)
                     </span>
-                    @elseif($producto->nivel_controlado == 3)
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-700 text-white shadow-xs">
-                        🚨 Nivel III (Alto Control - MINSA)
-                    </span>
-                    @endif
-                @elseif($producto->requiere_receta)
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
-                    Rx Receta Obligatoria
-                </span>
                 @endif
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -87,7 +77,7 @@
         </div>
     </div>
 
-    @if(($producto->nivel_controlado ?? 0) > 0)
+    @if($producto->esControlado())
     <!-- Banner Regulatorio MINSA -->
     <div class="rounded-2xl p-4 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-start space-x-3">
@@ -97,24 +87,21 @@
             <div>
                 <div class="flex items-center space-x-2">
                     <h3 class="text-xs font-bold text-purple-950 dark:text-purple-200">
-                        Medicamento Bajo Fiscalización Sanitaria Oficial (MINSA)
+                        Medicamento Bajo Control y Fiscalización Sanitaria (MINSA)
                     </h3>
                     <span class="px-2 py-0.5 rounded text-[10px] font-black bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100 uppercase">
-                        @if($producto->nivel_controlado == 1) Nivel I - Psicotrópico
-                        @elseif($producto->nivel_controlado == 2) Nivel II - Estupefaciente
-                        @elseif($producto->nivel_controlado == 3) Nivel III - Alto Control
-                        @endif
+                        Controlado
                     </span>
                 </div>
                 <p class="text-xs text-purple-800 dark:text-purple-300 mt-0.5">
-                    Toda dispensación en caja POS requiere retención obligatoria de receta médica, datos completos del paciente y registro profesional MINSA del médico.
+                    Toda dispensación en caja POS genera trazabilidad en la bitácora oficial MINSA con datos clínicos del médico/paciente o motivo de omisión.
                 </p>
             </div>
         </div>
         <div class="shrink-0 flex items-center gap-2">
             <a href="{{ route('controlados.libro') }}" class="px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-2xs transition flex items-center space-x-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                <span>Libro de Control</span>
+                <span>Libro Oficial</span>
             </a>
         </div>
     </div>
@@ -292,10 +279,8 @@
                 <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
                     <span class="text-[10px] text-slate-400 uppercase font-semibold block">Régimen de Control</span>
                     <span class="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                        @if($producto->tipo_control === 'venta_libre') Venta Libre Sin Receta
-                        @elseif($producto->tipo_control === 'receta_medica') Venta Bajo Receta Médica
-                        @elseif($producto->tipo_control === 'receta_retenida') Psicotrópico / Receta Retenida
-                        @else {{ ucfirst(str_replace('_', ' ', $producto->tipo_control)) }}
+                        @if($producto->esControlado()) 🟣 Controlado / Con Receta Médica (MINSA)
+                        @else 🟢 Venta Libre (OTC)
                         @endif
                     </span>
                 </div>
@@ -544,11 +529,8 @@
 </div>
 
 <!-- Modal Ficha Clínica IA -->
-<div id="modalProductoIA" class="hidden fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity" onclick="cerrarModalProductoIA()"></div>
-
-        <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200 dark:border-slate-800">
+<div id="modalProductoIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalProductoIA()">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
             <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 flex items-center justify-between">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
@@ -638,7 +620,6 @@
                 </button>
             </div>
         </div>
-    </div>
 </div>
 
 @push('scripts')

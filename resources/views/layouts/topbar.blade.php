@@ -29,7 +29,9 @@
 
                         <!-- Dirty Draft Indicator -->
                         <template x-if="hasDirtyDraft(tab)">
-                            <span title="Tiene cambios sin guardar" class="text-[10px] leading-none text-amber-500">✏️</span>
+                            <span title="Tiene cambios sin guardar" class="text-amber-500 inline-flex items-center">
+                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            </span>
                         </template>
 
                         <!-- Close Tab Button (Hidden on pinned dashboard) -->
@@ -51,7 +53,8 @@
     <div class="flex items-center space-x-2 shrink-0 pl-2">
         <!-- Date / Shift info -->
         <div class="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 shrink-0">
-            <span>📅 {{ now()->translatedFormat('d M, Y') }}</span>
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span>{{ now()->translatedFormat('d M, Y') }}</span>
         </div>
 
         <!-- Búsqueda Global Ctrl+K -->
@@ -144,7 +147,7 @@
                             <!-- Urgency Dot / Icon -->
                             <div class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mr-2.5"
                                  :class="item.urgencia === 'critica' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400' : (item.urgencia === 'alta' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400')">
-                                <span class="text-xs font-bold" x-text="item.urgencia === 'critica' ? '!' : (item.urgencia === 'alta' ? '⚠️' : 'ℹ️')"></span>
+                                <span class="text-xs font-bold" x-text="item.urgencia === 'critica' ? '!' : (item.urgencia === 'alta' ? '!' : 'i')"></span>
                             </div>
 
                             <div class="flex-1 min-w-0">

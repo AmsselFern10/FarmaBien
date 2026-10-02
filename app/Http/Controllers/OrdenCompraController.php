@@ -34,7 +34,7 @@ class OrdenCompraController extends Controller
             $query->where(function ($q) use ($buscar) {
                 $q->where('numero_orden', 'like', "%{$buscar}%")
                   ->orWhereHas('proveedor', function ($qp) use ($buscar) {
-                      $qp->where('nombre_empresa', 'like', "%{$buscar}%");
+                      $qp->where('nombre', 'like', "%{$buscar}%");
                   });
             });
         }
@@ -51,14 +51,14 @@ class OrdenCompraController extends Controller
         $totalMonto = (clone $query)->where('estado', '!=', 'cancelada')->sum('total');
 
         $ordenes = $query->paginate(15)->withQueryString();
-        $proveedores = Proveedor::activos()->orderBy('nombre_empresa')->get();
+        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
 
         return view('compras.ordenes.index', compact('ordenes', 'totalOrdenes', 'totalMonto', 'proveedores'));
     }
 
     public function create(Request $request)
     {
-        $proveedores = Proveedor::activos()->orderBy('nombre_empresa')->get();
+        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
         $productos = Producto::activos()->with(['laboratorio', 'categoria'])->orderBy('nombre')->get();
 
         // Si viene desde sugerencias de reorden

@@ -8,11 +8,33 @@
     ventaId: null,
     comprobanteInfo: '',
     motivoAnulacion: '',
+    modalRecetaPOS: false,
+    busquedaReceta: '',
+    recetasDisponibles: [],
+    buscandoRecetas: false,
     abrirModalAnular(id, info) {
         this.ventaId = id;
         this.comprobanteInfo = info;
         this.motivoAnulacion = '';
         this.modalAnular = true;
+    },
+    abrirModalRecetaPOS() {
+        this.modalRecetaPOS = true;
+        this.busquedaReceta = '';
+        this.buscarRecetasPOS();
+    },
+    async buscarRecetasPOS() {
+        this.buscandoRecetas = true;
+        try {
+            const res = await fetch(`{{ route('api.recetas.buscar') }}?q=${encodeURIComponent(this.busquedaReceta)}`);
+            if (res.ok) {
+                this.recetasDisponibles = await res.json();
+            }
+        } catch (e) {
+            console.error('Error buscando recetas:', e);
+        } finally {
+            this.buscandoRecetas = false;
+        }
     }
 }">
 
@@ -37,7 +59,7 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-2.5 shrink-0">
+        <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
             <button @click="$dispatch('toggle-pos-fullscreen')"
                     type="button"
                     title="Modo Pantalla Completa"
@@ -48,6 +70,12 @@
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
             @can('realizar ventas')
+            <button type="button"
+                    @click="abrirModalRecetaPOS()"
+                    class="inline-flex items-center space-x-2 px-3.5 py-2 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900 border border-purple-300 dark:border-purple-800 text-purple-800 dark:text-purple-300 text-xs font-bold rounded-xl shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Dispensar Receta</span>
+            </button>
             <a href="{{ route('ventas.create') }}" 
                class="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -64,10 +92,10 @@
         <!-- Total Ventas -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Operaciones</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Operaciones</p>
                 <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($stats['total'] ?? 0) }}</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             </div>
         </div>
@@ -75,10 +103,10 @@
         <!-- Completadas -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Ventas Exitosas</p>
-                <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ number_format($stats['completadas'] ?? 0) }}</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Ventas Exitosas</p>
+                <p class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400 mt-0.5">{{ number_format($stats['completadas'] ?? 0) }}</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             </div>
         </div>
@@ -86,10 +114,10 @@
         <!-- Anuladas -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Operaciones Anuladas</p>
-                <p class="text-xl font-bold text-rose-600 dark:text-rose-400 mt-0.5">{{ number_format($stats['anuladas'] ?? 0) }}</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Operaciones Anuladas</p>
+                <p class="text-xl font-extrabold text-rose-900 dark:text-rose-400 mt-0.5">{{ number_format($stats['anuladas'] ?? 0) }}</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-400 border border-rose-300 dark:border-rose-800 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
             </div>
         </div>
@@ -97,10 +125,10 @@
         <!-- Ingresos Totales -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Ingresos</p>
-                <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">${{ number_format($stats['ingresos'] ?? 0, 2) }}</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Ingresos</p>
+                <p class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400 mt-0.5 font-mono">C$ {{ number_format($stats['ingresos'] ?? 0, 2) }}</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
@@ -169,7 +197,7 @@
                        class="w-1/2 px-2 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                        placeholder="Hasta">
                 <button type="submit" 
-                        class="p-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition inline-flex items-center justify-center shrink-0">
+                        class="p-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center justify-center shrink-0 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                 </button>
                 @if(request()->hasAny(['buscar', 'estado', 'tipo_comprobante', 'orden', 'fecha_desde', 'fecha_hasta']))
@@ -206,10 +234,10 @@
                         <!-- Comprobante -->
                         <td class="px-5 py-3.5">
                             <div class="flex items-center space-x-2">
-                                <a href="{{ route('ventas.show', $venta) }}" class="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                                <a href="{{ route('ventas.show', $venta) }}" class="font-bold text-emerald-900 dark:text-emerald-400 hover:underline">
                                     #{{ str_pad($venta->id, 5, '0', STR_PAD_LEFT) }}
                                 </a>
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase {{ $venta->tipo_comprobante === 'factura' ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800' : ($venta->tipo_comprobante === 'boleta' ? 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700') }}">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase {{ $venta->tipo_comprobante === 'factura' ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800' : ($venta->tipo_comprobante === 'boleta' ? 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-900 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700') }}">
                                     {{ $venta->tipo_comprobante }}
                                 </span>
                             </div>
@@ -244,11 +272,11 @@
                         </td>
 
                         <!-- Total -->
-                        <td class="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white">
-                            ${{ number_format($venta->total, 2) }}
+                        <td class="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white font-mono">
+                            C$ {{ number_format($venta->total, 2) }}
                             @if($venta->descuento > 0)
-                                <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
-                                    Desc: -${{ number_format($venta->descuento, 2) }}
+                                <div class="text-[10px] text-emerald-900 dark:text-emerald-400 font-bold">
+                                    Desc: -C$ {{ number_format($venta->descuento, 2) }}
                                 </div>
                             @endif
                         </td>
@@ -264,16 +292,16 @@
                         <td class="px-5 py-3.5 text-center">
                             @if($venta->estado === 'completada')
                                 @if($venta->fueModificada())
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                                         Modificada
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                                         Completada
                                     </span>
                                 @endif
                             @elseif($venta->estado === 'anulada')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
                                     Anulada
                                 </span>
                             @else
@@ -294,7 +322,7 @@
                                 <!-- Ver Ficha -->
                                 <a href="{{ route('ventas.show', $venta) }}" 
                                    title="Ver Detalle de Venta"
-                                   class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800/60 inline-flex items-center justify-center transition shadow-2xs">
+                                   class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-300 dark:border-sky-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
 
@@ -302,7 +330,7 @@
                                 <a href="{{ route('ventas.ticket', $venta) }}" 
                                    target="_blank"
                                    title="Imprimir Ticket Térmico"
-                                   class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 inline-flex items-center justify-center transition shadow-2xs">
+                                   class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-300 dark:border-indigo-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 </a>
 
@@ -311,7 +339,7 @@
                                     @can('realizar ventas')
                                     <a href="{{ route('ventas.edit', $venta) }}" 
                                        title="Editar Venta"
-                                       class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs">
+                                       class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                     </a>
                                     @endcan
@@ -323,7 +351,7 @@
                                     <button type="button" 
                                             @click="abrirModalAnular({{ $venta->id }}, '{{ $venta->numero_comprobante ?? '#' . $venta->id }}')" 
                                             title="Anular Venta"
-                                            class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
+                                            class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                     </button>
                                     @endcan
@@ -364,9 +392,10 @@
     </div>
 
     <!-- Modal Anular Venta -->
+    <template x-teleport="body">
     <div x-show="modalAnular" 
          x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
          aria-labelledby="modal-title" 
          role="dialog" 
          aria-modal="true"
@@ -412,17 +441,114 @@
                 <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-2">
                     <button type="button" 
                             @click="modalAnular = false" 
-                            class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            class="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" 
                             :disabled="!motivoAnulacion || motivoAnulacion.trim().length < 5"
-                            class="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition">
+                            class="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer">
                         Confirmar Anulación
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    </template>
+
+    <!-- ============================================================== -->
+    <!-- MODAL: SELECCIONAR RECETA PARA DISPENSAR EN POS               -->
+    <!-- ============================================================== -->
+    <template x-teleport="body">
+    <div x-show="modalRecetaPOS" 
+         x-cloak 
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
+         @keydown.escape.window="modalRecetaPOS = false"
+         @click.self="modalRecetaPOS = false">
+        <div @click.stop
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-purple-200 dark:border-slate-800 my-auto flex flex-col max-h-[90vh]">
+            
+            <!-- Header -->
+            <div class="px-5 py-3.5 border-b border-purple-100 dark:border-slate-800 flex items-center justify-between bg-purple-50/80 dark:bg-slate-800/60 shrink-0">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Dispensar Receta Médica en POS</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Selecciona una receta vigente con saldo pendiente para iniciar la venta automáticamente en el POS.</p>
+                    </div>
+                </div>
+                <button type="button" @click="modalRecetaPOS = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-lg cursor-pointer">&times;</button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3 flex-1 overflow-y-auto">
+                <!-- Search Input -->
+                <div class="relative">
+                    <input type="text"
+                           x-model="busquedaReceta"
+                           @input.debounce.300ms="buscarRecetasPOS()"
+                           placeholder="Buscar por N° Receta, Paciente, Cédula o Médico prescriptor..."
+                           class="w-full pl-9 pr-24 py-2 bg-slate-50 dark:bg-slate-800 border border-purple-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-purple-500 font-medium">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-purple-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+                        <span x-show="buscandoRecetas" class="text-[10px] text-purple-600 font-bold animate-pulse mr-1">Buscando...</span>
+                        <button type="button" 
+                                @click="busquedaReceta = ''; buscarRecetasPOS();"
+                                x-show="busquedaReceta.length > 0" 
+                                class="text-slate-400 hover:text-slate-600 text-xs font-bold mr-1 cursor-pointer">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Recetas List -->
+                <div class="space-y-2">
+                    <template x-for="rec in recetasDisponibles" :key="rec.id">
+                        <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 hover:border-purple-400 dark:hover:border-purple-600 shadow-xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="min-w-0 flex-1 space-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-mono font-black text-xs text-purple-700 dark:text-purple-400" x-text="'#' + rec.numero_receta"></span>
+                                    <span class="text-slate-300 dark:text-slate-600">&bull;</span>
+                                    <span class="font-bold text-xs text-slate-900 dark:text-white" x-text="rec.paciente_nombre"></span>
+                                    <span x-show="rec.paciente_documento" class="text-[10px] text-slate-500 font-mono" x-text="'(' + rec.paciente_documento + ')'"></span>
+                                </div>
+                                <div class="text-[11px] text-slate-600 dark:text-slate-300">
+                                    <span>Dr. <strong x-text="rec.medico_nombre"></strong></span>
+                                    <span x-show="rec.medico_colegiatura" class="text-slate-500" x-text="' &bull; Reg: ' + rec.medico_colegiatura"></span>
+                                </div>
+                                <div class="text-[10px] text-purple-800 dark:text-purple-300 font-medium bg-purple-50 dark:bg-purple-950/40 px-2 py-1 rounded-lg border border-purple-100 dark:border-purple-900/60">
+                                    <span class="font-bold">Medicamentos:</span>
+                                    <span x-text="rec.detalles ? rec.detalles.map(d => (d.producto?.nombre || 'Medicamento') + ' [' + (d.cantidad_recetada - d.cantidad_dispensada) + ' u. pend.]').join(', ') : 'Sin detalle'"></span>
+                                </div>
+                            </div>
+                            <a :href="'{{ route('ventas.create') }}?receta_id=' + rec.id"
+                               class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-1.5 shrink-0 cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                <span>Dispensar en POS</span>
+                            </a>
+                        </div>
+                    </template>
+                    <div x-show="!buscandoRecetas && recetasDisponibles.length === 0" class="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800">
+                        No se encontraron recetas médicas con saldo disponible para el término buscado.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between shrink-0">
+                <a href="{{ route('recetas.index') }}" class="text-xs text-purple-600 dark:text-purple-400 font-bold hover:underline flex items-center gap-1">
+                    <span>Ver expediente de recetas completo &rarr;</span>
+                </a>
+                <button type="button" @click="modalRecetaPOS = false" class="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    </template>
 </div>
 @endsection

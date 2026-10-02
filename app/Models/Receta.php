@@ -67,9 +67,9 @@ class Receta extends Model
         return $query->whereIn('estado', ['pendiente', 'dispensada_parcial']);
     }
 
-    public function scopeRetenidas($query)
+    public function scopeDispensadas($query)
     {
-        return $query->where('tipo_receta', 'retenida');
+        return $query->where('estado', 'dispensada_total');
     }
 
     public function scopeVigentes($query)
@@ -80,9 +80,16 @@ class Receta extends Model
         });
     }
 
-    // Métodos
+    // Métodos & Accessors
     public function estaVencida(): bool
     {
-        return $this->fecha_vencimiento && $this->fecha_vencimiento < now()->toDateString();
+        return (bool) ($this->fecha_vencimiento && $this->fecha_vencimiento < now()->toDateString());
+    }
+
+    public function getSaldoPendienteTotalAttribute(): int
+    {
+        return (int) $this->detalles->sum(function ($detalle) {
+            return max(0, $detalle->cantidad_recetada - $detalle->cantidad_dispensada);
+        });
     }
 }

@@ -21,13 +21,12 @@
         laboratorio_id: @js(old('laboratorio_id', $producto->laboratorio_id)),
         tipo_control: @js(old('tipo_control', $producto->tipo_control)),
         registro_sanitario: @js(old('registro_sanitario', $producto->registro_sanitario)),
-        requiere_receta: @js(old('requiere_receta', $producto->requiere_receta) ? true : false),
+        requiere_receta: @js(old('tipo_control') === 'controlado' || old('requiere_receta', $producto->requiere_receta) ? true : false),
         activo: @js(old('activo', $producto->activo) ? true : false),
         precio_compra: @js(old('precio_compra', $producto->precio_compra ?? '')),
         precio_venta: @js(old('precio_venta', $producto->precio_venta)),
         stock_minimo: @js(old('stock_minimo', $producto->stock_minimo ?? 10)),
         ubicacion: @js(old('ubicacion', $producto->ubicacion ?? '')),
-        nivel_controlado: @js(old('nivel_controlado', $producto->nivel_controlado ?? 0)),
     }) : {
         nombre: @js(old('nombre', $producto->nombre)),
         codigo_barra: @js(old('codigo_barra', $producto->codigo_barra)),
@@ -39,13 +38,12 @@
         laboratorio_id: @js(old('laboratorio_id', $producto->laboratorio_id)),
         tipo_control: @js(old('tipo_control', $producto->tipo_control)),
         registro_sanitario: @js(old('registro_sanitario', $producto->registro_sanitario)),
-        requiere_receta: @js(old('requiere_receta', $producto->requiere_receta) ? true : false),
+        requiere_receta: @js(old('tipo_control') === 'controlado' || old('requiere_receta', $producto->requiere_receta) ? true : false),
         activo: @js(old('activo', $producto->activo) ? true : false),
         precio_compra: @js(old('precio_compra', $producto->precio_compra ?? '')),
         precio_venta: @js(old('precio_venta', $producto->precio_venta)),
         stock_minimo: @js(old('stock_minimo', $producto->stock_minimo ?? 10)),
         ubicacion: @js(old('ubicacion', $producto->ubicacion ?? '')),
-        nivel_controlado: @js(old('nivel_controlado', $producto->nivel_controlado ?? 0)),
     }),
     presentaciones: @js($producto->presentaciones->isNotEmpty() ? $producto->presentaciones->map(function($p) {
         return [
@@ -325,32 +323,19 @@ class="space-y-4 transition-all duration-200">
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Régimen de Venta <span class="text-rose-500">*</span>
+                                    Clasificación Sanitaria <span class="text-rose-500">*</span>
                                 </label>
                                 <select name="tipo_control" 
                                         x-model="formData.tipo_control"
+                                        @change="formData.requiere_receta = (formData.tipo_control === 'controlado')"
                                         required 
-                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                                    <option value="venta_libre">Venta Libre (OTC)</option>
-                                    <option value="receta_medica">Receta Médica Simple</option>
-                                    <option value="receta_retenida">Psicotrópico / Retenida</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-[11px] font-semibold text-purple-700 dark:text-purple-400 mb-1">
-                                    Control Sanitario MINSA
-                                </label>
-                                <select name="nivel_controlado" 
-                                        x-model="formData.nivel_controlado"
-                                        class="w-full px-2.5 py-1.5 bg-purple-50/50 dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-lg text-xs text-purple-950 dark:text-purple-200 font-bold focus:ring-1 focus:ring-purple-500">
-                                    <option value="0">0 - No Controlado</option>
-                                    <option value="1">1 - Psicotrópico (Nivel I)</option>
-                                    <option value="2">2 - Estupefaciente (Nivel II)</option>
-                                    <option value="3">3 - Alto Control (Nivel III)</option>
+                                        class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border rounded-lg text-xs font-bold focus:ring-1 focus:ring-emerald-500"
+                                        :class="formData.tipo_control === 'controlado' ? 'border-purple-400 text-purple-900 bg-purple-50/40 dark:text-purple-200' : 'border-emerald-400 text-emerald-900 bg-emerald-50/40 dark:text-emerald-200'">
+                                    <option value="venta_libre">🟢 Venta Libre (OTC)</option>
+                                    <option value="controlado">🟣 Controlado / Con Receta Médica (MINSA)</option>
                                 </select>
                             </div>
 
@@ -379,39 +364,9 @@ class="space-y-4 transition-all duration-200">
 
                         <div class="flex items-center space-x-4 pt-1">
                             <label class="inline-flex items-center space-x-2 cursor-pointer text-xs">
-                                <input type="checkbox" name="requiere_receta" x-model="formData.requiere_receta" value="1" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
-                                <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Exigir Receta Médica</span>
-                            </label>
-
-                            <label class="inline-flex items-center space-x-2 cursor-pointer text-xs">
                                 <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
                                 <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Producto Activo para Venta</span>
                             </label>
-                        </div>
-
-                        {{-- Nivel de Control MINSA --}}
-                        <div class="pt-1">
-                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                🔴 Control MINSA Nicaragua
-                            </label>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <select name="nivel_controlado" x-model="formData.nivel_controlado"
-                                        class="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-rose-500">
-                                    <option value="0">Sin control (venta libre)</option>
-                                    <option value="1">Nivel I — Control Básico (benzodiacepinas leves)</option>
-                                    <option value="2">Nivel II — Opioide (tramadol, codeína)</option>
-                                    <option value="3">Nivel III — Narcótico (morfina, fentanilo)</option>
-                                </select>
-                                <span x-show="formData.nivel_controlado > 0"
-                                      :class="{
-                                          'bg-amber-100 text-amber-700 border-amber-300': formData.nivel_controlado == 1,
-                                          'bg-orange-100 text-orange-700 border-orange-300': formData.nivel_controlado == 2,
-                                          'bg-rose-100 text-rose-700 border-rose-300': formData.nivel_controlado == 3,
-                                      }"
-                                      class="text-[10px] font-bold px-2 py-0.5 rounded border">
-                                    ⚠ Registro MINSA requerido al vender
-                                </span>
-                            </div>
                         </div>
                     </div>
 
@@ -727,42 +682,27 @@ class="space-y-4 transition-all duration-200">
                                 </select>
                             </div>
 
-                            <!-- Tipo de Control -->
-                            <div>
+                            <!-- Clasificación Sanitaria Unificada -->
+                            <div class="sm:col-span-2">
                                 <label for="tipo_control_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Régimen de Venta <span class="text-rose-500">*</span>
+                                    Clasificación Sanitaria <span class="text-rose-500">*</span>
                                 </label>
                                 <select name="tipo_control" 
                                         id="tipo_control_mod" 
                                         x-model="formData.tipo_control"
+                                        @change="formData.requiere_receta = (formData.tipo_control === 'controlado')"
                                         required 
-                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
-                                    <option value="venta_libre">Venta Libre (OTC)</option>
-                                    <option value="receta_medica">Receta Médica Simple</option>
-                                    <option value="receta_retenida">Psicotrópico / Retenida</option>
-                                </select>
-                            </div>
-
-                            <!-- Control MINSA -->
-                            <div>
-                                <label for="nivel_controlado_mod" class="block text-xs font-bold text-purple-700 dark:text-purple-400 mb-1.5">
-                                    Fiscalización MINSA
-                                </label>
-                                <select name="nivel_controlado" 
-                                        id="nivel_controlado_mod" 
-                                        x-model="formData.nivel_controlado"
-                                        class="w-full px-3.5 py-2 bg-purple-50/50 dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-xl text-xs text-purple-950 dark:text-purple-200 font-bold focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition shadow-2xs">
-                                    <option value="0">0 - No Controlado</option>
-                                    <option value="1">1 - Psicotrópico (Nivel I)</option>
-                                    <option value="2">2 - Estupefaciente (Nivel II)</option>
-                                    <option value="3">3 - Alto Control (Nivel III)</option>
+                                        class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold transition shadow-2xs"
+                                        :class="formData.tipo_control === 'controlado' ? 'border-purple-400 text-purple-950 bg-purple-50/40 dark:text-purple-200' : 'border-emerald-400 text-emerald-950 bg-emerald-50/40 dark:text-emerald-200'">
+                                    <option value="venta_libre">🟢 Venta Libre (OTC)</option>
+                                    <option value="controlado">🟣 Controlado / Con Receta Médica (MINSA)</option>
                                 </select>
                             </div>
 
                             <!-- Registro Sanitario -->
                             <div>
                                 <label for="registro_sanitario_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Registro Sanitario
+                                    Registro Sanitario (MINSA)
                                 </label>
                                 <input type="text" 
                                        name="registro_sanitario" 
@@ -776,17 +716,8 @@ class="space-y-4 transition-all duration-200">
                         <div class="flex flex-wrap items-center gap-6 pt-2 border-t border-slate-200 dark:border-slate-800">
                             <label class="inline-flex items-center space-x-2 cursor-pointer select-none text-xs text-slate-800 dark:text-slate-200">
                                 <input type="checkbox" 
-                                       name="requiere_receta" 
-                                       x-model="formData.requiere_receta"
-                                       value="1" 
-                                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                                <span class="font-bold">Exigir validación de Receta Médica en el POS de Ventas</span>
-                            </label>
-
-                            <label class="inline-flex items-center space-x-2 cursor-pointer select-none text-xs text-slate-800 dark:text-slate-200">
-                                <input type="checkbox" 
                                        name="activo" 
-                                       x-model="formData.activo"
+                                       x-model="formData.activo" 
                                        value="1" 
                                        class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
                                 <span class="font-bold text-emerald-700 dark:text-emerald-400">Producto Activo en el Catálogo</span>

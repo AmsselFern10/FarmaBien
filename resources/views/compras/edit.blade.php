@@ -257,9 +257,16 @@ class="space-y-4 transition-all duration-200">
             <span class="text-slate-800 dark:text-slate-200 font-semibold">Modificar e Historia</span>
         </nav>
 
-        <!-- Mode Switcher -->
+        <!-- Actions & Mode Switcher -->
         <div class="flex items-center space-x-2 self-start sm:self-auto">
-            <!-- Modo Full Screen (Ocultar Barras) -->
+            <!-- 1. Navegación Principal: Volver a Compras -->
+            <a href="{{ route('compras.show', $compra) }}" 
+               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
+
+            <!-- 2. Herramienta de Pantalla: Modo Full Screen -->
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
@@ -268,6 +275,7 @@ class="space-y-4 transition-all duration-200">
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
+            <!-- 3. Selector de Diseño: Moderna vs Compacta -->
             <span class="text-[11px] font-bold text-slate-700 dark:text-slate-400 hidden md:inline">Diseño:</span>
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
@@ -285,12 +293,6 @@ class="space-y-4 transition-all duration-200">
                     <span>Compacta (ERP)</span>
                 </button>
             </div>
-
-            <a href="{{ route('compras.show', $compra) }}" 
-               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
-            </a>
         </div>
     </div>
 
@@ -865,13 +867,14 @@ class="space-y-4 transition-all duration-200">
     <!-- ============================================================== -->
     <!-- MODAL RÁPIDO: CREAR NUEVA PRESENTACIÓN                        -->
     <!-- ============================================================== -->
+    <template x-teleport="body">
     <div x-show="modalNuevaPres" 
          x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm transition-opacity overflow-y-auto"
          @keydown.escape.window="modalNuevaPres = false"
          @click.self="modalNuevaPres = false">
         
-        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-xl space-y-4"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-xl space-y-4 my-auto"
              @click.stop>
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -884,7 +887,7 @@ class="space-y-4 transition-all duration-200">
                         <p class="text-[11px] text-slate-500 dark:text-slate-400" x-text="nuevaPres.producto_nombre"></p>
                     </div>
                 </div>
-                <button @click="modalNuevaPres = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+                <button @click="modalNuevaPres = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
             </div>
 
             <!-- Error Banner in Modal -->
@@ -958,7 +961,7 @@ class="space-y-4 transition-all duration-200">
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" 
                         @click="modalNuevaPres = false" 
-                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                     Cancelar
                 </button>
                 <button type="button" 
@@ -971,6 +974,7 @@ class="space-y-4 transition-all duration-200">
             </div>
         </div>
     </div>
+    </template>
 
 </div>
 @endsection

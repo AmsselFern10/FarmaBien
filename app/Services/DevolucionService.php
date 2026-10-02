@@ -182,6 +182,33 @@ class DevolucionService
                         ]);
                     }
                 }
+
+                // Si el producto es controlado, asentar en el Libro Oficial MINSA
+                $productoModel = \App\Models\Producto::find($itemData['producto_id']);
+                if ($productoModel && $productoModel->esControlado()) {
+                    $tipoMovCtrl = $itemData['reingresa_a_stock']
+                        ? \App\Models\RegistroVentaControlado::TIPO_DEVOLUCION_STOCK
+                        : \App\Models\RegistroVentaControlado::TIPO_DEVOLUCION_MERMA;
+
+                    $motivoTexto = $itemData['reingresa_a_stock']
+                        ? "Reingreso por Devolución {$numeroDevolucion}: " . ($data['motivo'] ?? 'Devolución') . (!empty($data['observaciones']) ? " ({$data['observaciones']})" : '')
+                        : "Baja por Devolución (Merma) {$numeroDevolucion} [{$itemData['estado_producto']}]: " . ($data['motivo'] ?? 'Devolución dañada/vencida') . (!empty($data['observaciones']) ? " ({$data['observaciones']})" : '');
+
+                    \App\Models\RegistroVentaControlado::create([
+                        'tipo_movimiento'     => $tipoMovCtrl,
+                        'venta_id'            => $venta->id,
+                        'devolucion_id'       => $devolucion->id,
+                        'producto_id'         => $itemData['producto_id'],
+                        'lote_id'             => $itemData['lote_id'],
+                        'nivel_controlado'    => 1,
+                        'paciente_nombre'     => $venta->cliente?->nombre ?? 'Público General',
+                        'paciente_cedula'     => $venta->cliente?->documento,
+                        'motivo_omision'      => $motivoTexto,
+                        'cantidad'            => $itemData['cantidad_unidades_base'],
+                        'unidad'              => 'unidad',
+                        'user_id'             => $userId,
+                    ]);
+                }
             }
 
             // Si el reembolso es en efectivo y hay caja abierta, registrar egreso de caja

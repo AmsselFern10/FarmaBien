@@ -310,6 +310,28 @@
         <div class="kv"><span class="k">CAMBIO:</span><span class="v">{{ is_null($venta->cambio) ? '-' : ($moneda.' '.number_format((float)$venta->cambio, 2)) }}</span></div>
     @endif
 
+    @php
+        $registrosControlados = \App\Models\RegistroVentaControlado::where('venta_id', $venta->id)->with('producto')->get();
+    @endphp
+    @if($registrosControlados->isNotEmpty())
+        <div class="rule"></div>
+        <div class="center bold xs" style="border: 1px dashed #000; padding: 3px 0; margin-bottom: 3px;">
+            *** DISPENSACIÓN CONTROLADA MINSA ***
+        </div>
+        @foreach($registrosControlados as $rc)
+            <div class="xs" style="margin-top: 2px; border-bottom: 1px dotted #ccc; padding-bottom: 2px;">
+                <div><span class="bold">MÉDICO:</span> Dr(a). {{ $rc->medico_nombre }}</div>
+                @if($rc->medico_num_registro)
+                    <div><span class="bold">REG. MINSA:</span> {{ $rc->medico_num_registro }}</div>
+                @endif
+                <div><span class="bold">PACIENTE:</span> {{ $rc->paciente_nombre }} @if($rc->paciente_cedula)({{ $rc->paciente_cedula }})@endif</div>
+                @if($rc->diagnostico)
+                    <div><span class="bold">DIAGNÓSTICO:</span> {{ $rc->diagnostico }}</div>
+                @endif
+            </div>
+        @endforeach
+    @endif
+
     @if(!empty($venta->observaciones))
         <div class="rule"></div>
         <div class="bold">OBSERVACIONES:</div>

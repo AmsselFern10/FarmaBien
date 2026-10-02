@@ -28,8 +28,8 @@ class UpdateRecetaRequest extends FormRequest
             'numero_receta' => ['required', 'string', 'max:50', Rule::unique('recetas', 'numero_receta')->ignore($recetaId)],
             'fecha_emision' => ['required', 'date'],
             'fecha_vencimiento' => ['nullable', 'date', 'after_or_equal:fecha_emision'],
-            'tipo_receta' => ['required', 'in:simple,retenida'],
-            'archivo_receta' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'tipo_receta' => ['nullable', 'string', 'max:50'],
+            'archivo_receta' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
             'observaciones' => ['nullable', 'string'],
         ];
     }

@@ -252,87 +252,89 @@
     </div>
 
     {{-- ═══════════════════  MODAL DE CONFIRMACIÓN  ═════════════════ --}}
-    <div
-        x-show="dlg.open"
-        x-cloak
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        @keydown.escape.window="resolveConfirm(false)"
-        @click.self="resolveConfirm(false)"
-        class="fixed inset-0 z-[9998] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
-    >
+    <template x-teleport="body">
         <div
             x-show="dlg.open"
+            x-cloak
             x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
             x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100 scale-100"
-            x-transition:leave-end="opacity-0 scale-95"
-            @click.stop
-            class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @keydown.escape.window="resolveConfirm(false)"
+            @click.self="resolveConfirm(false)"
+            class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto"
         >
-            {{-- Cabecera con ícono --}}
-            <div class="flex items-start gap-4 p-6 pb-4">
-                {{-- Ícono por tipo --}}
-                <div
-                    class="shrink-0 w-11 h-11 rounded-full flex items-center justify-center"
-                    :class="{
-                        'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'     : dlg.type === 'danger',
-                        'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'  : dlg.type === 'warning',
-                        'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' : dlg.type === 'default'
-                    }"
-                >
-                    {{-- danger: papelera --}}
-                    <svg x-show="dlg.type === 'danger'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                    {{-- warning: triángulo --}}
-                    <svg x-show="dlg.type === 'warning'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                    </svg>
-                    {{-- default: signo de interrogación --}}
-                    <svg x-show="dlg.type === 'default'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
+            <div
+                x-show="dlg.open"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                @click.stop
+                class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md my-auto"
+            >
+                {{-- Cabecera con ícono --}}
+                <div class="flex items-start gap-4 p-6 pb-4">
+                    {{-- Ícono por tipo --}}
+                    <div
+                        class="shrink-0 w-11 h-11 rounded-full flex items-center justify-center"
+                        :class="{
+                            'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'     : dlg.type === 'danger',
+                            'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'  : dlg.type === 'warning',
+                            'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' : dlg.type === 'default'
+                        }"
+                    >
+                        {{-- danger: papelera --}}
+                        <svg x-show="dlg.type === 'danger'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        {{-- warning: triángulo --}}
+                        <svg x-show="dlg.type === 'warning'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        </svg>
+                        {{-- default: signo de interrogación --}}
+                        <svg x-show="dlg.type === 'default'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+
+                    {{-- Textos --}}
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white leading-snug" x-text="dlg.title"></h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed" x-text="dlg.body" x-show="dlg.body"></p>
+                    </div>
                 </div>
 
-                {{-- Textos --}}
-                <div class="flex-1 min-w-0 pt-0.5">
-                    <h3 class="text-base font-bold text-slate-900 dark:text-white leading-snug" x-text="dlg.title"></h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed" x-text="dlg.body" x-show="dlg.body"></p>
+                {{-- Acciones --}}
+                <div class="flex items-center justify-end gap-2.5 px-6 pb-6 pt-2">
+                    <button
+                        @click="resolveConfirm(false)"
+                        type="button"
+                        class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        @click="resolveConfirm(true)"
+                        type="button"
+                        class="px-5 py-2 text-sm font-semibold rounded-xl text-white transition-colors"
+                        :class="{
+                            'bg-rose-600 hover:bg-rose-700'   : dlg.type === 'danger',
+                            'bg-amber-500 hover:bg-amber-600' : dlg.type === 'warning',
+                            'bg-emerald-600 hover:bg-emerald-700' : dlg.type === 'default'
+                        }"
+                    >
+                        <span x-show="dlg.ok" x-text="dlg.ok"></span>
+                        <span x-show="!dlg.ok && dlg.type === 'danger'">Sí, eliminar</span>
+                        <span x-show="!dlg.ok && dlg.type === 'warning'">Sí, continuar</span>
+                        <span x-show="!dlg.ok && dlg.type === 'default'">Confirmar</span>
+                    </button>
                 </div>
-            </div>
-
-            {{-- Acciones --}}
-            <div class="flex items-center justify-end gap-2.5 px-6 pb-6 pt-2">
-                <button
-                    @click="resolveConfirm(false)"
-                    type="button"
-                    class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
-                >
-                    Cancelar
-                </button>
-                <button
-                    @click="resolveConfirm(true)"
-                    type="button"
-                    class="px-5 py-2 text-sm font-semibold rounded-xl text-white transition-colors"
-                    :class="{
-                        'bg-rose-600 hover:bg-rose-700'   : dlg.type === 'danger',
-                        'bg-amber-500 hover:bg-amber-600' : dlg.type === 'warning',
-                        'bg-emerald-600 hover:bg-emerald-700' : dlg.type === 'default'
-                    }"
-                >
-                    <span x-show="dlg.ok" x-text="dlg.ok"></span>
-                    <span x-show="!dlg.ok && dlg.type === 'danger'">Sí, eliminar</span>
-                    <span x-show="!dlg.ok && dlg.type === 'warning'">Sí, continuar</span>
-                    <span x-show="!dlg.ok && dlg.type === 'default'">Confirmar</span>
-                </button>
             </div>
         </div>
-    </div>
+    </template>
 </div>

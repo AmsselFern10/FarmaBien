@@ -11,6 +11,9 @@ class Producto extends Model
 {
     use SoftDeletes;
 
+    public const TIPO_VENTA_LIBRE = 'venta_libre';
+    public const TIPO_CONTROLADO = 'controlado';
+
     protected $table = 'productos';
 
     protected $fillable = [
@@ -31,7 +34,6 @@ class Producto extends Model
         'ubicacion',
         'requiere_receta',
         'activo',
-        'nivel_controlado',
     ];
 
     protected $casts = [
@@ -103,6 +105,17 @@ class Producto extends Model
         return $this->hasMany(RecetaDetalle::class);
     }
 
+    // Helpers de Control Sanitario
+    public function esControlado(): bool
+    {
+        return $this->tipo_control === self::TIPO_CONTROLADO || (bool) $this->requiere_receta;
+    }
+
+    public function esVentaLibre(): bool
+    {
+        return !$this->esControlado();
+    }
+
     // Scopes
     public function scopeActivos($query)
     {
@@ -114,10 +127,23 @@ class Producto extends Model
         return $query->where('activo', true);
     }
 
+    public function scopeControlados($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('tipo_control', self::TIPO_CONTROLADO)
+              ->orWhere('requiere_receta', true);
+        });
+    }
+
+    public function scopeVentaLibre($query)
+    {
+        return $query->where('tipo_control', self::TIPO_VENTA_LIBRE)
+                     ->where('requiere_receta', false);
+    }
+
     public function scopeConReceta($query)
     {
-        return $query->where('requiere_receta', true)
-            ->orWhereIn('tipo_control', ['receta_medica', 'receta_retenida']);
+        return $this->scopeControlados($query);
     }
 
     public function scopeBajoStock($query)

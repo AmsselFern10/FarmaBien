@@ -32,7 +32,7 @@ return new class extends Migration
             $table->date('fecha_vencimiento')->nullable();
             
             // Clasificación y Control
-            $table->enum('tipo_receta', ['simple', 'retenida'])->default('simple');
+            $table->string('tipo_receta', 50)->default('general');
             $table->string('archivo_receta')->nullable(); // Imagen / PDF escaneado
             $table->enum('estado', ['pendiente', 'dispensada_parcial', 'dispensada_total', 'anulada'])->default('pendiente');
             $table->text('observaciones')->nullable();
@@ -43,7 +43,6 @@ return new class extends Migration
             $table->index('numero_receta');
             $table->index('fecha_emision');
             $table->index('estado');
-            $table->index('tipo_receta');
         });
     }
 

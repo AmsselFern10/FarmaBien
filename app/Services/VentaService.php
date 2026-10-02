@@ -118,7 +118,7 @@ class VentaService
 
                 foreach ($data['productos'] as &$prodItemRef) {
                     $pModel = Producto::find($prodItemRef['producto_id']);
-                    $esRx = $pModel && ($pModel->requiere_receta || in_array($pModel->tipo_control, ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente']));
+                    $esRx = $pModel && $pModel->esControlado();
                     
                     if ($esRx) {
                         $hayMedicamentosRx = true;
@@ -153,7 +153,7 @@ class VentaService
 
                 foreach ($data['productos'] as $prodItem) {
                     $pModel = Producto::find($prodItem['producto_id']);
-                    if ($pModel && ($pModel->requiere_receta || in_array($pModel->tipo_control, ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente']))) {
+                    if ($pModel && $pModel->esControlado()) {
                         $factor = 1;
                         if (!empty($prodItem['presentacion_id'])) {
                             $pres = PresentacionProducto::find($prodItem['presentacion_id']);
@@ -188,13 +188,14 @@ class VentaService
                         'cliente_id'          => $data['cliente_id'] ?? null,
                         'paciente_nombre'     => !empty($rcData['paciente_nombre']) ? trim($rcData['paciente_nombre']) : ($data['cliente_nombre'] ?? 'Paciente Mostrador'),
                         'paciente_documento'  => $rcData['paciente_documento'] ?? null,
+                        'paciente_edad'       => $rcData['paciente_edad'] ?? ($data['controlados_data']['paciente_edad'] ?? null),
                         'medico_nombre'       => !empty($rcData['medico_nombre']) ? trim($rcData['medico_nombre']) : 'Dr. Médico Tratante',
                         'medico_colegiatura'  => !empty($rcData['medico_colegiatura']) ? trim($rcData['medico_colegiatura']) : 'CMP-GENERAL',
                         'medico_especialidad' => $rcData['medico_especialidad'] ?? 'Medicina General',
                         'numero_receta'       => $numeroReceta,
                         'fecha_emision'       => now()->toDateString(),
                         'fecha_vencimiento'   => now()->addDays(30)->toDateString(),
-                        'tipo_receta'         => 'simple',
+                        'tipo_receta'         => 'general',
                         'observaciones'       => 'Emitida desde Terminal POS al momento de la venta',
                         'detalles'            => $detallesReceta
                     ]);
@@ -311,6 +312,60 @@ class VentaService
                 $venta->recetas()->syncWithoutDetaching($recetasAsociadas);
             }
 
+            // 8.1. Registrar automáticamente en el Libro Oficial de Medicamentos Controlados (MINSA) si hay productos controlados
+            $ctrlData = $data['controlados_data'] ?? null;
+            $motivoOmisionGeneral = trim((string) ($data['receta_omision_motivo'] ?? $data['motivo_omision'] ?? ''));
+            $recetaVinculada = isset($recetaModel) ? $recetaModel : (!empty($recetasAsociadas) ? Receta::find($recetasAsociadas[0]) : null);
+
+            foreach ($venta->detalles()->with('producto', 'lote')->get() as $det) {
+                $p = $det->producto;
+                if ($p && $p->esControlado()) {
+                    $esOmision = ($recetaModalidad === 'omitida') || (!empty($motivoOmisionGeneral) && empty($ctrlData['medico_nombre']) && !$recetaVinculada);
+                    
+                    $pacienteNombre = !empty($ctrlData['paciente_nombre']) 
+                        ? $ctrlData['paciente_nombre'] 
+                        : ($recetaVinculada ? $recetaVinculada->paciente_nombre : ($venta->cliente ? $venta->cliente->nombre : 'Público General'));
+                    $pacienteCedula = !empty($ctrlData['paciente_cedula']) 
+                        ? $ctrlData['paciente_cedula'] 
+                        : ($recetaVinculada ? $recetaVinculada->paciente_documento : ($venta->cliente ? $venta->cliente->documento : null));
+                    $pacienteEdad = !empty($ctrlData['paciente_edad']) ? (int) $ctrlData['paciente_edad'] : ($recetaVinculada?->paciente_edad);
+
+                    $medicoNombre = !empty($ctrlData['medico_nombre']) 
+                        ? $ctrlData['medico_nombre'] 
+                        : ($recetaVinculada ? $recetaVinculada->medico_nombre : ($esOmision ? null : 'Dr. Prescriptor MINSA'));
+                    $medicoNumRegistro = !empty($ctrlData['medico_num_registro']) 
+                        ? $ctrlData['medico_num_registro'] 
+                        : ($recetaVinculada ? ($recetaVinculada->medico_colegiatura ?? $recetaVinculada->numero_receta) : ($esOmision ? null : 'MINSA-REG'));
+                    $medicoCedula = $ctrlData['medico_cedula'] ?? null;
+                    $diagnostico = $ctrlData['diagnostico'] ?? ($recetaVinculada ? $recetaVinculada->observaciones : null);
+
+                    $motivoOmision = $esOmision 
+                        ? (!empty($motivoOmisionGeneral) ? $motivoOmisionGeneral : 'Dispensación verificada en mostrador')
+                        : null;
+                    $rutaFotoReceta = $data['ruta_foto_receta'] ?? ($recetaVinculada?->archivo_receta);
+
+                    \App\Models\RegistroVentaControlado::create([
+                        'tipo_movimiento'     => \App\Models\RegistroVentaControlado::TIPO_VENTA,
+                        'venta_id'            => $venta->id,
+                        'producto_id'         => $p->id,
+                        'lote_id'             => $det->lote_id,
+                        'nivel_controlado'    => 1,
+                        'paciente_nombre'     => $pacienteNombre,
+                        'paciente_cedula'     => $pacienteCedula,
+                        'paciente_edad'       => $pacienteEdad,
+                        'medico_nombre'       => $medicoNombre,
+                        'medico_cedula'       => $medicoCedula,
+                        'medico_num_registro' => $medicoNumRegistro,
+                        'motivo_omision'      => $motivoOmision,
+                        'ruta_foto_receta'    => $rutaFotoReceta,
+                        'diagnostico'         => $diagnostico,
+                        'cantidad'            => $det->cantidad_unidades_base ?? $det->cantidad,
+                        'unidad'              => 'unidad',
+                        'user_id'             => auth()->id() ?? $venta->user_id,
+                    ]);
+                }
+            }
+
             // 9. Recalcular totales de la caja activa
             if ($sesionActiva) {
                 app(CajaService::class)->recalcularTotales($sesionActiva);
@@ -414,11 +469,7 @@ class VentaService
 
         // 4. Validar Receta Médica y Sustancias Controladas
         $recetaDetalleId = !empty($item['receta_detalle_id']) ? (int) $item['receta_detalle_id'] : null;
-        $esControlado = $producto->requiere_receta || in_array($producto->tipo_control, ['receta_medica', 'receta_retenida', 'psicotropico', 'estupefaciente']);
-
-        if ($esControlado && $producto->tipo_control === 'receta_retenida' && !$recetaDetalleId && $recetaModalidad !== 'omitida') {
-            throw new Exception("El medicamento '{$producto->nombre}' es de RECETA RETENIDA y requiere asociar obligatoriamente la prescripción médica o declarar omisión justificada.");
-        }
+        $esControlado = $producto->esControlado();
 
         if ($recetaDetalleId) {
             $recetaDetalle = RecetaDetalle::where('id', $recetaDetalleId)->first();
@@ -551,6 +602,22 @@ class VentaService
                         $detalle->cantidad_unidades_base
                     );
                 }
+
+                if ($detalle->producto && $detalle->producto->esControlado()) {
+                    \App\Models\RegistroVentaControlado::create([
+                        'tipo_movimiento'     => \App\Models\RegistroVentaControlado::TIPO_ANULACION_VENTA,
+                        'venta_id'            => $ventaOriginal->id,
+                        'producto_id'         => $detalle->producto_id,
+                        'lote_id'             => $detalle->lote_id,
+                        'nivel_controlado'    => 1,
+                        'paciente_nombre'     => $ventaOriginal->cliente?->nombre ?? 'Público General',
+                        'paciente_cedula'     => $ventaOriginal->cliente?->documento,
+                        'motivo_omision'      => "Reingreso por Modificación de Venta #{$ventaOriginal->id}: {$motivo}",
+                        'cantidad'            => $detalle->cantidad_unidades_base,
+                        'unidad'              => 'unidad',
+                        'user_id'             => Auth::id() ?? 1,
+                    ]);
+                }
             }
 
             // 2. Procesar la nueva venta
@@ -636,6 +703,22 @@ class VentaService
                         $detalle->cantidad_unidades_base
                     );
                 }
+
+                if ($detalle->producto && $detalle->producto->esControlado()) {
+                    \App\Models\RegistroVentaControlado::create([
+                        'tipo_movimiento'     => \App\Models\RegistroVentaControlado::TIPO_ANULACION_VENTA,
+                        'venta_id'            => $venta->id,
+                        'producto_id'         => $detalle->producto_id,
+                        'lote_id'             => $detalle->lote_id,
+                        'nivel_controlado'    => 1,
+                        'paciente_nombre'     => $venta->cliente?->nombre ?? 'Público General',
+                        'paciente_cedula'     => $venta->cliente?->documento,
+                        'motivo_omision'      => "Reingreso a stock por Anulación de Venta #{$venta->id}: {$motivo}",
+                        'cantidad'            => $detalle->cantidad_unidades_base,
+                        'unidad'              => 'unidad',
+                        'user_id'             => Auth::id() ?? $venta->user_id,
+                    ]);
+                }
             }
 
             $venta->update([
@@ -681,8 +764,7 @@ class VentaService
                 'imagen',
                 'categoria_id',
                 'laboratorio_id',
-                'activo',
-                'nivel_controlado'
+                'activo'
             ])
             ->with([
                 'categoria:id,nombre',

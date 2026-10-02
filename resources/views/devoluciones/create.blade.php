@@ -28,21 +28,22 @@
         </div>
         
         <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <!-- 1. Botón Volver / Precedente (Primero de izquierda a derecha en la barra de acciones) -->
+            <a href="{{ route('devoluciones.index') }}" 
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-xl transition shadow-xs">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Devoluciones</span>
+            </a>
+
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
-
-            <a href="{{ route('devoluciones.index') }}" 
-               class="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-xs transition">
-                <svg class="w-4 h-4 mr-1.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Volver a Devoluciones
-            </a>
         </div>
     </div>
 
@@ -72,7 +73,7 @@
                            placeholder="Buscar por N° Comprobante (Ej: F-0012, Venta #85) o Nombre de Cliente..."
                            class="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500">
                 </div>
-                <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 transition shrink-0">
+                <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-xs transition shrink-0 cursor-pointer">
                     Buscar Venta
                 </button>
                 @if(request()->filled('buscar_venta'))
@@ -187,7 +188,7 @@
                 </div>
                 <div>
                     <span class="text-xs font-semibold text-slate-500">Total Original</span>
-                    <p class="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5 font-mono">{{ formato_moneda($venta->total) }}</p>
+                    <p class="text-base font-black text-emerald-900 dark:text-emerald-400 mt-0.5 font-mono">{{ formato_moneda($venta->total) }}</p>
                 </div>
             </div>
         </div>
@@ -228,7 +229,7 @@
                             </td>
                             <td class="px-4 py-3 text-center font-semibold">{{ $item['cantidad_original'] }}</td>
                             <td class="px-4 py-3 text-center text-slate-500">{{ $item['cantidad_devuelta_previa'] }}</td>
-                            <td class="px-4 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{{ $item['cantidad_disponible'] }}</td>
+                            <td class="px-4 py-3 text-center font-bold text-emerald-900 dark:text-emerald-400">{{ $item['cantidad_disponible'] }}</td>
                             <td class="px-4 py-3 text-center">
                                 @if($item['cantidad_disponible'] > 0)
                                 <div class="inline-flex items-center border border-slate-300 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
@@ -356,7 +357,7 @@
                         <p class="text-[11px] text-slate-400">Calculado en base a productos devueltos</p>
                     </div>
                     <div class="text-right">
-                        <span class="text-xl font-black text-rose-600 dark:text-rose-400 font-mono" x-text="formatoMoneda(totalReembolso)">C$ 0.00</span>
+                        <span class="text-xl font-black text-rose-900 dark:text-rose-400 font-mono" x-text="formatoMoneda(totalReembolso)">C$ 0.00</span>
                     </div>
                 </div>
             </div>
@@ -364,12 +365,12 @@
 
         <!-- Submit Button -->
         <div class="flex items-center justify-end gap-3 pt-2">
-            <a href="{{ route('devoluciones.create') }}" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            <a href="{{ route('devoluciones.create') }}" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition">
                 Cancelar
             </a>
             <button type="submit" 
                     :disabled="totalReembolso <= 0"
-                    :class="totalReembolso <= 0 ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-rose-600 hover:bg-rose-700 shadow-sm shadow-rose-600/30'"
+                    :class="totalReembolso <= 0 ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-rose-600 hover:bg-rose-700 shadow-sm shadow-rose-600/30 cursor-pointer'"
                     class="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition">
                 Confirmar y Procesar Devolución
             </button>

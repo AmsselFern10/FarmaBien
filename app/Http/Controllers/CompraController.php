@@ -90,9 +90,33 @@ class CompraController extends Controller
             ->get();
 
         $preloadedProveedorId = $request->input('proveedor_id', '');
+        $preloadedOrdenCompraId = $request->input('orden_compra_id', '');
+        $preloadedNumeroOrden = '';
+        $preloadedCondicionPago = $request->input('condicion_pago', 'contado');
+        $preloadedDiasCredito = $request->input('dias_credito', 0);
         $preloadedItems = [];
 
-        if ($request->filled('items')) {
+        if ($request->filled('orden_compra_id')) {
+            $ordenCompra = \App\Models\OrdenCompra::with(['detalles.producto', 'proveedor'])->find($request->input('orden_compra_id'));
+            if ($ordenCompra) {
+                $preloadedProveedorId = $ordenCompra->proveedor_id;
+                $preloadedNumeroOrden = $ordenCompra->numero_orden;
+                $preloadedCondicionPago = $ordenCompra->condicion_pago;
+                $preloadedDiasCredito = $ordenCompra->dias_credito;
+
+                foreach ($ordenCompra->detalles as $det) {
+                    $cantPendiente = max(1, (int)$det->cantidad_solicitada - (int)$det->cantidad_recibida);
+                    $preloadedItems[] = [
+                        'producto_id'     => $det->producto_id,
+                        'presentacion_id' => '',
+                        'cantidad'        => $cantPendiente,
+                        'precio_unitario' => (float) $det->precio_unitario_estimado,
+                        'numero_lote'     => '',
+                        'fecha_vencimiento' => '',
+                    ];
+                }
+            }
+        } elseif ($request->filled('items')) {
             $rawItems = $request->input('items');
             if (is_string($rawItems)) {
                 $decoded = json_decode($rawItems, true);
@@ -152,7 +176,17 @@ class CompraController extends Controller
             }
         }
 
-        return view('compras.create', compact('proveedores', 'productos', 'preloadedProveedorId', 'preloadedItems', 'historialMap'));
+        return view('compras.create', compact(
+            'proveedores', 
+            'productos', 
+            'preloadedProveedorId', 
+            'preloadedOrdenCompraId',
+            'preloadedNumeroOrden',
+            'preloadedCondicionPago',
+            'preloadedDiasCredito',
+            'preloadedItems', 
+            'historialMap'
+        ));
     }
 
     public function store(StoreCompraRequest $request)

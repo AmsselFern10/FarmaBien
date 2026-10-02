@@ -122,6 +122,10 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::get('/controlados/libro', [ControladoController::class, 'libroControl'])->name('controlados.libro');
+    Route::get('/controlados/exportar/excel', [ControladoController::class, 'exportarExcel'])->name('controlados.excel');
+    Route::post('/controlados/{registro}/evidencia', [ControladoController::class, 'subirEvidencia'])->name('controlados.evidencia.store');
+    Route::get('/controlados/{registro}/evidencia', [ControladoController::class, 'verEvidencia'])->name('controlados.evidencia');
+    Route::get('/controlados/{registro}', [ControladoController::class, 'show'])->name('controlados.show');
     Route::post('/controlados', [ControladoController::class, 'store'])->name('controlados.store');
     Route::get('/controlados', [ControladoController::class, 'index'])->name('controlados.index');
 
@@ -169,7 +173,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('ventas', VentaController::class);
 
     Route::get('devoluciones/{devolucion}/ticket', [DevolucionController::class, 'ticket'])->name('devoluciones.ticket');
-    Route::resource('devoluciones', DevolucionController::class)->except(['edit', 'update', 'destroy']);
+    Route::resource('devoluciones', DevolucionController::class)->parameters(['devoluciones' => 'devolucion'])->except(['edit', 'update', 'destroy']);
 
     /*
     |--------------------------------------------------------------------------

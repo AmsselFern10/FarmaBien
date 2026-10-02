@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\RegistroVentaControlado;
 use App\Models\Producto;
 use App\Models\Venta;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Exception;
 
 class ControladoController extends Controller
 {
@@ -16,30 +19,55 @@ class ControladoController extends Controller
     }
 
     /**
-     * Listado de registros de despacho de medicamentos controlados.
+     * Listado de bitácora oficial y kardex de movimientos de medicamentos controlados.
      */
     public function index(Request $request)
     {
         $query = RegistroVentaControlado::with([
-            'producto:id,nombre,principio_activo,nivel_controlado',
-            'venta:id,fecha,total',
+            'producto:id,nombre,principio_activo,tipo_control',
+            'venta:id,fecha,total,numero_comprobante',
+            'devolucion:id,numero_devolucion,tipo,motivo',
+            'compra:id,numero_comprobante,proveedor_id',
+            'compra.proveedor:id,nombre',
+            'movimientoInventario:id,subtipo,motivo',
             'despachador:id,name',
+            'lote:id,numero_lote,fecha_vencimiento',
         ]);
 
-        // Filtros
+        // Filtro de texto libre
         if ($request->filled('q')) {
-            $q = '%' . $request->q . '%';
+            $q = '%' . trim($request->q) . '%';
             $query->where(function ($sub) use ($q) {
                 $sub->where('paciente_nombre', 'like', $q)
                     ->orWhere('paciente_cedula', 'like', $q)
-                    ->orWhere('medico_nombre', 'like', $q);
+                    ->orWhere('medico_nombre', 'like', $q)
+                    ->orWhere('medico_num_registro', 'like', $q)
+                    ->orWhere('motivo_omision', 'like', $q)
+                    ->orWhereHas('producto', function ($pq) use ($q) {
+                        $pq->where('nombre', 'like', $q)
+                           ->orWhere('principio_activo', 'like', $q);
+                    })
+                    ->orWhereHas('lote', function ($lq) use ($q) {
+                        $lq->where('numero_lote', 'like', $q);
+                    });
             });
         }
 
-        if ($request->filled('nivel')) {
-            $query->where('nivel_controlado', $request->nivel);
+        // Filtro por tipo de movimiento / operación
+        if ($request->filled('tipo_movimiento')) {
+            $query->tipoMovimiento($request->tipo_movimiento);
         }
 
+        // Filtro por modalidad de despacho (receta vs omisión en ventas)
+        if ($request->filled('tipo_despacho')) {
+            if ($request->tipo_despacho === 'omision') {
+                $query->conOmision();
+            } elseif ($request->tipo_despacho === 'con_receta') {
+                $query->conReceta();
+            }
+        }
+
+        // Filtro por rango de fechas
         if ($request->filled('desde')) {
             $query->whereDate('created_at', '>=', $request->desde);
         }
@@ -48,105 +76,329 @@ class ControladoController extends Controller
             $query->whereDate('created_at', '<=', $request->hasta);
         }
 
+        // Filtro por producto específico
         if ($request->filled('producto_id')) {
             $query->where('producto_id', $request->producto_id);
         }
 
+        // Métricas de resumen para KPI cards
+        $kpiBaseQuery = clone $query;
+        $totalMovimientos = (clone $kpiBaseQuery)->count();
+        $totalEntradas = (clone $kpiBaseQuery)->whereIn('tipo_movimiento', [
+            RegistroVentaControlado::TIPO_DEVOLUCION_STOCK,
+            RegistroVentaControlado::TIPO_AJUSTE_INGRESO,
+            RegistroVentaControlado::TIPO_ANULACION_VENTA,
+            RegistroVentaControlado::TIPO_COMPRA,
+        ])->sum('cantidad');
+
+        $totalSalidas = (clone $kpiBaseQuery)->whereIn('tipo_movimiento', [
+            RegistroVentaControlado::TIPO_VENTA,
+            RegistroVentaControlado::TIPO_DEVOLUCION_MERMA,
+            RegistroVentaControlado::TIPO_AJUSTE_EGRESO,
+        ])->sum('cantidad');
+
+        $totalMermas = (clone $kpiBaseQuery)->whereIn('tipo_movimiento', [
+            RegistroVentaControlado::TIPO_DEVOLUCION_MERMA,
+            RegistroVentaControlado::TIPO_AJUSTE_EGRESO,
+        ])->sum('cantidad');
+
         $registros = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
 
-        // Para filtro de productos controlados
-        $productosControlados = Producto::where('nivel_controlado', '>', 0)
+        // Para selector de productos controlados
+        $productosControlados = Producto::controlados()
             ->select('id', 'nombre')
             ->orderBy('nombre')
             ->get();
 
-        return view('controlados.index', compact('registros', 'productosControlados'));
+        return view('controlados.index', compact(
+            'registros',
+            'productosControlados',
+            'totalMovimientos',
+            'totalEntradas',
+            'totalSalidas',
+            'totalMermas'
+        ));
     }
 
     /**
-     * Libro de control imprimible para inspección MINSA.
+     * Ver detalle completo y auditable de un movimiento de medicamento controlado.
+     */
+    public function show(RegistroVentaControlado $registro)
+    {
+        $registro->load([
+            'producto.laboratorio',
+            'venta.usuario',
+            'venta.recetas',
+            'venta.detalles.recetaDetalle.receta',
+            'venta.cliente',
+            'devolucion.usuario',
+            'compra.proveedor',
+            'movimientoInventario',
+            'despachador',
+            'lote',
+        ]);
+
+        return view('controlados.show', compact('registro'));
+    }
+
+    /**
+     * Libro de control imprimible para inspección MINSA / SILAIS.
      */
     public function libroControl(Request $request)
     {
         $desde = $request->desde ?? now()->startOfMonth()->toDateString();
         $hasta = $request->hasta ?? now()->toDateString();
-        $nivel = $request->nivel;
 
         $query = RegistroVentaControlado::with([
-            'producto:id,nombre,principio_activo,concentracion,nivel_controlado',
-            'venta:id,fecha',
+            'producto:id,nombre,principio_activo,concentracion,tipo_control',
+            'venta:id,fecha,numero_comprobante',
+            'devolucion:id,numero_devolucion',
+            'compra:id,numero_comprobante',
             'despachador:id,name',
             'lote:id,numero_lote',
         ])
         ->whereDate('created_at', '>=', $desde)
         ->whereDate('created_at', '<=', $hasta);
 
-        if ($nivel) {
-            $query->where('nivel_controlado', $nivel);
+        if ($request->filled('tipo_movimiento')) {
+            $query->tipoMovimiento($request->tipo_movimiento);
+        }
+
+        if ($request->filled('tipo_despacho')) {
+            if ($request->tipo_despacho === 'omision') {
+                $query->conOmision();
+            } elseif ($request->tipo_despacho === 'con_receta') {
+                $query->conReceta();
+            }
+        }
+
+        if ($request->filled('producto_id')) {
+            $query->where('producto_id', $request->producto_id);
+        }
+
+        if ($request->filled('q')) {
+            $q = '%' . trim($request->q) . '%';
+            $query->where(function ($sub) use ($q) {
+                $sub->where('paciente_nombre', 'like', $q)
+                    ->orWhere('paciente_cedula', 'like', $q)
+                    ->orWhere('medico_nombre', 'like', $q)
+                    ->orWhere('medico_num_registro', 'like', $q)
+                    ->orWhere('motivo_omision', 'like', $q)
+                    ->orWhereHas('producto', function ($pq) use ($q) {
+                        $pq->where('nombre', 'like', $q)
+                           ->orWhere('principio_activo', 'like', $q);
+                    })
+                    ->orWhereHas('lote', function ($lq) use ($q) {
+                        $lq->where('numero_lote', 'like', $q);
+                    });
+            });
         }
 
         $registros = $query->orderBy('created_at')->get();
 
         $farmacia = [
             'nombre'    => config('app.name', 'FarmaBien'),
-            'direccion' => '',
-            'telefono'  => '',
+            'direccion' => 'Local Central FarmaBien',
+            'telefono'  => '+505 2200-0000',
         ];
 
-        return view('controlados.libro', compact('registros', 'desde', 'hasta', 'nivel', 'farmacia'));
+        return view('controlados.libro', compact('registros', 'desde', 'hasta', 'farmacia'));
     }
 
     /**
-     * Registrar datos de paciente/médico al completar una venta con controlados.
-     * Llamado vía AJAX desde el POS.
+     * Exportar reporte consolidado de controlados a formato compatible con Excel / SILAIS.
      */
-    public function store(Request $request)
+    public function exportarExcel(Request $request)
     {
-        $request->validate([
-            'venta_id'              => 'required|exists:ventas,id',
-            'registros'             => 'required|array|min:1',
-            'registros.*.producto_id'      => 'required|exists:productos,id',
-            'registros.*.lote_id'          => 'nullable|exists:lotes,id',
-            'registros.*.nivel_controlado' => 'required|integer|min:1|max:3',
-            'registros.*.paciente_nombre'  => 'required|string|max:150',
-            'registros.*.paciente_cedula'  => 'nullable|string|max:30',
-            'registros.*.paciente_edad'    => 'nullable|integer|min:0|max:120',
-            'registros.*.medico_nombre'    => 'required|string|max:150',
-            'registros.*.medico_cedula'    => 'nullable|string|max:30',
-            'registros.*.medico_num_registro' => 'nullable|string|max:60',
-            'registros.*.diagnostico'      => 'nullable|string|max:255',
-            'registros.*.cantidad'         => 'required|numeric|min:0.01',
-            'registros.*.unidad'           => 'nullable|string|max:50',
-        ]);
+        $desde = $request->desde ?? now()->startOfMonth()->toDateString();
+        $hasta = $request->hasta ?? now()->toDateString();
 
-        try {
-            DB::beginTransaction();
+        $query = RegistroVentaControlado::with([
+            'producto.laboratorio',
+            'venta.usuario',
+            'devolucion',
+            'compra.proveedor',
+            'despachador',
+            'lote',
+        ])
+        ->whereDate('created_at', '>=', $desde)
+        ->whereDate('created_at', '<=', $hasta);
 
-            foreach ($request->registros as $item) {
-                RegistroVentaControlado::create([
-                    'venta_id'            => $request->venta_id,
-                    'producto_id'         => $item['producto_id'],
-                    'lote_id'             => $item['lote_id'] ?? null,
-                    'nivel_controlado'    => $item['nivel_controlado'],
-                    'paciente_nombre'     => $item['paciente_nombre'],
-                    'paciente_cedula'     => $item['paciente_cedula'] ?? null,
-                    'paciente_edad'       => $item['paciente_edad'] ?? null,
-                    'medico_nombre'       => $item['medico_nombre'],
-                    'medico_cedula'       => $item['medico_cedula'] ?? null,
-                    'medico_num_registro' => $item['medico_num_registro'] ?? null,
-                    'diagnostico'         => $item['diagnostico'] ?? null,
-                    'cantidad'            => $item['cantidad'],
-                    'unidad'              => $item['unidad'] ?? 'unidad',
-                    'user_id'             => auth()->id(),
+        if ($request->filled('tipo_movimiento')) {
+            $query->tipoMovimiento($request->tipo_movimiento);
+        }
+
+        if ($request->filled('tipo_despacho')) {
+            if ($request->tipo_despacho === 'omision') {
+                $query->conOmision();
+            } elseif ($request->tipo_despacho === 'con_receta') {
+                $query->conReceta();
+            }
+        }
+
+        if ($request->filled('producto_id')) {
+            $query->where('producto_id', $request->producto_id);
+        }
+
+        if ($request->filled('q')) {
+            $q = '%' . trim($request->q) . '%';
+            $query->where(function ($sub) use ($q) {
+                $sub->where('paciente_nombre', 'like', $q)
+                    ->orWhere('paciente_cedula', 'like', $q)
+                    ->orWhere('medico_nombre', 'like', $q)
+                    ->orWhere('medico_num_registro', 'like', $q)
+                    ->orWhere('motivo_omision', 'like', $q)
+                    ->orWhereHas('producto', function ($pq) use ($q) {
+                        $pq->where('nombre', 'like', $q)
+                           ->orWhere('principio_activo', 'like', $q);
+                    })
+                    ->orWhereHas('lote', function ($lq) use ($q) {
+                        $lq->where('numero_lote', 'like', $q);
+                    });
+            });
+        }
+
+        $registros = $query->orderBy('created_at')->get();
+
+        $filename = "Libro_Controlados_MINSA_{$desde}_al_{$hasta}.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($registros) {
+            $file = fopen('php://output', 'w');
+            // BOM UTF-8 for native Excel open
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'N° Folio',
+                'Fecha',
+                'Hora',
+                'Tipo Operación',
+                'Efecto',
+                'Medicamento',
+                'Principio Activo',
+                'Concentración',
+                'Laboratorio',
+                'Lote FEFO',
+                'Vencimiento Lote',
+                'Cantidad',
+                'Unidad',
+                'Paciente / Beneficiario',
+                'Cédula Paciente',
+                'Edad Paciente',
+                'Médico Prescriptor',
+                'Cédula Médico',
+                'N° Registro MINSA',
+                'Diagnóstico / Justificación Oficial',
+                'Responsable / Farmacéutico',
+                'Documento Referencia'
+            ]);
+
+            foreach ($registros as $reg) {
+                $docRef = '';
+                if ($reg->venta_id) {
+                    $docRef = 'Venta #' . str_pad($reg->venta_id, 5, '0', STR_PAD_LEFT);
+                } elseif ($reg->devolucion) {
+                    $docRef = $reg->devolucion->numero_devolucion;
+                } elseif ($reg->compra) {
+                    $docRef = 'Compra #' . $reg->compra->numero_comprobante;
+                } elseif ($reg->movimiento_inventario_id) {
+                    $docRef = 'Ajuste #' . $reg->movimiento_inventario_id;
+                }
+
+                fputcsv($file, [
+                    $reg->id,
+                    $reg->created_at->format('d/m/Y'),
+                    $reg->created_at->format('H:i'),
+                    $reg->tipo_etiqueta,
+                    $reg->esEntrada() ? 'ENTRADA (+)' : 'SALIDA (-)',
+                    $reg->producto->nombre ?? 'N/A',
+                    $reg->producto?->principio_activo ?? '',
+                    $reg->producto?->concentracion ?? '',
+                    $reg->producto?->laboratorio?->nombre ?? '',
+                    $reg->lote?->numero_lote ?? '',
+                    $reg->lote?->fecha_vencimiento ? $reg->lote->fecha_vencimiento->format('d/m/Y') : '',
+                    ($reg->esEntrada() ? '+' : '-') . number_format($reg->cantidad, 0),
+                    $reg->unidad ?: 'unidades',
+                    $reg->paciente_nombre,
+                    $reg->paciente_cedula ?? '',
+                    $reg->paciente_edad ? $reg->paciente_edad . ' años' : '',
+                    $reg->medico_nombre ?? '',
+                    $reg->medico_cedula ?? '',
+                    $reg->medico_num_registro ?? '',
+                    $reg->motivo_omision ?: ($reg->diagnostico ?: 'Tratamiento prescrito'),
+                    $reg->despachador->name ?? 'Sistema',
+                    $docRef
                 ]);
             }
 
-            DB::commit();
+            fclose($file);
+        };
 
-            return response()->json(['success' => true]);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Subir fotografía o evidencia escaneada de la receta física o justificante.
+     */
+    public function subirEvidencia(Request $request, RegistroVentaControlado $registro)
+    {
+        $request->validate([
+            'foto_receta' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:5120'],
+        ]);
+
+        try {
+            if ($registro->ruta_foto_receta && Storage::disk('local')->exists($registro->ruta_foto_receta)) {
+                Storage::disk('local')->delete($registro->ruta_foto_receta);
+            }
+
+            $path = $request->file('foto_receta')->store('recetas_controlados', 'local');
+            $registro->update(['ruta_foto_receta' => $path]);
+
+            AuditLog::log('controlados', 'subir_evidencia', "Evidencia adjunta al registro de controlado #{$registro->id}", [
+                'registro_id' => $registro->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('success', 'Documento de evidencia adjuntado exitosamente.');
+        } catch (Exception $e) {
+            return back()->with('error', 'Error al subir la evidencia: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Visualizar evidencia fotográfica o justificante digital de forma segura.
+     */
+    public function verEvidencia(RegistroVentaControlado $registro)
+    {
+        if (empty($registro->ruta_foto_receta)) {
+            abort(404, 'No hay archivo de evidencia adjunto a este registro.');
+        }
+
+        $path = null;
+        if (Storage::disk('local')->exists($registro->ruta_foto_receta)) {
+            $path = Storage::disk('local')->path($registro->ruta_foto_receta);
+        } elseif (Storage::disk('public')->exists($registro->ruta_foto_receta)) {
+            $path = Storage::disk('public')->path($registro->ruta_foto_receta);
+        }
+
+        if (!$path || !file_exists($path)) {
+            abort(404, 'El archivo físico no fue encontrado en el servidor.');
+        }
+
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+        $fileName = basename($registro->ruta_foto_receta);
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => "inline; filename=\"{$fileName}\"",
+            'Cache-Control' => 'private, no-cache, no-store, must-revalidate',
+        ]);
     }
 }

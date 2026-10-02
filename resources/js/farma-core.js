@@ -516,12 +516,23 @@ class FarmaDraftEngine {
         if (indicator) return; // ya visible
 
         // Buscar el contenedor más apropiado para insertar el banner:
-        // 1. El primer h1/h2 visible de la página (insertar antes)
-        // 2. El contenido principal (.content-wrapper, main > div, etc.)
-        // 3. El form como último recurso
+        // Subimos al primer ancestro directo de main que contiene el h1/h2,
+        // para que el banner quede ENCIMA del bloque de encabezado completo (incluyendo botones de acción).
         const heading = document.querySelector('main h1, main h2, .page-header');
         const mainContent = document.querySelector('main > div, main > section, .content-wrapper');
         const targetContainer = mainContent || document.querySelector('main') || this.form || document.body;
+
+        // Buscar el bloque contenedor del heading (su padre directo dentro de main > div)
+        // para insertar el banner ANTES de ese bloque, no dentro del flex-row del título.
+        let headingBlock = null;
+        if (heading) {
+            // Subir hasta encontrar un hijo directo del targetContainer
+            let el = heading;
+            while (el && el.parentElement && el.parentElement !== targetContainer) {
+                el = el.parentElement;
+            }
+            headingBlock = (el && el.parentElement === targetContainer) ? el : null;
+        }
 
         indicator = document.createElement('div');
         indicator.id = 'farma-draft-indicator';
@@ -544,8 +555,10 @@ class FarmaDraftEngine {
             </div>
         `;
 
-        // Insertar antes del heading si existe, sino al inicio del contenedor
-        if (heading && heading.parentNode) {
+        // Insertar antes del bloque completo de encabezado (no dentro del flex-row del título)
+        if (headingBlock) {
+            targetContainer.insertBefore(indicator, headingBlock);
+        } else if (heading && heading.parentNode) {
             heading.parentNode.insertBefore(indicator, heading);
         } else {
             targetContainer.prepend(indicator);
@@ -783,9 +796,88 @@ window.farmaNotify = function(message, type = 'info', title = null) {
     }
 };
 
+// ==========================================
+// AUTO-COLLAPSE SIDEBAR ON MODAL OPEN
+// ==========================================
+class FarmaModalWatcher {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        const modalEvents = ['open-modal', 'modal-open', 'farma:modal-open', 'confirmar'];
+        modalEvents.forEach(evt => {
+            window.addEventListener(evt, () => this.triggerCollapse());
+        });
+
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList') {
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE && this.isModalElement(node)) {
+                            if (this.isElementVisible(node)) {
+                                this.triggerCollapse();
+                                return;
+                            }
+                        }
+                    }
+                } else if (mutation.type === 'attributes' && (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+                    const target = mutation.target;
+                    if (target.nodeType === Node.ELEMENT_NODE && this.isModalElement(target)) {
+                        if (this.isElementVisible(target)) {
+                            this.triggerCollapse();
+                            return;
+                        }
+                    }
+                }
+            }
+        });
+
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class']
+            });
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+            });
+        }
+    }
+
+    isModalElement(el) {
+        if (!el || !el.classList) return false;
+        return (
+            (el.classList.contains('fixed') && el.classList.contains('inset-0') && (el.classList.contains('z-[9999]') || el.classList.contains('z-[10000]') || el.classList.contains('z-50'))) ||
+            el.getAttribute('role') === 'dialog' ||
+            (typeof el.id === 'string' && el.id.startsWith('modal'))
+        );
+    }
+
+    isElementVisible(el) {
+        if (el.classList.contains('hidden')) return false;
+        if (el.style.display === 'none') return false;
+        if (el.hasAttribute('x-cloak') && !window.Alpine) return false;
+        return true;
+    }
+
+    triggerCollapse() {
+        window.dispatchEvent(new CustomEvent('collapse-sidebar'));
+    }
+}
+
 // Instantiate systems
 window.farmaProgressBar = new FarmaProgressBar();
 window.farmaDraftEngine = new FarmaDraftEngine();
 window.farmaToast = new FarmaToastEngine();
+window.farmaModalWatcher = new FarmaModalWatcher();
 setupGlobalHttpInterceptors();
+
 

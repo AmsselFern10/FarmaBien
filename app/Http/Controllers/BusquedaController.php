@@ -32,7 +32,7 @@ class BusquedaController extends Controller
 
         // ── Productos ──────────────────────────────────────────────────────
         $productos = Producto::select('id', 'nombre', 'principio_activo', 'codigo_barra',
-                                      'precio_venta', 'activo', 'nivel_controlado')
+                                      'precio_venta', 'activo', 'tipo_control', 'requiere_receta')
             ->where(function ($w) use ($like) {
                 $w->where('nombre', 'like', $like)
                   ->orWhere('principio_activo', 'like', $like)
@@ -41,13 +41,14 @@ class BusquedaController extends Controller
             ->limit(5)
             ->get()
             ->map(fn ($p) => [
-                'id'               => $p->id,
-                'nombre'           => $p->nombre,
-                'subtitulo'        => $p->principio_activo ?: $p->codigo_barra,
-                'precio'           => number_format($p->precio_venta, 2),
-                'activo'           => $p->activo,
-                'nivel_controlado' => $p->nivel_controlado,
-                'url'              => route('productos.show', $p->id),
+                'id'            => $p->id,
+                'nombre'        => $p->nombre,
+                'subtitulo'     => $p->principio_activo ?: $p->codigo_barra,
+                'precio'        => number_format($p->precio_venta, 2),
+                'activo'        => $p->activo,
+                'tipo_control'  => $p->tipo_control,
+                'es_controlado' => $p->esControlado(),
+                'url'           => route('productos.show', $p->id),
             ]);
 
         // ── Clientes ───────────────────────────────────────────────────────

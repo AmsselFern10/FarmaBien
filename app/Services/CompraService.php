@@ -75,6 +75,20 @@ class CompraService
                 'saldo_pendiente' => $condicionPago === 'credito' ? $totalFinal : 0,
             ]);
 
+            // 4. Si proviene de una Orden de Compra, asociar y marcar recibida
+            if (!empty($data['orden_compra_id'])) {
+                $ordenCompra = \App\Models\OrdenCompra::find($data['orden_compra_id']);
+                if ($ordenCompra) {
+                    $ordenCompra->update([
+                        'compra_id' => $compra->id,
+                        'estado'    => 'recibida_total',
+                    ]);
+                    foreach ($ordenCompra->detalles as $ordDet) {
+                        $ordDet->update(['cantidad_recibida' => $ordDet->cantidad_solicitada]);
+                    }
+                }
+            }
+
             return $compra->load([
                 'detalles.producto.laboratorio',
                 'detalles.lote',
@@ -231,6 +245,23 @@ class CompraService
             'observaciones'             => "Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) - Lote {$numeroLote}",
         ]);
 
+        // 5. Asentar en Libro Oficial MINSA si el producto es controlado
+        if ($producto->esControlado()) {
+            \App\Models\RegistroVentaControlado::create([
+                'tipo_movimiento'     => \App\Models\RegistroVentaControlado::TIPO_COMPRA,
+                'compra_id'           => $compra->id,
+                'producto_id'         => $producto->id,
+                'lote_id'             => $lote->id,
+                'nivel_controlado'    => 1,
+                'paciente_nombre'     => 'Proveedor: ' . ($compra->proveedor?->nombre ?? 'Distribuidora Farmacéutica'),
+                'paciente_cedula'     => $compra->proveedor?->ruc ?? null,
+                'motivo_omision'      => "Ingreso de Fármaco Controlado por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) - Lote: {$numeroLote}",
+                'cantidad'            => $cantidadUnidadesBase,
+                'unidad'              => 'unidad',
+                'user_id'             => Auth::id() ?? $compra->user_id,
+            ]);
+        }
+
         // 5. Actualizar precio de compra de referencia en el producto
         $producto->update(['precio_compra' => $costoUnitarioBase]);
 
@@ -355,6 +386,23 @@ class CompraService
                     'motivo'           => "Anulación de compra #{$compra->id}: {$motivo} (Lote: {$loteBloqueado->numero_lote})",
                     'fecha_movimiento' => now(),
                 ]);
+
+                // Registrar salida/reversión en el Libro Oficial de Controlados MINSA si aplica
+                if ($loteBloqueado->producto && $loteBloqueado->producto->esControlado()) {
+                    \App\Models\RegistroVentaControlado::create([
+                        'tipo_movimiento'     => \App\Models\RegistroVentaControlado::TIPO_ANULACION_COMPRA,
+                        'compra_id'           => $compra->id,
+                        'producto_id'         => $loteBloqueado->producto_id,
+                        'lote_id'             => $loteBloqueado->id,
+                        'nivel_controlado'    => 1,
+                        'paciente_nombre'     => 'Proveedor: ' . ($compra->proveedor?->nombre ?? 'Distribuidora Farmacéutica'),
+                        'paciente_cedula'     => $compra->proveedor?->ruc ?? null,
+                        'motivo_omision'      => "Reversión por Anulación de Compra #{$compra->id}: {$motivo} - Lote: {$loteBloqueado->numero_lote}",
+                        'cantidad'            => $cantidadARevertir,
+                        'unidad'              => 'unidad',
+                        'user_id'             => Auth::id() ?? 1,
+                    ]);
+                }
             }
 
             // Remover del historial de precios los registros generados por esta compra anulada

@@ -25,7 +25,7 @@ class UpdateProductoRequest extends FormRequest
             'categoria_id' => ['required', 'integer', 'exists:categorias,id'],
             'laboratorio_id' => ['nullable', 'integer', 'exists:laboratorios,id'],
             'registro_sanitario' => ['nullable', 'string', 'max:100'],
-            'tipo_control' => ['required', 'in:venta_libre,receta_medica,receta_retenida'],
+            'tipo_control' => ['required', 'string', 'in:venta_libre,controlado'],
             'precio_compra' => ['nullable', 'numeric', 'min:0', 'max:9999999.99'],
             'precio_venta' => ['required', 'numeric', 'min:0.01', 'max:9999999.99'],
             'stock_minimo' => ['nullable', 'integer', 'min:0', 'max:1000000'],
@@ -34,7 +34,6 @@ class UpdateProductoRequest extends FormRequest
             'imagen' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'requiere_receta' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
-            'nivel_controlado' => ['nullable', 'integer', 'min:0', 'max:3'],
             'presentaciones' => ['nullable', 'array'],
             'presentaciones.*.id' => ['nullable', 'integer'],
             'presentaciones.*.nombre' => ['nullable', 'string', 'max:100'],
@@ -81,7 +80,7 @@ class UpdateProductoRequest extends FormRequest
             'precio_compra' => $this->filled('precio_compra') ? (float)$this->input('precio_compra') : 0,
             'precio_venta' => $this->filled('precio_venta') ? (float)$this->input('precio_venta') : null,
             'stock_minimo' => $this->filled('stock_minimo') ? (int)$this->input('stock_minimo') : 0,
-            'requiere_receta' => $this->boolean('requiere_receta') || in_array($this->input('tipo_control'), ['receta_medica', 'receta_retenida']),
+            'requiere_receta' => $this->input('tipo_control') === 'controlado' || $this->boolean('requiere_receta'),
             'activo' => $this->has('activo') ? $this->boolean('activo') : true,
         ]);
     }

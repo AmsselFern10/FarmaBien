@@ -29,6 +29,13 @@
         </div>
         
         <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- Navigation Button First -->
+            <a href="{{ route('compras.index') }}" 
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl shadow-xs transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Compras</span>
+            </a>
+
             <!-- Botón Modo Full -->
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
@@ -41,8 +48,8 @@
             <!-- Registrar Deuda / Factura Directa -->
             <button type="button" 
                     @click="abrirModalDirecta()" 
-                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-indigo-50/80 hover:bg-indigo-100/90 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-900 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800/80 shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-indigo-700 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>+ Factura / Gasto Directo</span>
             </button>
 
@@ -61,9 +68,9 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Deuda Total Pendiente</p>
+                <p class="text-xs font-semibold text-slate-900 dark:text-slate-300">Deuda Total Pendiente</p>
                 <p class="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">{{ formato_moneda($metricas['total_deuda']) }}</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">{{ $metricas['total_facturas_pendientes'] }} factura(s)</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">{{ $metricas['total_facturas_pendientes'] }} factura(s)</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -72,9 +79,9 @@
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-rose-200 dark:border-rose-900/50 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-rose-600 dark:text-rose-400">Deuda Vencida (Mora)</p>
-                <p class="text-xl font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">{{ formato_moneda($metricas['deuda_vencida']) }}</p>
-                <p class="text-[11px] text-rose-500 mt-0.5">Atención prioritaria</p>
+                <p class="text-xs font-semibold text-slate-900 dark:text-slate-300">Deuda Vencida (Mora)</p>
+                <p class="text-xl font-extrabold text-rose-900 dark:text-rose-400 mt-0.5">{{ formato_moneda($metricas['deuda_vencida']) }}</p>
+                <p class="text-[11px] text-rose-600 dark:text-rose-400 font-bold mt-0.5">Atención prioritaria</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -83,9 +90,9 @@
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-amber-200 dark:border-amber-900/50 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-amber-600 dark:text-amber-400">Vence en ≤ 7 Días</p>
-                <p class="text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-0.5">{{ formato_moneda($metricas['deuda_por_vencer_7_dias']) }}</p>
-                <p class="text-[11px] text-amber-500 mt-0.5">Programar pagos</p>
+                <p class="text-xs font-semibold text-slate-900 dark:text-slate-300">Vence en ≤ 7 Días</p>
+                <p class="text-xl font-extrabold text-amber-900 dark:text-amber-400 mt-0.5">{{ formato_moneda($metricas['deuda_por_vencer_7_dias']) }}</p>
+                <p class="text-[11px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">Programar pagos</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -94,7 +101,7 @@
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Bancos Autorizados</p>
+                <p class="text-xs font-semibold text-slate-900 dark:text-slate-300">Bancos Autorizados</p>
                 <p class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">LAFISE • BAC • Banpro</p>
                 <p class="text-[11px] text-slate-400">Ficohsa • Avanz • BDF</p>
             </div>
@@ -109,15 +116,15 @@
         <!-- Tabs -->
         <div class="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 pb-3 overflow-x-auto">
             <a href="{{ route('cuentas-por-pagar.index', array_merge(request()->except('estado_pago', 'page'), ['estado_pago' => 'pendientes'])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ $filtroEstado === 'pendientes' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ $filtroEstado === 'pendientes' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                 Pendientes y Parciales
             </a>
             <a href="{{ route('cuentas-por-pagar.index', array_merge(request()->except('estado_pago', 'page'), ['estado_pago' => 'vencidas'])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ $filtroEstado === 'vencidas' ? 'bg-rose-600 text-white' : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40' }}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ $filtroEstado === 'vencidas' ? 'bg-rose-600 text-white' : 'text-rose-900 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40' }}">
                 Vencidas
             </a>
             <a href="{{ route('cuentas-por-pagar.index', array_merge(request()->except('estado_pago', 'page'), ['estado_pago' => 'pagadas'])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ $filtroEstado === 'pagadas' ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ $filtroEstado === 'pagadas' ? 'bg-emerald-600 text-white' : 'text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                 Pagadas Totalmente
             </a>
         </div>
@@ -240,11 +247,11 @@
                         <!-- Saldo Pendiente -->
                         <td class="px-4 py-3 text-right font-mono">
                             @if($compra->saldo_pendiente > 0)
-                                <span class="font-extrabold text-sm text-rose-600 dark:text-rose-400">
+                                <span class="font-extrabold text-sm text-rose-900 dark:text-rose-400">
                                     {{ formato_moneda($compra->saldo_pendiente) }}
                                 </span>
                             @else
-                                <span class="font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                                <span class="font-bold text-xs text-emerald-900 dark:text-emerald-400">
                                     C$ 0.00
                                 </span>
                             @endif
@@ -253,19 +260,19 @@
                         <!-- Estado Pago -->
                         <td class="px-4 py-3 text-center whitespace-nowrap">
                             @if($compra->saldo_pendiente <= 0)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
                                     Pagado
                                 </span>
                             @elseif($compra->saldo_pendiente < $compra->total)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
                                     Parcial
                                 </span>
                             @elseif($estaVencida)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800">
                                     Mora
                                 </span>
                             @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
                                     Pendiente
                                 </span>
                             @endif
@@ -273,7 +280,7 @@
 
                         <!-- Acciones -->
                         <td class="px-4 py-3 text-center whitespace-nowrap">
-                            <div class="flex items-center justify-center space-x-1.5">
+                            <div class="inline-flex items-center justify-center gap-1.5">
                                 @if($compra->saldo_pendiente > 0)
                                 <button type="button" 
                                         @click="abrirModalAbono({
@@ -284,16 +291,16 @@
                                             total: {{ $compra->total }},
                                             url: '{{ route('cuentas-por-pagar.abonos.store', $compra) }}'
                                         })"
-                                        class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition shadow-2xs flex items-center space-x-1">
+                                        title="Registrar Abono"
+                                        class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                    <span>Abonar</span>
                                 </button>
                                 @endif
 
                                 <a href="{{ route('cuentas-por-pagar.show', $compra) }}" 
                                    title="Ver Estado de Cuenta y Pagos"
-                                   class="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                   class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-300 dark:border-sky-800/60 inline-flex items-center justify-center transition shadow-2xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 </a>
                             </div>
                         </td>
@@ -322,15 +329,17 @@
     <!-- ============================================================== -->
     <!-- MODAL 1: REGISTRAR ABONO A PROVEEDOR                          -->
     <!-- ============================================================== -->
+    <template x-teleport="body">
     <div x-show="modalAbonoOpen" 
          x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity"
+         class="fixed inset-0 z-[9999] p-3 sm:p-6 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm transition-opacity overflow-y-auto"
          @keydown.escape.window="modalAbonoOpen = false">
         
-        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar my-auto"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl my-auto flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden"
              @click.outside="modalAbonoOpen = false">
             
-            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <!-- Modal Header (Fixed) -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -340,115 +349,124 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[280px]" x-text="compraSeleccionada.proveedor + ' (' + compraSeleccionada.numero + ')'"></p>
                     </div>
                 </div>
-                <button type="button" @click="modalAbonoOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base font-bold p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">✕</button>
+                <button type="button" @click="modalAbonoOpen = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
             </div>
 
-            <!-- Balance Banner -->
-            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs">
-                <div>
-                    <span class="text-slate-500 dark:text-slate-400 font-medium block">Saldo Pendiente Actual:</span>
-                    <p class="text-lg font-black text-rose-600 dark:text-rose-400 mt-0.5" x-text="formatoMoneda(compraSeleccionada.saldo)"></p>
-                </div>
-                <button type="button" 
-                        @click="montoAbono = compraSeleccionada.saldo"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-200 transition cursor-pointer">
-                    Pagar Totalidad
-                </button>
-            </div>
-
-            <form :action="compraSeleccionada.url" method="POST" class="space-y-4">
+            <!-- Form Container -->
+            <form :action="compraSeleccionada.url" method="POST" class="flex flex-col flex-1 overflow-hidden">
                 @csrf
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Monto a Abonar (C$) <span class="text-rose-500">*</span></label>
-                    <input type="number" 
-                           name="monto" 
-                           x-model="montoAbono" 
-                           step="0.01" 
-                           min="0.01" 
-                           :max="compraSeleccionada.saldo" 
-                           required 
-                           class="w-full px-3.5 py-2 text-sm font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Forma de Pago <span class="text-rose-500">*</span></label>
-                        <select name="metodo_pago" x-model="metodoPago" required 
-                                class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                            <option value="transferencia">Transferencia Bancaria</option>
-                            <option value="efectivo">Efectivo</option>
-                            <option value="cheque">Cheque</option>
-                            <option value="otro">Otro</option>
-                        </select>
+                
+                <!-- Scrollable Form Body -->
+                <div class="space-y-4 py-3 overflow-y-auto pr-1 flex-1 custom-scrollbar">
+                    <!-- Balance Banner -->
+                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-slate-500 dark:text-slate-400 font-medium block">Saldo Pendiente:</span>
+                            <p class="text-base font-black text-rose-600 dark:text-rose-400 mt-0.5" x-text="formatoMoneda(compraSeleccionada.saldo)"></p>
+                        </div>
+                        <button type="button" 
+                                @click="montoAbono = compraSeleccionada.saldo"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-200 transition cursor-pointer">
+                            Pagar Totalidad
+                        </button>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha de Pago</label>
-                        <input type="date" name="fecha_pago" value="{{ now()->toDateString() }}" 
-                               class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Monto a Abonar (C$) <span class="text-rose-500">*</span></label>
+                        <input type="number" 
+                               name="monto" 
+                               x-model="montoAbono" 
+                               step="0.01" 
+                               min="0.01" 
+                               :max="compraSeleccionada.saldo" 
+                               required 
+                               class="w-full px-3.5 py-2 text-sm font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
                     </div>
-                </div>
 
-                <div x-show="metodoPago === 'transferencia' || metodoPago === 'cheque'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Forma de Pago <span class="text-rose-500">*</span></label>
+                            <select name="metodo_pago" x-model="metodoPago" required 
+                                    class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                <option value="transferencia">Transferencia Bancaria</option>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha de Pago</label>
+                            <input type="date" name="fecha_pago" value="{{ now()->toDateString() }}" 
+                                   class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+
+                    <div x-show="metodoPago === 'transferencia' || metodoPago === 'cheque'" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Banco Emisor / Receptor</label>
+                            <select name="banco" class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                <option value="">Seleccione Banco...</option>
+                                <option value="BAC Credomatic">BAC Credomatic</option>
+                                <option value="Banco LAFISE Bancentro">Banco LAFISE Bancentro</option>
+                                <option value="Banpro Grupo Promerica">Banpro Grupo Promerica</option>
+                                <option value="Banco Ficohsa">Banco Ficohsa</option>
+                                <option value="Banco Avanz">Banco Avanz</option>
+                                <option value="Banco BDF">Banco BDF</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">N° Referencia / Cheque</label>
+                            <input type="text" name="numero_referencia" placeholder="Ej: TR-984812"
+                                   class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Banco Emisor / Receptor</label>
-                        <select name="banco" class="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                            <option value="">Seleccione Banco...</option>
-                            <option value="BAC Credomatic">BAC Credomatic</option>
-                            <option value="Banco LAFISE Bancentro">Banco LAFISE Bancentro</option>
-                            <option value="Banpro Grupo Promerica">Banpro Grupo Promerica</option>
-                            <option value="Banco Ficohsa">Banco Ficohsa</option>
-                            <option value="Banco Avanz">Banco Avanz</option>
-                            <option value="Banco BDF">Banco BDF</option>
-                            <option value="Otro">Otro</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
+                        <textarea name="observaciones" rows="2" placeholder="Nota o detalle sobre el abono..."
+                                  class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"></textarea>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">N° de Referencia / Cheque</label>
-                        <input type="text" name="numero_referencia" placeholder="Ej: TR-984812"
-                               class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+
+                    <div x-show="metodoPago === 'efectivo'" class="pt-1">
+                        <label class="inline-flex items-center text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                            <input type="checkbox" name="registrar_en_caja" value="1" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
+                            Registrar egreso automáticamente en la caja activa del turno
+                        </label>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
-                    <textarea name="observaciones" rows="2" placeholder="Nota o detalle sobre el abono..."
-                              class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"></textarea>
-                </div>
-
-                <div x-show="metodoPago === 'efectivo'" class="pt-1">
-                    <label class="inline-flex items-center text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
-                        <input type="checkbox" name="registrar_en_caja" value="1" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
-                        Registrar egreso automáticamente en la caja activa del turno
-                    </label>
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <!-- Modal Footer (Fixed at Bottom) -->
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
                     <button type="button" @click="modalAbonoOpen = false" 
-                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" 
-                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition">
+                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition cursor-pointer">
                         Guardar Abono
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    </template>
 
     <!-- ============================================================== -->
     <!-- MODAL 2: REGISTRAR CUENTA POR PAGAR DIRECTA (SERVICIOS/INSUMOS)-->
     <!-- ============================================================== -->
+    <template x-teleport="body">
     <div x-show="modalDirectaOpen" 
          x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity"
+         class="fixed inset-0 z-[9999] p-3 sm:p-6 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm transition-opacity overflow-y-auto"
          @keydown.escape.window="modalDirectaOpen = false">
         
-        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar my-auto"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl my-auto flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden"
              @click.outside="modalDirectaOpen = false">
             
-            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <!-- Modal Header (Fixed) -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -458,127 +476,133 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400">Registra deudas con proveedores sin requerir inventario de medicamentos</p>
                     </div>
                 </div>
-                <button type="button" @click="modalDirectaOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base font-bold p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">✕</button>
+                <button type="button" @click="modalDirectaOpen = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
             </div>
 
-            <form action="{{ route('cuentas-por-pagar.directa.store') }}" method="POST" class="space-y-4">
+            <!-- Form Container -->
+            <form action="{{ route('cuentas-por-pagar.directa.store') }}" method="POST" class="flex flex-col flex-1 overflow-hidden">
                 @csrf
 
-                <!-- Proveedor con Buscador AJAX / Predictivo -->
-                <div class="relative z-30" @click.outside="provDropdown = false">
-                    <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                        Proveedor / Acreedor <span class="text-rose-500">*</span>
-                    </label>
-                    <input type="hidden" name="proveedor_id" :value="directa.proveedor_id" required>
+                <!-- Scrollable Form Body -->
+                <div class="space-y-4 py-3 overflow-y-auto pr-1 flex-1 custom-scrollbar">
+                    <!-- Proveedor con Buscador AJAX / Predictivo -->
+                    <div class="relative z-30" @click.outside="provDropdown = false">
+                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                            Proveedor / Acreedor <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="hidden" name="proveedor_id" :value="directa.proveedor_id" required>
 
-                    <!-- Proveedor Seleccionado -->
-                    <template x-if="directa.proveedorSeleccionado">
-                        <div class="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs">
-                            <div class="flex items-center space-x-2 truncate">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                <span class="font-bold text-emerald-950 dark:text-emerald-200 truncate" x-text="directa.proveedorSeleccionado.nombre_empresa || directa.proveedorSeleccionado.nombre"></span>
-                                <span class="text-emerald-700 dark:text-emerald-400 font-mono text-[11px]" x-show="directa.proveedorSeleccionado.ruc" x-text="'• RUC: ' + directa.proveedorSeleccionado.ruc"></span>
+                        <!-- Proveedor Seleccionado -->
+                        <template x-if="directa.proveedorSeleccionado">
+                            <div class="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs">
+                                <div class="flex items-center space-x-2 truncate">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                    <span class="font-bold text-emerald-950 dark:text-emerald-200 truncate" x-text="directa.proveedorSeleccionado.nombre_empresa || directa.proveedorSeleccionado.nombre"></span>
+                                    <span class="text-emerald-700 dark:text-emerald-400 font-mono text-[11px]" x-show="directa.proveedorSeleccionado.ruc" x-text="'• RUC: ' + directa.proveedorSeleccionado.ruc"></span>
+                                </div>
+                                <button type="button" @click="directa.proveedor_id = ''; directa.proveedorSeleccionado = null; provQuery = ''" class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline shrink-0 ml-2 cursor-pointer">
+                                    Cambiar
+                                </button>
                             </div>
-                            <button type="button" @click="directa.proveedor_id = ''; directa.proveedorSeleccionado = null; provQuery = ''" class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline shrink-0 ml-2">
-                                Cambiar
-                            </button>
-                        </div>
-                    </template>
+                        </template>
 
-                    <!-- Input de Búsqueda de Proveedor -->
-                    <template x-if="!directa.proveedorSeleccionado">
-                        <div class="relative">
-                            <input type="text" 
-                                   x-model="provQuery" 
-                                   @focus="provDropdown = true"
-                                   @input="provDropdown = true"
-                                   placeholder="🔍 Escribe nombre o RUC del proveedor..."
-                                   class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500">
-                            
-                            <div x-show="provDropdown && filtrarProveedores().length > 0"
-                                 x-cloak
-                                 class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/50">
-                                <template x-for="p in filtrarProveedores()" :key="p.id">
-                                    <button type="button" 
-                                            @click="seleccionarProveedor(p)"
-                                            class="w-full px-3.5 py-2 text-left hover:bg-emerald-50 dark:hover:bg-slate-700 flex items-center justify-between transition">
-                                        <div>
-                                            <span class="text-xs font-bold text-slate-800 dark:text-slate-100 block" x-text="p.nombre_empresa || p.nombre"></span>
-                                            <span class="text-[10px] text-slate-400" x-text="p.contacto ? 'Contacto: ' + p.contacto : (p.ruc ? 'RUC: ' + p.ruc : '')"></span>
-                                        </div>
-                                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Elegir →</span>
-                                    </button>
-                                </template>
+                        <!-- Input de Búsqueda de Proveedor -->
+                        <template x-if="!directa.proveedorSeleccionado">
+                            <div class="relative">
+                                <input type="text" 
+                                       x-model="provQuery" 
+                                       @focus="provDropdown = true"
+                                       @input="provDropdown = true"
+                                       placeholder="🔍 Escribe nombre o RUC del proveedor..."
+                                       class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500">
+                                
+                                <div x-show="provDropdown && filtrarProveedores().length > 0"
+                                     x-cloak
+                                     class="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <template x-for="p in filtrarProveedores()" :key="p.id">
+                                        <button type="button" 
+                                                @click="seleccionarProveedor(p)"
+                                                class="w-full px-3.5 py-2 text-left hover:bg-emerald-50 dark:hover:bg-slate-700 flex items-center justify-between transition cursor-pointer">
+                                            <div>
+                                                <span class="text-xs font-bold text-slate-800 dark:text-slate-100 block" x-text="p.nombre_empresa || p.nombre"></span>
+                                                <span class="text-[10px] text-slate-400" x-text="p.contacto ? 'Contacto: ' + p.contacto : (p.ruc ? 'RUC: ' + p.ruc : '')"></span>
+                                            </div>
+                                            <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Elegir →</span>
+                                        </button>
+                                    </template>
+                                </div>
                             </div>
-                        </div>
-                    </template>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- N° Factura -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">N° Factura / Documento <span class="text-rose-500">*</span></label>
-                        <input type="text" name="numero_comprobante" required placeholder="Ej: F001-00293"
-                               class="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                        </template>
                     </div>
 
-                    <!-- Monto Total (C$) -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Monto Total de la Factura (C$) <span class="text-rose-500">*</span></label>
-                        <input type="number" step="0.01" min="0.01" name="total" required placeholder="0.00"
-                               class="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-right">
-                    </div>
-                </div>
-
-                <!-- Concepto / Detalle -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Concepto / Descripción del Gasto</label>
-                    <input type="text" name="concepto" placeholder="Ej: Insumos de empaque, Servicio de transporte, Mantenimiento..."
-                           class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
-                </div>
-
-                <!-- Fechas y Plazos -->
-                <div class="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-3">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- N° Factura -->
                         <div>
-                            <label class="block text-xs font-bold text-amber-900 dark:text-amber-300 mb-1">Fecha Emisión <span class="text-rose-500">*</span></label>
-                            <input type="date" name="fecha" x-model="directa.fecha" @change="calcularVencimientoDirecta()" required
-                                   class="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">N° Factura / Documento <span class="text-rose-500">*</span></label>
+                            <input type="text" name="numero_comprobante" required placeholder="Ej: F001-00293"
+                                   class="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
                         </div>
 
+                        <!-- Monto Total (C$) -->
                         <div>
-                            <label class="block text-xs font-bold text-amber-900 dark:text-amber-300 mb-1">Fecha de Vencimiento</label>
-                            <input type="date" name="fecha_vencimiento_pago" x-model="directa.fecha_vencimiento_pago" required
-                                   class="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-amber-900 dark:text-amber-200">
+                            <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Monto Total de la Factura (C$) <span class="text-rose-500">*</span></label>
+                            <input type="number" step="0.01" min="0.01" name="total" required placeholder="0.00"
+                                   class="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-right">
                         </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2 pt-1">
-                        <span class="text-xs font-bold text-amber-900 dark:text-amber-300">Plazo de Crédito:</span>
-                        <div class="flex items-center gap-1">
-                            <button type="button" @click="setDiasDirecta(15)" :class="directa.dias_credito == 15 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">15d</button>
-                            <button type="button" @click="setDiasDirecta(30)" :class="directa.dias_credito == 30 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">30d</button>
-                            <button type="button" @click="setDiasDirecta(45)" :class="directa.dias_credito == 45 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">45d</button>
-                            <button type="button" @click="setDiasDirecta(60)" :class="directa.dias_credito == 60 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition">60d</button>
+                    <!-- Concepto / Detalle -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Concepto / Descripción del Gasto</label>
+                        <input type="text" name="concepto" placeholder="Ej: Insumos de empaque, Servicio de transporte, Mantenimiento..."
+                               class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <!-- Fechas y Plazos -->
+                    <div class="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-amber-900 dark:text-amber-300 mb-1">Fecha Emisión <span class="text-rose-500">*</span></label>
+                                <input type="date" name="fecha" x-model="directa.fecha" @change="calcularVencimientoDirecta()" required
+                                       class="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-amber-900 dark:text-amber-300 mb-1">Fecha de Vencimiento</label>
+                                <input type="date" name="fecha_vencimiento_pago" x-model="directa.fecha_vencimiento_pago" required
+                                       class="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-amber-900 dark:text-amber-200">
+                            </div>
                         </div>
-                        <input type="number" name="dias_credito" x-model="directa.dias_credito" @input="calcularVencimientoDirecta()" min="1" max="365" class="w-16 px-2 py-1 text-center text-xs font-bold rounded-lg border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
-                        <span class="text-xs text-amber-800 dark:text-amber-400 font-semibold">días</span>
+
+                        <div class="flex flex-wrap items-center gap-2 pt-1">
+                            <span class="text-xs font-bold text-amber-900 dark:text-amber-300">Plazo de Crédito:</span>
+                            <div class="flex items-center gap-1">
+                                <button type="button" @click="setDiasDirecta(15)" :class="directa.dias_credito == 15 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">15d</button>
+                                <button type="button" @click="setDiasDirecta(30)" :class="directa.dias_credito == 30 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">30d</button>
+                                <button type="button" @click="setDiasDirecta(45)" :class="directa.dias_credito == 45 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">45d</button>
+                                <button type="button" @click="setDiasDirecta(60)" :class="directa.dias_credito == 60 ? 'bg-amber-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">60d</button>
+                            </div>
+                            <input type="number" name="dias_credito" x-model="directa.dias_credito" @input="calcularVencimientoDirecta()" min="1" max="365" class="w-16 px-2 py-1 text-center text-xs font-bold rounded-lg border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                            <span class="text-xs text-amber-800 dark:text-amber-400 font-semibold">días</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <!-- Modal Footer (Fixed at Bottom) -->
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
                     <button type="button" @click="modalDirectaOpen = false" 
-                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" 
-                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 shadow-xs transition">
+                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 shadow-xs transition cursor-pointer">
                         Guardar Cuenta por Pagar
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    </template>
 
 </div>
 

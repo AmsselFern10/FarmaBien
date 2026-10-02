@@ -103,13 +103,17 @@ class HistorialPrecio extends Model
             $provId = $h->proveedor_id;
             if (!isset($porProveedor[$provId])) {
                 $porProveedor[$provId] = [
-                    'proveedor'            => $h->proveedor,
-                    'ultimo_registro'      => $h,
-                    'ultimo_precio_base'   => (float)$h->precio_unitario_base,
-                    'mejor_precio_base'    => (float)$h->precio_unitario_base,
-                    'mejor_registro'       => $h,
-                    'total_operaciones'    => 0,
-                    'registros'            => collect(),
+                    'proveedor'                 => $h->proveedor,
+                    'ultimo_registro'           => $h,
+                    'ultimo_precio_base'        => (float)$h->precio_unitario_base,
+                    'ultimo_precio_compra'      => (float)$h->precio_compra,
+                    'ultima_presentacion'       => $h->presentacion->nombre ?? ($h->tipo_presentacion ?: 'Unidad Base'),
+                    'unidades_por_presentacion' => $h->presentacion->unidades_por_presentacion ?? 1,
+                    'ultima_fecha'              => $h->fecha,
+                    'mejor_precio_base'         => (float)$h->precio_unitario_base,
+                    'mejor_registro'            => $h,
+                    'total_operaciones'         => 0,
+                    'registros'                 => collect(),
                 ];
             }
 

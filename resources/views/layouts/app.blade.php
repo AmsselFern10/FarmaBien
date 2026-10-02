@@ -139,6 +139,10 @@
             window.addEventListener('exit-pos-fullscreen', () => {
                 this.posFullscreen = false;
             });
+            window.addEventListener('collapse-sidebar', () => {
+                this.sidebarCollapsed = true;
+                this.mobileSidebarOpen = false;
+            });
         }
     }" 
     x-init="initShortcuts()"
@@ -175,61 +179,63 @@
         <x-busqueda-global />
 
         <!-- Global Keyboard Shortcuts Modal -->
-        <div x-show="showShortcutsModal" 
-             x-cloak
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 transform scale-95"
-             x-transition:enter-end="opacity-100 transform scale-100"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 transform scale-100"
-             x-transition:leave-end="opacity-0 transform scale-95"
-             @click.self="showShortcutsModal = false"
-             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-            
-            <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
-                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-4">
-                    <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                        <span>⌨️ Atajos de Teclado Rápidos</span>
-                    </h3>
-                    <button @click="showShortcutsModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                </div>
+        <template x-teleport="body">
+            <div x-show="showShortcutsModal" 
+                 x-cloak
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 @click.self="showShortcutsModal = false"
+                 class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+                
+                <div @click.stop class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 my-auto">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-4">
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <span>⌨️ Atajos de Teclado Rápidos</span>
+                        </h3>
+                        <button @click="showShortcutsModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
 
-                <div class="space-y-2.5">
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Punto de Venta (POS) / Nueva Venta</span>
-                        <kbd class="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded text-xs font-mono font-bold">F2</kbd>
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Punto de Venta (POS) / Nueva Venta</span>
+                            <kbd class="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded text-xs font-mono font-bold">F2</kbd>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Registrar Compra / Recepción Lote</span>
+                            <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">F4</kbd>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Panel de Inventario y Kardex</span>
+                            <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">Alt + I</kbd>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Recetas Médicas</span>
+                            <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">Alt + R</kbd>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Catálogo de Medicamentos</span>
+                            <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">Alt + P</kbd>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Ver esta guía de atajos</span>
+                            <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">F1 o ?</kbd>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Registrar Compra / Recepción Lote</span>
-                        <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">F4</kbd>
-                    </div>
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Panel de Inventario y Kardex</span>
-                        <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">Alt + I</kbd>
-                    </div>
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Recetas Médicas</span>
-                        <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">Alt + R</kbd>
-                    </div>
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Catálogo de Medicamentos</span>
-                        <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">Alt + P</kbd>
-                    </div>
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Ver esta guía de atajos</span>
-                        <kbd class="px-2 py-0.5 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 rounded text-xs font-mono font-bold">F1 o ?</kbd>
-                    </div>
-                </div>
 
-                <div class="mt-5 text-center">
-                    <button @click="showShortcutsModal = false" class="px-4 py-2 bg-slate-900 text-white dark:bg-slate-800 rounded-lg text-xs font-semibold hover:bg-slate-800 transition">
-                        Entendido
-                    </button>
+                    <div class="mt-5 text-center">
+                        <button @click="showShortcutsModal = false" class="px-4 py-2 bg-slate-900 text-white dark:bg-slate-800 rounded-lg text-xs font-semibold hover:bg-slate-800 transition">
+                            Entendido
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
         @stack('scripts')
         @if(session('tema_aplicado'))
         <script>

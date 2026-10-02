@@ -178,17 +178,19 @@
     },
     formData: (window.farmaGetDraft ? window.farmaGetDraft('{{ request()->getPathInfo() }}', {
         proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
+        orden_compra_id: @js(old('orden_compra_id', $preloadedOrdenCompraId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
         fecha: @js(old('fecha', date('Y-m-d'))),
-        condicion_pago: @js(old('condicion_pago', 'contado')),
-        dias_credito: @js(old('dias_credito', 30)),
+        condicion_pago: @js(old('condicion_pago', $preloadedCondicionPago ?? 'contado')),
+        dias_credito: @js(old('dias_credito', $preloadedDiasCredito ?? 30)),
         fecha_vencimiento_pago: @js(old('fecha_vencimiento_pago', ''))
     }) : {
         proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
+        orden_compra_id: @js(old('orden_compra_id', $preloadedOrdenCompraId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
         fecha: @js(old('fecha', date('Y-m-d'))),
-        condicion_pago: @js(old('condicion_pago', 'contado')),
-        dias_credito: @js(old('dias_credito', 30)),
+        condicion_pago: @js(old('condicion_pago', $preloadedCondicionPago ?? 'contado')),
+        dias_credito: @js(old('dias_credito', $preloadedDiasCredito ?? 30)),
         fecha_vencimiento_pago: @js(old('fecha_vencimiento_pago', ''))
     }),
     setDiasCredito(dias) {
@@ -560,17 +562,24 @@ class="space-y-4 transition-all duration-200">
         </nav>
 
         <!-- Mode Switcher -->
-        <div class="flex items-center space-x-2 self-start sm:self-auto">
-            <!-- Modo Full Screen (Ocultar Barras) -->
+        <div class="flex items-center space-x-2 self-start sm:self-auto flex-wrap">
+            <!-- 1. Volver a Compras (Primera posición a la izquierda) -->
+            <a href="{{ route('compras.index') }}" 
+               class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
+                <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver a Compras</span>
+            </a>
+
+            <!-- 2. Modo Full Screen (Segunda posición) -->
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+                    class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
                 <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                <span class="hidden sm:inline">Modo Full</span>
+                <span class="hidden sm:inline" x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
-            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-400 hidden md:inline">Diseño:</span>
+            <!-- 3. Selector de Diseño (Extrema derecha) -->
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
@@ -587,18 +596,34 @@ class="space-y-4 transition-all duration-200">
                     <span>Compacta (ERP)</span>
                 </button>
             </div>
-
-            <a href="{{ route('compras.index') }}" 
-               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
-            </a>
         </div>
     </div>
 
     <!-- Main Form -->
     <form action="{{ route('compras.store') }}" method="POST" id="formCompra" @submit="validarYEnviar($event)">
         @csrf
+        <input type="hidden" name="orden_compra_id" :value="formData.orden_compra_id || '{{ $preloadedOrdenCompraId ?? '' }}'">
+
+        @if (!empty($preloadedOrdenCompraId))
+        <!-- Preloaded Orden Compra Banner -->
+        <div class="mb-4 p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 flex items-center justify-between shadow-xs">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </div>
+                <div>
+                    <div class="font-bold text-xs sm:text-sm flex items-center space-x-2">
+                        <span>Recepcionando Orden de Compra #{{ $preloadedNumeroOrden ?? $preloadedOrdenCompraId }}</span>
+                        <span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300">Vinculada</span>
+                    </div>
+                    <p class="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5">Los productos, cantidades, proveedor y condiciones pactadas se han precargado. Ingrese los números de lote y fechas de vencimiento físicas para dar entrada al inventario.</p>
+                </div>
+            </div>
+            <a href="{{ route('ordenes-compras.index') }}" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-2.5 py-1 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shrink-0">
+                Ver Órdenes
+            </a>
+        </div>
+        @endif
 
         <!-- Error Alert -->
         @if ($errors->any())
@@ -819,7 +844,7 @@ class="space-y-4 transition-all duration-200">
                                            @input="busquedaDropdownAbierta = true"
                                            @keydown.enter.prevent="procesarEnterBuscador()"
                                            @keydown.escape="busquedaDropdownAbierta = false"
-                                           placeholder="🔍 Buscar por código, principio activo o nombre... [F3]"
+                                           placeholder="Buscar por código, principio activo o nombre... [F3]"
                                            class="w-full pl-8 pr-10 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-emerald-500 font-medium">
                                     <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                     <span class="absolute right-2 top-1.5 px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-[9px] font-mono text-slate-500 font-bold border border-slate-200 dark:border-slate-600 pointer-events-none">F3</span>
@@ -1184,7 +1209,7 @@ class="space-y-4 transition-all duration-200">
                                            @input="busquedaDropdownAbierta = true"
                                            @keydown.enter.prevent="procesarEnterBuscador()"
                                            @keydown.escape="busquedaDropdownAbierta = false"
-                                           placeholder="🔍 Buscar por código, principio activo o nombre... [F3]"
+                                           placeholder="Buscar por código, principio activo o nombre... [F3]"
                                            class="w-full pl-8 pr-10 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs font-medium">
                                     <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                     <span class="absolute right-2 top-1.5 px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-[9px] font-mono text-slate-500 font-bold border border-slate-200 dark:border-slate-600 pointer-events-none">F3</span>
@@ -1425,13 +1450,14 @@ class="space-y-4 transition-all duration-200">
     <!-- ============================================================== -->
     <!-- MODAL RÁPIDO: CREAR NUEVA PRESENTACIÓN                        -->
     <!-- ============================================================== -->
+    <template x-teleport="body">
     <div x-show="modalNuevaPres" 
          x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm transition-opacity overflow-y-auto"
          @keydown.escape.window="modalNuevaPres = false"
          @click.self="modalNuevaPres = false">
         
-        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-xl space-y-4"
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-xl space-y-4 my-auto"
              @click.stop>
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -1444,7 +1470,7 @@ class="space-y-4 transition-all duration-200">
                         <p class="text-[11px] text-slate-500 dark:text-slate-400" x-text="nuevaPres.producto_nombre"></p>
                     </div>
                 </div>
-                <button @click="modalNuevaPres = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+                <button @click="modalNuevaPres = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
             </div>
 
             <!-- Error Banner in Modal -->
@@ -1518,7 +1544,7 @@ class="space-y-4 transition-all duration-200">
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" 
                         @click="modalNuevaPres = false" 
-                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                     Cancelar
                 </button>
                 <button type="button" 
@@ -1531,6 +1557,7 @@ class="space-y-4 transition-all duration-200">
             </div>
         </div>
     </div>
+    </template>
 
 </div>
 @endsection

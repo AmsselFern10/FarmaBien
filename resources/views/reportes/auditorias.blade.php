@@ -293,56 +293,59 @@
     </div>
 
     {{-- Modal para Inspección de Payload JSON --}}
-    <div x-show="modalDetalles" x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div @click.away="modalDetalles = false"
-             class="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full border border-slate-300 dark:border-slate-800 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            
-            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-                        <span>Detalle de Auditoría &bull; Evento #<span x-text="selectedLog?.id"></span></span>
-                    </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="selectedLog?.descripcion"></p>
-                </div>
-                <button type="button" @click="modalDetalles = false"
-                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-
-            <div class="p-5 space-y-3">
-                <div class="grid grid-cols-3 gap-2 text-xs bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+    <template x-teleport="body">
+        <div x-show="modalDetalles" x-cloak
+             class="fixed inset-0 z-[9999] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+             @keydown.escape.window="modalDetalles = false">
+            <div @click.away="modalDetalles = false"
+                 class="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full border border-slate-300 dark:border-slate-800 shadow-xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+                
+                <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                        <span class="text-slate-400 block text-[10px]">Usuario:</span>
-                        <span class="font-semibold text-slate-800 dark:text-slate-200" x-text="selectedLog?.user?.name || 'Sistema'"></span>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            <span>Detalle de Auditoría &bull; Evento #<span x-text="selectedLog?.id"></span></span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="selectedLog?.descripcion"></p>
                     </div>
-                    <div>
-                        <span class="text-slate-400 block text-[10px]">IP:</span>
-                        <span class="font-mono text-slate-800 dark:text-slate-200" x-text="selectedLog?.ip || 'N/A'"></span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 block text-[10px]">Acción:</span>
-                        <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400" x-text="selectedLog?.accion"></span>
-                    </div>
+                    <button type="button" @click="modalDetalles = false"
+                            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Payload / Información de Cambios:</label>
-                    <pre class="bg-slate-950 text-emerald-400 p-3.5 rounded-xl text-xs font-mono overflow-x-auto max-h-72 select-all leading-relaxed"
-                         x-text="JSON.stringify(selectedLog?.detalles, null, 2)"></pre>
-                </div>
-            </div>
+                <div class="p-5 space-y-3">
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div>
+                            <span class="text-slate-400 block text-[10px]">Usuario:</span>
+                            <span class="font-semibold text-slate-800 dark:text-slate-200" x-text="selectedLog?.user?.name || 'Sistema'"></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px]">IP:</span>
+                            <span class="font-mono text-slate-800 dark:text-slate-200" x-text="selectedLog?.ip || 'N/A'"></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px]">Acción:</span>
+                            <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400" x-text="selectedLog?.accion"></span>
+                        </div>
+                    </div>
 
-            <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                <button type="button" @click="modalDetalles = false"
-                        class="px-4 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition">
-                    Cerrar
-                </button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Payload / Información de Cambios:</label>
+                        <pre class="bg-slate-950 text-emerald-400 p-3.5 rounded-xl text-xs font-mono overflow-x-auto max-h-72 select-all leading-relaxed"
+                             x-text="JSON.stringify(selectedLog?.detalles, null, 2)"></pre>
+                    </div>
+                </div>
+
+                <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                    <button type="button" @click="modalDetalles = false"
+                            class="px-4 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition">
+                        Cerrar
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
+    </template>
 
 </div>
 @endsection

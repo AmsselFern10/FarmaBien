@@ -25,7 +25,6 @@ function recetaEditForm() {
             medico_especialidad: @js(old('medico_especialidad', $receta->medico_especialidad ?? '')),
             institucion_salud: @js(old('institucion_salud', $receta->institucion_salud ?? '')),
             numero_receta: @js(old('numero_receta', $receta->numero_receta ?? '')),
-            tipo_receta: @js(old('tipo_receta', $receta->tipo_receta ?? 'simple')),
             fecha_emision: @js(old('fecha_emision', optional($receta->fecha_emision)->format('Y-m-d') ?? '')),
             fecha_vencimiento: @js(old('fecha_vencimiento', optional($receta->fecha_vencimiento)->format('Y-m-d') ?? '')),
             observaciones: @js(old('observaciones', $receta->observaciones ?? ''))
@@ -119,45 +118,47 @@ window._rxMedicos = {!! $medicosJson !!};
 
 <div
     x-data="recetaEditForm()"
-    x-init="init()"
     :class="formLayout === 'compact' ? 'w-full' : 'max-w-5xl mx-auto'"
     class="space-y-4 transition-all duration-200"
 >
     {{-- Breadcrumb & Toggle --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
-        <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
-            <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 transition">Inicio</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <a href="{{ route('recetas.index') }}" class="hover:text-emerald-600 transition">Recetas Médicas</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <span class="text-slate-800 dark:text-slate-200 font-semibold">Editar Receta #{{ $receta->numero_receta }}</span>
-        </nav>
-        <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
-            <button type="button" @click="setLayout('modern')" :class="formLayout==='modern'?'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold':'text-slate-600 hover:text-slate-900 dark:text-slate-400'" class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                <span>Moderna</span>
-            </button>
-            <button type="button" @click="setLayout('compact')" :class="formLayout==='compact'?'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold':'text-slate-600 hover:text-slate-900 dark:text-slate-400'" class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                <span>Compacta (POS / ERP)</span>
-            </button>
-        </div>
-    </div>
+    {{-- Breadcrumb --}}
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mb-0.5">
+        <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <a href="{{ route('recetas.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Recetas Médicas</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-800 dark:text-slate-200 font-semibold">Editar Receta #{{ $receta->numero_receta }}</span>
+    </nav>
 
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    {{-- Header & Action Toolbar --}}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
         <div>
             <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Editar Receta Médica: {{ $receta->numero_receta }}</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $receta->tipo_receta === 'retenida' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
-                    {{ ucfirst($receta->tipo_receta) }}
-                </span>
             </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Modifica los datos del paciente, médico prescriptor o medicamentos indicados.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Modifica los datos del paciente, médico prescriptor o medicamentos indicados.</p>
         </div>
-        <a href="{{ route('recetas.show', $receta) }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition shrink-0 shadow-2xs">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            <span>Ver Detalle</span>
-        </a>
+        <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <!-- 1. Botón Volver / Precedente (Primero a la izquierda) -->
+            <a href="{{ route('recetas.show', $receta) }}" 
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition shrink-0">
+                <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Receta #{{ $receta->numero_receta }}</span>
+            </a>
+
+            <!-- 2. Selector de Diseño (Moderna / Compacta) integrado en la misma barra -->
+            <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
+                <button type="button" @click="setLayout('modern')" :class="formLayout==='modern'?'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold':'text-slate-600 hover:text-slate-900 dark:text-slate-400'" class="px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    <span>Moderna</span>
+                </button>
+                <button type="button" @click="setLayout('compact')" :class="formLayout==='compact'?'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold':'text-slate-600 hover:text-slate-900 dark:text-slate-400'" class="px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Compacta (POS / ERP)</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     @if($errors->any())
@@ -284,17 +285,10 @@ window._rxMedicos = {!! $medicosJson !!};
                             <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             <span>Datos de la Receta y Medicamentos</span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">N° Receta <span class="text-rose-500">*</span></label>
                                 <input type="text" name="numero_receta" x-model="formData.numero_receta" required placeholder="RX-001..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Tipo <span class="text-rose-500">*</span></label>
-                                <select name="tipo_receta" x-model="formData.tipo_receta" required class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                                    <option value="simple">Simple</option>
-                                    <option value="retenida">Retenida</option>
-                                </select>
                             </div>
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Fecha Emisión <span class="text-rose-500">*</span></label>
@@ -307,15 +301,21 @@ window._rxMedicos = {!! $medicosJson !!};
                         </div>
 
                         {{-- Archivo Adjunto Actual / Reemplazo --}}
-                        <div class="border-t border-slate-200/60 dark:border-slate-700/60 pt-2 space-y-1">
-                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">Archivo / Foto de Receta</label>
-                            @if($receta->archivo_receta)
-                                <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 mb-1.5">
-                                    <span class="truncate">Archivo adjunto guardado</span>
-                                    <a href="{{ route('recetas.archivo', $receta) }}" target="_blank" class="font-bold underline text-[11px] ml-2 shrink-0">Ver / Descargar</a>
-                                </div>
-                            @endif
-                            <input type="file" name="archivo_receta" accept="image/*,application/pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 dark:file:bg-emerald-950 dark:file:text-emerald-300">
+                        <div class="border-t border-slate-200/60 dark:border-slate-700/60 pt-2 space-y-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Archivo / Foto de Receta</label>
+                                @if($receta->archivo_receta)
+                                    <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 mb-1.5">
+                                        <span class="truncate">Archivo adjunto guardado</span>
+                                        <a href="{{ route('recetas.archivo', $receta) }}" target="_blank" class="font-bold underline text-[11px] ml-2 shrink-0">Ver / Descargar</a>
+                                    </div>
+                                @endif
+                                <input type="file" name="archivo_receta" accept=".pdf,.jpg,.jpeg,.png,image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 dark:file:bg-emerald-950 dark:file:text-emerald-300 cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Observaciones / Diagnóstico</label>
+                                <input type="text" name="observaciones" x-model="formData.observaciones" placeholder="Indicaciones adicionales..." class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                            </div>
                         </div>
 
                         {{-- Medicamentos list --}}
@@ -497,17 +497,10 @@ window._rxMedicos = {!! $medicosJson !!};
                         </h3>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">N° de Receta <span class="text-rose-500">*</span></label>
                             <input type="text" name="numero_receta" x-model="formData.numero_receta" required placeholder="RX-2024-001..." class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition @error('numero_receta') border-rose-500 @enderror">
                             @error('numero_receta')<p class="text-rose-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tipo de Receta <span class="text-rose-500">*</span></label>
-                            <select name="tipo_receta" x-model="formData.tipo_receta" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition">
-                                <option value="simple">Simple</option>
-                                <option value="retenida">Retenida (Psicotrópicos / Estupefacientes)</option>
-                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Fecha de Emisión <span class="text-rose-500">*</span></label>

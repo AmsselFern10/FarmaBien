@@ -379,7 +379,7 @@ function posVentaEditData() {
     <!-- Header & Mode Switcher -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
         <div>
-            <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+            <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mb-0.5">
                 <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
                 <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 <a href="{{ route('ventas.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Ventas</a>
@@ -391,26 +391,34 @@ function posVentaEditData() {
             </h1>
         </div>
 
-        <div class="flex items-center space-x-2 self-start sm:self-auto">
-            <!-- Ticket Preview Shortcut Button -->
+        <div class="flex items-center space-x-2 self-start sm:self-auto flex-wrap">
+            <!-- 1. Botón Volver (Primero de izquierda a derecha en la barra de acciones) -->
+            <a href="{{ route('ventas.show', $venta) }}" 
+               class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition shrink-0 shadow-2xs">
+                <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Venta #{{ str_pad($venta->id, 5, '0', STR_PAD_LEFT) }}</span>
+            </a>
+
+            <!-- 2. Modo Full Screen Button (Herramienta de pantalla en segunda posición con bg-white y borde neutro) -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Alternar Modo Pantalla Completa (Ocultar Menú y Cabecera)"
+                    class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
+
+            <!-- 3. Ticket Preview Shortcut Button (Acción secundaria de acceso rápido) -->
             <button type="button" 
                     @click="modalTicketPreview = true"
                     :disabled="items.length === 0"
                     title="Ver Vista Previa del Ticket [F7]"
-                    class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold transition flex items-center space-x-1.5 disabled:opacity-40 shadow-2xs">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold transition disabled:opacity-40 shadow-2xs cursor-pointer">
+                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Ticket (F7)</span>
             </button>
 
-            <!-- Modo Full Screen Button -->
-            <button type="button" 
-                    @click="$dispatch('toggle-pos-fullscreen')"
-                    title="Alternar Modo Pantalla Completa (Ocultar Menú y Cabecera)"
-                    class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                <span class="hidden md:inline">Modo Full</span>
-            </button>
-
+            <!-- 4. Selector de Diseño (Moderna / Compacta) a la extrema derecha -->
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
@@ -425,12 +433,6 @@ function posVentaEditData() {
                     <span>Compacta (ERP)</span>
                 </button>
             </div>
-
-            <a href="{{ route('ventas.show', $venta) }}" 
-               class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Cancelar</span>
-            </a>
         </div>
     </div>
 
@@ -561,7 +563,10 @@ function posVentaEditData() {
                         <!-- Panel de Efectivo / Control de Caja (si es efectivo) -->
                         <div x-show="formData.metodo_pago === 'efectivo'" class="p-3 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 space-y-2">
                             <div class="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                                <span>💵 Control de Efectivo y Vuelto</span>
+                                <span class="flex items-center space-x-1.5">
+                                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    <span>Control de Efectivo y Vuelto</span>
+                                </span>
                                 <span class="text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded-md font-mono">Cálculo Inmediato</span>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -570,32 +575,32 @@ function posVentaEditData() {
                                         Monto Entregado por Cliente <span class="text-rose-500">*</span>
                                     </label>
                                     <div class="relative">
-                                        <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-emerald-600 font-bold text-xs">$</span>
+                                        <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-emerald-600 font-bold text-xs">C$</span>
                                         <input type="number" 
                                                step="0.01" 
-                                               min="0"
+                                               min="0" 
                                                name="monto_recibido"
                                                x-model.number="formData.monto_recibido" 
                                                @focus="$event.target.select()"
                                                placeholder="0.00"
-                                               class="w-full pl-6 pr-2.5 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+                                               class="w-full pl-8 pr-2.5 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
                                     </div>
                                     <!-- Botones de sugerencia rápida -->
                                     <div class="flex items-center gap-1 mt-1.5">
                                         <button type="button" @click="formData.monto_recibido = parseFloat(calcularTotalGeneral())" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">Exacto</button>
                                         <button type="button" @click="formData.monto_recibido = Math.ceil(parseFloat(calcularTotalGeneral()) / 10) * 10 || 10" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">Redondeo</button>
-                                        <button type="button" @click="formData.monto_recibido = (parseFloat(calcularTotalGeneral()) + 10)" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">+$10</button>
-                                        <button type="button" @click="formData.monto_recibido = (parseFloat(calcularTotalGeneral()) + 20)" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">+$20</button>
+                                        <button type="button" @click="formData.monto_recibido = (parseFloat(calcularTotalGeneral()) + 10)" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">+C$10</button>
+                                        <button type="button" @click="formData.monto_recibido = (parseFloat(calcularTotalGeneral()) + 20)" class="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 text-[10px] font-bold text-emerald-800 dark:text-emerald-200">+C$20</button>
                                     </div>
                                 </div>
                                 <div class="flex flex-col justify-between p-2 rounded-lg bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800">
                                     <span class="text-[10px] font-semibold text-slate-500">Cambio / Vuelto a Entregar:</span>
                                     <div class="flex items-baseline justify-between">
                                         <span class="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                                            $<span x-text="calcularCambio()"></span>
+                                            C$<span x-text="calcularCambio()"></span>
                                         </span>
                                         <span x-show="!esMontoRecibidoValido()" class="text-[10px] text-rose-500 font-bold bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200">
-                                            Faltan $<span x-text="(parseFloat(calcularTotalGeneral()) - (parseFloat(formData.monto_recibido) || 0)).toFixed(2)"></span>
+                                            Faltan C$<span x-text="(parseFloat(calcularTotalGeneral()) - (parseFloat(formData.monto_recibido) || 0)).toFixed(2)"></span>
                                         </span>
                                     </div>
                                 </div>
@@ -625,10 +630,10 @@ function posVentaEditData() {
                         <div class="space-y-2 text-xs">
                             <div class="flex justify-between items-center">
                                 <span class="text-[10px] font-semibold text-slate-500">Subtotal Bruto:</span>
-                                <span class="font-bold text-slate-900 dark:text-white" x-text="'$' + calcularSubtotalGeneral()"></span>
+                                <span class="font-bold text-slate-900 dark:text-white" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                             </div>
 
-                            <!-- Descuento con selector % o $ -->
+                            <!-- Descuento con selector % o C$ -->
                             <div class="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1.5">
                                 <div class="flex items-center justify-between">
                                     <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">Descuento Global:</span>
@@ -636,7 +641,7 @@ function posVentaEditData() {
                                         <button type="button" 
                                                 @click="formData.tipo_descuento = 'monto'"
                                                 :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'"
-                                                class="px-2 py-0.5 text-[10px] rounded-l-md transition cursor-pointer">$</button>
+                                                class="px-2 py-0.5 text-[10px] rounded-l-md transition cursor-pointer">C$</button>
                                         <button type="button" 
                                                 @click="formData.tipo_descuento = 'porcentaje'"
                                                 :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'"
@@ -664,7 +669,7 @@ function posVentaEditData() {
                                         <template x-if="formData.tipo_descuento === 'monto'">
                                             <input type="number" 
                                                    step="0.10" 
-                                                   min="0"
+                                                   min="0" 
                                                    name="descuento"
                                                    x-model.number="formData.descuento" 
                                                    @focus="$event.target.select()"
@@ -672,7 +677,7 @@ function posVentaEditData() {
                                                    class="w-full px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-rose-600 text-right">
                                         </template>
                                     </div>
-                                    <span class="text-xs font-bold text-rose-600 dark:text-rose-400" x-text="'-$' + calcularDescuentoTotal().toFixed(2)"></span>
+                                    <span class="text-xs font-bold text-rose-600 dark:text-rose-400" x-text="'-C$ ' + calcularDescuentoTotal().toFixed(2)"></span>
                                 </div>
                             </div>
                         </div>
@@ -680,7 +685,7 @@ function posVentaEditData() {
                         <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
                             <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Recalculado:</span>
                             <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                                $<span x-text="calcularTotalGeneral()"></span>
+                                C$<span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
                     </div>
@@ -712,7 +717,7 @@ function posVentaEditData() {
                                     <th class="py-2 px-3 min-w-[190px]">Lote (FEFO) & Ubicación</th>
                                     <th class="py-2 px-2 text-center w-20">Cant.</th>
                                     <th class="py-2 px-2 text-right w-20">P. Venta</th>
-                                    <th class="py-2 px-2 text-right w-20">Desc. ($)</th>
+                                    <th class="py-2 px-2 text-right w-20">Desc. (C$)</th>
                                     <th class="py-2 px-3 text-right w-24">Subtotal</th>
                                     <th class="py-2 px-2 text-center w-8"></th>
                                 </tr>
@@ -745,8 +750,9 @@ function posVentaEditData() {
                                                 </template>
                                             </select>
                                             <template x-if="item.factor > 1">
-                                                <div class="mt-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                                                    📦 <span x-text="item.cantidad"></span> pres. x <span x-text="item.factor"></span> = -<span x-text="calcularUnidadesBase(item)"></span> u. base
+                                                <div class="mt-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                                                    <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                                    <span><span x-text="item.cantidad"></span> pres. x <span x-text="item.factor"></span> = -<span x-text="calcularUnidadesBase(item)"></span> u. base</span>
                                                 </div>
                                             </template>
                                         </td>
@@ -761,8 +767,9 @@ function posVentaEditData() {
                                                     <option :value="l.id" x-text="l.numero_lote + ' (' + l.stock_actual + 'u)'"></option>
                                                 </template>
                                             </select>
-                                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                📍 Estante: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="item.ubicacion"></span>
+                                            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+                                                <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                <span>Estante: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="item.ubicacion"></span></span>
                                             </div>
                                         </td>
 
@@ -798,7 +805,7 @@ function posVentaEditData() {
 
                                         <!-- Subtotal -->
                                         <td class="py-2 px-3 text-right font-bold text-slate-900 dark:text-white">
-                                            $<span x-text="calcularSubtotal(item)"></span>
+                                            C$<span x-text="calcularSubtotal(item)"></span>
                                         </td>
 
                                         <!-- Botón Eliminar Fila -->
@@ -822,18 +829,19 @@ function posVentaEditData() {
                     <span>Los cambios registrarán una nueva versión de venta con ajuste automático en Kardex.</span>
                     <button type="submit" 
                             :disabled="!formData.motivo_modificacion || formData.motivo_modificacion.trim().length < 5 || items.length === 0 || !esMontoRecibidoValido()"
-                            class="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                            class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-extrabold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Actualizar y Generar Versión</span>
+                        <span>Guardar Cambios</span>
                     </button>
                 </div>
             </div>
     </form>
 
     <!-- MODAL VISTA PREVIA TICKET -->
+    <template x-teleport="body">
     <div x-show="modalTicketPreview" 
          x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
          @keydown.escape.window="modalTicketPreview = false"
          @click.self="modalTicketPreview = false">
         <div @click.stop
@@ -843,7 +851,7 @@ function posVentaEditData() {
              class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-md border border-slate-300 dark:border-slate-800 my-auto">
             <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <h3 class="text-xs font-bold uppercase text-slate-800 dark:text-slate-200">Vista Previa de Ticket</h3>
-                <button type="button" @click="modalTicketPreview = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                <button type="button" @click="modalTicketPreview = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-lg">&times;</button>
             </div>
             <div class="p-5 bg-slate-100 dark:bg-slate-950 flex justify-center">
                 <div class="bg-white text-slate-900 font-mono text-xs p-4 rounded-xl shadow-md border border-slate-300 space-y-2.5 w-full max-w-xs">
@@ -859,7 +867,7 @@ function posVentaEditData() {
                             <template x-for="item in items" :key="item.uid">
                                 <tr class="border-b border-slate-100">
                                     <td class="py-1" x-text="item.nombre + ' x' + item.cantidad"></td>
-                                    <td class="py-1 text-right font-bold" x-text="'$' + calcularSubtotal(item)"></td>
+                                    <td class="py-1 text-right font-bold" x-text="'C$ ' + calcularSubtotal(item)"></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -867,22 +875,24 @@ function posVentaEditData() {
                     <div class="border-t border-dashed border-slate-400 my-1"></div>
                     <div class="flex justify-between font-black text-sm pt-1">
                         <span>TOTAL:</span>
-                        <span class="text-emerald-700" x-text="'$' + calcularTotalGeneral()"></span>
+                        <span class="text-emerald-700" x-text="'C$ ' + calcularTotalGeneral()"></span>
                     </div>
                 </div>
             </div>
             <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                <button type="button" @click="modalTicketPreview = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">
+                <button type="button" @click="modalTicketPreview = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold cursor-pointer">
                     Cerrar
                 </button>
             </div>
         </div>
     </div>
+    </template>
 
     <!-- MODAL NUEVO CLIENTE RÁPIDO -->
+    <template x-teleport="body">
     <div x-show="modalNuevoCliente" 
          x-cloak 
-         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto" 
+         class="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" 
          @keydown.escape.window="modalNuevoCliente = false"
          @click.self="modalNuevoCliente = false">
         <div @click.stop
@@ -892,33 +902,34 @@ function posVentaEditData() {
              class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-md border border-slate-300 dark:border-slate-800 my-auto">
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente</h3>
-                <button type="button" @click="modalNuevoCliente = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                <button type="button" @click="modalNuevoCliente = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-lg cursor-pointer">&times;</button>
             </div>
             <div class="p-6 space-y-3">
                 <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs" x-text="errorClienteMsg"></div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo <span class="text-rose-500">*</span></label>
-                    <input type="text" x-model="nuevoCliente.nombre" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                    <input type="text" x-model="nuevoCliente.nombre" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
                 </div>
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cédula / RUC</label>
-                        <input type="text" x-model="nuevoCliente.documento" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                        <input type="text" x-model="nuevoCliente.documento" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
-                        <input type="text" x-model="nuevoCliente.telefono" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                        <input type="text" x-model="nuevoCliente.telefono" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
                     </div>
                 </div>
             </div>
             <div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
-                <button type="button" @click="modalNuevoCliente = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">Cancelar</button>
-                <button type="button" @click="registrarClienteRapido()" :disabled="guardandoCliente" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
+                <button type="button" @click="modalNuevoCliente = false" class="px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold cursor-pointer">Cancelar</button>
+                <button type="button" @click="registrarClienteRapido()" :disabled="guardandoCliente" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer">
                     <span x-text="guardandoCliente ? 'Guardando...' : 'Guardar y Seleccionar'"></span>
                 </button>
             </div>
         </div>
     </div>
+    </template>
 
 </div>
 @endsection

@@ -27,12 +27,14 @@ class StoreVentaRequest extends FormRequest
             'receta_modalidad'            => ['nullable', 'string', 'in:sin_receta,vinculada,creada,omitida'],
             'receta_id'                   => ['nullable', 'integer', 'exists:recetas,id'],
             'receta_omision_motivo'       => ['nullable', 'string', 'max:500'],
+            'motivo_omision'              => ['nullable', 'string', 'max:500'],
             'receta_crear'                => ['nullable', 'array'],
             'receta_crear.medico_nombre'  => ['nullable', 'string', 'max:150'],
             'receta_crear.medico_colegiatura' => ['nullable', 'string', 'max:50'],
             'receta_crear.medico_especialidad' => ['nullable', 'string', 'max:100'],
             'receta_crear.paciente_nombre' => ['nullable', 'string', 'max:150'],
             'receta_crear.paciente_documento' => ['nullable', 'string', 'max:50'],
+            'receta_crear.paciente_edad'   => ['nullable', 'integer', 'min:0', 'max:120'],
             'receta_crear.numero_receta'  => ['nullable', 'string', 'max:50'],
             'referencia_pago'             => ['nullable', 'string', 'max:100'],
             'observaciones'               => ['nullable', 'string', 'max:500'],
@@ -46,10 +48,61 @@ class StoreVentaRequest extends FormRequest
             'productos.*.precio_unitario' => ['nullable', 'numeric', 'min:0'],
             'productos.*.descuento'       => ['nullable', 'numeric', 'min:0'],
             'productos.*.tipo_descuento'  => ['nullable', 'string', 'in:monto,porcentaje'],
-            'productos.*.porcentaje_descuento' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'recetas'                     => ['nullable', 'array'],
             'recetas.*'                   => ['integer', 'exists:recetas,id'],
+            'controlados_data'            => ['nullable', 'array'],
+            'controlados_data.paciente_nombre' => ['nullable', 'string', 'max:150'],
+            'controlados_data.paciente_cedula' => ['nullable', 'string', 'max:30'],
+            'controlados_data.paciente_edad'   => ['nullable', 'integer', 'min:0', 'max:120'],
+            'controlados_data.medico_nombre'   => ['nullable', 'string', 'max:150'],
+            'controlados_data.medico_cedula'   => ['nullable', 'string', 'max:30'],
+            'controlados_data.medico_num_registro' => ['nullable', 'string', 'max:60'],
+            'controlados_data.diagnostico'     => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $productosInput = $this->input('productos', []);
+            if (empty($productosInput) || !is_array($productosInput)) {
+                return;
+            }
+
+            $productoIds = collect($productosInput)->pluck('producto_id')->filter()->unique();
+            if ($productoIds->isEmpty()) {
+                return;
+            }
+
+            $tieneControlados = \App\Models\Producto::whereIn('id', $productoIds)
+                ->where(function ($q) {
+                    $q->where('tipo_control', 'controlado')
+                      ->orWhere('requiere_receta', true);
+                })->exists();
+
+            if ($tieneControlados) {
+                $modalidad = $this->input('receta_modalidad');
+                $recetaId = $this->input('receta_id');
+                $motivoOmision = trim((string)($this->input('receta_omision_motivo') ?? $this->input('motivo_omision', '')));
+                
+                $ctrlData = $this->input('controlados_data', []);
+                $tieneDatosMinsa = !empty($ctrlData['medico_nombre']) || !empty($this->input('receta_crear.medico_nombre'));
+
+                if (!$recetaId && !$tieneDatosMinsa && empty($motivoOmision) && $modalidad !== 'omitida') {
+                    $validator->errors()->add(
+                        'controlados',
+                        'La venta contiene medicamentos controlados/bajo receta. Debe completar la ficha médica o especificar el motivo de omisión.'
+                    );
+                }
+
+                if ($modalidad === 'omitida' && empty($motivoOmision)) {
+                    $validator->errors()->add(
+                        'receta_omision_motivo',
+                        'Debe ingresar el motivo de omisión para los medicamentos controlados.'
+                    );
+                }
+            }
+        });
     }
 
     public function messages(): array

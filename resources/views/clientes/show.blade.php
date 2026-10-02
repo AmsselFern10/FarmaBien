@@ -187,7 +187,7 @@
                         <tr>
                             <th class="px-4 py-3">Receta #</th>
                             <th class="px-4 py-3">Médico / C.M.P.</th>
-                            <th class="px-4 py-3 text-center">Tipo</th>
+                            <th class="px-4 py-3 text-center">Fecha</th>
                             <th class="px-4 py-3 text-center">Estado</th>
                         </tr>
                     </thead>
@@ -203,16 +203,8 @@
                                 <span class="font-medium">{{ $receta->medico_nombre }}</span>
                                 <span class="block text-[10px] font-mono text-slate-400">CMP: {{ $receta->medico_colegiatura ?? 'S/C' }}</span>
                             </td>
-                            <td class="px-4 py-3 text-center">
-                                @if($receta->tipo_receta === 'retenida')
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                    Retenida
-                                </span>
-                                @else
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                                    Simple
-                                </span>
-                                @endif
+                            <td class="px-4 py-3 text-center font-mono text-slate-600 dark:text-slate-400">
+                                {{ $receta->fecha_emision ? \Carbon\Carbon::parse($receta->fecha_emision)->format('d/m/Y') : 'N/A' }}
                             </td>
                             <td class="px-4 py-3 text-center">
                                 @if($receta->estado === 'dispensada_total')

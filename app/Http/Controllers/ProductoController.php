@@ -65,10 +65,10 @@ class ProductoController extends Controller
 
         if ($request->filled('tipo_control')) {
             $tipoControl = $request->input('tipo_control');
-            if ($tipoControl === 'controlados') {
-                $query->where('nivel_controlado', '>', 0);
-            } else {
-                $query->where('tipo_control', $tipoControl);
+            if ($tipoControl === 'controlado' || $tipoControl === 'controlados') {
+                $query->controlados();
+            } elseif ($tipoControl === 'venta_libre') {
+                $query->ventaLibre();
             }
         }
 

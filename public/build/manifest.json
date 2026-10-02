@@ -6,12 +6,12 @@
     "file": "assets/vendor-axios-058efe08.js"
   },
   "resources/css/app.css": {
-    "file": "assets/app-e476c883.css",
+    "file": "assets/app-d631c18f.css",
     "isEntry": true,
     "src": "resources/css/app.css"
   },
   "resources/js/app.js": {
-    "file": "assets/app-8e9f7643.js",
+    "file": "assets/app-6520b8e8.js",
     "imports": [
       "_vendor-axios-058efe08.js",
       "_vendor-alpine-159b8952.js"
