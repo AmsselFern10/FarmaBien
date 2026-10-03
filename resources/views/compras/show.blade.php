@@ -20,12 +20,12 @@
     <!-- Header & Action Toolbar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 flex-wrap gap-y-1">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white">
                     Compra #{{ str_pad($compra->id, 5, '0', STR_PAD_LEFT) }}
                 </h1>
                 
-                <!-- Status Badge -->
+                <!-- Status Badges -->
                 @if($compra->estado === 'recibida')
                     @if($compra->fueModificada())
                         <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -50,75 +50,89 @@
                             Recibida en Kardex (Contado)
                         </span>
                     @endif
+
+                    @if($compra->esDevuelta())
+                        <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                            Devuelta
+                        </span>
+                    @elseif($compra->esDevueltaParcial())
+                        <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                            Devolución Parcial
+                        </span>
+                    @endif
                 @elseif($compra->estado === 'anulada')
                     <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
                         Anulada
                     </span>
                 @endif
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Comprobante: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $compra->numero_comprobante ?: 'Sin número fiscal' }}</span> • Fecha: {{ $compra->fecha ? $compra->fecha->format('d/m/Y') : '-' }}
+            <p class="text-xs text-slate-700 dark:text-slate-400 mt-0.5">
+                Comprobante: <span class="font-semibold text-slate-900 dark:text-slate-300">{{ $compra->numero_comprobante ?: 'Sin número fiscal' }}</span> • Registrado por: <span class="font-semibold text-slate-900 dark:text-slate-300">{{ $compra->usuario->name ?? 'Sistema' }}</span> el {{ $compra->fecha ? $compra->fecha->format('d/m/Y') : ($compra->created_at ? $compra->created_at->format('d/m/Y') : '-') }}
                 @if($compra->condicion_pago === 'credito')
                     • <span class="font-bold text-amber-900 dark:text-amber-300">Crédito a {{ $compra->dias_credito }} días</span>
                 @endif
             </p>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons (Exact Order: ← Historial, Modo Full, Procesar Devolución, Modificar, Anular Compra, Imprimir) -->
         <div class="flex flex-wrap items-center gap-2">
-            <!-- Navigation Button First -->
+            <!-- 1. Historial de Compras -->
             <a href="{{ route('compras.index') }}" 
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 shadow-xs transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+               class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Compras</span>
             </a>
 
-            <!-- Enlace a Cuenta por Pagar si es Crédito -->
-            @if($compra->condicion_pago === 'credito')
-            <a href="{{ route('cuentas-por-pagar.show', $compra) }}" 
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-purple-50/80 hover:bg-purple-100/90 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-950 dark:text-purple-300 text-xs font-bold border border-purple-200 dark:border-purple-800/80 shadow-2xs transition">
-                <svg class="w-4 h-4 text-purple-700 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                <span>Ver Cuenta por Pagar (CxP)</span>
-            </a>
-            @endif
+            <!-- 2. Modo Full -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
 
-            <!-- Ticket -->
-            <a href="{{ route('compras.ticket', $compra) }}" 
-               target="_blank"
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-indigo-50/80 hover:bg-indigo-100/90 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-900 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800/80 shadow-2xs transition">
-                <svg class="w-4 h-4 text-indigo-700 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Imprimir Ticket</span>
-            </a>
+            <!-- 3. Procesar Devolución -->
+            @can('registrar compras')
+                @if($compra->estado !== 'anulada' && $compra->lotes->sum('stock_actual') > 0)
+                <a href="{{ route('compras.devoluciones.create', ['compra_id' => $compra->id]) }}" 
+                   class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 transition">
+                    <svg class="w-4 h-4 text-indigo-700 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4-4m-4 4l4 4m6 4v1a3 3 0 003 3h3a3 3 0 003-3V7a3 3 0 00-3-3h-3a3 3 0 00-3 3v1"/></svg>
+                    <span>Procesar Devolución</span>
+                </a>
+                @endif
+            @endcan
 
-            <!-- PDF -->
-            <a href="{{ route('compras.pdf', $compra) }}" 
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-rose-50/80 hover:bg-rose-100/90 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-900 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-800/80 shadow-2xs transition">
-                <svg class="w-4 h-4 text-rose-700 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                <span>Descargar PDF</span>
-            </a>
-
-            <!-- Editar -->
+            <!-- 4. Modificar -->
             @if($compra->puedeModificarse())
                 @can('registrar compras')
                 <a href="{{ route('compras.edit', $compra) }}" 
-                   class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-amber-50/80 hover:bg-amber-100/90 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800/80 shadow-2xs transition">
+                   class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-300 transition">
                     <svg class="w-4 h-4 text-amber-700 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     <span>Modificar</span>
                 </a>
                 @endcan
             @endif
 
-            <!-- Anular -->
+            <!-- 5. Anular Compra -->
             @if($compra->puedeAnularse())
                 @can('anular compras')
                 <button type="button" 
                         @click="modalAnular = true" 
-                        class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-rose-50/80 hover:bg-rose-100/90 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-900 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-800/80 shadow-2xs transition cursor-pointer">
+                        class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-red-50 border border-red-200 text-red-900 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 transition cursor-pointer">
                     <svg class="w-4 h-4 text-rose-700 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     <span>Anular Compra</span>
                 </button>
                 @endcan
             @endif
+
+            <!-- 6. Imprimir (Principal Verde Sólido) -->
+            <a href="{{ route('compras.imprimir', $compra) }}" 
+               target="_blank"
+               class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Imprimir</span>
+            </a>
         </div>
     </div>
 
@@ -253,9 +267,16 @@
             <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Desglose de Medicamentos y Lotes Recibidos
             </h3>
-            <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                {{ $compra->detalles->count() }} líneas registradas
-            </span>
+            <div class="flex items-center space-x-2">
+                @if($compra->devoluciones->isNotEmpty())
+                    <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        {{ $compra->devoluciones->count() }} devolución(es) vinculada(s)
+                    </span>
+                @endif
+                <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                    {{ $compra->detalles->count() }} líneas registradas
+                </span>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -268,13 +289,22 @@
                         <th class="py-2.5 px-3 text-center">Cant. Comprada</th>
                         <th class="py-2.5 px-3 text-center">Factor Conversión</th>
                         <th class="py-2.5 px-3 text-center">Total Unidades Base</th>
+                        @if($compra->devoluciones->isNotEmpty())
+                            <th class="py-2.5 px-3 text-center text-rose-700 dark:text-rose-300">Devuelto</th>
+                        @endif
                         <th class="py-2.5 px-3">Lote & Vencimiento</th>
-                        <th class="py-2.5 px-3 text-right">Precio Compra</th>
+                        <th class="py-2.5 px-3 text-right">P. Compra (C$)</th>
                         <th class="py-2.5 px-3 text-right">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
                     @foreach($compra->detalles as $idx => $detalle)
+                    @php
+                        $cantDevuelta = $compra->devoluciones->flatMap->detalles
+                            ->where('producto_id', $detalle->producto_id)
+                            ->when($detalle->lote_id, fn($q) => $q->where('lote_id', $detalle->lote_id))
+                            ->sum('cantidad');
+                    @endphp
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                         <!-- # -->
                         <td class="py-3 px-3 text-slate-400 font-bold">{{ $idx + 1 }}</td>
@@ -309,6 +339,19 @@
                             {{ $detalle->cantidad_unidades_base }} u.
                         </td>
 
+                        <!-- Devuelto -->
+                        @if($compra->devoluciones->isNotEmpty())
+                            <td class="py-3 px-3 text-center font-bold text-rose-600 dark:text-rose-400">
+                                @if($cantDevuelta > 0)
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50">
+                                        -{{ $cantDevuelta }} u.
+                                    </span>
+                                @else
+                                    <span class="text-slate-400">-</span>
+                                @endif
+                            </td>
+                        @endif
+
                         <!-- Lote y Vencimiento -->
                         <td class="py-3 px-3">
                             @if($detalle->lote)
@@ -334,12 +377,12 @@
 
                         <!-- Precio Compra -->
                         <td class="py-3 px-3 text-right text-slate-700 dark:text-slate-300">
-                            ${{ number_format($detalle->precio_unitario, 2) }}
+                            {{ formato_moneda($detalle->precio_unitario) }}
                         </td>
 
                         <!-- Subtotal -->
                         <td class="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
-                            ${{ number_format($detalle->subtotal, 2) }}
+                            {{ formato_moneda($detalle->subtotal) }}
                         </td>
                     </tr>
                     @endforeach
@@ -347,6 +390,75 @@
             </table>
         </div>
     </div>
+
+    <!-- Devoluciones a Proveedor Procesadas Sobre Esta Compra -->
+    @if($compra->devoluciones->isNotEmpty())
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs overflow-hidden space-y-0">
+        <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900/50 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4-4m-4 4l4 4m6 4v1a3 3 0 003 3h3a3 3 0 003-3V7a3 3 0 00-3-3h-3a3 3 0 00-3 3v1"/></svg>
+                <h3 class="text-xs font-bold text-rose-950 dark:text-rose-200 uppercase tracking-wider">
+                    Devoluciones a Proveedor Procesadas Sobre Esta Compra
+                </h3>
+            </div>
+            <span class="text-xs font-bold text-rose-900 dark:text-rose-300">
+                Total devuelto: {{ formato_moneda($compra->totalDevuelto()) }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                        <th class="py-2.5 px-3">N° Devolución</th>
+                        <th class="py-2.5 px-3">Fecha</th>
+                        <th class="py-2.5 px-3">Motivo</th>
+                        <th class="py-2.5 px-3">Tipo</th>
+                        <th class="py-2.5 px-3 text-center">Unidades Devueltas</th>
+                        <th class="py-2.5 px-3 text-right">Monto Devuelto</th>
+                        <th class="py-2.5 px-3">Usuario</th>
+                        <th class="py-2.5 px-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                    @foreach($compra->devoluciones as $dev)
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-3 font-mono font-bold text-slate-900 dark:text-white">
+                            {{ $dev->numero_devolucion ?? ('DEV-' . str_pad($dev->id, 6, '0', STR_PAD_LEFT)) }}
+                        </td>
+                        <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                            {{ $dev->fecha ? $dev->fecha->format('d/m/Y') : ($dev->created_at ? $dev->created_at->format('d/m/Y') : '-') }}
+                        </td>
+                        <td class="py-3 px-3 text-slate-700 dark:text-slate-300 max-w-xs truncate" title="{{ $dev->motivo }}">
+                            {{ $dev->motivo }}
+                        </td>
+                        <td class="py-3 px-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $dev->tipo === 'total' ? 'bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-300' : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300' }}">
+                                {{ ucfirst($dev->tipo ?? 'parcial') }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 text-center font-bold text-rose-600 dark:text-rose-400">
+                            -{{ $dev->detalles->sum('cantidad') }} u.
+                        </td>
+                        <td class="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
+                            {{ formato_moneda($dev->total) }}
+                        </td>
+                        <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                            {{ $dev->usuario->name ?? 'Sistema' }}
+                        </td>
+                        <td class="py-3 px-3 text-right">
+                            <a href="{{ route('compras.devoluciones.show', $dev) }}" 
+                               class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                                Ver Detalle &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 
     <!-- Modal Anular Compra -->
     <template x-teleport="body">

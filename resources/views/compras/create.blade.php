@@ -45,12 +45,16 @@
                 'uid' => time() + $idx,
                 'producto_id' => $op['producto_id'] ?? '',
                 'presentacion_id' => $op['presentacion_id'] ?? '',
+                'detalle_orden_compra_id' => $op['detalle_orden_compra_id'] ?? '',
                 'factor' => $selectedPres ? (int)$selectedPres->unidades_por_presentacion : 1,
                 'tipo_presentacion' => $selectedPres ? $selectedPres->nombre : 'Unidad Base',
                 'cantidad' => $op['cantidad'] ?? 1,
                 'precio_unitario' => $op['precio_unitario'] ?? '',
                 'numero_lote' => $op['numero_lote'] ?? '',
                 'fecha_vencimiento' => $op['fecha_vencimiento'] ?? '',
+                'pedido' => isset($op['pedido']) ? (int)$op['pedido'] : null,
+                'recibido' => isset($op['recibido']) ? (int)$op['recibido'] : null,
+                'pendiente' => isset($op['pendiente']) ? (int)$op['pendiente'] : null,
                 'presentacionesDisponibles' => $presList
             ];
         }
@@ -74,12 +78,16 @@
                 'uid' => time() + $idx,
                 'producto_id' => $pi['producto_id'] ?? '',
                 'presentacion_id' => $pi['presentacion_id'] ?? '',
+                'detalle_orden_compra_id' => $pi['detalle_orden_compra_id'] ?? '',
                 'factor' => $selectedPres ? (int)$selectedPres->unidades_por_presentacion : 1,
                 'tipo_presentacion' => $selectedPres ? $selectedPres->nombre : 'Unidad Base',
                 'cantidad' => $pi['cantidad'] ?? 1,
                 'precio_unitario' => $pi['precio_unitario'] ?? ($prod ? (float)$prod->precio_compra : ''),
                 'numero_lote' => $pi['numero_lote'] ?? '',
                 'fecha_vencimiento' => $pi['fecha_vencimiento'] ?? '',
+                'pedido' => isset($pi['pedido']) ? (int)$pi['pedido'] : null,
+                'recibido' => isset($pi['recibido']) ? (int)$pi['recibido'] : null,
+                'pendiente' => isset($pi['pendiente']) ? (int)$pi['pendiente'] : null,
                 'presentacionesDisponibles' => $presList
             ];
         }
@@ -91,12 +99,16 @@
                 'uid' => time(),
                 'producto_id' => '',
                 'presentacion_id' => '',
+                'detalle_orden_compra_id' => '',
                 'factor' => 1,
                 'tipo_presentacion' => 'Unidad Base',
                 'cantidad' => 1,
                 'precio_unitario' => '',
                 'numero_lote' => '',
                 'fecha_vencimiento' => '',
+                'pedido' => null,
+                'recibido' => null,
+                'pendiente' => null,
                 'presentacionesDisponibles' => []
             ]
         ];
@@ -215,6 +227,16 @@
     guardandoCompra: false,
     hasOldItems: @js(!empty(old('productos')) || !empty($preloadedItems)),
     items: @js($initialItems),
+    // Estados para recepción de Orden de Compra
+    modalOrdenPendiente: false,
+    modalOrdenExcedente: false,
+    cerrarOrdenCompleta: false,
+    motivoFaltante: '',
+    decisionFaltanteTomada: false,
+    decisionExcedenteTomada: false,
+    lineasFaltantes: [],
+    lineasExcedentes: [],
+    forzarEnvio: false,
     // Modal Nueva Presentación
     modalNuevaPres: false,
     nuevaPresItemIdx: null,
@@ -328,12 +350,16 @@
             uid: Date.now(),
             producto_id: '',
             presentacion_id: '',
+            detalle_orden_compra_id: '',
             factor: 1,
             tipo_presentacion: 'Unidad Base',
             cantidad: 1,
             precio_unitario: '',
             numero_lote: '',
             fecha_vencimiento: '',
+            pedido: null,
+            recibido: null,
+            pendiente: null,
             presentacionesDisponibles: []
         }];
         if (window.farmaClearDraft) {
@@ -407,7 +433,90 @@
                 return;
             }
         }
+
+        // Verificación de Orden de Compra si está vinculada
+        const ordenId = this.formData.orden_compra_id || '{{ $preloadedOrdenCompraId ?? '' }}';
+        if (ordenId && !this.forzarEnvio) {
+            // 1. Verificar si hay excedentes
+            if (!this.decisionExcedenteTomada) {
+                const excedentes = [];
+                this.items.forEach(it => {
+                    if (it.pendiente !== null && it.pendiente !== undefined) {
+                        const cantBase = (parseInt(it.cantidad) || 0) * (parseInt(it.factor) || 1);
+                        if (cantBase > it.pendiente) {
+                            const prod = this.catalogo.find(p => p.id == it.producto_id);
+                            excedentes.push({
+                                nombre: prod ? prod.nombre : 'Medicamento',
+                                pendiente: it.pendiente,
+                                ingresando: cantBase,
+                                diferencia: cantBase - it.pendiente
+                            });
+                        }
+                    }
+                });
+
+                if (excedentes.length > 0) {
+                    e.preventDefault();
+                    this.lineasExcedentes = excedentes;
+                    this.modalOrdenExcedente = true;
+                    return;
+                }
+            }
+
+            // 2. Verificar si quedan unidades pendientes (recepción parcial)
+            if (!this.decisionFaltanteTomada) {
+                const faltantes = [];
+                this.items.forEach(it => {
+                    if (it.pendiente !== null && it.pendiente !== undefined) {
+                        const cantBase = (parseInt(it.cantidad) || 0) * (parseInt(it.factor) || 1);
+                        if (it.pendiente > cantBase) {
+                            const prod = this.catalogo.find(p => p.id == it.producto_id);
+                            faltantes.push({
+                                nombre: prod ? prod.nombre : 'Medicamento',
+                                pedido: it.pedido,
+                                recibido_prev: it.recibido,
+                                ingresando: cantBase,
+                                pendiente_anterior: it.pendiente,
+                                nuevo_pendiente: it.pendiente - cantBase
+                            });
+                        }
+                    }
+                });
+
+                if (faltantes.length > 0) {
+                    e.preventDefault();
+                    this.lineasFaltantes = faltantes;
+                    this.modalOrdenPendiente = true;
+                    return;
+                }
+            }
+        }
+
         this.guardandoCompra = true;
+    },
+    confirmarExcedente() {
+        this.decisionExcedenteTomada = true;
+        this.modalOrdenExcedente = false;
+        // Validar si quedan faltantes
+        const fakeE = { preventDefault() {} };
+        this.validarYEnviar(fakeE);
+        if (!this.modalOrdenPendiente && !this.modalOrdenExcedente) {
+            this.forzarEnvio = true;
+            this.guardandoCompra = true;
+            this.$nextTick(() => {
+                document.getElementById('formCompra').submit();
+            });
+        }
+    },
+    confirmarCierreOrden(cerrarCompleta) {
+        this.cerrarOrdenCompleta = cerrarCompleta;
+        this.decisionFaltanteTomada = true;
+        this.modalOrdenPendiente = false;
+        this.forzarEnvio = true;
+        this.guardandoCompra = true;
+        this.$nextTick(() => {
+            document.getElementById('formCompra').submit();
+        });
     },
     init() {
         if (!this.hasOldItems && this.items.length === 1 && !this.items[0].producto_id && this.formData && this.formData.savedItems && this.formData.savedItems.length > 0) {
@@ -568,7 +677,7 @@ class="space-y-4 transition-all duration-200">
             <a href="{{ route('compras.index') }}" 
                class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition flex items-center space-x-1.5 shrink-0 shadow-2xs">
                 <svg class="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver a Compras</span>
+                <span>Compras</span>
             </a>
 
             <!-- 2. Modo Full Screen (Segunda posición) -->
@@ -604,8 +713,14 @@ class="space-y-4 transition-all duration-200">
     <form action="{{ route('compras.store') }}" method="POST" id="formCompra" @submit="validarYEnviar($event)" novalidate>
         @csrf
         <input type="hidden" name="orden_compra_id" :value="formData.orden_compra_id || '{{ $preloadedOrdenCompraId ?? '' }}'">
+        <input type="hidden" name="cerrar_orden_completa" :value="cerrarOrdenCompleta ? '1' : '0'">
+        <input type="hidden" name="motivo_faltante" :value="motivoFaltante">
 
         @if (!empty($preloadedOrdenCompraId))
+        @php
+            $totalPendientePreload = collect($preloadedItems)->sum('pendiente');
+            $cantLineasPreload = count($preloadedItems);
+        @endphp
         <!-- Preloaded Orden Compra Banner -->
         <div class="mb-4 p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 flex items-center justify-between shadow-xs">
             <div class="flex items-center space-x-3">
@@ -613,15 +728,20 @@ class="space-y-4 transition-all duration-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 </div>
                 <div>
-                    <div class="font-bold text-xs sm:text-sm flex items-center space-x-2">
+                    <div class="font-bold text-xs sm:text-sm flex items-center space-x-2 flex-wrap gap-y-1">
                         <span>Recepcionando Orden de Compra #{{ $preloadedNumeroOrden ?? $preloadedOrdenCompraId }}</span>
-                        <span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300">Vinculada</span>
+                        <span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full bg-indigo-100 dark:bg-indigo-900/80 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700">Vinculada</span>
+                        @if($totalPendientePreload > 0)
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                Pendiente por recibir: {{ $totalPendientePreload }} u. en {{ $cantLineasPreload }} línea(s)
+                            </span>
+                        @endif
                     </div>
-                    <p class="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5">Los productos, cantidades, proveedor y condiciones pactadas se han precargado. Ingrese los números de lote y fechas de vencimiento físicas para dar entrada al inventario.</p>
+                    <p class="text-[11px] text-indigo-800 dark:text-indigo-300 mt-0.5">Se han precargado las líneas con saldo pendiente. Ingrese número de lote y fecha de vencimiento física para dar entrada al inventario.</p>
                 </div>
             </div>
-            <a href="{{ route('ordenes-compras.index') }}" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline px-2.5 py-1 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shrink-0">
-                Ver Órdenes
+            <a href="{{ route('ordenes-compras.show', $preloadedOrdenCompraId) }}" target="_blank" class="text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:underline px-2.5 py-1 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shrink-0">
+                Ver Orden (PO) &rarr;
             </a>
         </div>
         @endif
@@ -870,7 +990,7 @@ class="space-y-4 transition-all duration-200">
                                                 </div>
                                             </div>
                                             <div class="text-right shrink-0 pl-2">
-                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
+                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'C$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
                                             </div>
                                         </button>
                                     </template>
@@ -894,8 +1014,8 @@ class="space-y-4 transition-all duration-200">
                                     <th class="py-2.5 px-2 text-center w-8">#</th>
                                     <th class="py-2.5 px-3 min-w-[200px]">Medicamento / Fármaco</th>
                                     <th class="py-2.5 px-3 min-w-[190px]">Presentación</th>
-                                    <th class="py-2.5 px-2 text-center w-20">Cant.</th>
-                                    <th class="py-2.5 px-2 text-right w-24">P. Compra ($)</th>
+                                    <th class="py-2.5 px-2 text-center w-24">Cant.</th>
+                                    <th class="py-2.5 px-2 text-right w-24">P. Compra (C$)</th>
                                     <th class="py-2.5 px-2 w-28">N° Lote</th>
                                     <th class="py-2.5 px-2 w-32">F. Vencimiento</th>
                                     <th class="py-2.5 px-3 text-right w-24">Subtotal</th>
@@ -908,8 +1028,12 @@ class="space-y-4 transition-all duration-200">
                                         <!-- Indice -->
                                         <td class="py-2 px-2 text-center text-[11px] font-bold text-slate-400" x-text="idx + 1"></td>
 
-                                        <!-- Producto -->
+                                        <!-- Producto & Hidden fields -->
                                         <td class="py-2 px-3">
+                                            <input type="hidden" :name="'productos[' + idx + '][detalle_orden_compra_id]'" :value="item.detalle_orden_compra_id || ''">
+                                            <input type="hidden" :name="'productos[' + idx + '][pedido]'" :value="item.pedido !== null && item.pedido !== undefined ? item.pedido : ''">
+                                            <input type="hidden" :name="'productos[' + idx + '][recibido]'" :value="item.recibido !== null && item.recibido !== undefined ? item.recibido : ''">
+                                            <input type="hidden" :name="'productos[' + idx + '][pendiente]'" :value="item.pendiente !== null && item.pendiente !== undefined ? item.pendiente : ''">
                                             <select :name="'productos[' + idx + '][producto_id]'" 
                                                     x-model="item.producto_id" 
                                                     @change="onProductoChange(idx)"
@@ -947,7 +1071,7 @@ class="space-y-4 transition-all duration-200">
                                             </div>
                                         </td>
 
-                                        <!-- Cantidad -->
+                                        <!-- Cantidad con indicador de orden -->
                                         <td class="py-2 px-2">
                                             <input type="number" 
                                                    :name="'productos[' + idx + '][cantidad_presentaciones]'" 
@@ -956,6 +1080,9 @@ class="space-y-4 transition-all duration-200">
                                                    required
                                                    placeholder="1"
                                                    class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white font-bold text-center focus:ring-1 focus:ring-emerald-500">
+                                            <div class="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 whitespace-nowrap text-center" x-show="item.pedido !== null && item.pedido !== undefined">
+                                                <span>Ped: <strong x-text="item.pedido"></strong> · Rec: <span x-text="item.recibido"></span> · <strong class="text-amber-800 dark:text-amber-300">Pend: <span x-text="item.pendiente"></span></strong></span>
+                                            </div>
                                         </td>
 
                                         <!-- Precio Compra -->
@@ -1276,6 +1403,10 @@ class="space-y-4 transition-all duration-200">
                                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
                                     <!-- Producto -->
                                     <div class="md:col-span-4">
+                                        <input type="hidden" :name="'productos[' + idx + '][detalle_orden_compra_id]'" :value="item.detalle_orden_compra_id || ''">
+                                        <input type="hidden" :name="'productos[' + idx + '][pedido]'" :value="item.pedido !== null && item.pedido !== undefined ? item.pedido : ''">
+                                        <input type="hidden" :name="'productos[' + idx + '][recibido]'" :value="item.recibido !== null && item.recibido !== undefined ? item.recibido : ''">
+                                        <input type="hidden" :name="'productos[' + idx + '][pendiente]'" :value="item.pendiente !== null && item.pendiente !== undefined ? item.pendiente : ''">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                                             Medicamento / Producto <span class="text-rose-500">*</span>
                                         </label>
@@ -1318,7 +1449,7 @@ class="space-y-4 transition-all duration-200">
                                         </div>
                                     </div>
 
-                                    <!-- Cantidad -->
+                                    <!-- Cantidad con indicador de orden -->
                                     <div class="md:col-span-2">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                                             Cantidad <span class="text-rose-500">*</span>
@@ -1330,6 +1461,9 @@ class="space-y-4 transition-all duration-200">
                                                 required
                                                 placeholder="1"
                                                 class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500">
+                                        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 whitespace-nowrap" x-show="item.pedido !== null && item.pedido !== undefined">
+                                            <span>Pedido <strong x-text="item.pedido"></strong> · Recibido <span x-text="item.recibido"></span> · <strong class="text-amber-800 dark:text-amber-300">Pend. <span x-text="item.pendiente"></span></strong></span>
+                                        </div>
                                     </div>
 
                                     <!-- Precio Unitario -->
@@ -1554,6 +1688,167 @@ class="space-y-4 transition-all duration-200">
                         class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50">
                     <span x-show="!nuevaPres.cargando">Crear y Seleccionar</span>
                     <span x-show="nuevaPres.cargando">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    </template>
+
+    <!-- ============================================================== -->
+    <!-- MODAL: ORDEN CON UNIDADES PENDIENTES                          -->
+    <!-- ============================================================== -->
+    <template x-teleport="body">
+    <div x-show="modalOrdenPendiente" 
+         x-cloak
+         class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm transition-opacity overflow-y-auto"
+         @keydown.escape.window="modalOrdenPendiente = false"
+         @click.self="modalOrdenPendiente = false">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 border border-slate-300 dark:border-slate-800 shadow-2xl space-y-4 my-auto"
+             @click.stop>
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Orden de Compra con Unidades Pendientes</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Esta recepción no cubre la totalidad de los medicamentos solicitados.</p>
+                    </div>
+                </div>
+                <button @click="modalOrdenPendiente = false" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-300">
+                Quedan medicamentos pendientes por recibir en esta orden de compra:
+            </p>
+
+            <!-- Tabla de líneas faltantes -->
+            <div class="overflow-x-auto max-h-48 border border-slate-200 dark:border-slate-800 rounded-xl">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">
+                        <tr>
+                            <th class="py-2 px-3">Medicamento</th>
+                            <th class="py-2 px-2 text-center">Pedido</th>
+                            <th class="py-2 px-2 text-center">Ingresando</th>
+                            <th class="py-2 px-2 text-center text-amber-800 dark:text-amber-300">Pendiente</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <template x-for="linea in lineasFaltantes" :key="linea.nombre">
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200" x-text="linea.nombre"></td>
+                                <td class="py-2 px-2 text-center text-slate-500" x-text="linea.pedido + ' u.'"></td>
+                                <td class="py-2 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400" x-text="linea.ingresando + ' u.'"></td>
+                                <td class="py-2 px-2 text-center font-extrabold text-amber-900 dark:text-amber-300" x-text="linea.nuevo_pendiente + ' u.'"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pregunta de decisión -->
+            <div class="p-3 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
+                <p class="text-xs font-bold text-amber-950 dark:text-amber-200">
+                    ¿Desea dar esta orden por COMPLETA (cerrada con faltante) o DEJARLA PENDIENTE para futuras recepciones?
+                </p>
+                <div>
+                    <label class="block text-[11px] font-semibold text-amber-900 dark:text-amber-300 mb-1">
+                        Motivo del faltante (si decide cerrarla como completa):
+                    </label>
+                    <textarea x-model="motivoFaltante" 
+                              rows="2" 
+                              placeholder="Ej: Proveedor no entregará el resto por desabastecimiento de laboratorio..."
+                              class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-amber-500"></textarea>
+                </div>
+            </div>
+
+            <!-- Botones de Acción (Requisito: No, dejar pendiente = verde sólido; Sí, cerrar como completa = pastel amber) -->
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" 
+                        @click="modalOrdenPendiente = false" 
+                        class="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer order-3 sm:order-1">
+                    Revisar Cantidades
+                </button>
+                <button type="button" 
+                        @click="confirmarCierreOrden(true)" 
+                        class="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-950 dark:bg-amber-950/70 dark:hover:bg-amber-900/80 dark:text-amber-200 text-xs font-bold border border-amber-300 dark:border-amber-700 transition cursor-pointer order-2">
+                    Sí, cerrar como completa
+                </button>
+                <button type="button" 
+                        @click="confirmarCierreOrden(false)" 
+                        class="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold shadow-xs transition cursor-pointer order-1 sm:order-3">
+                    No, dejar pendiente
+                </button>
+            </div>
+        </div>
+    </div>
+    </template>
+
+    <!-- ============================================================== -->
+    <!-- MODAL: UNIDADES EXCEDEN LO SOLICITADO                         -->
+    <!-- ============================================================== -->
+    <template x-teleport="body">
+    <div x-show="modalOrdenExcedente" 
+         x-cloak
+         class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm transition-opacity overflow-y-auto"
+         @keydown.escape.window="modalOrdenExcedente = false"
+         @click.self="modalOrdenExcedente = false">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-300 dark:border-slate-800 shadow-2xl space-y-4 my-auto"
+             @click.stop>
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Unidades Exceden la Orden</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Cantidad mayor a lo pendiente en la orden.</p>
+                    </div>
+                </div>
+                <button @click="modalOrdenExcedente = false" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-300">
+                Las siguientes líneas ingresan más unidades de las pactadas en la orden:
+            </p>
+
+            <div class="overflow-x-auto max-h-40 border border-slate-200 dark:border-slate-800 rounded-xl">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">
+                        <tr>
+                            <th class="py-2 px-3">Medicamento</th>
+                            <th class="py-2 px-2 text-center">Pendiente</th>
+                            <th class="py-2 px-2 text-center">Ingresando</th>
+                            <th class="py-2 px-2 text-center text-blue-700 dark:text-blue-300">Excedente</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <template x-for="linea in lineasExcedentes" :key="linea.nombre">
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200" x-text="linea.nombre"></td>
+                                <td class="py-2 px-2 text-center text-slate-500" x-text="linea.pendiente + ' u.'"></td>
+                                <td class="py-2 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400" x-text="linea.ingresando + ' u.'"></td>
+                                <td class="py-2 px-2 text-center font-extrabold text-blue-800 dark:text-blue-300" x-text="'+' + linea.diferencia + ' u.'"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" 
+                        @click="modalOrdenExcedente = false" 
+                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                    Ajustar Cantidad
+                </button>
+                <button type="button" 
+                        @click="confirmarExcedente()" 
+                        class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition cursor-pointer">
+                    Aceptar Excedente
                 </button>
             </div>
         </div>

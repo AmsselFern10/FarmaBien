@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Registro de Compras e Ingreso de Lotes - FarmaBien')
 
@@ -42,26 +42,26 @@
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                    class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
             <a href="{{ route('compras.comparador-precios') }}" 
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-indigo-50/80 hover:bg-indigo-100/90 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-900 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800/80 shadow-2xs transition">
+               class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 transition">
                 <svg class="w-4 h-4 text-indigo-700 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <span>Comparador de Precios</span>
             </a>
 
             <a href="{{ route('compras.sugerencias-reorden') }}" 
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-amber-50/80 hover:bg-amber-100/90 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800/80 shadow-2xs transition">
+               class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-300 transition">
                 <svg class="w-4 h-4 text-amber-700 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span>Reorden Inteligente</span>
             </a>
 
             @can('registrar compras')
             <a href="{{ route('compras.create') }}" 
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
+               class="h-10 px-4 rounded-full text-sm font-medium inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Nueva Compra</span>
             </a>
@@ -94,17 +94,17 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Monto Página</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">${{ number_format($compras->sum('total'), 2) }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">C$ {{ number_format($compras->sum('total'), 2) }}</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">$</span>
+                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">C$</span>
             </div>
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Control Vencimientos</p>
-                <a href="{{ route('inventario.alertas') }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline mt-0.5 block">Alertas de Lotes &rarr;</a>
+                <a href="{{ route('inventario.alertas') }}" class="text-xs font-bold text-amber-900 dark:text-amber-400 hover:underline mt-0.5 block">Alertas de Lotes &rarr;</a>
             </div>
             <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -245,7 +245,7 @@
 
                         <!-- Total -->
                         <td class="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white">
-                            ${{ number_format($compra->total, 2) }}
+                            C$ {{ number_format($compra->total, 2) }}
                         </td>
 
                         <!-- Estado -->
