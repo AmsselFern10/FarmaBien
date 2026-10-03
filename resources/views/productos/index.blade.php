@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Catálogo de Medicamentos - FarmaBien')
 
@@ -607,9 +607,9 @@
 <!-- ======================================================== -->
 <!-- MODAL: LUPA INTELIGENTE CON IA (Búsqueda Semántica)      -->
 <!-- ======================================================== -->
-<div id="modalLupaIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalLupaIA()">
+<div id="modalLupaIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalLupaIA()">
     <!-- Modal Panel -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl text-left flex flex-col shadow-2xl transform transition-all w-full max-w-2xl max-h-[90vh] border border-slate-200 dark:border-slate-800">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-violet-50 via-white to-indigo-50 dark:from-violet-950/30 dark:via-slate-900 dark:to-indigo-950/30 flex items-center justify-between">
             <div class="flex items-center space-x-2.5">
@@ -686,9 +686,9 @@
 <!-- ======================================================== -->
 <!-- MODAL: FICHA CLÍNICA IA DEL MEDICAMENTO                  -->
 <!-- ======================================================== -->
-<div id="modalProductoIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalProductoIA()">
+<div id="modalProductoIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalProductoIA()">
     <!-- Modal Panel -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl text-left flex flex-col shadow-2xl transform transition-all w-full max-w-2xl max-h-[90vh] border border-slate-200 dark:border-slate-800">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 flex items-center justify-between">
             <div class="flex items-center space-x-2.5">
@@ -709,7 +709,7 @@
         </div>
 
         <!-- Body -->
-        <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div class="p-6 space-y-4 flex-1 overflow-y-auto">
             <!-- Loading State -->
             <div id="modalProductoIA_loading" class="py-8 text-center space-y-2">
                 <div class="inline-block w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -812,6 +812,7 @@ function abrirModalLupaIA() {
     if (!modal) return;
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 
     const normal = document.querySelector('input[name="buscar"]');
     const input = document.getElementById('lupa_q');
@@ -826,6 +827,7 @@ function cerrarModalLupaIA() {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 function probarSintoma(texto) {
@@ -953,6 +955,7 @@ function abrirModalProductoIA(id, nombre) {
 
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 
     const url = __productoIaUrlTpl.replace('__ID__', id);
     fetch(url, {
@@ -1022,6 +1025,7 @@ function cerrarModalProductoIA() {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 document.addEventListener('keydown', (e) => {
