@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Services\InventarioService;
 use App\Http\Requests\AjusteInventarioRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\QueryException;
 use Exception;
@@ -22,7 +23,7 @@ class InventarioController extends Controller
     {
         $this->inventarioService = $inventarioService;
         $this->middleware('permission:ver movimientos inventario')->only(['index', 'movimientos', 'lotes', 'kardexProducto', 'alertas']);
-        $this->middleware('permission:ajustar inventario')->only(['ajustar', 'storeAjuste', 'bajaVencidos']);
+        $this->middleware('permission:ajustar inventario')->only(['ajustar', 'storeAjuste', 'bajaVencidos', 'createLote', 'storeLote']);
         $this->middleware('permission:editar lotes|ajustar inventario')->only(['updateLote']);
     }
 
@@ -224,7 +225,7 @@ class InventarioController extends Controller
     }
 
     /**
-     * Endpoint para dar de baja automática a lotes vencidos
+     * Dar de baja automática a lotes vencidos
      */
     public function bajaVencidos()
     {
@@ -244,6 +245,96 @@ class InventarioController extends Controller
             ]);
 
             return back()->with('error', 'Error al procesar la baja de lotes vencidos: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Formulario para crear un lote manualmente (stock de apertura, migración, donaciones, etc.)
+     */
+    public function createLote(Request $request)
+    {
+        $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre', 'principio_activo']);
+        $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $productoPreseleccionado = $request->filled('producto_id')
+            ? Producto::find($request->input('producto_id'))
+            : null;
+
+        return view('inventario.lote-crear', compact('productos', 'proveedores', 'productoPreseleccionado'));
+    }
+
+    /**
+     * Guardar lote manual con movimiento de entrada en Kardex
+     */
+    public function storeLote(Request $request)
+    {
+        $validated = $request->validate([
+            'producto_id'       => ['required', 'integer', 'exists:productos,id'],
+            'numero_lote'       => ['required', 'string', 'max:100'],
+            'fecha_vencimiento' => ['required', 'date', 'after:today'],
+            'cantidad'          => ['required', 'integer', 'min:1'],
+            'precio_compra'     => ['nullable', 'numeric', 'min:0'],
+            'proveedor_id'      => ['nullable', 'integer', 'exists:proveedores,id'],
+            'motivo'            => ['required', 'string', 'min:5', 'max:500'],
+        ], [
+            'producto_id.required'       => 'Selecciona el medicamento.',
+            'producto_id.exists'         => 'El medicamento no existe.',
+            'numero_lote.required'       => 'El número de lote es obligatorio.',
+            'fecha_vencimiento.required' => 'La fecha de vencimiento es obligatoria.',
+            'fecha_vencimiento.after'    => 'La fecha de vencimiento debe ser una fecha futura.',
+            'cantidad.required'          => 'La cantidad inicial es obligatoria.',
+            'cantidad.min'               => 'La cantidad debe ser al menos 1 unidad.',
+            'motivo.required'            => 'El motivo es obligatorio para auditoría regulatoria.',
+            'motivo.min'                 => 'El motivo debe tener al menos 5 caracteres.',
+        ]);
+
+        try {
+            $lote = DB::transaction(function () use ($validated) {
+                $lote = Lote::create([
+                    'producto_id'       => $validated['producto_id'],
+                    'compra_id'         => null,
+                    'proveedor_id'      => $validated['proveedor_id'] ?? null,
+                    'numero_lote'       => $validated['numero_lote'],
+                    'fecha_vencimiento' => $validated['fecha_vencimiento'],
+                    'stock_inicial'     => $validated['cantidad'],
+                    'stock_actual'      => $validated['cantidad'],
+                    'precio_compra'     => $validated['precio_compra'] ?? 0,
+                    'activo'            => true,
+                ]);
+
+                MovimientoInventario::create([
+                    'producto_id'       => $lote->producto_id,
+                    'lote_id'           => $lote->id,
+                    'usuario_id'        => auth()->id(),
+                    'tipo'              => 'entrada',
+                    'subtipo'           => 'ajuste_manual',
+                    'cantidad'          => $validated['cantidad'],
+                    'stock_anterior'    => 0,
+                    'stock_nuevo'       => $validated['cantidad'],
+                    'motivo'            => 'Lote manual: ' . $validated['motivo'],
+                    'fecha_movimiento'  => now(),
+                ]);
+
+                return $lote;
+            });
+
+            AuditLog::log('inventario', 'lote_manual', "Lote manual creado: {$lote->numero_lote} ({$lote->producto->nombre})", [
+                'lote_id'    => $lote->id,
+                'producto_id'=> $lote->producto_id,
+                'cantidad'   => $validated['cantidad'],
+                'motivo'     => $validated['motivo'],
+            ]);
+
+            return redirect()->route('inventario.lotes')
+                ->with('success', "Lote '{$lote->numero_lote}' de {$lote->producto->nombre} creado con {$validated['cantidad']} unidades en inventario.");
+
+        } catch (Exception $e) {
+            Log::error('Error al crear lote manual', [
+                'user_id' => auth()->id(),
+                'payload' => $request->except(['_token']),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al crear el lote: ' . $e->getMessage());
         }
     }
 }

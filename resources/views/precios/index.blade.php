@@ -13,40 +13,45 @@
     </nav>
 
     {{-- Fila 2 — Título y Acciones --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Precios de Venta</h1>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Catálogo maestro centralizado para la administración de precios base, factores de presentación y márgenes comerciales.</p>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Precios de Venta</span>
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    {{ $totalProductosConPrecio }} con precio
+                </span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Catálogo maestro centralizado para la administración de precios base, factores de presentación y márgenes comerciales.</p>
         </div>
 
-        {{-- Barra de Acciones Superior: Modo Full, Secundarios Pastel, Principal Verde --}}
-        <div class="flex items-center space-x-2 self-start sm:self-auto flex-wrap gap-y-2">
+        {{-- Barra de Acciones Superior --}}
+        <div class="flex items-center gap-2 flex-wrap shrink-0">
             {{-- Modo Full --}}
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="h-10 px-4 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition inline-flex items-center gap-2 shrink-0 cursor-pointer shadow-2xs">
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                <span>Modo Full</span>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
             {{-- Secundario Pastel: Historial General --}}
             <a href="{{ route('precios.historial') }}"
-               class="h-10 px-4 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-indigo-900 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-sm font-medium transition inline-flex items-center gap-2 cursor-pointer shadow-2xs">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 text-indigo-950 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-xs font-semibold shadow-2xs transition">
                 <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>Historial General</span>
             </a>
 
             {{-- Secundario Pastel: Exportar --}}
             <a href="{{ route('precios.exportar') }}"
-               class="h-10 px-4 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-sm font-medium transition inline-flex items-center gap-2 cursor-pointer shadow-2xs">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-xs font-semibold shadow-2xs transition">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Exportar</span>
             </a>
 
             {{-- Principal Verde Sólido: Actualización Masiva --}}
             <a href="{{ route('precios.masivo') }}"
-               class="h-10 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition inline-flex items-center gap-2 shadow-xs cursor-pointer">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span>Actualización Masiva</span>
             </a>
@@ -54,58 +59,54 @@
     </div>
 
     {{-- Tarjetas Superiores de Métricas --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {{-- Card 1: Productos con precio --}}
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Medicamentos con Precio</span>
-                <span class="p-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-900 dark:text-blue-300">
-                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                </span>
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Medicamentos con Precio</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($totalProductosConPrecio) }}</p>
             </div>
-            <div class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ number_format($totalProductosConPrecio) }}</div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Vigentes en catálogo activo</div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            </div>
         </div>
 
         {{-- Card 2: Margen promedio --}}
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Margen Bruto Promedio</span>
-                <span class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-900 dark:text-emerald-300">
-                    <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                </span>
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Margen Promedio</p>
+                <p class="text-xl font-bold text-emerald-950 dark:text-emerald-400 mt-0.5">{{ number_format($margenPromedio, 1) }}%</p>
             </div>
-            <div class="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-400">{{ number_format($margenPromedio, 1) }}%</div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Sobre costo de adquisición</div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
         </div>
 
         {{-- Card 3: Margen bajo --}}
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Margen Bajo (&lt; 25%)</span>
-                <span class="p-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-900 dark:text-amber-300">
-                    <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                </span>
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Margen Bajo (&lt; 25%)</p>
+                <p class="text-xl font-bold text-amber-950 dark:text-amber-400 mt-0.5">{{ number_format($productosMargenBajo) }}</p>
             </div>
-            <div class="mt-2 text-2xl font-bold text-amber-900 dark:text-amber-400">{{ number_format($productosMargenBajo) }}</div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Requieren revisión comercial</div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
         </div>
 
         {{-- Card 4: Cambios últimos 30 días --}}
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Actualizaciones (30 días)</span>
-                <span class="p-2 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-900 dark:text-purple-300">
-                    <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </span>
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Cambios (30 días)</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($cambiosUltimos30Dias) }}</p>
             </div>
-            <div class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ number_format($cambiosUltimos30Dias) }}</div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Ajustes registrados en auditoría</div>
+            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
         </div>
     </div>
 
     {{-- Filtros con Buscadores AJAX y Botón Filtrar Verde Sólido --}}
-    <div x-data="filtroPrecios()" class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
+    <div x-data="filtroPrecios()" class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
         <form method="GET" action="{{ route('precios.index') }}" id="formFiltrosPrecios" class="space-y-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
                 {{-- Búsqueda por texto general --}}
@@ -199,11 +200,12 @@
                 </div>
                 <div class="flex items-center space-x-2">
                     @if(request()->hasAny(['q', 'categoria_id', 'laboratorio_id', 'estado_margen']))
-                    <a href="{{ route('precios.index') }}" class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-200 transition">
-                        Limpiar filtros
+                    <a href="{{ route('precios.index') }}" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center gap-1">
+                        <span>Limpiar</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                     @endif
-                    <button type="submit" class="h-9 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition inline-flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition inline-flex items-center justify-center gap-1.5">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                         <span>Filtrar</span>
                     </button>
@@ -213,10 +215,10 @@
     </div>
 
     {{-- Tabla de Precios de Venta con Edición Rápida en Línea --}}
-    <div x-data="tablaPreciosInline()" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
+    <div x-data="tablaPreciosInline()" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
-                <thead class="bg-slate-100/80 dark:bg-slate-800/80 text-[11px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
                     <tr>
                         <th class="px-4 py-3">Medicamento / Principio</th>
                         <th class="px-3 py-3">Categoría & Lab</th>

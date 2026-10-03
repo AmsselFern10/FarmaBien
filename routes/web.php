@@ -244,6 +244,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [InventarioController::class, 'index'])->name('index');
         Route::get('/movimientos', [InventarioController::class, 'movimientos'])->name('movimientos');
         Route::get('/lotes', [InventarioController::class, 'lotes'])->name('lotes');
+        Route::get('/lotes/crear', [InventarioController::class, 'createLote'])->name('lotes.create');
+        Route::post('/lotes', [InventarioController::class, 'storeLote'])->name('lotes.store');
         Route::put('/lotes/{lote}', [InventarioController::class, 'updateLote'])->name('lotes.update');
         Route::get('/kardex-producto/{producto}', [InventarioController::class, 'kardexProducto'])->name('kardex-producto');
         Route::get('/alertas', [InventarioController::class, 'alertas'])->name('alertas');

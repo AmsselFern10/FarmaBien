@@ -15,13 +15,13 @@
     </nav>
 
     {{-- Fila 2 — Título y Acciones --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{{ $producto->nombre }}</h1>
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mt-1">
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ $producto->nombre }}</h1>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
                 <span>{{ $producto->principio_activo ?? 'Sin principio activo' }}</span>
                 <span>·</span>
-                <span class="font-medium text-slate-800 dark:text-slate-200">{{ $producto->categoria->nombre ?? 'General' }}</span>
+                <span class="font-medium text-slate-700 dark:text-slate-300">{{ $producto->categoria->nombre ?? 'General' }}</span>
                 <span>·</span>
                 <span>{{ $producto->laboratorio->nombre ?? 'Sin Laboratorio' }}</span>
                 @if($producto->codigo_barra)
@@ -31,12 +31,12 @@
             </div>
         </div>
 
-        {{-- Barra de Acciones: ← Precios de Venta, Modo Full, Ver Ficha (Azul pastel), Editar Precio (Verde sólido) --}}
-        <div class="flex items-center space-x-2 self-start sm:self-auto flex-wrap gap-y-2">
+        {{-- Barra de Acciones --}}
+        <div class="flex items-center gap-2 flex-wrap shrink-0">
             {{-- Botón de Navegación --}}
             <a href="{{ route('precios.index') }}"
-               class="h-10 px-4 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition inline-flex items-center gap-2 cursor-pointer shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Precios de Venta</span>
             </a>
 
@@ -44,21 +44,21 @@
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa"
-                    class="h-10 px-4 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition inline-flex items-center gap-2 shrink-0 cursor-pointer shadow-2xs">
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                <span>Modo Full</span>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
             {{-- Secundario Pastel Azul: Ver Ficha del Medicamento --}}
             <a href="{{ route('productos.show', $producto) }}"
-               class="h-10 px-4 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 text-blue-900 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-sm font-medium transition inline-flex items-center gap-2 cursor-pointer shadow-2xs">
-                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>Ver Ficha del Medicamento</span>
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800/60 text-sky-950 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-xs font-semibold shadow-2xs transition">
+                <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Ver Ficha Medicamento</span>
             </a>
 
             {{-- Principal Verde Sólido: Editar Precio --}}
             <a href="{{ route('precios.edit', $producto) }}"
-               class="h-10 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition inline-flex items-center gap-2 shadow-xs cursor-pointer">
+               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span>Editar Precio</span>
             </a>
@@ -66,64 +66,67 @@
     </div>
 
     {{-- Cards de Precios y Rentabilidad --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {{-- Card 1: Precio Venta Base --}}
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="text-xs font-semibold text-slate-600 dark:text-slate-400">Precio de Venta Base</div>
-            <div class="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-400 font-mono">
-                C$ {{ number_format($precioBase, 2) }}
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Precio Venta Base</p>
+                <p class="text-xl font-bold text-emerald-950 dark:text-emerald-400 font-mono mt-0.5">C$ {{ number_format($precioBase, 2) }}</p>
             </div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Por unidad base / pastilla</div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
         </div>
 
         {{-- Card 2: Costo de Adquisición --}}
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="text-xs font-semibold text-slate-600 dark:text-slate-400">Costo de Adquisición</div>
-            <div class="mt-2 text-2xl font-bold text-slate-900 dark:text-white font-mono">
-                C$ {{ number_format($costoReferencia, 2) }}
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Costo Adquisición</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white font-mono mt-0.5">C$ {{ number_format($costoReferencia, 2) }}</p>
             </div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Último costo de compra</div>
+            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
         </div>
 
         {{-- Card 3: Margen Estimado --}}
         @php
             if ($margenEstimado < 0) {
-                $margenClass = 'text-red-900 dark:text-red-400';
+                $margenClass = 'text-red-950 dark:text-red-400';
             } elseif ($margenEstimado < 25) {
-                $margenClass = 'text-amber-900 dark:text-amber-400';
+                $margenClass = 'text-amber-950 dark:text-amber-400';
             } else {
-                $margenClass = 'text-emerald-900 dark:text-emerald-400';
+                $margenClass = 'text-emerald-950 dark:text-emerald-400';
             }
         @endphp
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="text-xs font-semibold text-slate-600 dark:text-slate-400">Margen Bruto Estimado</div>
-            <div class="mt-2 text-2xl font-bold {{ $margenClass }}">
-                {{ number_format($margenEstimado, 1) }}%
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Margen Estimado</p>
+                <p class="text-xl font-bold {{ $margenClass }} mt-0.5">{{ number_format($margenEstimado, 1) }}%</p>
             </div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Fórmula: (Precio − Costo) / Precio</div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
         </div>
 
         {{-- Card 4: Promoción Vigente --}}
-        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <div class="text-xs font-semibold text-slate-600 dark:text-slate-400">Promoción Vigente</div>
-            @if($promocionVigente)
-            <div class="mt-2 text-lg font-bold text-rose-900 dark:text-rose-400 truncate">
-                {{ $promocionVigente->nombre }}
+        <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Promoción Vigente</p>
+                @if($promocionVigente)
+                <p class="text-sm font-bold text-rose-950 dark:text-rose-400 truncate max-w-[150px] mt-0.5">{{ $promocionVigente->nombre }}</p>
+                @else
+                <p class="text-sm font-medium text-slate-400 mt-0.5">Sin promo activa</p>
+                @endif
             </div>
-            <div class="mt-0.5 text-[11px] text-slate-500">
-                Descuento activo · {{ $promocionVigente->fecha_fin ? 'Hasta ' . \Carbon\Carbon::parse($promocionVigente->fecha_fin)->format('d/m/Y') : 'Vigencia permanente' }}
+            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
             </div>
-            @else
-            <div class="mt-2 text-lg font-semibold text-slate-400">
-                Sin Promoción Activa
-            </div>
-            <div class="mt-0.5 text-[11px] text-slate-500">Se aplica precio de lista normal</div>
-            @endif
         </div>
     </div>
 
     {{-- Tabla de Presentaciones y Factores --}}
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div class="px-4 py-3 bg-slate-100/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                 Presentaciones Comerciales & Factores
@@ -199,7 +202,7 @@
     </div>
 
     {{-- Tabla de Historial de Cambios de Precio (Auditoría) --}}
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <div class="px-4 py-3 bg-slate-100/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                 Historial de Cambios & Auditoría de Precios

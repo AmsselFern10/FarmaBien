@@ -151,10 +151,14 @@ class PrecioVentaController extends Controller
                     $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', now());
                 })
                 ->where(function ($q) use ($producto) {
-                    $q->whereHas('productos', function ($pq) use ($producto) {
-                        $pq->where('productos.id', $producto->id);
-                    })->orWhere('aplica_a_todo', true)
-                    ->orWhere('categoria_id', $producto->categoria_id);
+                    $q->where('producto_id', $producto->id)
+                        ->orWhere('alcance', 'general');
+                    if ($producto->categoria_id) {
+                        $q->orWhere('categoria_id', $producto->categoria_id);
+                    }
+                    if ($producto->laboratorio_id) {
+                        $q->orWhere('laboratorio_id', $producto->laboratorio_id);
+                    }
                 })
                 ->first();
         }
