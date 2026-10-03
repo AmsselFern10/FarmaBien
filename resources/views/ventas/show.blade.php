@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Detalle de Venta #' . str_pad($venta->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 
@@ -59,7 +59,7 @@
                 @can('realizar ventas')
                 <a href="{{ route('devoluciones.create', ['venta_id' => $venta->id]) }}" 
                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800 transition shadow-2xs">
-                    <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l3-3m-3 3l3 3m5 4v1a3 3 0 003 3h4"/></svg>
+                    <svg class="w-4 h-4 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l3-3m-3 3l3 3m5 4v1a3 3 0 003 3h4"/></svg>
                     <span>Procesar Devolución</span>
                 </a>
                 @endcan
@@ -70,7 +70,7 @@
                 @can('anular ventas')
                 <a href="{{ route('ventas.edit', $venta) }}" 
                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800 transition shadow-2xs">
-                    <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <svg class="w-4 h-4 text-amber-900 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     <span>Modificar</span>
                 </a>
 
@@ -78,7 +78,7 @@
                 <button type="button" 
                         @click="modalAnular = true" 
                         class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-800 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-800 transition shadow-2xs cursor-pointer">
-                    <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <svg class="w-4 h-4 text-red-900 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     <span>Anular Venta</span>
                 </button>
                 @endcan
@@ -101,7 +101,7 @@
                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                 <span>Esta venta es una <strong>versión modificada</strong> que reemplaza a la venta original <strong>#{{ str_pad($venta->venta_original_id, 5, '0', STR_PAD_LEFT) }}</strong>.</span>
             </div>
-            <a href="{{ route('ventas.show', $venta->ventaOriginal) }}" class="font-bold text-blue-700 dark:text-blue-300 underline hover:no-underline">
+            <a href="{{ route('ventas.show', $venta->ventaOriginal) }}" class="font-bold text-blue-900 dark:text-blue-300 underline hover:no-underline">
                 Ver Venta Original &rarr;
             </a>
         </div>
@@ -113,7 +113,7 @@
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                 <span>Esta venta fue <strong>modificada</strong> y ha sido sustituida por la nueva versión <strong>#{{ str_pad($venta->reemplazada_por, 5, '0', STR_PAD_LEFT) }}</strong>.</span>
             </div>
-            <a href="{{ route('ventas.show', $venta->reemplazadaPor) }}" class="font-bold text-amber-700 dark:text-amber-300 underline hover:no-underline">
+            <a href="{{ route('ventas.show', $venta->reemplazadaPor) }}" class="font-bold text-amber-900 dark:text-amber-300 underline hover:no-underline">
                 Ver Nueva Versión Activa &rarr;
             </a>
         </div>
@@ -122,7 +122,7 @@
     @if($venta->estado === 'anulada')
         <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1">
             <div class="font-bold flex items-center space-x-2">
-                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <svg class="w-4 h-4 text-red-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <span>VENTA ANULADA</span>
             </div>
             <p class="text-[11px] text-rose-800 dark:text-rose-300">
@@ -137,7 +137,7 @@
         <!-- Cliente y Cajero -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
             <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 <span>Datos del Cliente & Atención</span>
             </div>
             <div>
@@ -148,7 +148,7 @@
                 @if($venta->cliente && $venta->cliente->telefono)
                     <p class="text-[11px] text-slate-500 dark:text-slate-400">Tel: {{ $venta->cliente->telefono }}</p>
                 @endif
-                <div class="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300">
+                <div class="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-700 dark:text-slate-300">
                     Atendido por: <strong class="text-slate-800 dark:text-slate-200">{{ $venta->usuario->name ?? 'Sistema' }}</strong>
                 </div>
             </div>
@@ -157,10 +157,10 @@
         <!-- Forma de Pago & Recetas -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
             <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                 <span>Método de Pago & Control</span>
             </div>
-            <div class="text-[11px] space-y-1 text-slate-600 dark:text-slate-300">
+            <div class="text-[11px] space-y-1 text-slate-700 dark:text-slate-300">
                 <div class="flex justify-between">
                     <span class="text-slate-400">Método:</span>
                     <span class="font-bold text-slate-900 dark:text-white uppercase">{{ $venta->metodo_pago ?? 'Efectivo' }}</span>
@@ -193,11 +193,11 @@
         <!-- Totales Financieros -->
         <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2 flex flex-col justify-between">
             <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>Resumen de Liquidación</span>
             </div>
             <div class="space-y-1 text-xs">
-                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                <div class="flex justify-between text-slate-700 dark:text-slate-300">
                     <span>Subtotal Bruto:</span>
                     <span class="font-bold text-slate-900 dark:text-white">C$ {{ number_format($venta->subtotal_bruto ?: $venta->total, 2) }}</span>
                 </div>
@@ -208,7 +208,7 @@
                 </div>
                 @endif
                 <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
-                    <span class="font-semibold text-slate-600 dark:text-slate-300">Monto Total:</span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-300">Monto Total:</span>
                     <span class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400">C$ {{ number_format($venta->total, 2) }}</span>
                 </div>
             </div>
@@ -229,7 +229,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                         <th class="py-2.5 px-3">#</th>
                         <th class="py-2.5 px-3">Medicamento / Fármaco</th>
                         <th class="py-2.5 px-3">Presentación</th>
@@ -256,7 +256,7 @@
                             <div class="text-[10px] text-slate-400 mt-0.5">
                                 {{ $detalle->producto->principio_activo ?? '' }} • Lab: {{ $detalle->producto->laboratorio->nombre ?? 'Sin Lab' }}
                                 @if($detalle->producto && $detalle->producto->requiere_receta)
-                                    <span class="ml-1 px-1 py-0.2 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">Rx Requerida</span>
+                                    <span class="ml-1 px-1 py-0.2 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300">Rx Requerida</span>
                                 @endif
                             </div>
                         </td>
@@ -361,7 +361,7 @@
                     @foreach($venta->devoluciones as $dev)
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                         <td class="py-2.5 px-3 font-bold text-slate-900 dark:text-white">{{ $dev->numero_devolucion }}</td>
-                        <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">{{ $dev->fecha->format('d/m/Y H:i') }}</td>
+                        <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300">{{ $dev->fecha->format('d/m/Y H:i') }}</td>
                         <td class="py-2.5 px-3 capitalize">
                             <span class="font-semibold">{{ $dev->tipo }}</span> — {{ str_replace('_', ' ', $dev->motivo) }}
                         </td>
@@ -384,7 +384,7 @@
     @if($venta->observaciones)
     <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-1">
         <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Observaciones Registradas</h4>
-        <p class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line">{{ $venta->observaciones }}</p>
+        <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line">{{ $venta->observaciones }}</p>
     </div>
     @endif
 
@@ -401,7 +401,7 @@
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-red-900 dark:text-rose-400 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">Anular Venta #{{ str_pad($venta->id, 5, '0', STR_PAD_LEFT) }}</h3>
@@ -411,7 +411,7 @@
                 </button>
             </div>
 
-            <p class="text-xs text-slate-600 dark:text-slate-300">
+            <p class="text-xs text-slate-700 dark:text-slate-300">
                 ¿Está completamente seguro de anular esta venta? El stock de todos los medicamentos y lotes será reintegrado al inventario disponible.
             </p>
 
@@ -419,7 +419,7 @@
                 @csrf
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Motivo de anulación <span class="text-rose-500">*</span>
+                        Motivo de anulación <span class="text-red-900">*</span>
                     </label>
                     <textarea name="motivo" 
                               x-model="motivoAnulacion" 
@@ -433,7 +433,7 @@
                 <div class="flex items-center justify-end space-x-2 pt-2">
                     <button type="button" 
                             @click="modalAnular = false" 
-                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" 

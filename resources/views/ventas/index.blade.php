@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Ventas & Facturación')
 
@@ -64,7 +64,7 @@
                     type="button"
                     title="Modo Pantalla Completa"
                     class="inline-flex items-center space-x-2 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
                 </svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
@@ -92,7 +92,7 @@
         <!-- Total Ventas -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Operaciones</p>
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-400">Total Operaciones</p>
                 <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($stats['total'] ?? 0) }}</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center">
@@ -103,7 +103,7 @@
         <!-- Completadas -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Ventas Exitosas</p>
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-400">Ventas Exitosas</p>
                 <p class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400 mt-0.5">{{ number_format($stats['completadas'] ?? 0) }}</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center">
@@ -114,7 +114,7 @@
         <!-- Anuladas -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Operaciones Anuladas</p>
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-400">Operaciones Anuladas</p>
                 <p class="text-xl font-extrabold text-rose-900 dark:text-rose-400 mt-0.5">{{ number_format($stats['anuladas'] ?? 0) }}</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-400 border border-rose-300 dark:border-rose-800 flex items-center justify-center">
@@ -125,7 +125,7 @@
         <!-- Ingresos Totales -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Ingresos</p>
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-400">Total Ingresos</p>
                 <p class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400 mt-0.5 font-mono">C$ {{ number_format($stats['ingresos'] ?? 0, 2) }}</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center">
@@ -203,7 +203,7 @@
                 @if(request()->hasAny(['buscar', 'estado', 'tipo_comprobante', 'orden', 'fecha_desde', 'fecha_hasta']))
                 <a href="{{ route('ventas.index') }}" 
                    title="Limpiar filtros"
-                   class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center shrink-0">
+                   class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition inline-flex items-center justify-center shrink-0">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </a>
                 @endif
@@ -312,7 +312,7 @@
                         </td>
 
                         <!-- Cajero Responsable -->
-                        <td class="px-5 py-3.5 text-slate-600 dark:text-slate-400">
+                        <td class="px-5 py-3.5 text-slate-700 dark:text-slate-400">
                             {{ $venta->usuario->name ?? 'Cajero' }}
                         </td>
 
@@ -338,7 +338,7 @@
                                 <a href="{{ route('ventas.pdf', $venta) }}"
                                    target="_blank"
                                    title="Descargar Factura A4 (PDF)"
-                                   class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs">
+                                   class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-red-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                 </a>
 
@@ -418,7 +418,7 @@
             <form :action="'/ventas/' + ventaId + '/anular'" method="POST">
                 @csrf
                 <div class="p-6">
-                    <div class="flex items-center space-x-3 text-rose-600 mb-4">
+                    <div class="flex items-center space-x-3 text-red-900 mb-4">
                         <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         </div>
@@ -433,7 +433,7 @@
                     <div class="space-y-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                Motivo de Anulación <span class="text-rose-500">*</span>
+                                Motivo de Anulación <span class="text-red-900">*</span>
                             </label>
                             <textarea name="motivo" 
                                       x-model="motivoAnulacion" 
@@ -524,7 +524,7 @@
                                     <span class="font-bold text-xs text-slate-900 dark:text-white" x-text="rec.paciente_nombre"></span>
                                     <span x-show="rec.paciente_documento" class="text-[10px] text-slate-500 font-mono" x-text="'(' + rec.paciente_documento + ')'"></span>
                                 </div>
-                                <div class="text-[11px] text-slate-600 dark:text-slate-300">
+                                <div class="text-[11px] text-slate-700 dark:text-slate-300">
                                     <span>Dr. <strong x-text="rec.medico_nombre"></strong></span>
                                     <span x-show="rec.medico_colegiatura" class="text-slate-500" x-text="' &bull; Reg: ' + rec.medico_colegiatura"></span>
                                 </div>

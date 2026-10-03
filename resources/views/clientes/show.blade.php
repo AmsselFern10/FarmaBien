@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', $cliente->nombre . ' - Ficha del Paciente - FarmaBien')
 
@@ -40,7 +40,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -70,7 +70,7 @@
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                         <span>Copiar</span>
                     </span>
-                    <span x-show="copied" class="text-emerald-600 dark:text-emerald-400">✓ Listo</span>
+                    <span x-show="copied" class="text-emerald-900 dark:text-emerald-400">✓ Listo</span>
                 </button>
                 @endif
             </div>
@@ -120,7 +120,7 @@
                     <p class="text-xs text-slate-400 mt-0.5">Historial reciente de transacciones en caja.</p>
                 </div>
                 @can('realizar ventas')
-                <a href="{{ route('ventas.create') }}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                <a href="{{ route('ventas.create') }}" class="text-xs font-bold text-emerald-900 dark:text-emerald-400 hover:underline">
                     + Nueva Venta (F2)
                 </a>
                 @endcan
@@ -190,7 +190,7 @@
                     <p class="text-xs text-slate-400 mt-0.5">Recetas archivadas y control de tratamientos.</p>
                 </div>
                 @can('crear recetas')
-                <a href="{{ route('recetas.create') }}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                <a href="{{ route('recetas.create') }}" class="text-xs font-bold text-emerald-900 dark:text-emerald-400 hover:underline">
                     + Nueva Receta
                 </a>
                 @endcan
@@ -217,7 +217,7 @@
                                 <span class="font-medium">{{ $receta->medico_nombre }}</span>
                                 <span class="block text-[10px] font-mono text-slate-400">CMP: {{ $receta->medico_colegiatura ?? 'S/C' }}</span>
                             </td>
-                            <td class="px-4 py-3 text-center font-mono text-slate-600 dark:text-slate-400">
+                            <td class="px-4 py-3 text-center font-mono text-slate-700 dark:text-slate-400">
                                 {{ $receta->fecha_emision ? \Carbon\Carbon::parse($receta->fecha_emision)->format('d/m/Y') : 'N/A' }}
                             </td>
                             <td class="px-4 py-3 text-center">

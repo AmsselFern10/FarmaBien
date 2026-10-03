@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', "Ficha de Precio — {$producto->nombre} — FarmaBien")
 
@@ -45,7 +45,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -73,7 +73,7 @@
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Precio Venta Base</p>
                 <p class="text-xl font-bold text-emerald-950 dark:text-emerald-400 font-mono mt-0.5">C$ {{ number_format($precioBase, 2) }}</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
@@ -84,7 +84,7 @@
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Costo Adquisición</p>
                 <p class="text-xl font-bold text-slate-900 dark:text-white font-mono mt-0.5">C$ {{ number_format($costoReferencia, 2) }}</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
         </div>
@@ -104,7 +104,7 @@
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Margen Estimado</p>
                 <p class="text-xl font-bold {{ $margenClass }} mt-0.5">{{ number_format($margenEstimado, 1) }}%</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-400 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
             </div>
         </div>
@@ -153,7 +153,7 @@
                             <span class="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 dark:bg-emerald-800/40 text-emerald-900 dark:text-emerald-300 font-semibold">Base</span>
                         </td>
                         <td class="px-3 py-2.5 text-center font-mono font-medium">1 u.</td>
-                        <td class="px-3 py-2.5 text-right font-mono text-slate-600 dark:text-slate-400">C$ {{ number_format($costoReferencia, 2) }}</td>
+                        <td class="px-3 py-2.5 text-right font-mono text-slate-700 dark:text-slate-400">C$ {{ number_format($costoReferencia, 2) }}</td>
                         <td class="px-3 py-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-400">C$ {{ number_format($precioBase, 2) }}</td>
                         <td class="px-3 py-2.5 text-center">
                             <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-bold {{ $margenClass }}">
@@ -186,7 +186,7 @@
                             @endif
                         </td>
                         <td class="px-3 py-2.5 text-center font-mono font-medium">{{ $factor }} u.</td>
-                        <td class="px-3 py-2.5 text-right font-mono text-slate-600 dark:text-slate-400">C$ {{ number_format($costoPres, 2) }}</td>
+                        <td class="px-3 py-2.5 text-right font-mono text-slate-700 dark:text-slate-400">C$ {{ number_format($costoPres, 2) }}</td>
                         <td class="px-3 py-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-400">C$ {{ number_format($precioPres, 2) }}</td>
                         <td class="px-3 py-2.5 text-center">
                             <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-bold {{ $mClass }}">
@@ -224,7 +224,7 @@
                 <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800/70">
                     @forelse($historial as $h)
                     <tr>
-                        <td class="px-4 py-2.5 font-mono text-slate-600 dark:text-slate-400">
+                        <td class="px-4 py-2.5 font-mono text-slate-700 dark:text-slate-400">
                             {{ $h->vigente_desde ? $h->vigente_desde->format('d/m/Y H:i') : $h->created_at->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-3 py-2.5 font-medium text-slate-800 dark:text-slate-200">
@@ -255,7 +255,7 @@
                             </span>
                             @endif
                         </td>
-                        <td class="px-4 py-2.5 text-slate-600 dark:text-slate-400">
+                        <td class="px-4 py-2.5 text-slate-700 dark:text-slate-400">
                             {{ $h->motivo ?? 'Sin motivo registrado' }}
                         </td>
                     </tr>

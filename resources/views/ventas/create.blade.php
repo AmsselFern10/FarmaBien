@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Terminal Punto de Venta (POS) - FarmaBien')
 
@@ -404,14 +404,60 @@ function posVentaData() {
             item.cantidad = cant;
         },
 
+        formatFechaVenc(fechaStr) {
+            if (!fechaStr) return '';
+            const clean = String(fechaStr).split('T')[0];
+            const parts = clean.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return clean;
+        },
+
+        verificarStockLotes() {
+            for (let [idx, it] of this.items.entries()) {
+                const uTotales = this.calcularUnidadesBase(it);
+                if (it.lote_obj && it.lote_obj.stock_actual < uTotales) {
+                    const lotesAlternos = (it.lotesDisponibles || []).filter(l =>
+                        l.id !== it.lote_id && l.stock_actual >= uTotales
+                    );
+                    this.stockInsuficienteData = {
+                        itemIdx: idx,
+                        nombre: it.nombre,
+                        loteActual: it.lote_obj.numero_lote,
+                        stockActual: it.lote_obj.stock_actual,
+                        solicitado: uTotales,
+                        lotesAlternos: lotesAlternos
+                    };
+                    this.modalStockInsuficiente = true;
+                    return false;
+                }
+            }
+            return true;
+        },
+
         cambiarLoteDesdeModal(lote) {
             const idx = this.stockInsuficienteData.itemIdx;
             if (idx === null || !this.items[idx]) { this.modalStockInsuficiente = false; return; }
             this.items[idx].lote_id = lote.id;
             this.items[idx].lote_obj = lote;
             this.modalStockInsuficiente = false;
-            // Reintentar cobrar después de cambiar el lote
-            this.$nextTick(() => this.procesarVentaFinal());
+            if (window.farmaToast) {
+                window.farmaToast.success(`Lote actualizado a ${lote.numero_lote}`, 'Lote Actualizado');
+            }
+        },
+
+        ajustarCantidadManualmente() {
+            const idx = this.stockInsuficienteData.itemIdx;
+            this.modalStockInsuficiente = false;
+            this.modalCobro = false;
+            if (idx !== null) {
+                this.$nextTick(() => {
+                    const el = document.getElementById(`item-cant-input-${idx}`) || document.querySelector(`input[data-item-idx="${idx}"]`);
+                    el?.focus();
+                    el?.select();
+                });
+            }
         },
 
         async limpiarVenta() {
@@ -822,6 +868,10 @@ function posVentaData() {
                 return;
             }
 
+            if (!this.verificarStockLotes()) {
+                return;
+            }
+
             // Pre-llenar datos del paciente en la receta y en el panel MINSA si hay cliente seleccionado
             if (this.formData.cliente_id) {
                 const cl = this.clientes.find(c => c.id == this.formData.cliente_id);
@@ -1006,24 +1056,8 @@ function posVentaData() {
             }
 
             // Validar stocks — si falla, abrir modal con lotes alternos
-            for (let [idx, it] of this.items.entries()) {
-                const uTotales = this.calcularUnidadesBase(it);
-                if (it.lote_obj && it.lote_obj.stock_actual < uTotales) {
-                    // Encontrar lotes alternos con stock suficiente
-                    const lotesAlternos = (it.lotesDisponibles || []).filter(l =>
-                        l.id !== it.lote_id && l.stock_actual >= uTotales
-                    );
-                    this.stockInsuficienteData = {
-                        itemIdx: idx,
-                        nombre: it.nombre,
-                        loteActual: it.lote_obj.numero_lote,
-                        stockActual: it.lote_obj.stock_actual,
-                        solicitado: uTotales,
-                        lotesAlternos: lotesAlternos
-                    };
-                    this.modalStockInsuficiente = true;
-                    return;
-                }
+            if (!this.verificarStockLotes()) {
+                return;
             }
 
             // Validar límites de receta médica si hay receta vinculada
@@ -1383,7 +1417,7 @@ function posVentaData() {
                     <a href="{{ route('cajas.index') }}"
                        class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-200 dark:hover:bg-rose-900 transition shadow-2xs"
                        title="No hay caja activa abierta. Haz clic para abrir un turno.">
-                        <svg class="w-3 h-3 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <svg class="w-3 h-3 text-red-900 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         <span>Sin Caja Activa (Requiere Apertura)</span>
                     </a>
                 @endif
@@ -1403,7 +1437,7 @@ function posVentaData() {
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
@@ -1420,14 +1454,14 @@ function posVentaData() {
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
-                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
-                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     <span>Compacta</span>
@@ -1439,7 +1473,7 @@ function posVentaData() {
     <!-- Error Alert Box -->
     <div x-show="errorMsg" x-cloak class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-center justify-between shadow-xs">
         <div class="flex items-center space-x-2">
-            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <svg class="w-4 h-4 text-red-900 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span x-text="errorMsg" class="font-semibold"></span>
         </div>
         <button type="button" @click="errorMsg = ''" class="text-slate-400 hover:text-slate-600">&times;</button>
@@ -1482,7 +1516,7 @@ function posVentaData() {
                 <div class="lg:col-span-7 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
                         <div class="flex items-center space-x-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                             <span>1. Identificación del Cliente & Búsqueda</span>
                         </div>
                         <button type="button" 
@@ -1520,13 +1554,13 @@ function posVentaData() {
                                    @keydown.enter.prevent="buscarPorCodigoBarra()"
                                    placeholder="[F3] Escanear código de barras o escribir medicamento / principio activo..."
                                    class="w-full pl-8 pr-24 py-2 bg-emerald-50/50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 font-medium">
-                            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-emerald-600">
+                            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-emerald-900">
                                 <svg x-show="!buscandoProductos" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                 <!-- Spinner de Búsqueda -->
-                                <svg x-show="buscandoProductos" x-cloak class="w-4 h-4 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <svg x-show="buscandoProductos" x-cloak class="w-4 h-4 animate-spin text-emerald-900" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             </div>
                             <div class="absolute inset-y-0 right-0 pr-2 flex items-center space-x-1">
-                                <span x-show="buscandoProductos" x-cloak class="text-[9px] text-emerald-600 font-bold animate-pulse">Buscando...</span>
+                                <span x-show="buscandoProductos" x-cloak class="text-[9px] text-emerald-900 font-bold animate-pulse">Buscando...</span>
                                 <span class="text-[10px] font-mono bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 px-1.5 py-0.5 rounded">Enter</span>
                             </div>
                         </div>
@@ -1546,7 +1580,7 @@ function posVentaData() {
                                         <div class="text-[10px] text-slate-500 dark:text-slate-400">
                                             <span x-text="prod.principio_activo || 'Fórmula general'"></span> &bull; 
                                             Ubicación: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="prod.ubicacion || 'Sin estante'"></span> &bull;
-                                            Lote FEFO: <span class="font-semibold text-emerald-600" x-text="prod.lotes && prod.lotes[0] ? prod.lotes[0].numero_lote + ' (Stock: ' + prod.lotes[0].stock_actual + ')' : 'Sin stock'"></span>
+                                            Lote FEFO: <span class="font-semibold text-emerald-900" x-text="prod.lotes && prod.lotes[0] ? prod.lotes[0].numero_lote + ' (Stock: ' + prod.lotes[0].stock_actual + ')' : 'Sin stock'"></span>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -1564,7 +1598,7 @@ function posVentaData() {
                 <!-- Panel 2: Resumen de Liquidación & Descuento Inteligente (5 cols) -->
                 <div class="lg:col-span-5 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 flex flex-col justify-between space-y-2">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Resumen Financiero & Descuento</span>
                     </div>
 
@@ -1581,11 +1615,11 @@ function posVentaData() {
                                 <div class="inline-flex rounded-md border border-slate-300 dark:border-slate-600 text-[9px] overflow-hidden">
                                     <button type="button" 
                                             @click="formData.tipo_descuento = 'porcentaje'" 
-                                            :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+                                            :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
                                             class="px-1.5 py-0.2">%</button>
                                     <button type="button" 
                                             @click="formData.tipo_descuento = 'monto'" 
-                                            :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+                                            :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
                                             class="px-1.5 py-0.2">C$</button>
                                 </div>
                             </div>
@@ -1598,7 +1632,7 @@ function posVentaData() {
                                            max="100"
                                            x-model="formData.porcentaje_descuento" 
                                            @focus="$event.target.select()"
-                                           class="w-full px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-rose-600 text-right">
+                                           class="w-full px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-red-900 text-right">
                                     <span class="text-xs font-bold text-slate-500">%</span>
                                 </div>
                             </template>
@@ -1610,10 +1644,10 @@ function posVentaData() {
                                            min="0" 
                                            x-model="formData.descuento" 
                                            @focus="$event.target.select()"
-                                           class="w-full px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-rose-600 text-right">
+                                           class="w-full px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold text-red-900 text-right">
                                 </div>
                             </template>
-                            <span class="text-[9px] text-rose-500 font-semibold block text-right mt-0.5 font-mono" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
+                            <span class="text-[9px] text-red-900 font-semibold block text-right mt-0.5 font-mono" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
                                 Descuenta: -C$ <span x-text="calcularDescuentoGeneralMonto()"></span>
                             </span>
                         </div>
@@ -1621,8 +1655,8 @@ function posVentaData() {
 
                     <!-- Total Gigante -->
                     <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
-                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total a Pagar:</span>
-                        <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Total a Pagar:</span>
+                        <span class="text-2xl font-black text-emerald-900 dark:text-emerald-400 font-mono">
                             C$ <span x-text="calcularTotalGeneral()"></span>
                         </span>
                     </div>
@@ -1633,7 +1667,7 @@ function posVentaData() {
             <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                 <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                        <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                         <span>2. Desglose de Medicamentos, Presentaciones y Equivalencia de Stock (FEFO)</span>
                     </div>
 
@@ -1703,7 +1737,7 @@ function posVentaData() {
                                         <!-- Badge de Equivalencia en Unidades -->
                                         <div class="mt-1 flex items-center space-x-1.5">
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
-                                                <svg class="w-3 h-3 text-emerald-700 dark:text-emerald-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                                <svg class="w-3 h-3 text-emerald-900 dark:text-emerald-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                                 <span><span x-text="item.cantidad"></span> <span x-text="item.presentacion_nombre || 'Unidad'"></span> = <strong class="ml-1 text-emerald-900 dark:text-emerald-200" x-text="'-' + calcularUnidadesBase(item) + ' unidades base'"></strong></span>
                                             </span>
                                         </div>
@@ -1763,7 +1797,7 @@ function posVentaData() {
                                                x-model="item.porcentaje_descuento" 
                                                @focus="$event.target.select()"
                                                placeholder="0"
-                                               class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-rose-600 font-bold text-right focus:ring-1 focus:ring-emerald-500">
+                                               class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-red-900 font-bold text-right focus:ring-1 focus:ring-emerald-500">
                                     </td>
 
                                     <!-- Subtotal -->
@@ -1796,11 +1830,11 @@ function posVentaData() {
             <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-slate-400 text-[11px]">
                 <div class="flex items-center space-x-2">
                     <span x-show="tieneControlados()" class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 font-bold flex items-center space-x-1.5 border border-rose-300 dark:border-rose-700">
-                        <svg class="w-3.5 h-3.5 text-rose-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <svg class="w-3.5 h-3.5 text-red-900 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         <span>Control MINSA (Receta Retenida): <strong x-text="getControladosCount()"></strong> medicamento(s)</span>
                     </span>
                     <span x-show="tieneProductosRxSimple()" class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 font-bold flex items-center space-x-1.5 border border-amber-300 dark:border-amber-700">
-                        <svg class="w-3.5 h-3.5 text-amber-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <svg class="w-3.5 h-3.5 text-amber-900 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Receta Estándar: <strong x-text="getProductosRxSimpleCount()"></strong> medicamento(s)</span>
                     </span>
                     <span x-show="!tieneControlados() && !tieneProductosRxSimple()" class="text-slate-500 dark:text-slate-400">Venta libre lista para despacho.</span>
@@ -1810,7 +1844,7 @@ function posVentaData() {
                             @click="modalTicketPreview = true"
                             :disabled="items.length === 0"
                             class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer">
-                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        <svg class="w-4 h-4 text-indigo-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                         <span>Vista Previa Ticket</span>
                     </button>
                     <button type="button" 
@@ -1847,7 +1881,7 @@ function posVentaData() {
                         </span>
                         <button type="button" 
                                 @click="modalNuevoCliente = true"
-                                class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center space-x-1 cursor-pointer">
+                                class="text-[10px] font-bold text-emerald-900 dark:text-emerald-400 hover:underline flex items-center space-x-1 cursor-pointer">
                             <span>+ Nuevo Cliente</span>
                         </button>
                     </div>
@@ -1883,10 +1917,10 @@ function posVentaData() {
                                class="w-full pl-8 pr-20 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500">
                         <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
                             <svg x-show="!buscandoProductos" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <svg x-show="buscandoProductos" x-cloak class="w-3.5 h-3.5 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <svg x-show="buscandoProductos" x-cloak class="w-3.5 h-3.5 animate-spin text-emerald-900" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         </div>
                         <div class="absolute inset-y-0 right-0 pr-2 flex items-center">
-                            <span x-show="buscandoProductos" x-cloak class="text-[9px] text-emerald-600 font-bold animate-pulse mr-1">Cargando...</span>
+                            <span x-show="buscandoProductos" x-cloak class="text-[9px] text-emerald-900 font-bold animate-pulse mr-1">Cargando...</span>
                             <span class="text-[9px] font-mono bg-slate-200 dark:bg-slate-700 text-slate-500 px-1 py-0.2 rounded">Enter</span>
                         </div>
                     </div>
@@ -1943,7 +1977,7 @@ function posVentaData() {
                                     </div>
                                     <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1" x-text="prod.principio_activo || 'Fórmula general'"></p>
                                     
-                                    <div class="mt-1 flex items-center space-x-1 text-[10px] text-slate-600 dark:text-slate-400">
+                                    <div class="mt-1 flex items-center space-x-1 text-[10px] text-slate-700 dark:text-slate-400">
                                         <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                         <span class="font-medium text-slate-700 dark:text-slate-300" x-text="prod.ubicacion || 'Sin estante'"></span>
                                     </div>
@@ -1951,7 +1985,7 @@ function posVentaData() {
 
                                 <div class="pt-1.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
                                     <span class="text-[10px] font-semibold text-slate-500">
-                                        Lote FEFO: <span class="text-emerald-600 font-bold" x-text="prod.lotes && prod.lotes[0] ? prod.lotes[0].stock_actual + ' u.' : '0'"></span>
+                                        Lote FEFO: <span class="text-emerald-900 font-bold" x-text="prod.lotes && prod.lotes[0] ? prod.lotes[0].stock_actual + ' u.' : '0'"></span>
                                     </span>
                                     <span class="text-xs font-black text-slate-900 dark:text-white" x-text="'C$ ' + parseFloat(prod.precio_venta).toFixed(2)"></span>
                                 </div>
@@ -1993,7 +2027,7 @@ function posVentaData() {
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                             <span>Cobrar C$<span x-text="calcularTotalGeneral()"></span></span>
                         </button>
-                        <button type="button" @click="limpiarVenta()" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">Vaciar Todo</button>
+                        <button type="button" @click="limpiarVenta()" class="text-xs font-bold text-red-900 hover:underline cursor-pointer">Vaciar Todo</button>
                     </div>
                 </div>
 
@@ -2032,8 +2066,8 @@ function posVentaData() {
                                             <option :value="pres.id" x-text="pres.nombre + ' (' + pres.unidades + ' unid. c/u)'"></option>
                                         </template>
                                     </select>
-                                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 flex items-center gap-1">
-                                        <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                    <div class="text-[10px] text-emerald-900 dark:text-emerald-400 font-bold mt-1 flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-900 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                         <span>Equivale a <span x-text="calcularUnidadesBase(item)"></span> unidades base</span>
                                     </div>
                                 </div>
@@ -2075,7 +2109,7 @@ function posVentaData() {
                                            x-model="item.porcentaje_descuento" 
                                            @focus="$event.target.select()"
                                            placeholder="0"
-                                           class="w-14 px-1 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-xs font-bold text-rose-600 text-right">
+                                           class="w-14 px-1 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-xs font-bold text-red-900 text-right">
                                 </div>
 
                                 <!-- Subtotal por Fila -->
@@ -2096,44 +2130,44 @@ function posVentaData() {
 
                 <!-- Totales y Botones de Cobro / Ticket (Fijo al Fondo) -->
                 <div class="shrink-0 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 bg-white dark:bg-slate-900">
-                    <div class="flex justify-between text-xs text-slate-600 dark:text-slate-300">
+                    <div class="flex justify-between text-xs text-slate-700 dark:text-slate-300">
                         <span>Subtotal Bruto:</span>
                         <span class="font-bold" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                     </div>
 
                     <!-- Descuento Global Configurable -->
-                    <div class="flex justify-between items-center text-xs text-slate-600 dark:text-slate-300">
+                    <div class="flex justify-between items-center text-xs text-slate-700 dark:text-slate-300">
                         <div class="flex items-center space-x-1.5">
                             <span>Descuento Global:</span>
                             <div class="inline-flex rounded border border-slate-300 dark:border-slate-700 text-[10px]">
-                                <button type="button" @click="formData.tipo_descuento = 'porcentaje'" :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">%</button>
-                                <button type="button" @click="formData.tipo_descuento = 'monto'" :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600'" class="px-1.5 py-0.2">C$</button>
+                                <button type="button" @click="formData.tipo_descuento = 'porcentaje'" :class="formData.tipo_descuento === 'porcentaje' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700'" class="px-1.5 py-0.2">%</button>
+                                <button type="button" @click="formData.tipo_descuento = 'monto'" :class="formData.tipo_descuento === 'monto' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-700'" class="px-1.5 py-0.2">C$</button>
                             </div>
                         </div>
                         <div class="flex items-center space-x-1">
-                            <span class="text-rose-600 font-bold">-C$</span>
-                            <span class="text-rose-600 font-bold" x-text="calcularDescuentoGeneralMonto()"></span>
+                            <span class="text-red-900 font-bold">-C$</span>
+                            <span class="text-red-900 font-bold" x-text="calcularDescuentoGeneralMonto()"></span>
                             <input type="number" 
                                    :step="formData.tipo_descuento === 'porcentaje' ? 1 : 0.10" 
                                    min="0" 
                                    :max="formData.tipo_descuento === 'porcentaje' ? 100 : null"
                                    x-model="formData[formData.tipo_descuento === 'porcentaje' ? 'porcentaje_descuento' : 'descuento']" 
                                    @focus="$event.target.select()"
-                                   class="w-16 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-rose-600 text-right">
+                                   class="w-16 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-red-900 text-right">
                             <span class="text-xs font-bold" x-text="formData.tipo_descuento === 'porcentaje' ? '%' : 'C$'"></span>
                         </div>
                     </div>
 
                     <div class="flex justify-between text-base font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
                         <span>Total a Pagar:</span>
-                        <span class="text-2xl text-emerald-600 dark:text-emerald-400" x-text="'C$ ' + calcularTotalGeneral()"></span>
+                        <span class="text-2xl text-emerald-900 dark:text-emerald-400" x-text="'C$ ' + calcularTotalGeneral()"></span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-1.5">
                         <button type="button" 
                                 @click="modalTicketPreview = true"
                                 class="py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            <svg class="w-4 h-4 text-indigo-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                             <span>Ticket (F7)</span>
                         </button>
                         <button type="button" 
@@ -2190,7 +2224,7 @@ function posVentaData() {
                     <!-- Total Gigante -->
                     <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-center shrink-0">
                         <span class="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Total a Cobrar</span>
-                        <span class="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                        <span class="text-3xl font-black text-emerald-900 dark:text-emerald-400">
                             C$<span x-text="calcularTotalGeneral()"></span>
                         </span>
                         <div class="text-[10px] text-slate-500 mt-0.5" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
@@ -2240,18 +2274,18 @@ function posVentaData() {
                             <div class="p-2 bg-white/90 dark:bg-slate-800/90 rounded-lg border border-purple-200 dark:border-purple-800 space-y-1.5">
                                 <span class="text-[10px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">1. Paciente</span>
                                 <div>
-                                    <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Nombre Completo <span class="text-rose-500">*</span></label>
+                                    <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-400 mb-0.5">Nombre Completo <span class="text-red-900">*</span></label>
                                     <input type="text" x-model="controlData.paciente_nombre" placeholder="Nombre completo del paciente"
                                            class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-1 focus:ring-purple-500">
                                 </div>
                                 <div class="grid grid-cols-2 gap-1.5">
                                     <div>
-                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Cédula / ID</label>
+                                        <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-400 mb-0.5">Cédula / ID</label>
                                         <input type="text" x-model="controlData.paciente_cedula" placeholder="Ej: 001-010190-0000A"
                                                class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono focus:ring-1 focus:ring-purple-500">
                                     </div>
                                     <div>
-                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Edad</label>
+                                        <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-400 mb-0.5">Edad</label>
                                         <input type="number" min="0" max="120" x-model="controlData.paciente_edad" placeholder="Años"
                                                class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-purple-500">
                                     </div>
@@ -2262,24 +2296,24 @@ function posVentaData() {
                             <div class="p-2 bg-white/90 dark:bg-slate-800/90 rounded-lg border border-purple-200 dark:border-purple-800 space-y-1.5">
                                 <span class="text-[10px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">2. Médico Prescriptor</span>
                                 <div>
-                                    <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Dr(a). Nombre Completo <span class="text-rose-500">*</span></label>
+                                    <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-400 mb-0.5">Dr(a). Nombre Completo <span class="text-red-900">*</span></label>
                                     <input type="text" x-model="controlData.medico_nombre" placeholder="Dr. Nombre y Apellidos"
                                            class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-1 focus:ring-purple-500">
                                 </div>
                                 <div class="grid grid-cols-2 gap-1.5">
                                     <div>
-                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">N° Registro MINSA <span class="text-rose-500">*</span></label>
+                                        <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-400 mb-0.5">N° Registro MINSA <span class="text-red-900">*</span></label>
                                         <input type="text" x-model="controlData.medico_num_registro" placeholder="Ej: MINSA-12345"
                                                class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-purple-700 dark:text-purple-300 focus:ring-1 focus:ring-purple-500">
                                     </div>
                                     <div>
-                                        <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Cédula Médico</label>
+                                        <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-400 mb-0.5">Cédula Médico</label>
                                         <input type="text" x-model="controlData.medico_cedula" placeholder="Opcional"
                                                class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-purple-500">
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Diagnóstico / Indicación</label>
+                                    <label class="block text-[9px] font-bold text-slate-700 dark:text-slate-400 mb-0.5">Diagnóstico / Indicación</label>
                                     <input type="text" x-model="controlData.diagnostico" placeholder="Tratamiento prescrito..."
                                            class="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-purple-500">
                                 </div>
@@ -2298,7 +2332,7 @@ function posVentaData() {
                                                 #<span x-text="recetaSeleccionadaObj.numero_receta"></span>
                                             </span>
                                         </div>
-                                        <button type="button" @click="deseleccionarReceta()" class="text-[10px] text-rose-600 hover:underline font-bold cursor-pointer inline-flex items-center gap-0.5">
+                                        <button type="button" @click="deseleccionarReceta()" class="text-[10px] text-red-900 hover:underline font-bold cursor-pointer inline-flex items-center gap-0.5">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                             <span>Cambiar</span>
                                         </button>
@@ -2307,8 +2341,8 @@ function posVentaData() {
                                         <div>Pac: <strong x-text="recetaSeleccionadaObj.paciente_nombre"></strong></div>
                                         <div class="text-[10px] text-slate-500">Dr. <span x-text="recetaSeleccionadaObj.medico_nombre"></span> (Col: <span x-text="recetaSeleccionadaObj.medico_colegiatura || 'S/N'"></span>)</div>
                                     </div>
-                                    <div class="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                        <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <div class="text-[9px] text-emerald-900 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-900 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                         <span>Receta vinculada correctamente</span>
                                     </div>
                                 </div>
@@ -2349,14 +2383,14 @@ function posVentaData() {
                                                             </div>
                                                             <div class="text-[9px] text-slate-500 truncate" x-text="'Dr. ' + rec.medico_nombre + (rec.medico_colegiatura ? ' (Col: ' + rec.medico_colegiatura + ')' : '')"></div>
                                                         </div>
-                                                        <span :class="recetaCoincideConCarrito(rec) ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+                                                        <span :class="recetaCoincideConCarrito(rec) ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
                                                               class="px-2 py-0.5 rounded text-[9px] font-bold shrink-0 shadow-2xs">
                                                             <span x-show="recetaCoincideConCarrito(rec)">+ Vincular</span>
                                                             <span x-show="!recetaCoincideConCarrito(rec)">Sin Coincidencia</span>
                                                         </span>
                                                     </div>
                                                     <!-- Lista de medicamentos prescritos con saldo -->
-                                                    <div class="text-[9px] text-slate-600 dark:text-slate-300 flex items-center space-x-1">
+                                                    <div class="text-[9px] text-slate-700 dark:text-slate-300 flex items-center space-x-1">
                                                         <span class="font-bold text-slate-400 flex items-center gap-1">
                                                             <svg class="w-3 h-3 text-slate-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                                                             <span>Prescribe:</span>
@@ -2377,20 +2411,20 @@ function posVentaData() {
                         <!-- Opción 3: Omitir Receta con Justificación -->
                         <div x-show="recetaTab === 'omitir'" class="space-y-2 text-xs bg-amber-50 dark:bg-amber-950/60 p-3 rounded-xl border border-amber-300 dark:border-amber-700">
                             <label class="flex items-start space-x-2 text-[11px] text-amber-900 dark:text-amber-200 cursor-pointer">
-                                <input type="checkbox" x-model="recetaOmisionConfirmada" class="mt-0.5 rounded border-amber-400 text-amber-600">
+                                <input type="checkbox" x-model="recetaOmisionConfirmada" class="mt-0.5 rounded border-amber-400 text-amber-900">
                                 <span class="font-bold">Autorizo despacho justificado sin receta física.</span>
                             </label>
                             <div>
-                                <label class="block text-[9px] font-bold text-amber-900 dark:text-amber-300 mb-0.5">Motivo de Omisión (MINSA) <span class="text-rose-500">*</span></label>
+                                <label class="block text-[9px] font-bold text-amber-900 dark:text-amber-300 mb-0.5">Motivo de Omisión (MINSA) <span class="text-red-900">*</span></label>
                                 <input type="text" x-model="formData.receta_omision_motivo" placeholder="Ej: Tratamiento crónico / Urgencia médica" class="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-amber-400 rounded-lg text-xs">
                             </div>
                         </div>
                     </div>
 
                     <!-- CASO 2: VENTA LIBRE (SIN PRODUCTOS CONTROLADOS) -->
-                    <div x-show="!tieneControlados()" class="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-slate-800/50 border border-emerald-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+                    <div x-show="!tieneControlados()" class="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-slate-800/50 border border-emerald-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
                         <div class="flex items-center space-x-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             <span>Venta Libre (Sin Requisito Rx)</span>
                         </div>
                         <p class="text-[10px] text-slate-500 dark:text-slate-400">
@@ -2449,7 +2483,7 @@ function posVentaData() {
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-0.5">
-                                    Monto Recibido (C$) <span class="text-rose-500">*</span>
+                                    Monto Recibido (C$) <span class="text-red-900">*</span>
                                 </label>
                                 <input type="number" 
                                        id="posMontoRecibidoInput"
@@ -2464,7 +2498,7 @@ function posVentaData() {
                                 <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-0.5">
                                     Cambio / Vuelto (C$)
                                 </label>
-                                <div class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border-2 border-emerald-500/80 rounded-lg text-lg font-black text-emerald-600 dark:text-emerald-400 text-right" 
+                                <div class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border-2 border-emerald-500/80 rounded-lg text-lg font-black text-emerald-900 dark:text-emerald-400 text-right" 
                                      x-text="'C$ ' + calcularVuelto()"></div>
                             </div>
                         </div>
@@ -2472,7 +2506,7 @@ function posVentaData() {
                         <!-- Alerta si falta dinero -->
                         <div x-show="formData.monto_recibido !== '' && parseFloat(formData.monto_recibido) < parseFloat(calcularTotalGeneral())" 
                              class="p-2 rounded-lg bg-rose-100 dark:bg-rose-950/60 border border-rose-300 text-rose-800 dark:text-rose-200 text-[11px] font-bold flex items-center space-x-1.5 animate-pulse">
-                            <svg class="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <svg class="w-4 h-4 shrink-0 text-red-900 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                             <span>Dinero insuficiente: Faltan C$<span x-text="calcularFaltanteEfectivo()"></span></span>
                         </div>
 
@@ -2529,7 +2563,7 @@ function posVentaData() {
                 <div class="lg:col-span-4 bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col space-y-2 min-h-0">
                     <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase pb-1 border-b border-slate-200 dark:border-slate-800 shrink-0">
                         <span>Vista Previa de Ticket</span>
-                        <span class="text-[9px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 px-1.5 py-0.2 rounded font-mono">80mm ESC/POS</span>
+                        <span class="text-[9px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 px-1.5 py-0.2 rounded font-mono">80mm ESC/POS</span>
                     </div>
 
                     <!-- Ticket Papel Térmico Simulado -->
@@ -2537,8 +2571,8 @@ function posVentaData() {
                         <div class="text-center">
                             <div class="font-extrabold text-xs uppercase">{{ config('app.name', 'FarmaBien') }}</div>
                             <div>RUC: {{ env('EMPRESA_RUC', '20123456789') }}</div>
-                            <div class="text-[8px] text-slate-600">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123, Managua') }}</div>
-                            <div class="text-[8px] text-slate-600">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
+                            <div class="text-[8px] text-slate-700">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123, Managua') }}</div>
+                            <div class="text-[8px] text-slate-700">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
                         </div>
 
                         <div class="border-t border-dashed border-slate-400 my-1"></div>
@@ -2597,13 +2631,13 @@ function posVentaData() {
                                 <span>SUBTOTAL:</span>
                                 <span class="font-bold" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                             </div>
-                            <div class="flex justify-between text-rose-600" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
+                            <div class="flex justify-between text-red-900" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
                                 <span>DESCUENTO:</span>
                                 <span class="font-bold" x-text="'-C$ ' + calcularDescuentoGeneralMonto()"></span>
                             </div>
                             <div class="flex justify-between font-extrabold text-xs border-t border-slate-300 pt-0.5">
                                 <span>TOTAL:</span>
-                                <span class="text-emerald-700" x-text="'C$ ' + calcularTotalGeneral()"></span>
+                                <span class="text-emerald-900" x-text="'C$ ' + calcularTotalGeneral()"></span>
                             </div>
                             <div class="flex justify-between text-[8px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
                                 <span>RECIBIDO:</span>
@@ -2611,7 +2645,7 @@ function posVentaData() {
                             </div>
                             <div class="flex justify-between text-[8px]" x-show="formData.metodo_pago === 'efectivo' && formData.monto_recibido > 0">
                                 <span>CAMBIO:</span>
-                                <span class="font-bold text-emerald-700" x-text="'C$ ' + calcularVuelto()"></span>
+                                <span class="font-bold text-emerald-900" x-text="'C$ ' + calcularVuelto()"></span>
                             </div>
                         </div>
 
@@ -2626,8 +2660,8 @@ function posVentaData() {
             <!-- Modal Footer -->
             <div class="bg-slate-50 dark:bg-slate-800/50 px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0 rounded-b-2xl">
                 <div>
-                    <span x-show="!esValidoCobro()" class="text-xs text-rose-600 font-bold flex items-center space-x-1.5">
-                        <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span x-show="!esValidoCobro()" class="text-xs text-red-900 font-bold flex items-center space-x-1.5">
+                        <svg class="w-4 h-4 shrink-0 text-red-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         <span x-show="formData.metodo_pago === 'efectivo' && (!formData.monto_recibido || parseFloat(formData.monto_recibido) < parseFloat(calcularTotalGeneral()))">Ingrese un monto recibido válido</span>
                         <span x-show="tieneControlados() && recetaTab === 'datos' && (!controlData.paciente_nombre || !controlData.medico_nombre)">Complete los datos del paciente y médico prescriptor</span>
                         <span x-show="tieneControlados() && recetaTab === 'vincular' && !formData.receta_id">Seleccione una receta clínica para vincular</span>
@@ -2683,8 +2717,8 @@ function posVentaData() {
                     <div class="text-center">
                         <div class="font-extrabold text-sm uppercase">{{ config('app.name', 'FarmaBien') }}</div>
                         <div class="text-[10px]">RUC: {{ env('EMPRESA_RUC', '20123456789') }}</div>
-                        <div class="text-[9px] text-slate-600">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123') }}</div>
-                        <div class="text-[9px] text-slate-600">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
+                        <div class="text-[9px] text-slate-700">{{ env('EMPRESA_DIRECCION', 'Av. Principal 123') }}</div>
+                        <div class="text-[9px] text-slate-700">Tel: {{ env('EMPRESA_TELEFONO', '2244-5566') }}</div>
                     </div>
 
                     <div class="border-t border-dashed border-slate-400 my-1"></div>
@@ -2731,13 +2765,13 @@ function posVentaData() {
                             <span>SUBTOTAL:</span>
                             <span class="font-bold" x-text="'C$ ' + calcularSubtotalGeneral()"></span>
                         </div>
-                        <div class="flex justify-between text-rose-600" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
+                        <div class="flex justify-between text-red-900" x-show="parseFloat(calcularDescuentoGeneralMonto()) > 0">
                             <span>DESCUENTO:</span>
                             <span class="font-bold" x-text="'-C$ ' + calcularDescuentoGeneralMonto()"></span>
                         </div>
                         <div class="flex justify-between font-black text-sm border-t border-slate-300 pt-1">
                             <span>TOTAL:</span>
-                            <span class="text-emerald-700" x-text="'C$ ' + calcularTotalGeneral()"></span>
+                            <span class="text-emerald-900" x-text="'C$ ' + calcularTotalGeneral()"></span>
                         </div>
                     </div>
 
@@ -2781,7 +2815,7 @@ function posVentaData() {
                     <!-- Header -->
                     <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
                         <div class="flex items-center space-x-2.5">
-                            <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 flex items-center justify-center">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                             </div>
                             <div>
@@ -2796,7 +2830,7 @@ function posVentaData() {
                         <!-- Ubicación Física Destacada -->
                         <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
                             <div class="flex items-center space-x-2">
-                                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <svg class="w-5 h-5 text-emerald-900 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 <div>
                                     <span class="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-300 block">Ubicación Física en Farmacia:</span>
                                     <span class="text-xs font-black text-emerald-900 dark:text-emerald-200" x-text="productoInfo.ubicacion || 'Sin estantería asignada'"></span>
@@ -2818,7 +2852,7 @@ function posVentaData() {
 
                             <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
                                 <table class="w-full text-left text-xs border-collapse">
-                                    <thead class="bg-slate-50 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                                    <thead class="bg-slate-50 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">
                                         <tr>
                                             <th class="py-2 px-3">N° Lote</th>
                                             <th class="py-2 px-3">Vencimiento</th>
@@ -2831,8 +2865,8 @@ function posVentaData() {
                                         <template x-for="(lote, lIdx) in (productoInfo.lotes || [])" :key="lote.id">
                                             <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                                                 <td class="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-white" x-text="lote.numero_lote"></td>
-                                                <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300" x-text="lote.fecha_vencimiento ? lote.fecha_vencimiento.substring(0, 10) : 'N/A'"></td>
-                                                <td class="py-2.5 px-3 text-center font-bold text-emerald-600" x-text="lote.stock_actual + ' u.'"></td>
+                                                <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300" x-text="lote.fecha_vencimiento ? lote.fecha_vencimiento.substring(0, 10) : 'N/A'"></td>
+                                                <td class="py-2.5 px-3 text-center font-bold text-emerald-900" x-text="lote.stock_actual + ' u.'"></td>
                                                 <td class="py-2.5 px-3 text-center">
                                                     <span x-show="lIdx === 0" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                                                         FEFO (Sale 1°)
@@ -2890,7 +2924,7 @@ function posVentaData() {
             
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
                     </div>
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">Registrar Nuevo Cliente Rápido</h3>
@@ -2899,11 +2933,11 @@ function posVentaData() {
             </div>
 
             <div class="p-6 space-y-3">
-                <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs" x-text="errorClienteMsg"></div>
+                <div x-show="errorClienteMsg" class="p-2.5 rounded-lg bg-rose-50 text-red-900 text-xs" x-text="errorClienteMsg"></div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Nombre Completo / Razón Social <span class="text-rose-500">*</span>
+                        Nombre Completo / Razón Social <span class="text-red-900">*</span>
                     </label>
                     <input type="text" 
                            x-model="nuevoCliente.nombre" 
@@ -2972,7 +3006,7 @@ function posVentaData() {
          class="fixed inset-0 z-[9999] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white dark:bg-slate-900 rounded-3xl border border-amber-300 dark:border-amber-700/80 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto">
             <div class="p-6 text-center">
-                <div class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 mx-auto flex items-center justify-center mb-4 ring-8 ring-amber-50 dark:ring-amber-950/30">
+                <div class="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-900 mx-auto flex items-center justify-center mb-4 ring-8 ring-amber-50 dark:ring-amber-950/30">
                     <svg class="w-8 h-8 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 
@@ -2980,16 +3014,16 @@ function posVentaData() {
                     Parpadeo o Corte de Red Detectado
                 </h3>
                 
-                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+                <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed mb-4">
                     La petición no pudo completarse debido a una pérdida temporal de señal o tiempo de espera agotado.
                 </p>
 
                 <div class="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-left mb-5">
                     <div class="flex items-start gap-2.5">
-                        <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                         <div class="text-xs text-emerald-800 dark:text-emerald-300">
                             <span class="font-bold">¡Tu carrito está 100% seguro!</span>
-                            <p class="text-[11px] text-emerald-700/80 dark:text-emerald-400 mt-0.5">
+                            <p class="text-[11px] text-emerald-900/80 dark:text-emerald-400 mt-0.5">
                                 Hay <span class="font-extrabold" x-text="items.length"></span> ítems cargados (Total: <span class="font-mono font-bold" x-text="'C$ ' + calcularTotalGeneral()"></span>). La venta está protegida contra duplicados por clave criptográfica de sesión.
                             </p>
                         </div>
@@ -3058,18 +3092,18 @@ function posVentaData() {
                     <p class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Datos del Paciente</p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="sm:col-span-2">
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre completo <span class="text-rose-500">*</span></label>
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 mb-1">Nombre completo <span class="text-red-900">*</span></label>
                             <input type="text" x-model="controlData.paciente_nombre" placeholder="Nombre del paciente"
                                    class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Edad</label>
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 mb-1">Edad</label>
                             <input type="number" x-model="controlData.paciente_edad" placeholder="Años" min="0" max="120"
                                    class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Cédula de identidad</label>
+                        <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 mb-1">Cédula de identidad</label>
                         <input type="text" x-model="controlData.paciente_cedula" placeholder="Ej. 001-010190-0000A"
                                class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
                     </div>
@@ -3080,18 +3114,18 @@ function posVentaData() {
                     <p class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Médico Prescriptor</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre del médico <span class="text-rose-500">*</span></label>
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 mb-1">Nombre del médico <span class="text-red-900">*</span></label>
                             <input type="text" x-model="controlData.medico_nombre" placeholder="Dr./Dra. nombre completo"
                                    class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">No. Registro MINSA</label>
+                            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 mb-1">No. Registro MINSA</label>
                             <input type="text" x-model="controlData.medico_num_registro" placeholder="Ej. MINSA-12345"
                                    class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Diagnóstico / Indicación</label>
+                        <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-400 mb-1">Diagnóstico / Indicación</label>
                         <input type="text" x-model="controlData.diagnostico" placeholder="Diagnóstico o indicación terapéutica..."
                                class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500"/>
                     </div>
@@ -3184,7 +3218,7 @@ function posVentaData() {
                                     <span class="font-bold text-xs text-slate-900 dark:text-white" x-text="rec.paciente_nombre"></span>
                                     <span x-show="rec.paciente_documento" class="text-[10px] text-slate-500 font-mono" x-text="'(' + rec.paciente_documento + ')'"></span>
                                 </div>
-                                <div class="text-[11px] text-slate-600 dark:text-slate-300">
+                                <div class="text-[11px] text-slate-700 dark:text-slate-300">
                                     <span>Dr. <strong x-text="rec.medico_nombre"></strong></span>
                                     <span x-show="rec.medico_colegiatura" class="text-slate-500" x-text="' &bull; Reg: ' + rec.medico_colegiatura"></span>
                                     <span x-show="rec.medico_especialidad" class="text-slate-500" x-text="' (' + rec.medico_especialidad + ')'"></span>
@@ -3226,8 +3260,8 @@ function posVentaData() {
     {{-- ═══ Modal: Stock Insuficiente — Lote Alterno ═══ --}}
     <template x-teleport="body">
     <div x-show="modalStockInsuficiente" x-cloak
-         class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
-         @keydown.escape.window="modalStockInsuficiente = false">
+         class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs"
+         @keydown.escape.stop="modalStockInsuficiente = false">
         <div @click.stop x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100"
              class="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl border border-slate-300 dark:border-slate-800 overflow-hidden">
@@ -3236,17 +3270,17 @@ function posVentaData() {
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center shrink-0">
-                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-amber-900 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                     </div>
                     <div>
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">Stock insuficiente en lote</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400" x-text="stockInsuficienteData.nombre"></p>
+                        <p class="text-[11px] text-slate-700 dark:text-slate-400" x-text="stockInsuficienteData.nombre"></p>
                     </div>
                 </div>
-                <button @click="modalStockInsuficiente = false"
-                        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <button type="button" @click="modalStockInsuficiente = false"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer text-lg">
                     &times;
                 </button>
             </div>
@@ -3255,46 +3289,46 @@ function posVentaData() {
             <div class="px-5 py-4 space-y-4">
                 {{-- Info del lote actual --}}
                 <div class="bg-rose-50 dark:bg-rose-950/40 rounded-xl p-3.5 border border-rose-200 dark:border-rose-800 text-xs space-y-1.5">
-                    <div class="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        Lote actual sin suficiente stock
+                    <div class="font-bold text-red-900 dark:text-rose-400 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 shrink-0 text-red-900 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Lote actual sin suficiente stock</span>
                     </div>
                     <div class="grid grid-cols-3 gap-2 text-[11px]">
-                        <div class="bg-white/60 dark:bg-slate-900/40 rounded-lg p-2 text-center">
-                            <div class="font-mono font-bold text-slate-800 dark:text-slate-200 truncate" x-text="stockInsuficienteData.loteActual"></div>
-                            <div class="text-slate-500 dark:text-slate-400 mt-0.5">Lote</div>
+                        <div class="bg-white/80 dark:bg-slate-900/40 rounded-lg p-2 text-center border border-rose-100 dark:border-rose-900/30">
+                            <div class="font-mono font-bold text-slate-900 dark:text-slate-200 truncate" x-text="stockInsuficienteData.loteActual"></div>
+                            <div class="text-slate-700 dark:text-slate-400 mt-0.5">Lote</div>
                         </div>
-                        <div class="bg-white/60 dark:bg-slate-900/40 rounded-lg p-2 text-center">
-                            <div class="font-bold text-rose-600 dark:text-rose-400" x-text="stockInsuficienteData.stockActual + ' u.'"></div>
-                            <div class="text-slate-500 dark:text-slate-400 mt-0.5">Disponible</div>
+                        <div class="bg-white/80 dark:bg-slate-900/40 rounded-lg p-2 text-center border border-rose-100 dark:border-rose-900/30">
+                            <div class="font-bold text-red-900 dark:text-rose-400" x-text="stockInsuficienteData.stockActual + ' u.'"></div>
+                            <div class="text-slate-700 dark:text-slate-400 mt-0.5">Disponible</div>
                         </div>
-                        <div class="bg-white/60 dark:bg-slate-900/40 rounded-lg p-2 text-center">
-                            <div class="font-bold text-amber-700 dark:text-amber-400" x-text="stockInsuficienteData.solicitado + ' u.'"></div>
-                            <div class="text-slate-500 dark:text-slate-400 mt-0.5">Solicitado</div>
+                        <div class="bg-white/80 dark:bg-slate-900/40 rounded-lg p-2 text-center border border-rose-100 dark:border-rose-900/30">
+                            <div class="font-bold text-amber-900 dark:text-amber-400" x-text="stockInsuficienteData.solicitado + ' u.'"></div>
+                            <div class="text-slate-700 dark:text-slate-400 mt-0.5">Solicitado</div>
                         </div>
                     </div>
                 </div>
 
                 {{-- Lotes alternos --}}
                 <div>
-                    <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                        Lotes disponibles con stock suficiente
+                    <p class="text-[11px] font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider mb-2">
+                        LOTES DISPONIBLES CON STOCK SUFICIENTE
                     </p>
 
                     <template x-if="stockInsuficienteData.lotesAlternos.length > 0">
                         <div class="space-y-2">
                             <template x-for="lote in stockInsuficienteData.lotesAlternos" :key="lote.id">
                                 <button type="button" @click="cambiarLoteDesdeModal(lote)"
-                                        class="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 rounded-xl transition group text-left">
+                                        class="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 rounded-xl transition group text-left cursor-pointer">
                                     <div class="text-xs">
-                                        <span class="font-bold text-slate-900 dark:text-white font-mono" x-text="lote.numero_lote"></span>
-                                        <span x-show="lote.fecha_vencimiento" class="text-slate-500 dark:text-slate-400 ml-2 text-[10px]"
-                                              x-text="'Vence: ' + (lote.fecha_vencimiento || '')"></span>
+                                        <span class="font-bold text-emerald-900 dark:text-emerald-300 font-mono" x-text="lote.numero_lote"></span>
+                                        <span x-show="lote.fecha_vencimiento" class="text-slate-700 dark:text-slate-400 ml-2 text-[10px]"
+                                              x-text="'Vence: ' + formatFechaVenc(lote.fecha_vencimiento)"></span>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+                                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
                                               x-text="lote.stock_actual + ' u. disp.'"></span>
-                                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
                                     </div>
@@ -3304,12 +3338,9 @@ function posVentaData() {
                     </template>
 
                     <template x-if="stockInsuficienteData.lotesAlternos.length === 0">
-                        <div class="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-center text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                            <svg class="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/>
-                            </svg>
-                            <p class="font-semibold text-slate-600 dark:text-slate-300">Sin lotes alternos disponibles</p>
-                            <p class="text-[10px] mt-1">No hay otro lote con suficiente stock para esta cantidad.<br>Reduce la cantidad solicitada o espera una reposición.</p>
+                        <div class="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-center text-xs text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <p class="font-semibold text-slate-700 dark:text-slate-300">Sin lotes alternos disponibles</p>
+                            <p class="text-[10px] mt-1 text-slate-500">No hay otro lote con suficiente stock para esta cantidad.<br>Reduce la cantidad solicitada o espera una reposición.</p>
                         </div>
                     </template>
                 </div>
@@ -3317,8 +3348,8 @@ function posVentaData() {
 
             {{-- Footer --}}
             <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex justify-end">
-                <button type="button" @click="modalStockInsuficiente = false"
-                        class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <button type="button" @click="ajustarCantidadManualmente()"
+                        class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                     Ajustar cantidad manualmente
                 </button>
             </div>

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Nuevo Cliente - FarmaBien')
 
@@ -67,7 +67,7 @@ class="space-y-4 transition-all duration-200">
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -137,7 +137,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 1: Filiación y Documento -->
                     <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                             <span>Datos del Paciente / Titular</span>
                         </div>
 
@@ -154,7 +154,7 @@ class="space-y-4 transition-all duration-200">
 
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Nombre Completo o Razón Social <span class="text-rose-500">*</span>
+                                Nombre Completo o Razón Social <span class="text-red-900">*</span>
                             </label>
                             <input type="text" 
                                    name="nombre" 
@@ -167,8 +167,8 @@ class="space-y-4 transition-all duration-200">
 
                         <div class="pt-2">
                             <label class="inline-flex items-center space-x-2 cursor-pointer text-xs">
-                                <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
-                                <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Cliente Activo para Facturación POS</span>
+                                <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-900 w-3.5 h-3.5">
+                                <span class="text-[11px] font-semibold text-emerald-900 dark:text-emerald-400">Cliente Activo para Facturación POS</span>
                             </label>
                         </div>
                     </div>
@@ -176,7 +176,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 2: Contacto y Residencia -->
                     <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                             <span>Contacto y Dirección</span>
                         </div>
 
@@ -224,7 +224,7 @@ class="space-y-4 transition-all duration-200">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
                             <input type="checkbox" name="crear_otro" value="1"
                                    {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                   class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                             <span>Guardar y crear otro</span>
                         </label>
                         <button type="submit" 
@@ -256,7 +256,7 @@ class="space-y-4 transition-all duration-200">
                         <!-- Nombre Completo -->
                         <div class="md:col-span-2">
                             <label for="nombre_mod" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                                Nombre Completo o Razón Social <span class="text-rose-500">*</span>
+                                Nombre Completo o Razón Social <span class="text-red-900">*</span>
                             </label>
                             <input type="text" 
                                    id="nombre_mod" 
@@ -266,7 +266,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. Juan Manuel Pérez Salazar / Clínica San Rafael S.A.C." 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('nombre') border-rose-500 @enderror">
                             @error('nombre')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -282,7 +282,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. 72481920 o 20601234567" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('documento') border-rose-500 @enderror">
                             @error('documento')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
@@ -311,7 +311,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. +51 987 654 321" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('telefono') border-rose-500 @enderror">
                             @error('telefono')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -327,7 +327,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="paciente@correo.com" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('email') border-rose-500 @enderror">
                             @error('email')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -343,7 +343,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. Av. Javier Prado Este 2580, Dpto 402, San Borja" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('direccion') border-rose-500 @enderror">
                             @error('direccion')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
@@ -356,7 +356,7 @@ class="space-y-4 transition-all duration-200">
                                name="activo" 
                                x-model="formData.activo"
                                value="1" 
-                               class="w-4 h-4 rounded bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500">
+                               class="w-4 h-4 rounded bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-emerald-900 focus:ring-emerald-500">
                         <div>
                             <span class="text-sm font-semibold text-slate-800 dark:text-slate-200 block">Cliente Activo en el Sistema</span>
                             <span class="text-xs text-slate-400">Permite asociar ventas en el Punto de Venta (POS) y emitir recetas médicas.</span>
@@ -374,7 +374,7 @@ class="space-y-4 transition-all duration-200">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
                             <input type="checkbox" name="crear_otro" value="1"
                                    {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                   class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                             <span>Guardar y crear otro</span>
                         </label>
                         <button type="submit" 
