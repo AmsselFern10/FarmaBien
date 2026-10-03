@@ -230,6 +230,12 @@
                     <span>Reorden Inteligente</span>
                 </a>
 
+                <a href="{{ route('compras.devoluciones.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('compras.devoluciones.*') ? 'bg-rose-600/20 text-rose-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('compras.devoluciones.*') ? '!bg-rose-400' : '' }}"></span>
+                    <span>Dev. a Proveedor</span>
+                </a>
+
                 <a href="{{ route('cuentas-por-pagar.index') }}" 
                    class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('cuentas-por-pagar.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('cuentas-por-pagar.*') ? '!bg-emerald-400' : '' }}"></span>

@@ -8,6 +8,7 @@ use App\Http\Controllers\VentaController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\ConteoInventarioController;
+use App\Http\Controllers\DevolucionCompraController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\LaboratorioController;
 use App\Http\Controllers\CategoriaController;
@@ -176,6 +177,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('devoluciones/{devolucion}/ticket', [DevolucionController::class, 'ticket'])->name('devoluciones.ticket');
     Route::resource('devoluciones', DevolucionController::class)->parameters(['devoluciones' => 'devolucion'])->except(['edit', 'update', 'destroy']);
+
+    // Devoluciones a proveedor (DevolucionCompra)
+    Route::prefix('compras/devoluciones')->name('compras.devoluciones.')->group(function () {
+        Route::get('/', [DevolucionCompraController::class, 'index'])->name('index');
+        Route::get('/nueva', [DevolucionCompraController::class, 'create'])->name('create');
+        Route::post('/', [DevolucionCompraController::class, 'store'])->name('store');
+        Route::get('/{devolucionCompra}', [DevolucionCompraController::class, 'show'])->name('show');
+        Route::post('/{devolucionCompra}/enviar', [DevolucionCompraController::class, 'marcarEnviada'])->name('enviar');
+        Route::post('/{devolucionCompra}/confirmar', [DevolucionCompraController::class, 'confirmar'])->name('confirmar');
+    });
+
 
     /*
     |--------------------------------------------------------------------------
