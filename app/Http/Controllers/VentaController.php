@@ -308,7 +308,8 @@ class VentaController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('ventas.pdf', compact('venta'));
         $pdf->setPaper('a4', 'portrait');
 
-        return $pdf->download("factura-{$venta->numero_comprobante ?? $venta->id}.pdf");
+        $nombre = $venta->numero_comprobante ?? $venta->id;
+        return $pdf->download("factura-{$nombre}.pdf");
     }
 
     public function buscarProductos(Request $request)
