@@ -173,6 +173,7 @@ Route::middleware('auth')->group(function () {
     */
     Route::post('ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
     Route::get('ventas/{venta}/ticket', [VentaController::class, 'ticket'])->name('ventas.ticket');
+    Route::get('ventas/{venta}/pdf', [VentaController::class, 'generarPDF'])->name('ventas.pdf');
     Route::resource('ventas', VentaController::class);
 
     Route::get('devoluciones/{devolucion}/ticket', [DevolucionController::class, 'ticket'])->name('devoluciones.ticket');

@@ -295,6 +295,22 @@ class VentaController extends Controller
         return view('ventas.ticket', compact('venta'));
     }
 
+    public function generarPDF(Venta $venta)
+    {
+        $venta->load([
+            'cliente',
+            'usuario',
+            'detalles.producto',
+            'detalles.presentacion',
+            'detalles.lote',
+        ]);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('ventas.pdf', compact('venta'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download("factura-{$venta->numero_comprobante ?? $venta->id}.pdf");
+    }
+
     public function buscarProductos(Request $request)
     {
         $termino = trim($request->input('q', ''));
