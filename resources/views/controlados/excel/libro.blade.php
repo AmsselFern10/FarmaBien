@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -6,6 +6,7 @@
       xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+@verbatim
 <!--[if gte mso 9]>
 <xml>
  <x:ExcelWorkbook>
@@ -20,6 +21,7 @@
  </x:ExcelWorkbook>
 </xml>
 <![endif]-->
+@endverbatim
 <style>
   body, table { font-family: Calibri, Arial, Helvetica, sans-serif; font-size: 10.5pt; color: #1e293b; }
   table { border-collapse: collapse; width: 100%; }
