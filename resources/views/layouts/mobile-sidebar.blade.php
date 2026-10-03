@@ -148,6 +148,9 @@
                     @can('ver productos')
                     <a href="{{ route('productos.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Medicamentos</a>
                     @endcan
+                    @can('ver productos')
+                    <a href="{{ route('precios.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Precios de Venta</a>
+                    @endcan
                     @can('ver promociones')
                     <a href="{{ route('promociones.index') }}" @click="mobileSidebarOpen = false" class="block px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800">Promociones & Descuentos</a>
                     @endcan

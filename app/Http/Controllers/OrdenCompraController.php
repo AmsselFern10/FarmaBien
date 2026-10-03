@@ -193,6 +193,9 @@ class OrdenCompraController extends Controller
         if ($orden->estado === 'recibida_total') {
             return back()->with('error', 'Esta orden de compra ya fue recibida en su totalidad.');
         }
+        if ($orden->estado === 'cancelada') {
+            return back()->with('error', 'No se puede recepcionar una orden cancelada.');
+        }
 
         // Redireccionar al formulario de compra pre-llenado con los datos de esta orden
         return redirect()->route('compras.create', [

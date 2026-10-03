@@ -93,7 +93,7 @@ class VentaController extends Controller
         return view('ventas.index', compact('ventas', 'stats'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $user = auth()->user();
         $sesionActivaCaja = $user ? $user->sesionCajaActiva() : null;
@@ -122,7 +122,22 @@ class VentaController extends Controller
             }
         }
 
-        return view('ventas.create', compact('clientes', 'categorias', 'productos', 'sesionActivaCaja', 'recetasRecientes'));
+        $recetaPreload = null;
+        $recetaIdParam = $request->input('receta_id') ?: $request->input('cargar_receta');
+        if ($recetaIdParam && class_exists(\App\Models\Receta::class)) {
+            $recetaPreload = \App\Models\Receta::with([
+                'detalles.producto.lotesActivos',
+                'cliente'
+            ])->where(function ($q) use ($recetaIdParam) {
+                if (is_numeric($recetaIdParam)) {
+                    $q->where('id', (int) $recetaIdParam)->orWhere('numero_receta', $recetaIdParam);
+                } else {
+                    $q->where('numero_receta', $recetaIdParam);
+                }
+            })->first();
+        }
+
+        return view('ventas.create', compact('clientes', 'categorias', 'productos', 'sesionActivaCaja', 'recetasRecientes', 'recetaPreload'));
     }
 
     public function store(StoreVentaRequest $request)

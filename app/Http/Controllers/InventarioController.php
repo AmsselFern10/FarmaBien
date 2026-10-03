@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Producto;
 use App\Models\Lote;
+use App\Models\Proveedor;
 use App\Models\MovimientoInventario;
 use App\Models\AuditLog;
 use App\Services\InventarioService;
@@ -22,11 +23,12 @@ class InventarioController extends Controller
         $this->inventarioService = $inventarioService;
         $this->middleware('permission:ver movimientos inventario')->only(['index', 'movimientos', 'lotes', 'kardexProducto', 'alertas']);
         $this->middleware('permission:ajustar inventario')->only(['ajustar', 'storeAjuste', 'bajaVencidos']);
+        $this->middleware('permission:editar lotes|ajustar inventario')->only(['updateLote']);
     }
 
     public function index()
     {
-        $valorizacion = $this->inventarioService->valorizacionInventario();
+        $valorizacion = $this->inventarioService->valorizacionInventario(true);
         $productosBajoStock = $this->inventarioService->productosConStockBajo();
         $lotesPorVencer = $this->inventarioService->lotesProximosVencer(60);
         $lotesVencidos = $this->inventarioService->lotesVencidos();
@@ -118,8 +120,42 @@ class InventarioController extends Controller
         }
 
         $lotes = $query->paginate(15)->withQueryString();
+        $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
 
-        return view('inventario.lotes', compact('lotes'));
+        return view('inventario.lotes', compact('lotes', 'proveedores'));
+    }
+
+    /**
+     * Actualizar metadatos de un lote (número de lote, fecha de vencimiento, proveedor)
+     */
+    public function updateLote(Request $request, Lote $lote)
+    {
+        $validated = $request->validate([
+            'numero_lote'       => 'required|string|max:100',
+            'fecha_vencimiento' => 'required|date',
+            'proveedor_id'      => 'nullable|exists:proveedores,id',
+            'motivo_cambio'     => 'required|string|min:5|max:255',
+        ], [
+            'numero_lote.required'       => 'El número de lote es obligatorio.',
+            'fecha_vencimiento.required' => 'La fecha de vencimiento es obligatoria.',
+            'motivo_cambio.required'     => 'El motivo de la modificación es obligatorio para auditoría regulatoria.',
+            'motivo_cambio.min'          => 'El motivo debe tener al menos 5 caracteres.',
+        ]);
+
+        try {
+            $this->inventarioService->actualizarMetadatosLote($lote, $validated);
+
+            return redirect()->route('inventario.lotes')
+                ->with('success', "Los metadatos del lote '{$lote->numero_lote}' han sido actualizados exitosamente con auditoría.");
+        } catch (Exception $e) {
+            Log::error('Error al actualizar metadatos del lote', [
+                'lote_id' => $lote->id,
+                'user_id' => auth()->id(),
+                'error'   => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al actualizar metadatos del lote: ' . $e->getMessage());
+        }
     }
 
     public function kardexProducto(Producto $producto, Request $request)

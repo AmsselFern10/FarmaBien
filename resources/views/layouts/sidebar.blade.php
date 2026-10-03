@@ -7,7 +7,7 @@
                clinica: {{ request()->routeIs('recetas.*') || request()->routeIs('controlados.*') ? 'true' : 'false' }},
                compras: {{ request()->routeIs('compras.*') || request()->routeIs('cuentas-por-pagar.*') || request()->routeIs('ordenes-compras.*') ? 'true' : 'false' }},
                inventario: {{ request()->routeIs('inventario.*') ? 'true' : 'false' }},
-               catalogos: {{ request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') || request()->routeIs('promociones.*') ? 'true' : 'false' }},
+                catalogos: {{ request()->routeIs('precios.*') || request()->routeIs('productos.*') || request()->routeIs('laboratorios.*') || request()->routeIs('categorias.*') || request()->routeIs('clientes.*') || request()->routeIs('proveedores.*') || request()->routeIs('presentaciones.*') || request()->routeIs('promociones.*') ? 'true' : 'false' }},
                administracion: {{ request()->routeIs('reportes.*') || request()->routeIs('usuarios.*') || request()->routeIs('admin.*') || request()->routeIs('ajustes.*') ? 'true' : 'false' }}
            },
            toggleMenu(menu) {
@@ -329,6 +329,14 @@
                    class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('productos.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('productos.*') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Medicamentos & Productos</span>
+                </a>
+                @endcan
+
+                @can('ver productos')
+                <a href="{{ route('precios.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('precios.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('precios.*') ? '!bg-emerald-400' : '' }}"></span>
+                    <span>Precios de Venta</span>
                 </a>
                 @endcan
 

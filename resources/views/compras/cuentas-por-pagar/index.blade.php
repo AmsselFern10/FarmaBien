@@ -77,22 +77,22 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-rose-200 dark:border-rose-900/50 shadow-xs flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold text-slate-900 dark:text-slate-300">Deuda Vencida (Mora)</p>
                 <p class="text-xl font-extrabold text-rose-900 dark:text-rose-400 mt-0.5">{{ formato_moneda($metricas['deuda_vencida']) }}</p>
-                <p class="text-[11px] text-rose-600 dark:text-rose-400 font-bold mt-0.5">Atención prioritaria</p>
+                <p class="text-[11px] text-red-950 dark:text-red-300 font-bold mt-0.5">Atención prioritaria</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-amber-200 dark:border-amber-900/50 shadow-xs flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold text-slate-900 dark:text-slate-300">Vence en ≤ 7 Días</p>
                 <p class="text-xl font-extrabold text-amber-900 dark:text-amber-400 mt-0.5">{{ formato_moneda($metricas['deuda_por_vencer_7_dias']) }}</p>
-                <p class="text-[11px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">Programar pagos</p>
+                <p class="text-[11px] text-amber-950 dark:text-amber-300 font-bold mt-0.5">Programar pagos</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -353,7 +353,7 @@
             </div>
 
             <!-- Form Container -->
-            <form :action="compraSeleccionada.url" method="POST" class="flex flex-col flex-1 overflow-hidden">
+            <form :action="compraSeleccionada.url" method="POST" x-ref="formAbono" @submit.prevent="solicitarGuardarAbono()" class="flex flex-col flex-1 overflow-hidden">
                 @csrf
                 
                 <!-- Scrollable Form Body -->
@@ -431,7 +431,7 @@
 
                     <div x-show="metodoPago === 'efectivo'" class="pt-1">
                         <label class="inline-flex items-center text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
-                            <input type="checkbox" name="registrar_en_caja" value="1" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
+                            <input type="checkbox" name="registrar_en_caja" value="1" x-model="registrarEnCaja" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
                             Registrar egreso automáticamente en la caja activa del turno
                         </label>
                     </div>
@@ -490,7 +490,7 @@
                         <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
                             Proveedor / Acreedor <span class="text-rose-500">*</span>
                         </label>
-                        <input type="hidden" name="proveedor_id" :value="directa.proveedor_id" required>
+                        <input type="hidden" name="proveedor_id" :value="directa.proveedor_id">
 
                         <!-- Proveedor Seleccionado -->
                         <template x-if="directa.proveedorSeleccionado">
@@ -510,10 +510,11 @@
                         <template x-if="!directa.proveedorSeleccionado">
                             <div class="relative">
                                 <input type="text" 
+                                       name="proveedor_nombre"
                                        x-model="provQuery" 
                                        @focus="provDropdown = true"
                                        @input="provDropdown = true"
-                                       placeholder="🔍 Escribe nombre o RUC del proveedor..."
+                                       placeholder="Escribe nombre o RUC del proveedor..."
                                        class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500">
                                 
                                 <div x-show="provDropdown && filtrarProveedores().length > 0"
@@ -604,6 +605,50 @@
     </div>
     </template>
 
+    <!-- ============================================================== -->
+    <!-- MODAL 3: CONFIRMACIÓN DE SEGURIDAD DE EGRESO DE CAJA          -->
+    <!-- ============================================================== -->
+    <template x-teleport="body">
+    <div x-show="modalConfirmEgresoOpen" 
+         x-cloak
+         class="fixed inset-0 z-[10000] p-4 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs transition-opacity"
+         @keydown.escape.window="modalConfirmEgresoOpen = false">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 sm:p-6 border border-amber-300 dark:border-amber-700 shadow-2xl space-y-4 text-center"
+             @click.outside="modalConfirmEgresoOpen = false">
+            
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl shadow-inner">
+                ⚠️
+            </div>
+
+            <div class="space-y-2">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    Confirmación de Egreso de Caja
+                </h3>
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    ¿Está seguro de que desea registrar un egreso por <strong class="text-slate-950 dark:text-white font-extrabold text-sm" x-text="formatoMoneda(montoAbono)"></strong> de la <strong class="text-emerald-950 dark:text-emerald-300 font-extrabold">{{ $sesionCaja?->caja?->nombre ?? 'Caja Principal 01' }}</strong>?
+                </p>
+                <p class="text-[11px] font-medium text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
+                    <em>Esta acción descontará inmediatamente el efectivo del arqueo del turno actual.</em>
+                </p>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button type="button" 
+                        @click="modalConfirmEgresoOpen = false" 
+                        class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" 
+                        @click="confirmarYEnviarAbono()" 
+                        class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-md transition cursor-pointer">
+                    Sí, Confirmar Egreso
+                </button>
+            </div>
+        </div>
+    </div>
+    </template>
+
 </div>
 
 <script>
@@ -611,7 +656,9 @@ function cuentasPorPagarApp(proveedoresLista = []) {
     return {
         modalAbonoOpen: false,
         modalDirectaOpen: false,
+        modalConfirmEgresoOpen: false,
         metodoPago: 'transferencia',
+        registrarEnCaja: true,
         montoAbono: 0,
         proveedores: proveedoresLista,
         provQuery: '',
@@ -641,7 +688,21 @@ function cuentasPorPagarApp(proveedoresLista = []) {
         abrirModalAbono(data) {
             this.compraSeleccionada = data;
             this.montoAbono = data.saldo;
+            this.modalConfirmEgresoOpen = false;
             this.modalAbonoOpen = true;
+        },
+
+        solicitarGuardarAbono() {
+            if (this.metodoPago === 'efectivo' && this.registrarEnCaja) {
+                this.modalConfirmEgresoOpen = true;
+            } else {
+                this.$refs.formAbono.submit();
+            }
+        },
+
+        confirmarYEnviarAbono() {
+            this.modalConfirmEgresoOpen = false;
+            this.$refs.formAbono.submit();
         },
 
         abrirModalDirecta() {
@@ -685,7 +746,7 @@ function cuentasPorPagarApp(proveedoresLista = []) {
         },
 
         formatoMoneda(val) {
-            return 'C$ ' + Number(val).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return 'C$ ' + Number(val || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
     };
 }

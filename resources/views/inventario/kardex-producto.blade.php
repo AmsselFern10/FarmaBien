@@ -29,6 +29,14 @@
             </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <!-- 1. Botón de navegación (Extrema Izquierda) -->
+            <a href="{{ route('inventario.movimientos') }}" 
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl shadow-xs transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Kardex</span>
+            </a>
+
+            <!-- 2. Botón Modo Full -->
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
@@ -36,14 +44,13 @@
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span>Modo Full</span>
             </button>
-            <a href="{{ route('inventario.movimientos') }}" class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
-            </a>
+
             @can('ajustar inventario')
-            <a href="{{ route('inventario.ajustar') }}" class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition">
+            <!-- 3. Ajustar Stock (Verde Sólido Institucional) -->
+            <a href="{{ route('inventario.ajustar') }}" 
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                <span>Ajustar</span>
+                <span>Ajustar Stock</span>
             </a>
             @endcan
         </div>
@@ -57,21 +64,20 @@
             $hoy = now()->toDateString();
             $venc = $lote->fecha_vencimiento->toDateString();
             $dias = (int)now()->diffInDays($lote->fecha_vencimiento, false);
-            $borderColor = $venc < $hoy ? 'border-rose-300 dark:border-rose-700' : ($dias <= 30 ? 'border-amber-300 dark:border-amber-700' : 'border-slate-200 dark:border-slate-800');
-            $stockColor = $lote->stock_actual == 0 ? 'text-rose-600' : ($dias <= 0 ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400');
+            $stockColor = $lote->stock_actual == 0 ? 'text-red-950 dark:text-rose-400' : ($dias <= 0 ? 'text-red-950 dark:text-rose-400' : 'text-emerald-950 dark:text-emerald-400');
         @endphp
-        <div class="bg-white dark:bg-slate-900 rounded-xl border {{ $borderColor }} p-3.5 shadow-xs">
-            <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Lote</p>
-            <p class="text-xs font-bold font-mono text-slate-700 dark:text-slate-300">{{ $lote->numero_lote }}</p>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs">
+            <p class="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider mb-1">Lote</p>
+            <p class="text-xs font-bold font-mono text-slate-900 dark:text-slate-200">{{ $lote->numero_lote }}</p>
             <div class="mt-2 flex items-end justify-between">
                 <div>
-                    <p class="text-[10px] text-slate-400">Stock actual</p>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400">Stock actual</p>
                     <p class="text-xl font-extrabold {{ $stockColor }}">{{ number_format($lote->stock_actual) }}</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-[10px] text-slate-400">Vence</p>
-                    <p class="text-[11px] font-semibold {{ $venc < $hoy ? 'text-rose-600' : ($dias <= 30 ? 'text-amber-600' : 'text-slate-600 dark:text-slate-400') }}">{{ $lote->fecha_vencimiento->format('d/m/Y') }}</p>
-                    @if($dias > 0 && $dias <= 60)<p class="text-[10px] text-amber-500 font-semibold">{{ $dias }}d restantes</p>@elseif($venc < $hoy)<p class="text-[10px] text-rose-500 font-bold">VENCIDO</p>@endif
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400">Vence</p>
+                    <p class="text-[11px] font-semibold {{ $venc < $hoy ? 'text-red-950 dark:text-rose-400' : ($dias <= 30 ? 'text-amber-950 dark:text-amber-400' : 'text-slate-900 dark:text-slate-300') }}">{{ $lote->fecha_vencimiento->format('d/m/Y') }}</p>
+                    @if($dias > 0 && $dias <= 60)<p class="text-[10px] text-amber-950 dark:text-amber-400 font-bold">{{ $dias }}d restantes</p>@elseif($venc < $hoy)<p class="text-[10px] text-red-950 dark:text-rose-400 font-extrabold">VENCIDO</p>@endif
                 </div>
             </div>
         </div>
@@ -90,7 +96,7 @@
                 <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Hasta</label>
                 <input type="date" name="fecha_hasta" value="{{ request('fecha_hasta') }}" class="px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
             </div>
-            <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition inline-flex items-center justify-center gap-1.5">
+            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition inline-flex items-center justify-center gap-1.5 cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                 <span>Filtrar</span>
             </button>
@@ -111,24 +117,24 @@
         $valorSalidas = $movimientos->where('tipo', 'salida')->sum('costo_total');
     @endphp
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80 p-4 text-center">
-            <p class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Total Entradas</p>
-            <p class="text-xl font-extrabold text-emerald-700 dark:text-emerald-400 mt-1">+{{ number_format($totalEntradas) }}</p>
-            <p class="text-[10px] text-emerald-600 font-mono">{{ $moneda }} {{ number_format($valorEntradas, 2) }}</p>
-        </div>
-        <div class="bg-rose-50/60 dark:bg-rose-950/30 rounded-xl border border-rose-200/80 dark:border-rose-800/80 p-4 text-center">
-            <p class="text-[10px] font-semibold text-rose-600 uppercase tracking-wider">Total Salidas</p>
-            <p class="text-xl font-extrabold text-rose-700 dark:text-rose-400 mt-1">-{{ number_format($totalSalidas) }}</p>
-            <p class="text-[10px] text-rose-600 font-mono">{{ $moneda }} {{ number_format($valorSalidas, 2) }}</p>
-        </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center">
-            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Saldo Neto</p>
-            <p class="text-xl font-extrabold {{ $saldoNeto >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400' }} mt-1">{{ $saldoNeto >= 0 ? '+' : '' }}{{ number_format($saldoNeto) }}</p>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center shadow-xs">
+            <p class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total Entradas</p>
+            <p class="text-xl font-extrabold text-emerald-950 dark:text-emerald-400 mt-1">+{{ number_format($totalEntradas) }}</p>
+            <p class="text-[10px] text-emerald-950 dark:text-emerald-400 font-mono font-semibold">{{ $moneda }} {{ number_format($valorEntradas, 2) }}</p>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center shadow-xs">
-            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Stock Actual</p>
+            <p class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total Salidas</p>
+            <p class="text-xl font-extrabold text-red-950 dark:text-rose-400 mt-1">-{{ number_format($totalSalidas) }}</p>
+            <p class="text-[10px] text-red-950 dark:text-rose-400 font-mono font-semibold">{{ $moneda }} {{ number_format($valorSalidas, 2) }}</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center shadow-xs">
+            <p class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Saldo Neto</p>
+            <p class="text-xl font-extrabold {{ $saldoNeto >= 0 ? 'text-emerald-950 dark:text-emerald-400' : 'text-red-950 dark:text-rose-400' }} mt-1">{{ $saldoNeto >= 0 ? '+' : '' }}{{ number_format($saldoNeto) }}</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center shadow-xs">
+            <p class="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Stock Actual</p>
             <p class="text-xl font-extrabold text-slate-900 dark:text-white mt-1">{{ number_format($producto->stock_disponible) }}</p>
-            <p class="text-[10px] text-slate-400">unidades disponibles</p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">unidades disponibles</p>
         </div>
     </div>
 
@@ -160,11 +166,11 @@
                         $esMerma = in_array($mov->subtipo, ['merma_vencimiento', 'merma_danio', 'vencimiento_automatico']);
                         $rowClass = $esMerma ? 'bg-rose-50/30 dark:bg-rose-950/10' : '';
                         $tipoBadge = match($mov->tipo) {
-                            'entrada' => 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800',
-                            'salida'  => 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800',
-                            default   => 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800',
+                            'entrada' => 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800',
+                            'salida'  => 'bg-rose-50 dark:bg-rose-950/40 text-red-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800',
+                            default   => 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800',
                         };
-                        $cantClass = $mov->cantidad > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400';
+                        $cantClass = $mov->cantidad > 0 ? 'text-emerald-950 dark:text-emerald-400' : 'text-red-950 dark:text-rose-400';
                     @endphp
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition {{ $rowClass }}">
                         <td class="px-4 py-3 whitespace-nowrap">

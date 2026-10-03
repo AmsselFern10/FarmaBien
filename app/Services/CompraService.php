@@ -75,17 +75,38 @@ class CompraService
                 'saldo_pendiente' => $condicionPago === 'credito' ? $totalFinal : 0,
             ]);
 
-            // 4. Si proviene de una Orden de Compra, asociar y marcar recibida
+            // 4. Si proviene de una Orden de Compra, asociar y actualizar cantidades recibidas
             if (!empty($data['orden_compra_id'])) {
-                $ordenCompra = \App\Models\OrdenCompra::find($data['orden_compra_id']);
+                $ordenCompra = \App\Models\OrdenCompra::with('detalles')->find($data['orden_compra_id']);
                 if ($ordenCompra) {
+                    // Construir mapa producto_id → unidades_base recibidas en esta compra
+                    // Los productos en $data['productos'] llevan cantidad en unidades base
+                    $recibidosPorProducto = [];
+                    foreach ($data['productos'] as $item) {
+                        $pid = (int) $item['producto_id'];
+                        // cantidad puede venir como unidades base directas o via presentación
+                        // La unidad que llega en $item['cantidad'] son unidades base (CompraService::procesarDetalleCompra lo convierte)
+                        $cantidadBase = (int) ($item['cantidad'] ?? 0);
+                        $recibidosPorProducto[$pid] = ($recibidosPorProducto[$pid] ?? 0) + $cantidadBase;
+                    }
+
+                    $hayPendientes = false;
+
+                    foreach ($ordenCompra->detalles as $ordDet) {
+                        $recibido = $recibidosPorProducto[$ordDet->producto_id] ?? 0;
+                        // Sumar a lo ya recibido en recepciones anteriores (recibida_parcial)
+                        $totalRecibido = $ordDet->cantidad_recibida + $recibido;
+                        $ordDet->update(['cantidad_recibida' => $totalRecibido]);
+
+                        if ($totalRecibido < $ordDet->cantidad_solicitada) {
+                            $hayPendientes = true;
+                        }
+                    }
+
                     $ordenCompra->update([
                         'compra_id' => $compra->id,
-                        'estado'    => 'recibida_total',
+                        'estado'    => $hayPendientes ? 'recibida_parcial' : 'recibida_total',
                     ]);
-                    foreach ($ordenCompra->detalles as $ordDet) {
-                        $ordDet->update(['cantidad_recibida' => $ordDet->cantidad_solicitada]);
-                    }
                 }
             }
 

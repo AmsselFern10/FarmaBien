@@ -3,7 +3,27 @@
 @section('title', "Estado de Cuenta Compra #{$compra->numero_comprobante} - FarmaBien")
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-5" x-data="{ modalAbono: false, metodoPago: 'transferencia', montoAbono: {{ $compra->saldo_pendiente }} }">
+<div class="max-w-5xl mx-auto space-y-5" x-data="{ 
+    modalAbono: false, 
+    modalConfirmEgresoOpen: false,
+    metodoPago: 'transferencia', 
+    registrarEnCaja: true,
+    montoAbono: {{ $compra->saldo_pendiente }},
+    solicitarGuardarAbono() {
+        if (this.metodoPago === 'efectivo' && this.registrarEnCaja) {
+            this.modalConfirmEgresoOpen = true;
+        } else {
+            this.$refs.formAbono.submit();
+        }
+    },
+    confirmarYEnviarAbono() {
+        this.modalConfirmEgresoOpen = false;
+        this.$refs.formAbono.submit();
+    },
+    formatoMoneda(val) {
+        return 'C$ ' + Number(val || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+}">
     
     <!-- Breadcrumbs -->
     <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
@@ -30,16 +50,24 @@
             </h1>
             <p class="text-xs text-slate-500">Proveedor: <span class="font-bold text-slate-700 dark:text-slate-300">{{ $compra->proveedor->nombre ?? $compra->proveedor->nombre_empresa }}</span></p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             <!-- Navigation Button First -->
             <a href="{{ route('cuentas-por-pagar.index') }}" 
                class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 shadow-xs transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Cuentas por Pagar</span>
             </a>
+
+            <!-- Link to Original Purchase / Kardex -->
+            <a href="{{ route('compras.show', $compra) }}" 
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 shadow-xs transition">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Ver Compra / Kardex</span>
+            </a>
+
             @if($compra->saldo_pendiente > 0)
             <button type="button" @click="modalAbono = true" 
-                    class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-sm transition">
+                    class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-sm transition cursor-pointer">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Registrar Abono
             </button>
@@ -180,7 +208,7 @@
                 <button type="button" @click="modalAbono = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Cerrar">✕</button>
             </div>
 
-            <form action="{{ route('cuentas-por-pagar.abonos.store', $compra) }}" method="POST" class="flex flex-col flex-1 overflow-hidden">
+            <form action="{{ route('cuentas-por-pagar.abonos.store', $compra) }}" method="POST" x-ref="formAbono" @submit.prevent="solicitarGuardarAbono()" class="flex flex-col flex-1 overflow-hidden">
                 @csrf
                 
                 <div class="space-y-4 py-3 overflow-y-auto pr-1 flex-1 custom-scrollbar">
@@ -244,7 +272,7 @@
 
                     <div x-show="metodoPago === 'efectivo'" class="pt-1">
                         <label class="inline-flex items-center text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
-                            <input type="checkbox" name="registrar_en_caja" value="1" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
+                            <input type="checkbox" name="registrar_en_caja" value="1" x-model="registrarEnCaja" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
                             Registrar egreso automáticamente en la caja activa del turno
                         </label>
                     </div>
@@ -261,6 +289,48 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+    </template>
+
+    <!-- Modal Confirmación Egreso de Caja -->
+    <template x-teleport="body">
+    <div x-show="modalConfirmEgresoOpen" 
+         x-cloak
+         class="fixed inset-0 z-[10000] p-4 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs transition-opacity"
+         @keydown.escape.window="modalConfirmEgresoOpen = false">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 sm:p-6 border border-amber-300 dark:border-amber-700 shadow-2xl space-y-4 text-center"
+             @click.outside="modalConfirmEgresoOpen = false">
+            
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl shadow-inner">
+                ⚠️
+            </div>
+
+            <div class="space-y-2">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    Confirmación de Egreso de Caja
+                </h3>
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    ¿Está seguro de que desea registrar un egreso por <strong class="text-slate-950 dark:text-white font-extrabold text-sm" x-text="formatoMoneda(montoAbono)"></strong> de la <strong class="text-emerald-950 dark:text-emerald-300 font-extrabold">{{ $sesionCaja?->caja?->nombre ?? 'Caja Principal 01' }}</strong>?
+                </p>
+                <p class="text-[11px] font-medium text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
+                    <em>Esta acción descontará inmediatamente el efectivo del arqueo del turno actual.</em>
+                </p>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button type="button" 
+                        @click="modalConfirmEgresoOpen = false" 
+                        class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" 
+                        @click="confirmarYEnviarAbono()" 
+                        class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-md transition cursor-pointer">
+                    Sí, Confirmar Egreso
+                </button>
+            </div>
         </div>
     </div>
     </template>

@@ -120,68 +120,75 @@
 :class="formLayout === 'compact' ? 'w-full max-w-full' : 'max-w-6xl mx-auto'"
 class="space-y-4 transition-all duration-200">
     
-    <!-- Breadcrumbs & View Toggle Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
-        <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
-            <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <a href="{{ route('productos.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Medicamentos</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <span class="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[200px]">Editar: {{ $producto->nombre }}</span>
-        </nav>
+    <!-- Fila 1: Breadcrumb Únicamente -->
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+        <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <a href="{{ route('productos.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Medicamentos</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[200px]">Editar: {{ $producto->nombre }}</span>
+    </nav>
 
-        <!-- View Mode Switcher -->
-        <div class="flex items-center space-x-2 self-start sm:self-auto">
-            <!-- Modo Full Screen (Ocultar Barras) -->
+    <!-- Fila 2: Título + Botones de Acción Alineados a la Derecha -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Editar Medicamento: {{ $producto->nombre }}</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Código: <span class="font-mono text-emerald-700 dark:text-emerald-400 font-bold">{{ $producto->codigo_barra ?? 'S/C' }}</span> &bull; Stock actual registrado en lotes.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <!-- 1. Botón Volver -->
+            <a href="{{ route('productos.index') }}" 
+               class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>&larr; Medicamentos</span>
+            </a>
+
+            <!-- 2. Botón Modo Full -->
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+                    class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
                 <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
-            <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 hidden md:inline">Diseño:</span>
-            <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
+            <!-- 3. Botón Ver Ficha (Pastel Azul/Sky) -->
+            <a href="{{ route('productos.show', $producto) }}" 
+               class="px-3.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-950 dark:text-sky-300 text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-2xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Ver Ficha</span>
+            </a>
+
+            <!-- 4. Botón Principal Guardar -->
+            <button type="button" 
+                    onclick="document.querySelector('form[x-ref=productoEditForm]').submit()"
+                    class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Cambios</span>
+            </button>
+
+            <!-- 5. Toggle Diseño Moderna / Compacta -->
+            <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
                         :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
-                        class="px-3 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                        class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
                         :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
-                        class="px-3 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                        class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span>Compacta (POS / ERP)</span>
+                    <span>Compacta</span>
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-            <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Editar Medicamento: {{ $producto->nombre }}</span>
-            </h1>
-            <p class="text-xs text-slate-600 dark:text-slate-400">
-                Código: <span class="font-mono text-emerald-700 dark:text-emerald-400 font-bold">{{ $producto->codigo_barra ?? 'S/C' }}</span> &bull; Stock actual registrado en lotes.
-            </p>
-        </div>
-        <div class="flex items-center space-x-2 shrink-0 self-start sm:self-auto">
-            <a href="{{ route('productos.show', $producto) }}" 
-               class="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                <span>Ver Ficha</span>
-            </a>
-            <a href="{{ route('productos.index') }}" 
-               class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Catálogo</span>
-            </a>
         </div>
     </div>
 
@@ -334,8 +341,8 @@ class="space-y-4 transition-all duration-200">
                                         required 
                                         class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border rounded-lg text-xs font-bold focus:ring-1 focus:ring-emerald-500"
                                         :class="formData.tipo_control === 'controlado' ? 'border-purple-400 text-purple-900 bg-purple-50/40 dark:text-purple-200' : 'border-emerald-400 text-emerald-900 bg-emerald-50/40 dark:text-emerald-200'">
-                                    <option value="venta_libre">🟢 Venta Libre (OTC)</option>
-                                    <option value="controlado">🟣 Controlado / Con Receta Médica (MINSA)</option>
+                                    <option value="venta_libre">Venta Libre (OTC)</option>
+                                    <option value="controlado">Controlado / Con Receta Médica (MINSA)</option>
                                 </select>
                             </div>
 
@@ -375,46 +382,47 @@ class="space-y-4 transition-all duration-200">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
                             <div class="flex items-center space-x-1.5">
                                 <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                <span>2. Precios, Stock & Presentaciones</span>
+                                <span>2. Precios & Stock</span>
                             </div>
-                            <span class="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">Unidad Base</span>
+                            <a href="{{ route('precios.edit', $producto) }}" class="text-[10px] text-indigo-700 dark:text-indigo-400 font-bold hover:underline">
+                                Editar Precios &rarr;
+                            </a>
                         </div>
 
-                        <!-- Precios y Margen -->
-                        <div class="grid grid-cols-3 gap-2.5">
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    P. Compra (S/)
-                                </label>
-                                <input type="number" 
-                                       step="0.01" 
-                                       min="0" 
-                                       name="precio_compra" 
-                                       x-model="formData.precio_compra" 
-                                       placeholder="0.00" 
-                                       class="w-full font-mono px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
-                            </div>
+                        <!-- Precios y Margen en Modo Solo Lectura -->
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-3 gap-2.5">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                        P. Compra (S/)
+                                    </label>
+                                    <input type="number" 
+                                           step="0.01" 
+                                           name="precio_compra" 
+                                           x-model="formData.precio_compra" 
+                                           readonly
+                                           class="w-full font-mono px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 cursor-not-allowed">
+                                </div>
 
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    P. Venta Base <span class="text-rose-500">*</span>
-                                </label>
-                                <input type="number" 
-                                       step="0.01" 
-                                       min="0" 
-                                       name="precio_venta" 
-                                       x-model="formData.precio_venta" 
-                                       required 
-                                       placeholder="0.00" 
-                                       class="w-full font-mono font-bold px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-emerald-500 rounded-lg text-xs text-emerald-700 dark:text-emerald-300 focus:ring-1 focus:ring-emerald-500">
-                            </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                        P. Venta Base
+                                    </label>
+                                    <input type="number" 
+                                           step="0.01" 
+                                           name="precio_venta" 
+                                           x-model="formData.precio_venta" 
+                                           readonly
+                                           class="w-full font-mono font-bold px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-emerald-800 dark:text-emerald-300 cursor-not-allowed">
+                                </div>
 
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1 text-center">
-                                    Margen
-                                </label>
-                                <div class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-xs font-bold text-emerald-700 dark:text-emerald-400 text-center">
-                                    <span x-text="calcularMargen() + '%'">0%</span>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1 text-center">
+                                        Margen
+                                    </label>
+                                    <div class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-400 text-center">
+                                        <span x-text="calcularMargen() + '%'">0%</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -694,8 +702,8 @@ class="space-y-4 transition-all duration-200">
                                         required 
                                         class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold transition shadow-2xs"
                                         :class="formData.tipo_control === 'controlado' ? 'border-purple-400 text-purple-950 bg-purple-50/40 dark:text-purple-200' : 'border-emerald-400 text-emerald-950 bg-emerald-50/40 dark:text-emerald-200'">
-                                    <option value="venta_libre">🟢 Venta Libre (OTC)</option>
-                                    <option value="controlado">🟣 Controlado / Con Receta Médica (MINSA)</option>
+                                    <option value="venta_libre">Venta Libre (OTC)</option>
+                                    <option value="controlado">Controlado / Con Receta Médica (MINSA)</option>
                                 </select>
                             </div>
 
@@ -726,49 +734,50 @@ class="space-y-4 transition-all duration-200">
                     </div>
                 </div>
 
-                <!-- Tarjeta 3: Precios e Inventario Base -->
+                <!-- Tarjeta 3: Precios e Inventario Base (Solo Lectura con Enlace a Precios de Venta) -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
-                    <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                            Precios de Compra / Venta e Inventario Base
-                        </h2>
+                    <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                                Precios de Compra / Venta e Inventario Base
+                            </h2>
+                        </div>
+                        <a href="{{ route('precios.edit', $producto) }}" 
+                           class="h-8 px-3 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-300 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition inline-flex items-center gap-1.5 shadow-2xs">
+                            <svg class="w-3.5 h-3.5 text-indigo-700 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            <span>Editar Precios y Márgenes &rarr;</span>
+                        </a>
                     </div>
 
                     <div class="p-5 space-y-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <!-- Precio de Compra -->
+                            <!-- Precio de Compra (Read-only) -->
                             <div>
                                 <label for="precio_compra_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                                     Precio Compra Base (S/)
                                 </label>
                                 <input type="number" 
                                        step="0.01" 
-                                       min="0" 
                                        name="precio_compra" 
                                        id="precio_compra_mod" 
                                        x-model="formData.precio_compra" 
-                                       placeholder="0.00" 
-                                       class="w-full font-mono px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs">
+                                       readonly
+                                       class="w-full font-mono px-3.5 py-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-600 dark:text-slate-400 cursor-not-allowed shadow-2xs">
                             </div>
 
-                            <!-- Precio de Venta -->
+                            <!-- Precio de Venta (Read-only) -->
                             <div>
                                 <label for="precio_venta_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Precio Venta Unitario (S/) <span class="text-rose-500">*</span>
+                                    Precio Venta Unitario (S/)
                                 </label>
                                 <input type="number" 
                                        step="0.01" 
-                                       min="0" 
                                        name="precio_venta" 
                                        id="precio_venta_mod" 
                                        x-model="formData.precio_venta" 
-                                       required 
-                                       placeholder="0.00" 
-                                       class="w-full font-mono font-extrabold px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('precio_venta') border-rose-500 @enderror">
-                                @error('precio_venta')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
-                                @enderror
+                                       readonly
+                                       class="w-full font-mono font-extrabold px-3.5 py-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 cursor-not-allowed shadow-2xs">
                             </div>
 
                             <!-- Margen Calculado -->

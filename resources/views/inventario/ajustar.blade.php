@@ -84,17 +84,17 @@ $lotesJson = $lotes->map(function($l) {
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Cada ajuste queda registrado en el Kardex con auditoría completa.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <a href="{{ route('inventario.index') }}" class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Inventario</span>
+            </a>
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span>Modo Full</span>
             </button>
-            <a href="{{ route('inventario.index') }}" class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
-            </a>
         </div>
     </div>
 
@@ -149,18 +149,18 @@ $lotesJson = $lotes->map(function($l) {
                         <p class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5" x-text="lote?.producto"></p>
                     </div>
                     <div class="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl p-3 border border-emerald-200 dark:border-emerald-800">
-                        <p class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Stock</p>
-                        <p class="text-xl font-extrabold text-emerald-700 dark:text-emerald-300 leading-tight" x-text="lote?.stock_actual"></p>
-                        <p class="text-[10px] text-emerald-600">unidades</p>
+                        <p class="text-[10px] font-semibold text-emerald-900 dark:text-emerald-400 uppercase tracking-wider">Stock</p>
+                        <p class="text-xl font-extrabold text-emerald-900 dark:text-emerald-300 leading-tight" x-text="lote?.stock_actual"></p>
+                        <p class="text-[10px] text-emerald-900 dark:text-emerald-400 font-medium">unidades</p>
                     </div>
                     <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700 col-span-2" :class="lote?.vencido ? '!bg-rose-50 dark:!bg-rose-950/30 !border-rose-200 dark:!border-rose-800' : ''">
-                        <p class="text-[10px] font-semibold uppercase tracking-wider" :class="lote?.vencido ? 'text-rose-500' : 'text-slate-400'">Vencimiento</p>
-                        <p class="text-xs font-bold mt-0.5" :class="lote?.vencido ? 'text-rose-700 dark:text-rose-300' : 'text-slate-700 dark:text-slate-300'" x-text="lote?.fecha_vencimiento"></p>
-                        <p x-show="lote?.vencido" class="text-[10px] font-extrabold text-rose-500 uppercase mt-0.5">¡Vencido!</p>
+                        <p class="text-[10px] font-semibold uppercase tracking-wider" :class="lote?.vencido ? 'text-rose-900 dark:text-rose-400' : 'text-slate-400'">Vencimiento</p>
+                        <p class="text-xs font-bold mt-0.5" :class="lote?.vencido ? 'text-rose-900 dark:text-rose-300' : 'text-slate-700 dark:text-slate-300'" x-text="lote?.fecha_vencimiento"></p>
+                        <p x-show="lote?.vencido" class="text-[10px] font-extrabold text-rose-900 dark:text-rose-400 uppercase mt-0.5">¡Vencido!</p>
                     </div>
                 </div>
-                <div x-show="lote && lote.vencido" class="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700 text-xs text-amber-800 dark:text-amber-300">
-                    <svg class="w-4 h-4 shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div x-show="lote && lote.vencido" class="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700 text-xs text-amber-900 dark:text-amber-300">
+                    <svg class="w-4 h-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     <span>Lote vencido. Usa "Merma por Vencimiento" y presiona "Vaciar (0)".</span>
                 </div>
             </div>
@@ -180,18 +180,18 @@ $lotesJson = $lotes->map(function($l) {
             <div class="space-y-2">
                 <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Ajuste rápido</p>
                 <div class="flex flex-wrap gap-1.5">
-                    <button type="button" @click="sumar(-50)" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition">-50</button>
-                    <button type="button" @click="sumar(-20)" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition">-20</button>
-                    <button type="button" @click="sumar(-10)" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition">-10</button>
-                    <button type="button" @click="sumar(-5)"  class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition">-5</button>
-                    <button type="button" @click="sumar(-1)"  class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition">-1</button>
+                    <button type="button" @click="sumar(-50)" class="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-300 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer">-50</button>
+                    <button type="button" @click="sumar(-20)" class="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-300 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer">-20</button>
+                    <button type="button" @click="sumar(-10)" class="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-300 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer">-10</button>
+                    <button type="button" @click="sumar(-5)"  class="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-300 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer">-5</button>
+                    <button type="button" @click="sumar(-1)"  class="px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-300 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer">-1</button>
                     <span class="px-1 text-slate-300 dark:text-slate-600 self-center">|</span>
-                    <button type="button" @click="sumar(1)"   class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+1</button>
-                    <button type="button" @click="sumar(5)"   class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+5</button>
-                    <button type="button" @click="sumar(10)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+10</button>
-                    <button type="button" @click="sumar(20)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+20</button>
-                    <button type="button" @click="sumar(50)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition">+50</button>
-                    <button type="button" @click="stockNuevo=0" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-xs font-bold hover:bg-slate-200 transition">Vaciar (0)</button>
+                    <button type="button" @click="sumar(1)"   class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer">+1</button>
+                    <button type="button" @click="sumar(5)"   class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer">+5</button>
+                    <button type="button" @click="sumar(10)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer">+10</button>
+                    <button type="button" @click="sumar(20)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer">+20</button>
+                    <button type="button" @click="sumar(50)"  class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer">+50</button>
+                    <button type="button" @click="stockNuevo=0" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer">Vaciar (0)</button>
                 </div>
             </div>
 
@@ -204,12 +204,12 @@ $lotesJson = $lotes->map(function($l) {
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] text-slate-400 mb-1">Diferencia</p>
                     <div x-show="diferencia !== null" class="flex items-center gap-1.5">
-                        <svg x-show="diferencia > 0" class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                        <svg x-show="diferencia < 0" class="w-5 h-5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                        <svg x-show="diferencia > 0" class="w-5 h-5 text-emerald-700 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                        <svg x-show="diferencia < 0" class="w-5 h-5 text-red-700 dark:text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                         <svg x-show="diferencia === 0" class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
-                        <span class="text-lg font-extrabold" :class="diferencia > 0 ? 'text-emerald-600 dark:text-emerald-400' : diferencia < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'" x-text="diferenciaLabel"></span>
+                        <span class="text-lg font-extrabold" :class="diferencia > 0 ? 'text-emerald-900 dark:text-emerald-400' : diferencia < 0 ? 'text-red-900 dark:text-rose-400' : 'text-slate-500'" x-text="diferenciaLabel"></span>
                     </div>
-                    <p x-show="diferencia === 0 && stockNuevo !== ''" class="text-[11px] text-amber-600 font-semibold mt-0.5">Sin cambio — el valor es idéntico al actual.</p>
+                    <p x-show="diferencia === 0 && stockNuevo !== ''" class="text-[11px] text-amber-900 dark:text-amber-400 font-semibold mt-0.5">Sin cambio — el valor es idéntico al actual.</p>
                 </div>
             </div>
 
@@ -235,7 +235,10 @@ $lotesJson = $lotes->map(function($l) {
 
     {{-- Footer acciones --}}
     <div class="flex items-center justify-between gap-3">
-        <button type="button" @click="limpiar()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl shadow-2xs transition">Limpiar</button>
+        <button type="button" @click="limpiar()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl shadow-2xs transition cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            <span>Limpiar Formulario</span>
+        </button>
         <button type="submit" :disabled="!loteId || stockNuevo==='' || diferencia===0 || motivo.length<5" class="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition disabled:opacity-40 disabled:cursor-not-allowed">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             <span>Registrar Ajuste en Kardex</span>

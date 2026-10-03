@@ -101,6 +101,7 @@
             ]
         ];
     }
+    $hasPreloadedData = !empty(old('proveedor_id')) || !empty($preloadedProveedorId) || !empty($preloadedOrdenCompraId) || !empty($preloadedItems);
 @endphp
 
 <div x-data="{
@@ -176,7 +177,7 @@
             esIgual: Math.abs(diff) <= 0.0001
         };
     },
-    formData: (window.farmaGetDraft ? window.farmaGetDraft('{{ request()->getPathInfo() }}', {
+    formData: (@js($hasPreloadedData) || !window.farmaGetDraft) ? {
         proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
         orden_compra_id: @js(old('orden_compra_id', $preloadedOrdenCompraId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
@@ -184,7 +185,7 @@
         condicion_pago: @js(old('condicion_pago', $preloadedCondicionPago ?? 'contado')),
         dias_credito: @js(old('dias_credito', $preloadedDiasCredito ?? 30)),
         fecha_vencimiento_pago: @js(old('fecha_vencimiento_pago', ''))
-    }) : {
+    } : window.farmaGetDraft('{{ request()->getPathInfo() }}', {
         proveedor_id: @js(old('proveedor_id', $preloadedProveedorId ?? '')),
         orden_compra_id: @js(old('orden_compra_id', $preloadedOrdenCompraId ?? '')),
         numero_comprobante: @js(old('numero_comprobante', '')),
@@ -600,7 +601,7 @@ class="space-y-4 transition-all duration-200">
     </div>
 
     <!-- Main Form -->
-    <form action="{{ route('compras.store') }}" method="POST" id="formCompra" @submit="validarYEnviar($event)">
+    <form action="{{ route('compras.store') }}" method="POST" id="formCompra" @submit="validarYEnviar($event)" novalidate>
         @csrf
         <input type="hidden" name="orden_compra_id" :value="formData.orden_compra_id || '{{ $preloadedOrdenCompraId ?? '' }}'">
 
@@ -685,7 +686,7 @@ class="space-y-4 transition-all duration-200">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                     Proveedor <span class="text-rose-500">*</span>
                                 </label>
-                                <input type="hidden" name="proveedor_id" :value="formData.proveedor_id" required>
+                                <input type="hidden" name="proveedor_id" :value="formData.proveedor_id">
                                 
                                 <template x-if="proveedorSeleccionado()">
                                     <div class="flex items-center justify-between px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-lg text-xs">
@@ -1072,7 +1073,7 @@ class="space-y-4 transition-all duration-200">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                                     Proveedor Registrado <span class="text-rose-500">*</span>
                                 </label>
-                                <input type="hidden" name="proveedor_id" :value="formData.proveedor_id" required>
+                                <input type="hidden" name="proveedor_id" :value="formData.proveedor_id">
                                 
                                 <template x-if="proveedorSeleccionado()">
                                     <div class="flex items-center justify-between px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs shadow-2xs">

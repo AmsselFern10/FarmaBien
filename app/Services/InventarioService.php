@@ -141,6 +141,69 @@ class InventarioService
     }
 
     /**
+     * Actualizar metadatos de un lote (número de lote, vencimiento, proveedor)
+     * dejando trazabilidad de auditoría estricta sin alterar stock.
+     */
+    public function actualizarMetadatosLote(Lote $lote, array $data): Lote
+    {
+        return DB::transaction(function () use ($lote, $data) {
+            $lote->load('producto');
+            $lote->lockForUpdate();
+
+            $cambios = [];
+            
+            if (isset($data['numero_lote']) && trim($data['numero_lote']) !== $lote->numero_lote) {
+                $cambios['numero_lote'] = [
+                    'anterior' => $lote->numero_lote,
+                    'nuevo' => trim($data['numero_lote']),
+                ];
+                $lote->numero_lote = trim($data['numero_lote']);
+            }
+
+            if (isset($data['fecha_vencimiento'])) {
+                $nuevaFecha = \Carbon\Carbon::parse($data['fecha_vencimiento'])->format('Y-m-d');
+                $fechaAnterior = $lote->fecha_vencimiento ? $lote->fecha_vencimiento->format('Y-m-d') : null;
+                if ($nuevaFecha !== $fechaAnterior) {
+                    $cambios['fecha_vencimiento'] = [
+                        'anterior' => $fechaAnterior,
+                        'nuevo' => $nuevaFecha,
+                    ];
+                    $lote->fecha_vencimiento = $nuevaFecha;
+                }
+            }
+
+            if (array_key_exists('proveedor_id', $data)) {
+                $nuevoProvId = !empty($data['proveedor_id']) ? (int)$data['proveedor_id'] : null;
+                $anteriorProvId = $lote->proveedor_id ? (int)$lote->proveedor_id : null;
+                if ($nuevoProvId !== $anteriorProvId) {
+                    $cambios['proveedor_id'] = [
+                        'anterior' => $anteriorProvId,
+                        'nuevo' => $nuevoProvId,
+                    ];
+                    $lote->proveedor_id = $nuevoProvId;
+                }
+            }
+
+            $lote->save();
+
+            \App\Models\AuditLog::log('inventario', 'editar_lote', "Modificación de metadatos en lote {$lote->numero_lote} (" . ($lote->producto->nombre ?? 'N/A') . ")", [
+                'lote_id' => $lote->id,
+                'producto_id' => $lote->producto_id,
+                'cambios' => $cambios,
+                'motivo' => $data['motivo_cambio'] ?? 'Corrección de metadatos',
+            ]);
+
+            Log::info('Metadatos de lote actualizados', [
+                'lote_id' => $lote->id,
+                'cambios' => $cambios,
+                'user_id' => Auth::id(),
+            ]);
+
+            return $lote;
+        });
+    }
+
+    /**
      * Descontar stock bajo algoritmo FIFO estricto con bloqueo pesimista para evitar sobreventas
      * 
      * @param Producto $producto

@@ -37,25 +37,25 @@
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                    class="h-10 px-4 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition inline-flex items-center gap-2 shrink-0 cursor-pointer shadow-2xs">
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span>Modo Full</span>
             </button>
 
-            <!-- Botón Lupa Inteligente (IA) -->
+            <!-- Botón Lupa Inteligente (IA) en Pastel Morado -->
             <button type="button" 
                     onclick="abrirModalLupaIA()" 
-                    class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-xs font-semibold shadow-xs transition hover:shadow-md cursor-pointer">
-                <svg class="w-4 h-4 text-violet-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    class="h-10 px-4 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 text-violet-900 dark:text-violet-300 text-sm font-medium transition inline-flex items-center gap-2 cursor-pointer shadow-2xs">
+                <svg class="w-4 h-4 text-violet-700 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span class="hidden sm:inline">Lupa Inteligente con IA</span>
                 <span class="sm:hidden">Lupa IA</span>
             </button>
 
             @can('crear productos')
             <a href="{{ route('productos.create') }}" 
-               class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition">
+               class="h-10 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition inline-flex items-center gap-2 shadow-xs cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>Nuevo Fármaco</span>
+                <span>Nuevo Medicamento</span>
             </a>
             @endcan
         </div>
@@ -150,8 +150,8 @@
                             onchange="this.form.submit()" 
                             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
                         <option value="">Régimen: Todos</option>
-                        <option value="venta_libre" {{ request('tipo_control') == 'venta_libre' ? 'selected' : '' }}>🟢 Venta Libre</option>
-                        <option value="controlados" {{ in_array(request('tipo_control'), ['controlados', 'controlado']) ? 'selected' : '' }}>🟣 Controlados / Con Receta</option>
+                        <option value="venta_libre" {{ request('tipo_control') == 'venta_libre' ? 'selected' : '' }}>Venta Libre</option>
+                        <option value="controlados" {{ in_array(request('tipo_control'), ['controlados', 'controlado']) ? 'selected' : '' }}>Controlados / Con Receta</option>
                     </select>
                 </div>
             </div>
@@ -169,7 +169,7 @@
                         <span class="font-medium">Solo productos en stock bajo</span>
                     </label>
 
-                    <button type="submit" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition flex items-center space-x-1.5 cursor-pointer">
+                    <button type="submit" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition flex items-center space-x-1.5 cursor-pointer">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
                         <span>Filtrar</span>
                     </button>
@@ -365,8 +365,8 @@
                         @can('editar productos')
                         <a href="{{ route('productos.edit', $producto) }}" 
                            title="Editar Fármaco"
-                           class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center transition shrink-0">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                           class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center transition shrink-0">
+                            <svg class="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                         </a>
                         @endcan
 
@@ -557,8 +557,8 @@
                                 <!-- Editar -->
                                 <a href="{{ route('productos.edit', $producto) }}" 
                                    title="Editar Fármaco" 
-                                   class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center transition shadow-2xs">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                   class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs">
+                                    <svg class="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </a>
                                 @endcan
 
@@ -607,7 +607,7 @@
 <!-- ======================================================== -->
 <!-- MODAL: LUPA INTELIGENTE CON IA (Búsqueda Semántica)      -->
 <!-- ======================================================== -->
-<div id="modalLupaIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalLupaIA()">
+<div id="modalLupaIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalLupaIA()">
     <!-- Modal Panel -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
         <!-- Header -->
@@ -686,7 +686,7 @@
 <!-- ======================================================== -->
 <!-- MODAL: FICHA CLÍNICA IA DEL MEDICAMENTO                  -->
 <!-- ======================================================== -->
-<div id="modalProductoIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalProductoIA()">
+<div id="modalProductoIA" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true" onclick="if(event.target === this) cerrarModalProductoIA()">
     <!-- Modal Panel -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl border border-slate-200 dark:border-slate-800 my-auto">
         <!-- Header -->

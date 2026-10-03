@@ -35,65 +35,75 @@
 :class="formLayout === 'compact' ? 'w-full' : 'max-w-5xl mx-auto'"
 class="space-y-4 transition-all duration-200">
     
-    <!-- Breadcrumb & View Toggle Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-300/80 dark:border-slate-800">
-        <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
-            <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <a href="{{ route('laboratorios.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Laboratorios</a>
-            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <span class="text-slate-800 dark:text-slate-200 font-semibold">Editar</span>
-        </nav>
+    <!-- Fila 1: Breadcrumb Únicamente -->
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+        <a href="{{ route('dashboard') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Inicio</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <a href="{{ route('laboratorios.index') }}" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition">Laboratorios</a>
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[200px]">Editar: {{ $laboratorio->nombre }}</span>
+    </nav>
 
-        <!-- View Mode Switcher -->
-        <div class="flex items-center space-x-2 self-start sm:self-auto">
-            <!-- Modo Full Screen (Ocultar Barras) -->
+    <!-- Fila 2: Título + Botones de Acción Alineados a la Derecha -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Editar Laboratorio: {{ $laboratorio->nombre }}</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Actualiza los datos institucionales y de contacto del fabricante.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <!-- 1. Botón Volver -->
+            <a href="{{ route('laboratorios.index') }}" 
+               class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>&larr; Laboratorios</span>
+            </a>
+
+            <!-- 2. Botón Modo Full -->
             <button type="button" 
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
-                    class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
+                    class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
                 <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
-            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-400 hidden md:inline">Diseño:</span>
-            <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
+            <!-- 3. Botón Ver Ficha -->
+            <a href="{{ route('laboratorios.show', $laboratorio) }}" 
+               class="px-3.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-950 dark:text-sky-300 text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-2xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Ver Ficha</span>
+            </a>
+
+            <!-- 4. Botón Principal Guardar -->
+            <button type="button" 
+                    onclick="document.querySelector('form[x-ref=laboratorioEditForm]').submit()"
+                    class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Cambios</span>
+            </button>
+
+            <!-- 5. Toggle Diseño Moderna / Compacta -->
+            <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
                         :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
-                        class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                        class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
                         :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
-                        class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                        class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span>Compacta (POS / ERP)</span>
+                    <span>Compacta</span>
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-            <h1 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Editar Laboratorio: {{ $laboratorio->nombre }}</h1>
-            <p class="text-xs text-slate-600 dark:text-slate-400">
-                Actualiza los datos institucionales y de contacto del fabricante.
-            </p>
-        </div>
-        <div class="flex items-center space-x-2">
-            <a href="{{ route('laboratorios.show', $laboratorio) }}" 
-               class="inline-flex items-center space-x-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition shadow-2xs">
-                <span>Ver Ficha</span>
-            </a>
-            <a href="{{ route('laboratorios.index') }}" 
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition shrink-0 shadow-2xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
-            </a>
         </div>
     </div>
 

@@ -61,9 +61,13 @@ class CuentaPorPagarController extends Controller
 
         $metricas = $this->cuentaPorPagarService->getMetricas();
         $compras = $query->paginate(15)->withQueryString();
-        $proveedores = Proveedor::activos()->orderBy('nombre_empresa')->get();
+        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
+        $sesionCaja = \App\Models\SesionCaja::with('caja')
+            ->where('user_id', auth()->id())
+            ->where('estado', 'abierta')
+            ->first();
 
-        return view('compras.cuentas-por-pagar.index', compact('compras', 'metricas', 'proveedores', 'filtroEstado'));
+        return view('compras.cuentas-por-pagar.index', compact('compras', 'metricas', 'proveedores', 'filtroEstado', 'sesionCaja'));
     }
 
     public function show(Compra $compra)
@@ -73,8 +77,12 @@ class CuentaPorPagarController extends Controller
         }
 
         $compra->load(['proveedor', 'usuario', 'detalles.producto', 'detalles.lote', 'pagos.usuario']);
+        $sesionCaja = \App\Models\SesionCaja::with('caja')
+            ->where('user_id', auth()->id())
+            ->where('estado', 'abierta')
+            ->first();
 
-        return view('compras.cuentas-por-pagar.show', compact('compra'));
+        return view('compras.cuentas-por-pagar.show', compact('compra', 'sesionCaja'));
     }
 
     public function storeAbono(Request $request, Compra $compra)
@@ -94,7 +102,7 @@ class CuentaPorPagarController extends Controller
         try {
             $pago = $this->cuentaPorPagarService->registrarAbono($validated);
 
-            return back()->with('success', "Abono {$pago->numero_pago} de " . formato_moneda($pago->monto) . " registrado correctamente a {$compra->proveedor->nombre_empresa}.");
+            return back()->with('success', "Abono {$pago->numero_pago} de " . formato_moneda($pago->monto) . " registrado correctamente a {$compra->proveedor->nombre}.");
         } catch (Exception $e) {
             Log::error("Error al registrar abono en CxP: " . $e->getMessage());
             return back()->withInput()->with('error', $e->getMessage());
@@ -104,36 +112,63 @@ class CuentaPorPagarController extends Controller
     public function storeDirecta(Request $request)
     {
         $validated = $request->validate([
-            'proveedor_id'           => 'required|exists:proveedores,id',
+            'proveedor_id'           => 'nullable',
+            'proveedor_nombre'       => 'nullable|string|max:150',
             'numero_comprobante'     => 'required|string|max:50',
             'fecha'                  => 'required|date',
             'total'                  => 'required|numeric|min:0.01',
-            'dias_credito'           => 'required|integer|min:1|max:365',
-            'fecha_vencimiento_pago' => 'required|date',
+            'dias_credito'           => 'nullable|integer|min:1|max:365',
+            'fecha_vencimiento_pago' => 'nullable|date',
             'concepto'               => 'nullable|string|max:100',
         ]);
 
-        $numComp = $validated['numero_comprobante'];
-        if (!empty($validated['concepto'])) {
-            $numComp = substr($validated['numero_comprobante'] . ' (' . $validated['concepto'] . ')', 0, 50);
+        try {
+            $proveedorId = $request->input('proveedor_id');
+            if (empty($proveedorId)) {
+                $nombreProv = trim($request->input('proveedor_nombre', ''));
+                if (empty($nombreProv)) {
+                    return back()->withInput()->with('error', 'Debes seleccionar o especificar un proveedor/acreedor para la factura.');
+                }
+                $proveedor = Proveedor::firstOrCreate(
+                    ['nombre' => $nombreProv],
+                    ['activo' => true]
+                );
+                $proveedorId = $proveedor->id;
+            }
+
+            $diasCredito = (int) ($request->input('dias_credito') ?: 30);
+            $fecha = \Carbon\Carbon::parse($request->input('fecha'));
+            $fechaVencimiento = $request->filled('fecha_vencimiento_pago')
+                ? \Carbon\Carbon::parse($request->input('fecha_vencimiento_pago'))
+                : (clone $fecha)->addDays($diasCredito);
+
+            $numComp = $validated['numero_comprobante'];
+            if (!empty($validated['concepto'])) {
+                $numComp = substr($validated['numero_comprobante'] . ' (' . $validated['concepto'] . ')', 0, 50);
+            }
+
+            $total = round((float) $validated['total'], 2);
+
+            $compra = Compra::create([
+                'proveedor_id'           => $proveedorId,
+                'user_id'                => auth()->id() ?? 1,
+                'numero_comprobante'     => $numComp,
+                'subtotal'               => $total,
+                'impuesto'               => 0,
+                'total'                  => $total,
+                'condicion_pago'         => 'credito',
+                'dias_credito'           => $diasCredito,
+                'fecha_vencimiento_pago' => $fechaVencimiento,
+                'saldo_pendiente'        => $total,
+                'estado_pago'            => 'pendiente',
+                'estado'                 => 'recibida',
+                'fecha'                  => $fecha,
+            ]);
+
+            return back()->with('success', "Cuenta por pagar {$compra->numero_comprobante} por " . formato_moneda($compra->total) . " registrada exitosamente.");
+        } catch (Exception $e) {
+            Log::error("Error al registrar cuenta por pagar directa: " . $e->getMessage());
+            return back()->withInput()->with('error', 'Error al procesar la factura: ' . $e->getMessage());
         }
-
-        $compra = Compra::create([
-            'proveedor_id'           => $validated['proveedor_id'],
-            'user_id'                => auth()->id(),
-            'numero_comprobante'     => $numComp,
-            'subtotal'               => $validated['total'],
-            'impuesto'               => 0,
-            'total'                  => $validated['total'],
-            'condicion_pago'         => 'credito',
-            'dias_credito'           => $validated['dias_credito'],
-            'fecha_vencimiento_pago' => $validated['fecha_vencimiento_pago'],
-            'saldo_pendiente'        => $validated['total'],
-            'estado_pago'            => 'pendiente',
-            'estado'                 => 'recibida',
-            'fecha'                  => $validated['fecha'],
-        ]);
-
-        return back()->with('success', "Cuenta por pagar {$compra->numero_comprobante} por " . formato_moneda($compra->total) . " registrada exitosamente.");
     }
 }

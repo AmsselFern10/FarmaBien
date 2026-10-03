@@ -119,6 +119,7 @@
                         </x-slot>
                         <x-slot name="content">
                             @can('ver productos')<x-dropdown-link :href="route('productos.index')">Medicamentos</x-dropdown-link>@endcan
+                            @can('ver productos')<x-dropdown-link :href="route('precios.index')">Precios de Venta</x-dropdown-link>@endcan
                             @can('ver promociones')<x-dropdown-link :href="route('promociones.index')">Promociones & Ofertas</x-dropdown-link>@endcan
                             @can('ver laboratorios')<x-dropdown-link :href="route('laboratorios.index')">Laboratorios</x-dropdown-link>@endcan
                             @can('ver categorias')<x-dropdown-link :href="route('categorias.index')">Categorías</x-dropdown-link>@endcan
@@ -251,6 +252,7 @@
         @can('ver recetas')<x-responsive-nav-link :href="route('recetas.index')" :active="request()->routeIs('recetas.*')">Recetas Médicas</x-responsive-nav-link>@endcan
         <x-responsive-nav-link :href="route('controlados.index')" :active="request()->routeIs('controlados.*')">Med. Controlados (MINSA)</x-responsive-nav-link>
         @can('ver productos')<x-responsive-nav-link :href="route('productos.index')" :active="request()->routeIs('productos.*')">Medicamentos</x-responsive-nav-link>@endcan
+        @can('ver productos')<x-responsive-nav-link :href="route('precios.index')" :active="request()->routeIs('precios.*')">Precios de Venta</x-responsive-nav-link>@endcan
         @can('ver promociones')<x-responsive-nav-link :href="route('promociones.index')" :active="request()->routeIs('promociones.*')">Promociones & Ofertas</x-responsive-nav-link>@endcan
         @can('ver laboratorios')<x-responsive-nav-link :href="route('laboratorios.index')" :active="request()->routeIs('laboratorios.*')">Laboratorios</x-responsive-nav-link>@endcan
         @can('ver reportes ventas')<x-responsive-nav-link :href="route('reportes.index')" :active="request()->routeIs('reportes.*')">Reportes Gerenciales</x-responsive-nav-link>@endcan

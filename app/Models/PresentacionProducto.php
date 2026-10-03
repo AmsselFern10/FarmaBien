@@ -57,6 +57,16 @@ class PresentacionProducto extends Model
         return $this->hasMany(DetalleVenta::class, 'presentacion_id');
     }
 
+    public function preciosVenta(): HasMany
+    {
+        return $this->hasMany(PrecioVenta::class, 'presentacion_id')->orderBy('vigente_desde', 'desc');
+    }
+
+    public function precioVentaVigente()
+    {
+        return $this->hasOne(PrecioVenta::class, 'presentacion_id')->whereNull('vigente_hasta');
+    }
+
     public function scopeActivas($query)
     {
         return $query->where('activo', true);

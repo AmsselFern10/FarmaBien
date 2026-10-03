@@ -92,7 +92,7 @@
                     <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Proveedor Destinatario <span class="text-rose-500">*</span>
                     </label>
-                    <input type="hidden" name="proveedor_id" :value="proveedorSeleccionadoId" required>
+                    <input type="hidden" name="proveedor_id" :value="proveedorSeleccionadoId">
 
                     <!-- Estado: Proveedor Seleccionado -->
                     <template x-if="proveedorSeleccionado">

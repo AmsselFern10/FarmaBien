@@ -31,9 +31,23 @@
                         <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                             Modificada (Reemplazada)
                         </span>
+                    @elseif($compra->condicion_pago === 'credito')
+                        @if($compra->saldo_pendiente <= 0)
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                Recibida / Crédito Pagado
+                            </span>
+                        @elseif($compra->saldo_pendiente < $compra->total)
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                Recibida / Crédito Parcial
+                            </span>
+                        @else
+                            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                                Recibida / Crédito Pendiente
+                            </span>
+                        @endif
                     @else
                         <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                            Recibida en Kardex
+                            Recibida en Kardex (Contado)
                         </span>
                     @endif
                 @elseif($compra->estado === 'anulada')
@@ -44,6 +58,9 @@
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Comprobante: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $compra->numero_comprobante ?: 'Sin número fiscal' }}</span> • Fecha: {{ $compra->fecha ? $compra->fecha->format('d/m/Y') : '-' }}
+                @if($compra->condicion_pago === 'credito')
+                    • <span class="font-bold text-amber-900 dark:text-amber-300">Crédito a {{ $compra->dias_credito }} días</span>
+                @endif
             </p>
         </div>
 
@@ -55,6 +72,15 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Compras</span>
             </a>
+
+            <!-- Enlace a Cuenta por Pagar si es Crédito -->
+            @if($compra->condicion_pago === 'credito')
+            <a href="{{ route('cuentas-por-pagar.show', $compra) }}" 
+               class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-purple-50/80 hover:bg-purple-100/90 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-950 dark:text-purple-300 text-xs font-bold border border-purple-200 dark:border-purple-800/80 shadow-2xs transition">
+                <svg class="w-4 h-4 text-purple-700 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <span>Ver Cuenta por Pagar (CxP)</span>
+            </a>
+            @endif
 
             <!-- Ticket -->
             <a href="{{ route('compras.ticket', $compra) }}" 
@@ -186,18 +212,36 @@
                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>Resumen de Liquidación</span>
             </div>
-            <div class="space-y-1 text-xs">
+            <div class="space-y-1.5 text-xs">
                 <div class="flex justify-between text-slate-600 dark:text-slate-300">
-                    <span>Lotes Ingresados:</span>
-                    <span class="font-bold text-slate-900 dark:text-white">{{ $compra->lotes->count() }} lotes</span>
+                    <span>Condición de Pago:</span>
+                    <span class="font-bold {{ $compra->condicion_pago === 'credito' ? 'text-amber-900 dark:text-amber-300' : 'text-slate-900 dark:text-white' }} uppercase">
+                        {{ $compra->condicion_pago }} {{ $compra->condicion_pago === 'credito' ? '(' . $compra->dias_credito . 'd)' : '' }}
+                    </span>
                 </div>
+                @if($compra->condicion_pago === 'credito')
                 <div class="flex justify-between text-slate-600 dark:text-slate-300">
-                    <span>Total Unidades Base al Kardex:</span>
+                    <span>Saldo Pendiente:</span>
+                    <span class="font-extrabold {{ $compra->saldo_pendiente > 0 ? 'text-rose-900 dark:text-rose-400' : 'text-emerald-900 dark:text-emerald-400' }}">
+                        {{ formato_moneda($compra->saldo_pendiente) }}
+                    </span>
+                </div>
+                @if($compra->saldo_pendiente < $compra->total)
+                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>Total Abonado:</span>
+                    <span class="font-bold text-emerald-900 dark:text-emerald-400">
+                        {{ formato_moneda($compra->total - $compra->saldo_pendiente) }}
+                    </span>
+                </div>
+                @endif
+                @endif
+                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>Unidades al Kardex:</span>
                     <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $compra->detalles->sum('cantidad_unidades_base') }} u.</span>
                 </div>
                 <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
                     <span class="font-semibold text-slate-600 dark:text-slate-300">Monto Total:</span>
-                    <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">${{ number_format($compra->total, 2) }}</span>
+                    <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ formato_moneda($compra->total) }}</span>
                 </div>
             </div>
         </div>

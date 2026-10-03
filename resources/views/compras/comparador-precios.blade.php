@@ -568,7 +568,7 @@
                             <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
                                 Medicamento <span class="text-rose-500">*</span>
                             </label>
-                            <input type="hidden" name="producto_id" :value="cotizacionProdId" required>
+                            <input type="hidden" name="producto_id" :value="cotizacionProdId">
 
                             <!-- Estado: Medicamento Seleccionado -->
                             <template x-if="cotizacionProdObj">
@@ -621,7 +621,7 @@
                             <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
                                 Proveedor Distribuidor <span class="text-rose-500">*</span>
                             </label>
-                            <input type="hidden" name="proveedor_id" :value="cotizacionProvId" required>
+                            <input type="hidden" name="proveedor_id" :value="cotizacionProvId">
 
                             <!-- Estado: Proveedor Seleccionado -->
                             <template x-if="cotizacionProvObj">

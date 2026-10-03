@@ -14,6 +14,7 @@ function posVentaData() {
         catalogo: @js($productos ?? []),
         clientes: @js($clientes ?? []),
         categorias: @js($categorias ?? []),
+        recetaPreload: @js($recetaPreload ?? null),
         
         // Buscador y filtros con Debounce y Caché
         busqueda: '',
@@ -127,9 +128,11 @@ function posVentaData() {
                     }
                 }
 
-                // Auto-vincular y cargar receta si viene por parámetro de URL (ej. desde /recetas o /ventas)
+                // Auto-vincular y cargar receta si viene precargada o por parámetro de URL (ej. desde /recetas o /ventas)
                 const recetaIdParam = urlParams.get('receta_id') || urlParams.get('cargar_receta');
-                if (recetaIdParam) {
+                if (this.recetaPreload) {
+                    this.importarRecetaAlCarrito(this.recetaPreload);
+                } else if (recetaIdParam) {
                     const rObj = this.recetasRecientes.find(r => r.id == recetaIdParam || r.numero_receta == recetaIdParam);
                     if (rObj) {
                         this.importarRecetaAlCarrito(rObj);
@@ -255,6 +258,13 @@ function posVentaData() {
             const existeIdx = this.items.findIndex(it => it.producto_id == producto.id && it.lote_id == loteDefault.id && it.presentacion_id == presSel.id);
             
             if (existeIdx !== -1) {
+                const itemExistente = this.items[existeIdx];
+                if (itemExistente.receta_max_cantidad && itemExistente.cantidad >= itemExistente.receta_max_cantidad) {
+                    const msg = `Límite alcanzado: La receta médica prescribe un saldo máximo de ${itemExistente.receta_max_cantidad} unidad(es) para ${itemExistente.nombre}.`;
+                    if (window.farmaToast) window.farmaToast.warning(msg, 'Saldo de Receta');
+                    else alert(msg);
+                    return;
+                }
                 this.items[existeIdx].cantidad++;
                 // Mover el ítem al inicio (unshift) para que el cajero siempre lo vea arriba
                 const itemActualizado = this.items.splice(existeIdx, 1)[0];
@@ -364,6 +374,34 @@ function posVentaData() {
 
         eliminarItem(idx) {
             this.items.splice(idx, 1);
+        },
+
+        incrementarCantidad(item) {
+            if (item.receta_max_cantidad && item.cantidad >= item.receta_max_cantidad) {
+                const msg = `Límite alcanzado: La receta médica prescribe un saldo máximo de ${item.receta_max_cantidad} unidad(es) para ${item.nombre}.`;
+                if (window.farmaToast) window.farmaToast.warning(msg, 'Saldo de Receta');
+                else alert(msg);
+                return;
+            }
+            item.cantidad++;
+        },
+
+        decrementarCantidad(item) {
+            if (item.cantidad > 1) {
+                item.cantidad--;
+            }
+        },
+
+        validarCantidad(item) {
+            let cant = parseInt(item.cantidad) || 1;
+            if (cant < 1) cant = 1;
+            if (item.receta_max_cantidad && cant > item.receta_max_cantidad) {
+                cant = item.receta_max_cantidad;
+                const msg = `Límite ajustado: No puedes dispensar más de ${item.receta_max_cantidad} unidad(es) prescritas en la receta para ${item.nombre}.`;
+                if (window.farmaToast) window.farmaToast.warning(msg, 'Saldo de Receta');
+                else alert(msg);
+            }
+            item.cantidad = cant;
         },
 
         cambiarLoteDesdeModal(lote) {
@@ -618,7 +656,9 @@ function posVentaData() {
             
             // 1. Validar si tiene saldo disponible
             if (!this.recetaTieneMedicamentosRxDisponibles(receta)) {
-                alert(`La receta #${receta.numero_receta} ya ha sido dispensada en su totalidad o no cuenta con saldo pendiente.`);
+                const msg = `La receta #${receta.numero_receta} ya ha sido dispensada en su totalidad o no cuenta con saldo pendiente.`;
+                if (window.farmaToast) window.farmaToast.warning(msg, 'Receta sin saldo');
+                else alert(msg);
                 return;
             }
 
@@ -647,11 +687,24 @@ function posVentaData() {
             let cargadosCount = 0;
             if (receta.detalles && Array.isArray(receta.detalles)) {
                 for (let d of receta.detalles) {
-                    const cantPend = parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada || 0);
+                    const cantPend = Math.max(0, parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada || 0));
                     if (cantPend <= 0) continue;
 
                     let prod = this.catalogo.find(p => p.id == d.producto_id);
-                    if (!prod) {
+                    if (!prod && d.producto) {
+                        prod = {
+                            id: d.producto.id,
+                            nombre: d.producto.nombre,
+                            principio_activo: d.producto.principio_activo || '',
+                            concentracion: d.producto.concentracion || '',
+                            tipo_control: d.producto.tipo_control || 'venta_libre',
+                            precio_venta: d.producto.precio_venta || 0,
+                            codigo_barra: d.producto.codigo_barra || '',
+                            lotes: d.producto.lotes_activos || d.producto.lotesActivos || [],
+                            presentaciones_activas: []
+                        };
+                        this.catalogo.unshift(prod);
+                    } else if (!prod) {
                         try {
                             const res = await fetch(`{{ route('api.productos.buscar') }}?q=${encodeURIComponent(d.producto?.nombre || d.producto_id)}&limit=1`);
                             if (res.ok) {
@@ -669,12 +722,19 @@ function posVentaData() {
                     }
 
                     if (prod) {
-                        this.agregarAlCarrito(prod);
                         const itemIdx = this.items.findIndex(it => it.producto_id == prod.id);
                         if (itemIdx !== -1) {
                             this.items[itemIdx].cantidad = cantPend;
                             this.items[itemIdx].receta_detalle_id = d.id;
                             this.items[itemIdx].receta_max_cantidad = cantPend;
+                        } else {
+                            this.agregarAlCarrito(prod);
+                            const newIdx = this.items.findIndex(it => it.producto_id == prod.id);
+                            if (newIdx !== -1) {
+                                this.items[newIdx].cantidad = cantPend;
+                                this.items[newIdx].receta_detalle_id = d.id;
+                                this.items[newIdx].receta_max_cantidad = cantPend;
+                            }
                         }
                         cargadosCount++;
                     }
@@ -717,9 +777,12 @@ function posVentaData() {
             for (let it of this.items) {
                 const d = receta.detalles?.find(det => det.producto_id == it.producto_id);
                 if (d) {
-                    const saldo = parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada || 0);
+                    const saldo = Math.max(0, parseInt(d.cantidad_recetada) - parseInt(d.cantidad_dispensada || 0));
                     it.receta_detalle_id = d.id;
                     it.receta_max_cantidad = saldo;
+                    if (it.cantidad > saldo && saldo > 0) {
+                        it.cantidad = saldo;
+                    }
                 }
             }
 
@@ -1665,15 +1728,18 @@ function posVentaData() {
                                     <td class="py-2.5 px-2">
                                         <div class="flex items-center space-x-1">
                                             <button type="button" 
-                                                    @click="if(item.cantidad > 1) item.cantidad--" 
+                                                    @click="decrementarCantidad(item)" 
                                                     class="w-6 h-7 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold text-xs flex items-center justify-center transition cursor-pointer">-</button>
                                             <input type="number" 
                                                    x-model.number="item.cantidad" 
+                                                   @input="validarCantidad(item)"
+                                                   @change="validarCantidad(item)"
                                                    @focus="$event.target.select()"
                                                    min="1" 
+                                                   :max="item.receta_max_cantidad || null"
                                                    class="w-14 py-1 bg-white dark:bg-slate-800 border-2 border-emerald-500/60 dark:border-emerald-600 rounded-lg text-xs text-slate-900 dark:text-white font-black text-center focus:ring-2 focus:ring-emerald-500 shadow-2xs">
                                             <button type="button" 
-                                                    @click="item.cantidad++" 
+                                                    @click="incrementarCantidad(item)" 
                                                     class="w-6 h-7 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-bold text-xs flex items-center justify-center transition cursor-pointer">+</button>
                                         </div>
                                     </td>
@@ -1987,13 +2053,16 @@ function posVentaData() {
                             <div class="flex items-center justify-between pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80">
                                 <!-- Selector Cantidad Prominente -->
                                 <div class="flex items-center space-x-1">
-                                    <button type="button" @click="if(item.cantidad > 1) item.cantidad--" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">-</button>
+                                    <button type="button" @click="decrementarCantidad(item)" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">-</button>
                                     <input type="number" 
                                            min="1" 
+                                           :max="item.receta_max_cantidad || null"
                                            x-model.number="item.cantidad" 
+                                           @input="validarCantidad(item)"
+                                           @change="validarCantidad(item)"
                                            @focus="$event.target.select()"
                                            class="w-16 py-1 text-center font-black text-sm bg-white dark:bg-slate-800 border-2 border-emerald-500/60 dark:border-emerald-600 rounded-lg text-slate-900 dark:text-white shadow-2xs">
-                                    <button type="button" @click="item.cantidad++" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">+</button>
+                                    <button type="button" @click="incrementarCantidad(item)" class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 font-black text-xs hover:bg-slate-300 transition cursor-pointer">+</button>
                                 </div>
 
                                 <!-- Descuento Ítem -->

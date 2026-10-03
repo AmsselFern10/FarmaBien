@@ -105,6 +105,16 @@ class Producto extends Model
         return $this->hasMany(RecetaDetalle::class);
     }
 
+    public function preciosVenta(): HasMany
+    {
+        return $this->hasMany(PrecioVenta::class)->orderBy('vigente_desde', 'desc');
+    }
+
+    public function precioVentaVigente()
+    {
+        return $this->hasOne(PrecioVenta::class)->whereNull('presentacion_id')->whereNull('vigente_hasta');
+    }
+
     // Helpers de Control Sanitario
     public function esControlado(): bool
     {

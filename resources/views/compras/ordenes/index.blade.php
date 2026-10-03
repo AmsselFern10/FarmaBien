@@ -133,6 +133,7 @@
                 <select name="estado" class="w-full text-xs rounded-xl border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500">
                     <option value="">Todos los estados</option>
                     <option value="enviada" {{ request('estado') == 'enviada' ? 'selected' : '' }}>Enviada / Pendiente</option>
+                    <option value="recibida_parcial" {{ request('estado') == 'recibida_parcial' ? 'selected' : '' }}>Recibida Parcialmente</option>
                     <option value="recibida_total" {{ request('estado') == 'recibida_total' ? 'selected' : '' }}>Recibida en Inventario</option>
                     <option value="cancelada" {{ request('estado') == 'cancelada' ? 'selected' : '' }}>Cancelada</option>
                 </select>
@@ -201,7 +202,11 @@
                         <td class="px-4 py-3 text-center">
                             @if($oc->estado === 'recibida_total')
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800">
-                                Recibida
+                                ✓ Recibida
+                            </span>
+                            @elseif($oc->estado === 'recibida_parcial')
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700">
+                                ⚠ Parcial
                             </span>
                             @elseif($oc->estado === 'cancelada')
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-800">
@@ -225,9 +230,9 @@
                                    class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-300 dark:border-indigo-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 </a>
-                                @if($oc->estado === 'enviada')
+                                @if(in_array($oc->estado, ['enviada', 'recibida_parcial']))
                                 <a href="{{ route('ordenes-compras.recibir', $oc) }}" 
-                                   title="Ingresar a Inventario (Recibir)"
+                                   title="{{ $oc->estado === 'recibida_parcial' ? 'Recepcionar Resto Pendiente' : 'Ingresar a Inventario (Recibir)' }}"
                                    class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
                                 </a>

@@ -27,7 +27,11 @@
                 <!-- Status Badge -->
                 @if($orden->estado === 'recibida_total')
                     <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                        Recibida Total
+                        ✓ Recibida Total
+                    </span>
+                @elseif($orden->estado === 'recibida_parcial')
+                    <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                        ⚠ Recibida Parcialmente
                     </span>
                 @elseif($orden->estado === 'cancelada')
                     <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
@@ -79,12 +83,12 @@
             </form>
             @endif
 
-            <!-- 1-Click Receive Goods (Main Action) -->
-            @if($orden->estado === 'enviada')
+            <!-- Recepcionar (primera vez o complemento parcial) -->
+            @if(in_array($orden->estado, ['enviada', 'recibida_parcial']))
             <a href="{{ route('ordenes-compras.recibir', $orden) }}" 
                class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-sm transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <span>Recepcionar y Crear Compra</span>
+                <span>{{ $orden->estado === 'recibida_parcial' ? 'Recepcionar Resto Pendiente' : 'Recepcionar y Crear Compra' }}</span>
             </a>
             @endif
         </div>
@@ -187,14 +191,17 @@
                     <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                         <th class="px-4 py-3">Producto</th>
                         <th class="px-4 py-3">Laboratorio / Principio</th>
-                        <th class="px-4 py-3 text-center">Cant. Solicitada</th>
+                        <th class="px-4 py-3 text-center">Solicitado</th>
+                        <th class="px-4 py-3 text-center">Recibido</th>
+                        <th class="px-4 py-3 text-center">Pendiente</th>
                         <th class="px-4 py-3 text-right">Precio Est.</th>
-                        <th class="px-4 py-3 text-right">Subtotal Estimado</th>
+                        <th class="px-4 py-3 text-right">Subtotal Est.</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                     @foreach($orden->detalles as $det)
-                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+                    @php $pendiente = max(0, $det->cantidad_solicitada - $det->cantidad_recibida); @endphp
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition {{ $pendiente === 0 && $det->cantidad_recibida > 0 ? 'opacity-60' : '' }}">
                         <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">
                             {{ $det->producto->nombre }}
                             @if($det->producto->codigo_barra)
@@ -211,6 +218,25 @@
                             <span class="font-mono font-bold text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
                                 {{ $det->cantidad_solicitada }}
                             </span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="font-mono font-bold text-sm px-2 py-0.5 rounded
+                                {{ $det->cantidad_recibida >= $det->cantidad_solicitada
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                                    : ($det->cantidad_recibida > 0
+                                        ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500') }}">
+                                {{ $det->cantidad_recibida }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if($pendiente > 0)
+                                <span class="font-mono font-bold text-sm bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded">
+                                    {{ $pendiente }}
+                                </span>
+                            @else
+                                <span class="text-emerald-600 dark:text-emerald-400 font-bold text-sm">✓</span>
+                            @endif
                         </td>
                         <td class="px-4 py-3 text-right font-mono text-slate-700 dark:text-slate-300">
                             {{ formato_moneda($det->precio_unitario_estimado) }}

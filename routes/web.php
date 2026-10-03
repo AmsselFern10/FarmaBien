@@ -29,6 +29,7 @@ use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\CuentaPorPagarController;
 use App\Http\Controllers\OrdenCompraController;
 use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\PrecioVentaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -202,6 +203,23 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | PRECIOS DE VENTA (Catálogos & Maestros)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('precios/masivo', [PrecioVentaController::class, 'masivo'])->name('precios.masivo');
+    Route::post('precios/masivo', [PrecioVentaController::class, 'aplicarMasivo'])->name('precios.masivo.aplicar');
+    Route::post('precios/masivo/preview', [PrecioVentaController::class, 'apiPreviewMasivo'])->name('precios.masivo.preview');
+    Route::get('precios/historial-general', [PrecioVentaController::class, 'historialGeneral'])->name('precios.historial');
+    Route::get('precios/exportar', [PrecioVentaController::class, 'exportar'])->name('precios.exportar');
+    Route::get('precios/buscar-ajax', [PrecioVentaController::class, 'apiBuscar'])->name('precios.buscar-ajax');
+    Route::post('precios/{producto}/inline', [PrecioVentaController::class, 'inlineUpdate'])->name('precios.inline-update');
+    Route::get('precios/{producto}/edit', [PrecioVentaController::class, 'edit'])->name('precios.edit');
+    Route::put('precios/{producto}', [PrecioVentaController::class, 'update'])->name('precios.update');
+    Route::get('precios/{producto}', [PrecioVentaController::class, 'show'])->name('precios.show');
+    Route::get('precios', [PrecioVentaController::class, 'index'])->name('precios.index');
+
+    /*
+    |--------------------------------------------------------------------------
     | CATÁLOGOS: PRODUCTOS, LABORATORIOS, CATEGORÍAS, CLIENTES, PROVEEDORES
     |--------------------------------------------------------------------------
     */
@@ -226,6 +244,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [InventarioController::class, 'index'])->name('index');
         Route::get('/movimientos', [InventarioController::class, 'movimientos'])->name('movimientos');
         Route::get('/lotes', [InventarioController::class, 'lotes'])->name('lotes');
+        Route::put('/lotes/{lote}', [InventarioController::class, 'updateLote'])->name('lotes.update');
         Route::get('/kardex-producto/{producto}', [InventarioController::class, 'kardexProducto'])->name('kardex-producto');
         Route::get('/alertas', [InventarioController::class, 'alertas'])->name('alertas');
         Route::post('/baja-vencidos', [InventarioController::class, 'bajaVencidos'])->name('baja-vencidos');
