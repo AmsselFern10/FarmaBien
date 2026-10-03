@@ -116,26 +116,33 @@ class FarmaProgressBar {
             this.navLock   = true;
             this.navTarget = dest;
 
-            // Inicia barra de progreso
+            // Inicia barra de progreso (feedback visual inmediato)
             this.start();
 
-            // Animación de salida del contenido (~80ms) antes de redirigir
-            const main = document.querySelector('main.page-fade-in, main');
-            if (main) {
-                main.classList.add('page-navigating-out');
+            // *** NAVEGACIÓN INSTANTÁNEA ***
+            // La View Transitions API (Chrome 126+, Safari 18.2+) maneja la
+            // animación de salida automáticamente — no necesitamos setTimeout.
+            // En Firefox/browsers sin soporte: navegación normal sin animación.
+            const supportsViewTransitions = typeof document.startViewTransition === 'function' ||
+                CSS.supports('@view-transition { navigation: auto; }');
+
+            if (!supportsViewTransitions) {
+                // Fallback: aplicar clase de salida y navegar tras el frame
+                const main = document.querySelector('main.page-fade-in, main');
+                if (main) main.classList.add('page-navigating-out');
             }
 
-            // Redirige tras el fade-out. requestAnimationFrame garantiza que el
-            // frame de salida se pintó antes de que el navegador empiece a cargar.
-            setTimeout(() => {
+            // Navegar en el próximo frame (garantiza que la barra de progreso se pintó)
+            requestAnimationFrame(() => {
                 window.location.href = dest;
-            }, 90);
+            });
 
             // Fallback: si tras 8s no hubo unload, libera el lock
             clearTimeout(this.navLockTimer);
             this.navLockTimer = setTimeout(() => {
                 this.navLock   = false;
                 this.navTarget = null;
+                const main = document.querySelector('main');
                 if (main) main.classList.remove('page-navigating-out');
                 this.finish();
             }, 8000);

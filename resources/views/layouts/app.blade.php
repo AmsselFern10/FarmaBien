@@ -85,6 +85,34 @@
         <!-- Scripts & Styles -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @stack('styles')
+
+        <!--
+            View Transitions: bloquea el render hasta que el contenido
+            principal esté parseado, para evitar un cross-fade a página vacía.
+        -->
+        <link rel="expect" href="#main-content" blocking="render">
+
+        <!--
+            Speculation Rules API (Chrome 109+): prerender de las páginas
+            del menú lateral al hacer hover, reduciendo el tiempo de navegación
+            a ~0ms en la mayoría de los casos. Sin efecto en Firefox/Safari.
+        -->
+        <script type="speculationrules">
+        {
+            "prerender": [
+                {
+                    "where": { "selector_matches": "nav a[href], aside a[href]" },
+                    "eagerness": "moderate"
+                }
+            ],
+            "prefetch": [
+                {
+                    "where": { "selector_matches": "a[href]", "not": { "selector_matches": "a[href^='#'], a[href^='mailto:'], a[href^='tel:'], a[href*='/logout'], a[href*='/delete'], a[href*='/destroy']" } },
+                    "eagerness": "conservative"
+                }
+            ]
+        }
+        </script>
     </head>
     <body x-data="{ 
         sidebarCollapsed: localStorage.getItem('farma_sidebar_collapsed') === 'true',
@@ -163,7 +191,8 @@
                 <!-- Main Scrollable Area -->
                 <div class="flex-1 overflow-y-auto">
                     <!-- Page View Content -->
-                    <main class="page-fade-in mx-auto w-full transition-all duration-200"
+                    <main id="main-content"
+                          class="page-fade-in mx-auto w-full transition-all duration-200"
                           :class="posFullscreen ? 'max-w-none px-2 sm:px-4 py-3' : 'max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6'">
                         {{ $slot ?? '' }}
                         @yield('content')
