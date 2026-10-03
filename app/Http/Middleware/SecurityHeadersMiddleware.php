@@ -37,32 +37,33 @@ class SecurityHeadersMiddleware
         $response->headers->remove('X-Powered-By');
         $response->headers->remove('Server');
 
-        // 7. HSTS — fuerza HTTPS en el browser (31536000s = 1 año)
-        //    Solo activo en producción para no romper desarrollo local HTTP.
+        // 7 & 8. Solo en producción: HSTS + CSP
+        // En desarrollo local, Vite sirve assets desde localhost:5173 (diferente origen)
+        // y el CSP los bloquearía. En producción los assets vienen del mismo dominio.
         if (app()->environment('production')) {
+            // HSTS — fuerza HTTPS en el browser (31536000s = 1 año)
             $response->headers->set(
                 'Strict-Transport-Security',
                 'max-age=31536000; includeSubDomains'
             );
-        }
 
-        // 8. Content-Security-Policy — bloquea carga de scripts/styles/frames externos
-        //    'unsafe-inline' requerido por Alpine.js y Tailwind inline styles.
-        //    'unsafe-eval' requerido por Alpine.js (v3 usa Function()).
-        //    data: requerido para íconos SVG inline y fuentes embebidas.
-        $csp = implode('; ', [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
-            "font-src 'self' data: https://fonts.gstatic.com",
-            "img-src 'self' data: blob:",
-            "connect-src 'self'",
-            "frame-ancestors 'self'",
-            "object-src 'none'",
-            "base-uri 'self'",
-            "form-action 'self'",
-        ]);
-        $response->headers->set('Content-Security-Policy', $csp);
+            // Content-Security-Policy — bloquea scripts/styles/frames externos
+            // 'unsafe-inline' requerido por Alpine.js y Tailwind inline styles.
+            // 'unsafe-eval' requerido por Alpine.js v3 (usa Function()).
+            $csp = implode('; ', [
+                "default-src 'self'",
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
+                "font-src 'self' data: https://fonts.gstatic.com",
+                "img-src 'self' data: blob:",
+                "connect-src 'self'",
+                "frame-ancestors 'self'",
+                "object-src 'none'",
+                "base-uri 'self'",
+                "form-action 'self'",
+            ]);
+            $response->headers->set('Content-Security-Policy', $csp);
+        }
 
         return $response;
     }
