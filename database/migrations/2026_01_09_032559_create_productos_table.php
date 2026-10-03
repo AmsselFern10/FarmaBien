@@ -26,6 +26,7 @@ return new class extends Migration
             
             $table->string('registro_sanitario', 100)->nullable();
             $table->enum('tipo_control', ['venta_libre', 'controlado'])->default('venta_libre');
+            $table->tinyInteger('nivel_controlado')->unsigned()->default(1)->comment('Nivel MINSA: 1=básico, 2=psicotrópico, 3=estupefaciente');
             
             $table->decimal('precio_compra', 10, 2)->default(0);
             $table->decimal('precio_venta', 10, 2);
