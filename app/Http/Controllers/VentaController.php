@@ -30,7 +30,10 @@ class VentaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Venta::with(['cliente', 'usuario'])->withCount('detalles');
+        $query = Venta::with([
+            'cliente:id,nombre,documento',
+            'usuario:id,name',
+        ])->withCount('detalles');
 
         // Si es cajero sin permiso de ver todas las ventas, solo ve las suyas
         if (!$request->user()->can('ver ventas') && $request->user()->can('ver ventas propias')) {
@@ -56,12 +59,13 @@ class VentaController extends Controller
             $query->where('tipo_comprobante', $request->input('tipo_comprobante'));
         }
 
+        // Rango en lugar de whereDate() para que el índice sobre `fecha` pueda usarse
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha', '>=', $request->input('fecha_desde'));
+            $query->where('fecha', '>=', $request->input('fecha_desde') . ' 00:00:00');
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha', '<=', $request->input('fecha_hasta'));
+            $query->where('fecha', '<=', $request->input('fecha_hasta') . ' 23:59:59');
         }
 
         $orden = $request->input('orden', 'fecha_desc');
@@ -83,11 +87,19 @@ class VentaController extends Controller
 
         $ventas = $query->paginate(15)->withQueryString();
 
+        // Una sola query para todas las estadísticas (antes eran 4 queries separadas)
+        $statsRaw = Venta::selectRaw("
+            COUNT(*) as total,
+            SUM(estado = 'completada') as completadas,
+            SUM(estado = 'anulada') as anuladas,
+            SUM(CASE WHEN estado = 'completada' THEN total ELSE 0 END) as ingresos
+        ")->first();
+
         $stats = [
-            'total' => Venta::count(),
-            'completadas' => Venta::where('estado', 'completada')->count(),
-            'anuladas' => Venta::where('estado', 'anulada')->count(),
-            'ingresos' => Venta::where('estado', 'completada')->sum('total'),
+            'total'       => (int) $statsRaw->total,
+            'completadas' => (int) $statsRaw->completadas,
+            'anuladas'    => (int) $statsRaw->anuladas,
+            'ingresos'    => (float) $statsRaw->ingresos,
         ];
 
         return view('ventas.index', compact('ventas', 'stats'));
@@ -95,6 +107,7 @@ class VentaController extends Controller
 
     public function create(Request $request)
     {
+
         $user = auth()->user();
         $sesionActivaCaja = $user ? $user->sesionCajaActiva() : null;
 

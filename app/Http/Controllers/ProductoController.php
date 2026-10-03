@@ -30,7 +30,8 @@ class ProductoController extends Controller
 
     public function index(Request $request, FarmaIaService $iaService)
     {
-        $query = Producto::with(['categoria:id,nombre', 'laboratorio:id,nombre', 'presentacionesActivas'])
+        $query = Producto::with(['categoria:id,nombre', 'laboratorio:id,nombre', 'presentacionesActivas:id,producto_id,nombre,unidades_por_presentacion,precio_venta,activo'])
+
             ->withSum(['lotes as stock_total' => function ($q) {
                 $q->where('activo', true);
             }], 'stock_actual');

@@ -150,7 +150,10 @@ class RecetaController extends Controller
 
     public function create()
     {
-        $clientes = Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->get();
+        $clientes = \Illuminate\Support\Facades\Cache::remember('receta_clientes_init_50', 120, function () {
+            return Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->limit(50)->get();
+        });
+
         $medicos = Receta::select(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
             ->whereNotNull('medico_nombre')
             ->where('medico_nombre', '!=', '')

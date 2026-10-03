@@ -39,7 +39,13 @@ class InventarioController extends Controller
 
     public function movimientos(Request $request)
     {
-        $query = MovimientoInventario::with(['producto.laboratorio', 'lote', 'usuario']);
+        $query = MovimientoInventario::with([
+            'producto:id,nombre,principio_activo,laboratorio_id',
+            'producto.laboratorio:id,nombre',
+            'lote:id,numero_lote,fecha_vencimiento',
+            'usuario:id,name',
+        ]);
+
 
         if ($request->filled('producto_id')) {
             $query->where('producto_id', $request->input('producto_id'));
@@ -73,8 +79,13 @@ class InventarioController extends Controller
 
     public function lotes(Request $request)
     {
-        $query = Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
-            ->where('activo', true);
+        $query = Lote::with([
+            'producto:id,nombre,principio_activo,categoria_id,laboratorio_id',
+            'producto.categoria:id,nombre',
+            'producto.laboratorio:id,nombre',
+            'proveedor:id,nombre',
+        ])->where('activo', true);
+
 
         if ($request->filled('buscar')) {
             $buscar = trim($request->input('buscar'));

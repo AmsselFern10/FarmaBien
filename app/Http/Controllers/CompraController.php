@@ -31,7 +31,11 @@ class CompraController extends Controller
 
     public function index(Request $request)
     {
-        $query = Compra::with(['proveedor', 'usuario'])->withCount('detalles');
+        $query = Compra::with([
+            'proveedor:id,nombre,ruc',
+            'usuario:id,name',
+        ])->withCount('detalles');
+
 
         if ($request->filled('buscar')) {
             $buscar = trim($request->input('buscar'));
@@ -48,12 +52,13 @@ class CompraController extends Controller
         }
 
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha', '>=', $request->input('fecha_desde'));
+            $query->where('fecha', '>=', $request->input('fecha_desde') . ' 00:00:00');
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha', '<=', $request->input('fecha_hasta'));
+            $query->where('fecha', '<=', $request->input('fecha_hasta') . ' 23:59:59');
         }
+
 
         $orden = $request->input('orden', 'fecha_desc');
         switch ($orden) {
