@@ -203,20 +203,25 @@
                 </select>
             </div>
 
-            <div class="lg:col-span-2 flex items-center h-10">
-                <label class="inline-flex items-center space-x-2 cursor-pointer">
+            <div class="lg:col-span-2 flex items-end gap-2">
+                <label class="inline-flex items-center space-x-2 cursor-pointer h-10">
                     <input type="checkbox" name="solo_agotados" value="1" onchange="this.form.submit()"
                            {{ request('solo_agotados') ? 'checked' : '' }}
                            class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                     <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Solo Agotados (0)</span>
                 </label>
+                <button type="submit"
+                        class="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                    <span>Filtrar</span>
+                </button>
             </div>
         </form>
 
         @if(request()->hasAny(['buscar', 'proveedor_id', 'categoria_id', 'solo_agotados']))
         <div class="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
             <span class="text-slate-500 dark:text-slate-400 text-[11px]">Filtros activos</span>
-            <a href="{{ route('compras.sugerencias-reorden') }}" class="text-emerald-700 dark:text-emerald-400 hover:underline text-[11px] font-bold">
+            <a href="{{ route('compras.sugerencias-reorden') }}" class="text-emerald-900 dark:text-emerald-400 hover:underline text-[11px] font-bold">
                 Limpiar filtros
             </a>
         </div>

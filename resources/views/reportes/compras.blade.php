@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Reporte de Proveedores y Compras - FarmaBien')
 @section('content')
 <div class="space-y-5">
@@ -19,26 +19,32 @@
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Control de adquisiciones y análisis de abastecimiento por período.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            <a href="{{ route('reportes.index') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
+            <a href="{{ route('reportes.index') }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
+                <span>Centro de Reportes</span>
             </a>
-            <button type="button" onclick="window.print()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
+            {{-- Modo Full --}}
+            <button type="button" @click="$dispatch('toggle-pos-fullscreen')"
+                    class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
+            <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                 <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Imprimir</span>
             </button>
             <a href="{{ route('reportes.compras', array_merge(request()->query(), ['export' => 'pdf'])) }}" target="_blank"
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 <span>Exportar PDF</span>
             </a>
             <a href="{{ route('reportes.compras', array_merge(request()->query(), ['export' => 'excel'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Exportar Excel</span>
             </a>
             <a href="{{ route('reportes.compras', array_merge(request()->query(), ['export' => 'csv'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-800 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Exportar CSV</span>
             </a>
@@ -64,7 +70,7 @@
         </div>
         <div class="mt-2 text-xs bg-slate-100 p-2 rounded flex items-center justify-between">
             <span><strong>Período:</strong> {{ \Carbon\Carbon::parse($fechaDesde)->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($fechaHasta)->format('d/m/Y') }}</span>
-            <span><strong>Total Comprado:</strong> ${{ number_format($totalComprado, 2) }}</span>
+            <span><strong>Total Comprado:</strong> C$ {{ number_format($totalComprado, 2) }}</span>
         </div>
     </div>
 
@@ -108,19 +114,19 @@
     @endphp
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
-            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Comprado</p><p class="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">${{ number_format($totalComprado, 2) }}</p><p class="text-[10px] text-slate-400 mt-0.5">Período</p></div>
+            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Comprado</p><p class="text-lg font-bold text-amber-900 dark:text-amber-400 mt-0.5">C$ {{ number_format($totalComprado, 2) }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Período</p></div>
             <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
-            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Órdenes</p><p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($cantOrdenes) }}</p><p class="text-[10px] text-slate-400 mt-0.5">Recibidas</p></div>
+            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Órdenes</p><p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($cantOrdenes) }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Recibidas</p></div>
             <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
-            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Proveedor Líder</p><p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate max-w-[120px]">{{ $proveedorLider?->nombre ?? '—' }}</p><p class="text-[10px] text-slate-400 mt-0.5">{{ $proveedorLider ? '$'.number_format($proveedorLider->monto_total,2) : 'Sin datos' }}</p></div>
+            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Proveedor Líder</p><p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate max-w-[120px]">{{ $proveedorLider?->nombre ?? '—' }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">{{ $proveedorLider ? '$'.number_format($proveedorLider->monto_total,2) : 'Sin datos' }}</p></div>
             <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
-            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Prom. por Orden</p><p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">${{ number_format($promedioOrden, 2) }}</p><p class="text-[10px] text-slate-400 mt-0.5">Ticket promedio</p></div>
+            <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Prom. por Orden</p><p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">C$ {{ number_format($promedioOrden, 2) }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Ticket promedio</p></div>
             <div class="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
         </div>
     </div>
@@ -171,7 +177,7 @@
                         <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">{{ $c->fecha ? \Carbon\Carbon::parse($c->fecha)->format('d/m/Y') : '—' }}</td>
                         <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300">{{ $c->usuario?->name ?? 'Sistema' }}</td>
                         <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded-full font-semibold {{ $stClass }}">{{ ucfirst($c->estado ?? 'N/A') }}</span></td>
-                        <td class="px-4 py-2.5 text-right font-bold text-slate-900 dark:text-white">${{ number_format($c->total, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right font-bold text-slate-900 dark:text-white">C$ {{ number_format($c->total, 2) }}</td>
                         <td class="px-4 py-2.5 print:hidden">
                             @can('ver compras')
                             <a href="{{ route('compras.show', $c) }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">Ver</a>
@@ -183,7 +189,7 @@
                 <tfoot>
                     <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
                         <td colspan="6" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Total ({{ number_format($compras->total()) }} órdenes)</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-amber-600 dark:text-amber-400">${{ number_format($totalComprado, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-amber-600 dark:text-amber-400">C$ {{ number_format($totalComprado, 2) }}</td>
                         <td class="print:hidden"></td>
                     </tr>
                 </tfoot>

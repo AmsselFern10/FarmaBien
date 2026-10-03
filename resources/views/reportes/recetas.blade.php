@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Reporte de Recetas Médicas - FarmaBien')
 
@@ -22,27 +22,33 @@
         </div>
         <div class="flex items-center gap-2 flex-wrap">
             <a href="{{ route('reportes.index') }}"
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
+                <span>Centro de Reportes</span>
             </a>
+            {{-- Modo Full --}}
+            <button type="button" @click="$dispatch('toggle-pos-fullscreen')"
+                    class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
             <button type="button" onclick="window.print()"
-                    class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
+                    class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                 <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Imprimir</span>
             </button>
             <a href="{{ route('reportes.recetas', array_merge(request()->query(), ['export' => 'pdf'])) }}" target="_blank"
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 <span>Exportar PDF</span>
             </a>
             <a href="{{ route('reportes.recetas', array_merge(request()->query(), ['export' => 'excel'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Exportar Excel</span>
             </a>
             <a href="{{ route('reportes.recetas', array_merge(request()->query(), ['export' => 'csv'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-800 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Exportar CSV</span>
             </a>
@@ -131,7 +137,7 @@
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total</p>
                 <p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($totalRecetas) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Recetas</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Recetas</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -142,8 +148,8 @@
            class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between hover:shadow-sm transition {{ $estadoFiltro==='procesada' ? 'ring-2 ring-emerald-400 dark:ring-offset-slate-900 ring-offset-1' : '' }}">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Procesadas</p>
-                <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ number_format($procesadas) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Dispensadas</p>
+                <p class="text-lg font-bold text-emerald-900 dark:text-emerald-400 mt-0.5">{{ number_format($procesadas) }}</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Dispensadas</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -154,8 +160,8 @@
            class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between hover:shadow-sm transition {{ $estadoFiltro==='pendiente' ? 'ring-2 ring-amber-400 dark:ring-offset-slate-900 ring-offset-1' : '' }}">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Pendientes</p>
-                <p class="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">{{ number_format($pendientes) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Por dispensar</p>
+                <p class="text-lg font-bold text-amber-900 dark:text-amber-400 mt-0.5">{{ number_format($pendientes) }}</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Por dispensar</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -166,8 +172,8 @@
            class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between hover:shadow-sm transition {{ $estadoFiltro==='vencida' ? 'ring-2 ring-rose-400 dark:ring-offset-slate-900 ring-offset-1' : '' }}">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Vencidas</p>
-                <p class="text-lg font-bold text-rose-600 dark:text-rose-400 mt-0.5">{{ number_format($vencidas) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Expiradas</p>
+                <p class="text-lg font-bold text-rose-900 dark:text-rose-400 mt-0.5">{{ number_format($vencidas) }}</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Expiradas</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -179,7 +185,7 @@
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Rechazadas</p>
                 <p class="text-lg font-bold text-slate-600 dark:text-slate-400 mt-0.5">{{ number_format($rechazadas) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">No dispensadas</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">No dispensadas</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>

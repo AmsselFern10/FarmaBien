@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Reporte de Inventario y Caducidad - FarmaBien')
 @section('content')
 <div class="space-y-5">
@@ -19,26 +19,32 @@
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Semáforo PEPS, valor a costo y venta proyectada, control por lote.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            <a href="{{ route('reportes.index') }}" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
+            <a href="{{ route('reportes.index') }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver</span>
+                <span>Centro de Reportes</span>
             </a>
-            <button type="button" onclick="window.print()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition">
+            {{-- Modo Full --}}
+            <button type="button" @click="$dispatch('toggle-pos-fullscreen')"
+                    class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
+            <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                 <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Imprimir</span>
             </button>
             <a href="{{ route('reportes.inventario', array_merge(request()->query(), ['export' => 'pdf'])) }}" target="_blank"
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 <span>Exportar PDF</span>
             </a>
             <a href="{{ route('reportes.inventario', array_merge(request()->query(), ['export' => 'excel'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Exportar Excel</span>
             </a>
             <a href="{{ route('reportes.inventario', array_merge(request()->query(), ['export' => 'csv'])) }}"
-               class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-slate-700 hover:bg-slate-800 active:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition">
+               class="inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-medium bg-slate-700 hover:bg-slate-800 text-white transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <span>Exportar CSV</span>
             </a>
@@ -89,8 +95,8 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Valor a Costo</p>
-                <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">${{ number_format($totalValorCosto, 2) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Inventario filtrado</p>
+                <p class="text-lg font-bold text-indigo-900 dark:text-indigo-400 mt-0.5">C$ {{ number_format($totalValorCosto, 2) }}</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Inventario filtrado</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -99,8 +105,8 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Valor Venta Proy.</p>
-                <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">${{ number_format($totalValorVenta, 2) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">A precio de venta</p>
+                <p class="text-lg font-bold text-emerald-900 dark:text-emerald-400 mt-0.5">C$ {{ number_format($totalValorVenta, 2) }}</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">A precio de venta</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
@@ -110,7 +116,7 @@
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Unidades en Stock</p>
                 <p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($totalUnidadesStock) }}</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Total unidades</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Total unidades</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
@@ -120,7 +126,7 @@
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Margen Proyectado</p>
                 <p class="text-lg font-bold {{ $margenProyectado > 20 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' }} mt-0.5">{{ $margenProyectado }}%</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Sobre costo</p>
+                <p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Sobre costo</p>
             </div>
             <div class="w-9 h-9 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -227,16 +233,16 @@
                             <span class="px-2 py-0.5 rounded-full font-semibold {{ $semClass }}">{{ $sem }}</span>
                         </td>
                         <td class="px-4 py-2.5 text-right font-bold text-slate-800 dark:text-slate-200">{{ number_format($l->stock_actual) }}</td>
-                        <td class="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300">${{ number_format($valCosto, 2) }}</td>
-                        <td class="px-4 py-2.5 text-right font-semibold text-emerald-600 dark:text-emerald-400">${{ number_format($valVenta, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300">C$ {{ number_format($valCosto, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right font-semibold text-emerald-600 dark:text-emerald-400">C$ {{ number_format($valVenta, 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
                         <td colspan="5" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Total ({{ number_format($lotes->total()) }} lotes)</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-indigo-600 dark:text-indigo-400">${{ number_format($totalValorCosto, 2) }}</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-600 dark:text-emerald-400">${{ number_format($totalValorVenta, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-indigo-600 dark:text-indigo-400">C$ {{ number_format($totalValorCosto, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-600 dark:text-emerald-400">C$ {{ number_format($totalValorVenta, 2) }}</td>
                     </tr>
                 </tfoot>
             </table>
