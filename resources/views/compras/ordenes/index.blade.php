@@ -164,6 +164,7 @@
                         <th class="px-4 py-3">Condición Pago</th>
                         <th class="px-4 py-3 text-center">Ítems</th>
                         <th class="px-4 py-3 text-right">Total Estimado</th>
+                        <th class="px-4 py-3 text-center">Pendiente</th>
                         <th class="px-4 py-3 text-center">Estado</th>
                         <th class="px-4 py-3 text-center">Acciones</th>
                     </tr>
@@ -198,6 +199,21 @@
                         </td>
                         <td class="px-4 py-3 text-right font-black text-slate-900 dark:text-white">
                             {{ formato_moneda($oc->total) }}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if($oc->cerrada_con_faltante)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-800" title="Cerrada con {{ $oc->faltante_unidades }} u. faltantes">
+                                    Cerrada faltante ({{ $oc->faltante_unidades }} u.)
+                                </span>
+                            @elseif($oc->pendiente_total > 0 && $oc->estado !== 'cancelada')
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    Faltan {{ $oc->pendiente_total }} u. ({{ $oc->lineas_pendientes_count }} lín.)
+                                </span>
+                            @elseif($oc->estado === 'recibida_total')
+                                <span class="text-emerald-800 dark:text-emerald-300 font-bold text-[11px]">0 u. (Completa)</span>
+                            @else
+                                <span class="text-slate-400">-</span>
+                            @endif
                         </td>
                         <td class="px-4 py-3 text-center">
                             @if($oc->estado === 'recibida_total')
@@ -242,7 +258,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                        <td colspan="9" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                             No se encontraron órdenes de compra registradas.
                         </td>
                     </tr>

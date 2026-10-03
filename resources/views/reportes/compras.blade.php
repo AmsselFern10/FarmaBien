@@ -26,7 +26,7 @@
             {{-- Modo Full --}}
             <button type="button" @click="$dispatch('toggle-pos-fullscreen')"
                     class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
             <button type="button" onclick="window.print()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
@@ -55,16 +55,16 @@
     <div class="hidden print:block border-b-2 border-emerald-600 pb-3 mb-4">
         <div class="flex items-start justify-between">
             <div>
-                <h1 class="text-xl font-bold text-emerald-700 uppercase tracking-wide">FARMABIEN</h1>
-                <p class="text-xs text-slate-600">Farmacia & Droguería FarmaBien C.A. · Sistema de Gestión Farmacéutica</p>
+                <h1 class="text-xl font-bold text-emerald-900 uppercase tracking-wide">FARMABIEN</h1>
+                <p class="text-xs text-slate-700">Farmacia & Droguería FarmaBien C.A. · Sistema de Gestión Farmacéutica</p>
                 <p class="text-[10px] text-slate-500 mt-0.5"><strong>RIF / RUC:</strong> J-40892154-0 &bull; <strong>Teléfono:</strong> (0212) 555-0199 / +58 412-1234567</p>
                 <p class="text-[10px] text-slate-500"><strong>Dirección:</strong> Av. Principal Los Próceres, Edif. FarmaBien, Caracas - Venezuela</p>
             </div>
             <div class="text-right">
                 <div class="inline-block border border-emerald-600 bg-emerald-50 px-3 py-1.5 rounded text-center">
                     <p class="text-xs font-bold text-emerald-800">REPORTE DE PROVEEDORES Y COMPRAS</p>
-                    <p class="text-[9px] text-emerald-700 mt-0.5">Emisión: {{ now()->format('d/m/Y H:i') }}</p>
-                    <p class="text-[9px] text-emerald-700">Por: {{ Auth::user()->name ?? 'Sistema' }}</p>
+                    <p class="text-[9px] text-emerald-900 mt-0.5">Emisión: {{ now()->format('d/m/Y H:i') }}</p>
+                    <p class="text-[9px] text-emerald-900">Por: {{ Auth::user()->name ?? 'Sistema' }}</p>
                 </div>
             </div>
         </div>
@@ -78,12 +78,12 @@
     <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs print:hidden">
         <form method="GET" action="{{ route('reportes.compras') }}" class="flex flex-wrap items-end gap-3">
             <div>
-                <label for="rc_desde" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Desde</label>
+                <label for="rc_desde" class="block text-xs font-semibold text-slate-700 dark:text-slate-400 mb-1">Desde</label>
                 <input type="date" id="rc_desde" name="fecha_desde" value="{{ $fechaDesde }}"
                        class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
             </div>
             <div>
-                <label for="rc_hasta" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Hasta</label>
+                <label for="rc_hasta" class="block text-xs font-semibold text-slate-700 dark:text-slate-400 mb-1">Hasta</label>
                 <input type="date" id="rc_hasta" name="fecha_hasta" value="{{ $fechaHasta }}"
                        class="px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400">
             </div>
@@ -97,11 +97,11 @@
             @endphp
             @foreach($presets2 as [$lbl2,$d1,$d2])
             <a href="{{ route('reportes.compras', ['fecha_desde'=>$d1,'fecha_hasta'=>$d2]) }}"
-               class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition {{ ($fechaDesde===$d1 && $fechaHasta===$d2) ? 'bg-amber-600 text-white border-amber-600 dark:bg-amber-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400' }}">{{ $lbl2 }}</a>
+               class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition {{ ($fechaDesde===$d1 && $fechaHasta===$d2) ? 'bg-amber-600 text-white border-amber-600 dark:bg-amber-600' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400' }}">{{ $lbl2 }}</a>
             @endforeach
             <button type="submit" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">Filtrar</button>
             @if(request()->hasAny(['fecha_desde','fecha_hasta']))
-            <a href="{{ route('reportes.compras') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Limpiar</a>
+            <a href="{{ route('reportes.compras') }}" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Limpiar</a>
             @endif
         </form>
     </div>
@@ -115,19 +115,19 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Comprado</p><p class="text-lg font-bold text-amber-900 dark:text-amber-400 mt-0.5">C$ {{ number_format($totalComprado, 2) }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Período</p></div>
-            <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
+            <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Órdenes</p><p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($cantOrdenes) }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Recibidas</p></div>
-            <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+            <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Proveedor Líder</p><p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5 truncate max-w-[120px]">{{ $proveedorLider?->nombre ?? '—' }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">{{ $proveedorLider ? '$'.number_format($proveedorLider->monto_total,2) : 'Sin datos' }}</p></div>
-            <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
+            <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-300 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div><p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Prom. por Orden</p><p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">C$ {{ number_format($promedioOrden, 2) }}</p><p class="text-[10px] text-slate-700 dark:text-slate-400 mt-0.5">Ticket promedio</p></div>
-            <div class="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+            <div class="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-red-900 dark:text-rose-400 flex items-center justify-center shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
         </div>
     </div>
 
@@ -167,20 +167,20 @@
                             'pendiente' => 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
                             'parcial'   => 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
                             'cancelada' => 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
-                            default     => 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                            default     => 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
                         };
                     @endphp
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         <td class="px-4 py-2.5 font-bold text-slate-800 dark:text-slate-200">#{{ str_pad($c->id,4,'0',STR_PAD_LEFT) }}</td>
                         <td class="px-4 py-2.5"><p class="font-semibold text-slate-800 dark:text-slate-200">{{ $c->proveedor?->nombre ?? '—' }}</p><p class="text-slate-400">{{ $c->proveedor?->rif ?? '' }}</p></td>
-                        <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300">{{ $c->numero_factura ?? '—' }}</td>
-                        <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">{{ $c->fecha ? \Carbon\Carbon::parse($c->fecha)->format('d/m/Y') : '—' }}</td>
-                        <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300">{{ $c->usuario?->name ?? 'Sistema' }}</td>
+                        <td class="px-4 py-2.5 text-slate-700 dark:text-slate-300">{{ $c->numero_factura ?? '—' }}</td>
+                        <td class="px-4 py-2.5 text-slate-700 dark:text-slate-300 whitespace-nowrap">{{ $c->fecha ? \Carbon\Carbon::parse($c->fecha)->format('d/m/Y') : '—' }}</td>
+                        <td class="px-4 py-2.5 text-slate-700 dark:text-slate-300">{{ $c->usuario?->name ?? 'Sistema' }}</td>
                         <td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded-full font-semibold {{ $stClass }}">{{ ucfirst($c->estado ?? 'N/A') }}</span></td>
                         <td class="px-4 py-2.5 text-right font-bold text-slate-900 dark:text-white">C$ {{ number_format($c->total, 2) }}</td>
                         <td class="px-4 py-2.5 print:hidden">
                             @can('ver compras')
-                            <a href="{{ route('compras.show', $c) }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">Ver</a>
+                            <a href="{{ route('compras.show', $c) }}" class="text-xs font-bold text-amber-900 dark:text-amber-400 hover:underline">Ver</a>
                             @endcan
                         </td>
                     </tr>
@@ -189,7 +189,7 @@
                 <tfoot>
                     <tr class="bg-slate-100 dark:bg-slate-800/90 border-t border-slate-300 dark:border-slate-700">
                         <td colspan="6" class="px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Total ({{ number_format($compras->total()) }} órdenes)</td>
-                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-amber-600 dark:text-amber-400">C$ {{ number_format($totalComprado, 2) }}</td>
+                        <td class="px-4 py-2.5 text-right text-xs font-extrabold text-amber-900 dark:text-amber-400">C$ {{ number_format($totalComprado, 2) }}</td>
                         <td class="print:hidden"></td>
                     </tr>
                 </tfoot>

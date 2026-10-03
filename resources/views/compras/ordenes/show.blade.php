@@ -57,6 +57,15 @@
                 <span>Órdenes de Compra</span>
             </a>
 
+            <!-- Modo Full -->
+            <button type="button" 
+                    @click="$dispatch('toggle-pos-fullscreen')"
+                    title="Modo Pantalla Completa / Ocultar Barras"
+                    class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
+            </button>
+
             <!-- WhatsApp Export -->
             <a href="{{ $whatsappUrl }}" target="_blank"
                class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-950 dark:text-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 shadow-2xs transition">
@@ -86,13 +95,27 @@
             <!-- Recepcionar (primera vez o complemento parcial) -->
             @if(in_array($orden->estado, ['enviada', 'recibida_parcial']))
             <a href="{{ route('ordenes-compras.recibir', $orden) }}" 
-               class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-sm transition">
+               class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-sm transition cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 <span>{{ $orden->estado === 'recibida_parcial' ? 'Recepcionar Resto Pendiente' : 'Recepcionar y Crear Compra' }}</span>
             </a>
             @endif
         </div>
     </div>
+
+    <!-- Alert / Notice si la orden fue cerrada con faltante -->
+    @if($orden->cerrada_con_faltante)
+    <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 text-xs space-y-1">
+        <div class="font-bold flex items-center space-x-2">
+            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span>ORDEN CERRADA CON FALTANTE ({{ $orden->faltante_unidades }} UNIDADES)</span>
+        </div>
+        <p class="text-[11px] text-amber-900 dark:text-amber-300">
+            <strong>Cerrada por:</strong> {{ $orden->cerradaPor->name ?? 'Sistema' }} el {{ $orden->fecha_cierre ? $orden->fecha_cierre->format('d/m/Y H:i') : '-' }} • 
+            <strong>Motivo:</strong> {{ $orden->motivo_faltante ?: 'Sin motivo registrado' }}
+        </p>
+    </div>
+    @endif
 
     <!-- Information Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -194,7 +217,7 @@
                         <th class="px-4 py-3 text-center">Solicitado</th>
                         <th class="px-4 py-3 text-center">Recibido</th>
                         <th class="px-4 py-3 text-center">Pendiente</th>
-                        <th class="px-4 py-3 text-right">Precio Est.</th>
+                        <th class="px-4 py-3 text-right">Precio Est. (C$)</th>
                         <th class="px-4 py-3 text-right">Subtotal Est.</th>
                     </tr>
                 </thead>
@@ -250,5 +273,80 @@
             </table>
         </div>
     </div>
+
+    <!-- Recepciones Registradas Sobre Esta Orden (Compras Vinculadas) -->
+    @if($orden->compras->isNotEmpty())
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs overflow-hidden space-y-0">
+        <div class="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border-b border-indigo-200 dark:border-indigo-900/50 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <h3 class="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider">
+                    Recepciones Registradas Sobre Esta Orden (Facturas / Compras)
+                </h3>
+            </div>
+            <span class="text-xs font-bold text-indigo-900 dark:text-indigo-300">
+                {{ $orden->compras->count() }} recepción(es) registrada(s)
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                        <th class="py-2.5 px-3">N° Compra</th>
+                        <th class="py-2.5 px-3">Comprobante Fiscal</th>
+                        <th class="py-2.5 px-3">Fecha Recepción</th>
+                        <th class="py-2.5 px-3">Condición Pago</th>
+                        <th class="py-2.5 px-3 text-center">Líneas</th>
+                        <th class="py-2.5 px-3 text-center">Unidades al Kardex</th>
+                        <th class="py-2.5 px-3 text-right">Total Factura</th>
+                        <th class="py-2.5 px-3">Registrado Por</th>
+                        <th class="py-2.5 px-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
+                    @foreach($orden->compras as $compra)
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-3 font-mono font-bold text-slate-900 dark:text-white">
+                            #{{ str_pad($compra->id, 5, '0', STR_PAD_LEFT) }}
+                        </td>
+                        <td class="py-3 px-3 font-semibold text-slate-800 dark:text-slate-200">
+                            {{ $compra->numero_comprobante ?: 'Sin N° fiscal' }}
+                        </td>
+                        <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                            {{ $compra->fecha ? $compra->fecha->format('d/m/Y') : ($compra->created_at ? $compra->created_at->format('d/m/Y') : '-') }}
+                        </td>
+                        <td class="py-3 px-3 capitalize">
+                            <span class="font-semibold">{{ $compra->condicion_pago }}</span>
+                            @if($compra->condicion_pago === 'credito')
+                                <span class="text-[10px] text-slate-400">({{ $compra->dias_credito }}d)</span>
+                            @endif
+                        </td>
+                        <td class="py-3 px-3 text-center font-bold text-slate-800 dark:text-slate-200">
+                            {{ $compra->detalles->count() }}
+                        </td>
+                        <td class="py-3 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                            {{ $compra->detalles->sum('cantidad_unidades_base') }} u.
+                        </td>
+                        <td class="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
+                            {{ formato_moneda($compra->total) }}
+                        </td>
+                        <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                            {{ $compra->usuario->name ?? 'Sistema' }}
+                        </td>
+                        <td class="py-3 px-3 text-right">
+                            <a href="{{ route('compras.show', $compra) }}" 
+                               class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                                Ver Compra &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
 </div>
 @endsection

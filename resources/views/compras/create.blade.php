@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Registrar Compra e Ingreso de Lotes - FarmaBien')
 
@@ -685,7 +685,7 @@ class="space-y-4 transition-all duration-200">
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline" x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -693,14 +693,14 @@ class="space-y-4 transition-all duration-200">
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
-                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
-                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     <span>Compacta (ERP)</span>
@@ -740,7 +740,7 @@ class="space-y-4 transition-all duration-200">
                     <p class="text-[11px] text-indigo-800 dark:text-indigo-300 mt-0.5">Se han precargado las líneas con saldo pendiente. Ingrese número de lote y fecha de vencimiento física para dar entrada al inventario.</p>
                 </div>
             </div>
-            <a href="{{ route('ordenes-compras.show', $preloadedOrdenCompraId) }}" target="_blank" class="text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:underline px-2.5 py-1 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shrink-0">
+            <a href="{{ route('ordenes-compras.show', $preloadedOrdenCompraId) }}" target="_blank" class="text-xs font-bold text-indigo-900 dark:text-indigo-300 hover:underline px-2.5 py-1 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shrink-0">
                 Ver Orden (PO) &rarr;
             </a>
         </div>
@@ -750,7 +750,7 @@ class="space-y-4 transition-all duration-200">
         @if ($errors->any())
         <div class="p-3 mb-4 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs">
             <div class="font-bold flex items-center space-x-1 mb-1">
-                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <svg class="w-4 h-4 text-red-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <span>Por favor corrija los siguientes errores:</span>
             </div>
             <ul class="list-disc list-inside space-y-0.5">
@@ -796,7 +796,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 1: Datos Fiscales y Proveedor (8 cols) -->
                     <div class="lg:col-span-8 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                             <span>1. Identificación del Proveedor & Comprobante</span>
                         </div>
 
@@ -804,7 +804,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Proveedor (Col 4) -->
                             <div class="sm:col-span-4 relative z-30" @click.outside="proveedorDropdownAbierto = false">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Proveedor <span class="text-rose-500">*</span>
+                                    Proveedor <span class="text-red-900">*</span>
                                 </label>
                                 <input type="hidden" name="proveedor_id" :value="formData.proveedor_id">
                                 
@@ -813,7 +813,7 @@ class="space-y-4 transition-all duration-200">
                                         <div class="flex items-center space-x-1.5 min-w-0">
                                             <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                                             <span class="font-bold text-emerald-900 dark:text-emerald-200 truncate" x-text="proveedorSeleccionado().nombre"></span>
-                                            <span class="text-[10px] text-emerald-700 dark:text-emerald-300 font-mono" x-show="proveedorSeleccionado().ruc" x-text="'(' + proveedorSeleccionado().ruc + ')'"></span>
+                                            <span class="text-[10px] text-emerald-900 dark:text-emerald-300 font-mono" x-show="proveedorSeleccionado().ruc" x-text="'(' + proveedorSeleccionado().ruc + ')'"></span>
                                         </div>
                                         <button type="button" @click="deseleccionarProveedor()" class="ml-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-0.5" title="Cambiar proveedor">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -851,7 +851,7 @@ class="space-y-4 transition-all duration-200">
                                                     <span x-show="prov.telefono" x-text="'Tel: ' + prov.telefono"></span>
                                                 </div>
                                             </div>
-                                            <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1.5">Elegir →</span>
+                                            <span class="text-[10px] font-semibold text-emerald-900 dark:text-emerald-400 shrink-0 ml-1.5">Elegir →</span>
                                         </button>
                                     </template>
                                     <div x-show="filtrarProveedores().length === 0" class="px-3 py-2 text-center text-xs text-slate-500 dark:text-slate-400">
@@ -875,7 +875,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Fecha Documento (Col 2) -->
                             <div class="sm:col-span-2">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Fecha <span class="text-rose-500">*</span>
+                                    Fecha <span class="text-red-900">*</span>
                                 </label>
                                 <input type="date" 
                                        name="fecha" 
@@ -903,7 +903,7 @@ class="space-y-4 transition-all duration-200">
                         <!-- Fila Condicional de Crédito -->
                         <div x-show="formData.condicion_pago === 'credito'" x-transition class="pt-2 border-t border-slate-200/70 dark:border-slate-700/70 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
                             <div class="sm:col-span-6 flex items-center gap-1.5">
-                                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 shrink-0">Días Crédito:</span>
+                                <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300 shrink-0">Días Crédito:</span>
                                 <div class="flex items-center gap-1">
                                     <button type="button" @click="setDiasCredito(15)" :class="formData.dias_credito == 15 ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="px-2 py-0.5 rounded text-[10px] font-bold">15d</button>
                                     <button type="button" @click="setDiasCredito(30)" :class="formData.dias_credito == 30 ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'" class="px-2 py-0.5 rounded text-[10px] font-bold">30d</button>
@@ -913,8 +913,8 @@ class="space-y-4 transition-all duration-200">
                                 <input type="number" name="dias_credito" x-model="formData.dias_credito" @input="calcularFechaVencimientoPago()" min="1" max="365" class="w-14 px-1.5 py-0.5 text-center text-xs font-bold rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
                             </div>
                             <div class="sm:col-span-6 flex items-center gap-2">
-                                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 shrink-0">Vencimiento CxP:</span>
-                                <input type="date" name="fecha_vencimiento_pago" x-model="formData.fecha_vencimiento_pago" class="w-full px-2 py-1 text-xs font-bold rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400">
+                                <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300 shrink-0">Vencimiento CxP:</span>
+                                <input type="date" name="fecha_vencimiento_pago" x-model="formData.fecha_vencimiento_pago" class="w-full px-2 py-1 text-xs font-bold rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-amber-900 dark:text-amber-400">
                             </div>
                         </div>
                     </div>
@@ -922,7 +922,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 2: Resumen de Liquidación (4 cols) -->
                     <div class="lg:col-span-4 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 flex flex-col justify-between space-y-2">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Resumen de Liquidación</span>
                         </div>
 
@@ -933,13 +933,13 @@ class="space-y-4 transition-all duration-200">
                             </div>
                             <div>
                                 <span class="text-[10px] font-semibold text-slate-500 block">Unidades al Kardex:</span>
-                                <span class="font-bold text-emerald-600 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
+                                <span class="font-bold text-emerald-900 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
                             </div>
                         </div>
 
                         <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Liquidado:</span>
-                            <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Total Liquidado:</span>
+                            <span class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400 font-mono">
                                 C$ <span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
@@ -950,7 +950,7 @@ class="space-y-4 transition-all duration-200">
                 <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 shrink-0">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                             <span>2. Desglose de Medicamentos, Presentaciones y Lotes</span>
                         </div>
 
@@ -990,7 +990,7 @@ class="space-y-4 transition-all duration-200">
                                                 </div>
                                             </div>
                                             <div class="text-right shrink-0 pl-2">
-                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'C$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
+                                                <span class="font-mono font-bold text-xs text-emerald-900 dark:text-emerald-400" x-text="'C$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
                                             </div>
                                         </button>
                                     </template>
@@ -1062,11 +1062,11 @@ class="space-y-4 transition-all duration-200">
                                                         @click="abrirModalPresentacion(idx)"
                                                         :disabled="!item.producto_id"
                                                         title="Crear nueva presentación para este medicamento"
-                                                        class="p-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 transition shrink-0 disabled:opacity-40 cursor-pointer">
+                                                        class="p-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-900 dark:text-emerald-300 transition shrink-0 disabled:opacity-40 cursor-pointer">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                                 </button>
                                             </div>
-                                            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5" x-show="item.factor > 1">
+                                            <div class="text-[10px] text-emerald-900 dark:text-emerald-400 font-semibold mt-0.5" x-show="item.factor > 1">
                                                 Total Base: <span x-text="calcularUnidadesBase(item)"></span> u.
                                             </div>
                                         </td>
@@ -1104,9 +1104,9 @@ class="space-y-4 transition-all duration-200">
                                                 <template x-if="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor)">
                                                     <span class="text-[9px] font-extrabold px-1 rounded inline-flex items-center"
                                                           :class="{
-                                                              'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento,
-                                                              'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja,
-                                                              'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esIgual
+                                                              'bg-rose-100 text-red-900 dark:bg-rose-950 dark:text-rose-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento,
+                                                              'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja,
+                                                              'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esIgual
                                                           }">
                                                         <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento">↑ +</span>
                                                         <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja">↓ </span>
@@ -1163,7 +1163,7 @@ class="space-y-4 transition-all duration-200">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
                             <input type="checkbox" name="crear_otro" value="1"
                                    {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                   class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                             <span>Guardar y registrar otra</span>
                         </label>
                         <button type="submit" 
@@ -1198,7 +1198,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Proveedor (Col 4) -->
                             <div class="md:col-span-4 relative z-30" @click.outside="proveedorDropdownAbierto = false">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Proveedor Registrado <span class="text-rose-500">*</span>
+                                    Proveedor Registrado <span class="text-red-900">*</span>
                                 </label>
                                 <input type="hidden" name="proveedor_id" :value="formData.proveedor_id">
                                 
@@ -1207,9 +1207,9 @@ class="space-y-4 transition-all duration-200">
                                         <div class="flex items-center space-x-2 min-w-0">
                                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
                                             <span class="font-bold text-emerald-950 dark:text-emerald-200 truncate" x-text="proveedorSeleccionado().nombre"></span>
-                                            <span class="text-[11px] text-emerald-700 dark:text-emerald-300 font-mono" x-show="proveedorSeleccionado().ruc" x-text="'• RUC: ' + proveedorSeleccionado().ruc"></span>
+                                            <span class="text-[11px] text-emerald-900 dark:text-emerald-300 font-mono" x-show="proveedorSeleccionado().ruc" x-text="'• RUC: ' + proveedorSeleccionado().ruc"></span>
                                         </div>
-                                        <button type="button" @click="deseleccionarProveedor()" class="ml-2 px-2 py-0.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded-lg transition" title="Cambiar proveedor">
+                                        <button type="button" @click="deseleccionarProveedor()" class="ml-2 px-2 py-0.5 text-[11px] font-semibold text-red-900 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded-lg transition" title="Cambiar proveedor">
                                             Cambiar
                                         </button>
                                     </div>
@@ -1245,7 +1245,7 @@ class="space-y-4 transition-all duration-200">
                                                     <span x-show="prov.telefono" x-text="'• Tel: ' + prov.telefono"></span>
                                                 </div>
                                             </div>
-                                            <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">Seleccionar →</span>
+                                            <span class="text-xs font-semibold text-emerald-900 dark:text-emerald-400 shrink-0 ml-2">Seleccionar →</span>
                                         </button>
                                     </template>
                                     <div x-show="filtrarProveedores().length === 0" class="px-4 py-3 text-center text-xs text-slate-500 dark:text-slate-400">
@@ -1269,7 +1269,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Fecha (Col 2) -->
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Fecha Emisión <span class="text-rose-500">*</span>
+                                    Fecha Emisión <span class="text-red-900">*</span>
                                 </label>
                                 <input type="date" 
                                        name="fecha" 
@@ -1282,7 +1282,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Condición de Pago (Col 3) -->
                             <div class="md:col-span-3">
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Condición de Pago <span class="text-rose-500">*</span>
+                                    Condición de Pago <span class="text-red-900">*</span>
                                 </label>
                                 <select name="condicion_pago" 
                                         x-model="formData.condicion_pago" 
@@ -1362,7 +1362,7 @@ class="space-y-4 transition-all duration-200">
                                                 </div>
                                             </div>
                                             <div class="text-right shrink-0 pl-2">
-                                                <span class="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400" x-text="'C$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
+                                                <span class="font-mono font-bold text-xs text-emerald-900 dark:text-emerald-400" x-text="'C$' + (parseFloat(p.precio_compra) || 0).toFixed(2)"></span>
                                             </div>
                                         </button>
                                     </template>
@@ -1383,13 +1383,13 @@ class="space-y-4 transition-all duration-200">
                             <div class="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 space-y-3 transition">
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                                        <span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-[10px] font-bold" x-text="idx + 1"></span>
+                                        <span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 flex items-center justify-center text-[10px] font-bold" x-text="idx + 1"></span>
                                         <span>Lote de Compra</span>
                                     </span>
 
                                     <div class="flex items-center space-x-3">
                                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                            Subtotal: <span class="text-emerald-600 dark:text-emerald-400 text-sm">C$<span x-text="calcularSubtotal(item)"></span></span>
+                                            Subtotal: <span class="text-emerald-900 dark:text-emerald-400 text-sm">C$<span x-text="calcularSubtotal(item)"></span></span>
                                         </div>
                                         <button type="button" 
                                                 @click="eliminarItem(idx)" 
@@ -1408,7 +1408,7 @@ class="space-y-4 transition-all duration-200">
                                         <input type="hidden" :name="'productos[' + idx + '][recibido]'" :value="item.recibido !== null && item.recibido !== undefined ? item.recibido : ''">
                                         <input type="hidden" :name="'productos[' + idx + '][pendiente]'" :value="item.pendiente !== null && item.pendiente !== undefined ? item.pendiente : ''">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Medicamento / Producto <span class="text-rose-500">*</span>
+                                            Medicamento / Producto <span class="text-red-900">*</span>
                                         </label>
                                         <select :name="'productos[' + idx + '][producto_id]'" 
                                                 x-model="item.producto_id" 
@@ -1431,7 +1431,7 @@ class="space-y-4 transition-all duration-200">
                                             <button type="button" 
                                                     @click="abrirModalPresentacion(idx)"
                                                     :disabled="!item.producto_id"
-                                                    class="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold disabled:opacity-40">
+                                                    class="text-[10px] text-emerald-900 dark:text-emerald-400 hover:underline font-bold disabled:opacity-40">
                                                 + Nueva
                                             </button>
                                         </div>
@@ -1444,7 +1444,7 @@ class="space-y-4 transition-all duration-200">
                                                 <option :value="pres.id" x-text="pres.nombre + ' (x' + pres.unidades + ')'"></option>
                                             </template>
                                         </select>
-                                        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1" x-show="item.factor > 1">
+                                        <div class="text-[10px] text-emerald-900 dark:text-emerald-400 font-semibold mt-1" x-show="item.factor > 1">
                                             Total Base: <span x-text="calcularUnidadesBase(item)"></span> u.
                                         </div>
                                     </div>
@@ -1452,7 +1452,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- Cantidad con indicador de orden -->
                                     <div class="md:col-span-2">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Cantidad <span class="text-rose-500">*</span>
+                                            Cantidad <span class="text-red-900">*</span>
                                         </label>
                                         <input type="number" 
                                                 :name="'productos[' + idx + '][cantidad_presentaciones]'" 
@@ -1470,7 +1470,7 @@ class="space-y-4 transition-all duration-200">
                                     <div class="md:col-span-3">
                                         <div class="flex items-center justify-between mb-1">
                                             <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                                                Precio Unit. (C$) <span class="text-rose-500">*</span>
+                                                Precio Unit. (C$) <span class="text-red-900">*</span>
                                             </label>
                                             <template x-if="item.producto_id && getPrecioAnterior(item.producto_id)">
                                                 <span class="text-[10px] text-slate-400" :title="'Proveedor: ' + (getPrecioAnterior(item.producto_id)?.proveedor || '') + ' (' + (getPrecioAnterior(item.producto_id)?.fecha || '') + ')'">
@@ -1492,9 +1492,9 @@ class="space-y-4 transition-all duration-200">
                                             <div class="mt-1 flex items-center justify-end space-x-1">
                                                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded inline-flex items-center"
                                                       :class="{
-                                                          'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento,
-                                                          'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja,
-                                                          'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esIgual
+                                                          'bg-rose-100 text-red-900 dark:bg-rose-950 dark:text-rose-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento,
+                                                          'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja,
+                                                          'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400': getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esIgual
                                                       }">
                                                     <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esAumento">↑ +</span>
                                                     <span x-show="getDeltaPrecio(item.producto_id, item.precio_unitario, item.factor).esRebaja">↓ </span>
@@ -1509,7 +1509,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- N° Lote -->
                                     <div class="md:col-span-6">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Número de Lote de Fabricación <span class="text-rose-500">*</span>
+                                            Número de Lote de Fabricación <span class="text-red-900">*</span>
                                         </label>
                                         <input type="text" 
                                                 :name="'productos[' + idx + '][numero_lote]'" 
@@ -1522,7 +1522,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- Fecha Vencimiento -->
                                     <div class="md:col-span-6">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Fecha de Vencimiento <span class="text-rose-500">*</span>
+                                            Fecha de Vencimiento <span class="text-red-900">*</span>
                                         </label>
                                         <input type="date" 
                                                 :name="'productos[' + idx + '][fecha_vencimiento]'" 
@@ -1538,18 +1538,18 @@ class="space-y-4 transition-all duration-200">
 
                 <!-- Tarjeta 3: Totales y Acciones Sticky Bottom -->
                 <div class="sticky bottom-3 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-slate-300 dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center space-x-6 text-xs text-slate-600 dark:text-slate-300">
+                    <div class="flex items-center space-x-6 text-xs text-slate-700 dark:text-slate-300">
                         <div>
                             <span class="block text-slate-400 text-[11px]">Total de Líneas:</span>
                             <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="items.length"></span>
                         </div>
                         <div>
                             <span class="block text-slate-400 text-[11px]">Unidades al Kardex:</span>
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
+                            <span class="font-bold text-emerald-900 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
                         </div>
                         <div>
                             <span class="block text-slate-400 text-[11px]">Monto Total:</span>
-                            <span class="font-extrabold text-emerald-600 dark:text-emerald-400 text-xl">
+                            <span class="font-extrabold text-emerald-900 dark:text-emerald-400 text-xl">
                                 C$<span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
@@ -1559,12 +1559,12 @@ class="space-y-4 transition-all duration-200">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium self-start sm:self-auto">
                             <input type="checkbox" name="crear_otro" value="1"
                                    {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                   class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                             <span>Guardar y registrar otra</span>
                         </label>
                         <div class="flex items-center space-x-2 w-full sm:w-auto">
                             <a href="{{ route('compras.index') }}" 
-                               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center">
+                               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center">
                                 Cancelar
                             </a>
                             <button type="submit" 
@@ -1597,7 +1597,7 @@ class="space-y-4 transition-all duration-200">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     </div>
                     <div>
@@ -1609,13 +1609,13 @@ class="space-y-4 transition-all duration-200">
             </div>
 
             <!-- Error Banner in Modal -->
-            <div x-show="nuevaPres.error" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200" x-text="nuevaPres.error"></div>
+            <div x-show="nuevaPres.error" class="p-2.5 rounded-lg bg-rose-50 text-red-900 text-xs font-medium border border-rose-200" x-text="nuevaPres.error"></div>
 
             <div class="space-y-3">
                 <!-- Nombre Presentación -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Nombre de la Presentación <span class="text-rose-500">*</span>
+                        Nombre de la Presentación <span class="text-red-900">*</span>
                     </label>
                     <input type="text" 
                            x-model="nuevaPres.nombre" 
@@ -1627,7 +1627,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Factor / Unidades -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            Unidades Contenidas <span class="text-rose-500">*</span>
+                            Unidades Contenidas <span class="text-red-900">*</span>
                         </label>
                         <input type="number" 
                                x-model.number="nuevaPres.unidades_por_presentacion" 
@@ -1679,7 +1679,7 @@ class="space-y-4 transition-all duration-200">
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" 
                         @click="modalNuevaPres = false" 
-                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                     Cancelar
                 </button>
                 <button type="button" 
@@ -1709,7 +1709,7 @@ class="space-y-4 transition-all duration-200">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-400 flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
                     <div>
@@ -1720,7 +1720,7 @@ class="space-y-4 transition-all duration-200">
                 <button @click="modalOrdenPendiente = false" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
             </div>
 
-            <p class="text-xs text-slate-600 dark:text-slate-300">
+            <p class="text-xs text-slate-700 dark:text-slate-300">
                 Quedan medicamentos pendientes por recibir en esta orden de compra:
             </p>
 
@@ -1740,7 +1740,7 @@ class="space-y-4 transition-all duration-200">
                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                 <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200" x-text="linea.nombre"></td>
                                 <td class="py-2 px-2 text-center text-slate-500" x-text="linea.pedido + ' u.'"></td>
-                                <td class="py-2 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400" x-text="linea.ingresando + ' u.'"></td>
+                                <td class="py-2 px-2 text-center font-bold text-emerald-900 dark:text-emerald-400" x-text="linea.ingresando + ' u.'"></td>
                                 <td class="py-2 px-2 text-center font-extrabold text-amber-900 dark:text-amber-300" x-text="linea.nuevo_pendiente + ' u.'"></td>
                             </tr>
                         </template>
@@ -1768,7 +1768,7 @@ class="space-y-4 transition-all duration-200">
             <div class="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" 
                         @click="modalOrdenPendiente = false" 
-                        class="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer order-3 sm:order-1">
+                        class="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer order-3 sm:order-1">
                     Revisar Cantidades
                 </button>
                 <button type="button" 
@@ -1801,7 +1801,7 @@ class="space-y-4 transition-all duration-200">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-400 flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                     <div>
@@ -1812,7 +1812,7 @@ class="space-y-4 transition-all duration-200">
                 <button @click="modalOrdenExcedente = false" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer" title="Cerrar">✕</button>
             </div>
 
-            <p class="text-xs text-slate-600 dark:text-slate-300">
+            <p class="text-xs text-slate-700 dark:text-slate-300">
                 Las siguientes líneas ingresan más unidades de las pactadas en la orden:
             </p>
 
@@ -1823,7 +1823,7 @@ class="space-y-4 transition-all duration-200">
                             <th class="py-2 px-3">Medicamento</th>
                             <th class="py-2 px-2 text-center">Pendiente</th>
                             <th class="py-2 px-2 text-center">Ingresando</th>
-                            <th class="py-2 px-2 text-center text-blue-700 dark:text-blue-300">Excedente</th>
+                            <th class="py-2 px-2 text-center text-blue-900 dark:text-blue-300">Excedente</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1831,7 +1831,7 @@ class="space-y-4 transition-all duration-200">
                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                 <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200" x-text="linea.nombre"></td>
                                 <td class="py-2 px-2 text-center text-slate-500" x-text="linea.pendiente + ' u.'"></td>
-                                <td class="py-2 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400" x-text="linea.ingresando + ' u.'"></td>
+                                <td class="py-2 px-2 text-center font-bold text-emerald-900 dark:text-emerald-400" x-text="linea.ingresando + ' u.'"></td>
                                 <td class="py-2 px-2 text-center font-extrabold text-blue-800 dark:text-blue-300" x-text="'+' + linea.diferencia + ' u.'"></td>
                             </tr>
                         </template>
@@ -1842,7 +1842,7 @@ class="space-y-4 transition-all duration-200">
             <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" 
                         @click="modalOrdenExcedente = false" 
-                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                     Ajustar Cantidad
                 </button>
                 <button type="button" 

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', $proveedor->nombre . ' - Ficha de Proveedor - FarmaBien')
 
@@ -18,7 +18,7 @@
         <div>
             <div class="flex items-center space-x-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ $proveedor->nombre }}</h1>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $proveedor->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $proveedor->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
                     {{ $proveedor->activo ? 'Activo' : 'Inactivo' }}
                 </span>
             </div>
@@ -40,7 +40,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
@@ -70,7 +70,7 @@
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
                         <span>Copiar</span>
                     </span>
-                    <span x-show="copied" class="text-emerald-600 dark:text-emerald-400">✓ Copiado</span>
+                    <span x-show="copied" class="text-emerald-900 dark:text-emerald-400">✓ Copiado</span>
                 </button>
                 @endif
             </div>
@@ -118,7 +118,7 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Historial de operaciones de compra realizadas a este proveedor.</p>
             </div>
             @can('registrar compras')
-            <a href="{{ route('compras.create') }}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+            <a href="{{ route('compras.create') }}" class="text-xs font-bold text-emerald-900 dark:text-emerald-400 hover:underline">
                 + Nueva Compra (F4)
             </a>
             @endcan
@@ -144,7 +144,7 @@
                         <td class="px-5 py-3.5 text-slate-500 dark:text-slate-400">
                             {{ $compra->fecha ? $compra->fecha->format('d/m/Y H:i') : '—' }}
                         </td>
-                        <td class="px-5 py-3.5 text-right font-mono text-slate-600 dark:text-slate-300">
+                        <td class="px-5 py-3.5 text-right font-mono text-slate-700 dark:text-slate-300">
                             S/ {{ number_format($compra->subtotal, 2) }}
                         </td>
                         <td class="px-5 py-3.5 text-right font-mono font-bold text-slate-900 dark:text-white">
@@ -152,11 +152,11 @@
                         </td>
                         <td class="px-5 py-3.5 text-center">
                             @if($compra->estado === 'recibida')
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                 Recibida
                             </span>
                             @elseif($compra->estado === 'anulada')
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/60 text-red-900 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                                 Anulada
                             </span>
                             @else
@@ -167,7 +167,7 @@
                         </td>
                         <td class="px-5 py-3.5 text-center">
                             @can('ver compras')
-                            <a href="{{ route('compras.show', $compra) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold">Ver Detalle &rarr;</a>
+                            <a href="{{ route('compras.show', $compra) }}" class="text-emerald-900 dark:text-emerald-400 hover:underline font-semibold">Ver Detalle &rarr;</a>
                             @endcan
                         </td>
                     </tr>

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Modificar Compra #' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 
@@ -271,7 +271,7 @@ class="space-y-4 transition-all duration-200">
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center space-x-1.5 shrink-0 shadow-2xs cursor-pointer">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
@@ -280,14 +280,14 @@ class="space-y-4 transition-all duration-200">
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
-                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
-                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     <span>Compacta (ERP)</span>
@@ -298,7 +298,7 @@ class="space-y-4 transition-all duration-200">
 
     <!-- Traceability Notice Box -->
     <div class="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-start space-x-3">
-        <div class="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+        <div class="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <div>
@@ -318,7 +318,7 @@ class="space-y-4 transition-all duration-200">
         @if ($errors->any())
         <div class="p-3 mb-4 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs">
             <div class="font-bold flex items-center space-x-1 mb-1">
-                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <svg class="w-4 h-4 text-red-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <span>Por favor corrija los siguientes errores:</span>
             </div>
             <ul class="list-disc list-inside space-y-0.5">
@@ -362,14 +362,14 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 1: Datos Fiscales y Razón del Cambio (8 cols) -->
                     <div class="lg:col-span-8 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             <span>1. Identificación del Proveedor, Comprobante y Motivo</span>
                         </div>
 
                         <!-- Motivo Modificación -->
                         <div>
                             <label class="block text-[11px] font-semibold text-amber-800 dark:text-amber-400 mb-1">
-                                Motivo de la Modificación <span class="text-rose-500">*</span>
+                                Motivo de la Modificación <span class="text-red-900">*</span>
                             </label>
                             <input type="text" 
                                    name="motivo_modificacion" 
@@ -384,7 +384,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Proveedor (Col 5) -->
                             <div class="sm:col-span-5">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Proveedor <span class="text-rose-500">*</span>
+                                    Proveedor <span class="text-red-900">*</span>
                                 </label>
                                 <select name="proveedor_id" 
                                         x-model="formData.proveedor_id" 
@@ -414,7 +414,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Fecha Documento (Col 3) -->
                             <div class="sm:col-span-3">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Fecha Documento <span class="text-rose-500">*</span>
+                                    Fecha Documento <span class="text-red-900">*</span>
                                 </label>
                                 <input type="date" 
                                        name="fecha" 
@@ -428,7 +428,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 2: Resumen de Liquidación (4 cols) -->
                     <div class="lg:col-span-4 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 flex flex-col justify-between space-y-2">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Resumen Actualizado</span>
                         </div>
 
@@ -439,13 +439,13 @@ class="space-y-4 transition-all duration-200">
                             </div>
                             <div>
                                 <span class="text-[10px] font-semibold text-slate-500 block">Unidades al Kardex:</span>
-                                <span class="font-bold text-emerald-600 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
+                                <span class="font-bold text-emerald-900 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
                             </div>
                         </div>
 
                         <div class="pt-1.5 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Total Recalculado:</span>
-                            <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Total Recalculado:</span>
+                            <span class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400">
                                 $<span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
@@ -456,7 +456,7 @@ class="space-y-4 transition-all duration-200">
                 <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                     <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                             <span>2. Desglose y Ajuste de Productos y Lotes</span>
                         </div>
 
@@ -520,11 +520,11 @@ class="space-y-4 transition-all duration-200">
                                                         @click="abrirModalPresentacion(idx)"
                                                         :disabled="!item.producto_id"
                                                         title="Crear nueva presentación para este medicamento"
-                                                        class="p-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 transition shrink-0 disabled:opacity-40 cursor-pointer">
+                                                        class="p-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-900 dark:text-emerald-300 transition shrink-0 disabled:opacity-40 cursor-pointer">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                                 </button>
                                             </div>
-                                            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5" x-show="item.factor > 1">
+                                            <div class="text-[10px] text-emerald-900 dark:text-emerald-400 font-semibold mt-0.5" x-show="item.factor > 1">
                                                 Total Base: <span x-text="calcularUnidadesBase(item)"></span> u.
                                             </div>
                                         </td>
@@ -625,7 +625,7 @@ class="space-y-4 transition-all duration-200">
                         <!-- Motivo Modificación -->
                         <div>
                             <label class="block text-xs font-bold text-amber-800 dark:text-amber-300 mb-1.5">
-                                Motivo de la Modificación <span class="text-rose-500">*</span>
+                                Motivo de la Modificación <span class="text-red-900">*</span>
                             </label>
                             <textarea name="motivo_modificacion" 
                                       x-model="formData.motivo_modificacion" 
@@ -640,7 +640,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Proveedor -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Proveedor Registrado <span class="text-rose-500">*</span>
+                                    Proveedor Registrado <span class="text-red-900">*</span>
                                 </label>
                                 <select name="proveedor_id" 
                                         x-model="formData.proveedor_id" 
@@ -670,7 +670,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Fecha -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Fecha de Recepción / Emisión <span class="text-rose-500">*</span>
+                                    Fecha de Recepción / Emisión <span class="text-red-900">*</span>
                                 </label>
                                 <input type="date" 
                                        name="fecha" 
@@ -705,13 +705,13 @@ class="space-y-4 transition-all duration-200">
                             <div class="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 space-y-3 transition">
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                                        <span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-[10px] font-bold" x-text="idx + 1"></span>
+                                        <span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 flex items-center justify-center text-[10px] font-bold" x-text="idx + 1"></span>
                                         <span>Lote de Compra</span>
                                     </span>
 
                                     <div class="flex items-center space-x-3">
                                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                            Subtotal: <span class="text-emerald-600 dark:text-emerald-400 text-sm">$<span x-text="calcularSubtotal(item)"></span></span>
+                                            Subtotal: <span class="text-emerald-900 dark:text-emerald-400 text-sm">$<span x-text="calcularSubtotal(item)"></span></span>
                                         </div>
                                         <button type="button" 
                                                 @click="eliminarItem(idx)" 
@@ -726,7 +726,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- Producto -->
                                     <div class="md:col-span-4">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Medicamento / Producto <span class="text-rose-500">*</span>
+                                            Medicamento / Producto <span class="text-red-900">*</span>
                                         </label>
                                         <select :name="'productos[' + idx + '][producto_id]'" 
                                                 x-model="item.producto_id" 
@@ -749,7 +749,7 @@ class="space-y-4 transition-all duration-200">
                                             <button type="button" 
                                                     @click="abrirModalPresentacion(idx)"
                                                     :disabled="!item.producto_id"
-                                                    class="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold disabled:opacity-40">
+                                                    class="text-[10px] text-emerald-900 dark:text-emerald-400 hover:underline font-bold disabled:opacity-40">
                                                 + Nueva
                                             </button>
                                         </div>
@@ -762,7 +762,7 @@ class="space-y-4 transition-all duration-200">
                                                 <option :value="pres.id" x-text="pres.nombre + ' (x' + pres.unidades + ')'"></option>
                                             </template>
                                         </select>
-                                        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1" x-show="item.factor > 1">
+                                        <div class="text-[10px] text-emerald-900 dark:text-emerald-400 font-semibold mt-1" x-show="item.factor > 1">
                                             Total Base: <span x-text="calcularUnidadesBase(item)"></span> u.
                                         </div>
                                     </div>
@@ -770,7 +770,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- Cantidad -->
                                     <div class="md:col-span-2">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Cantidad <span class="text-rose-500">*</span>
+                                            Cantidad <span class="text-red-900">*</span>
                                         </label>
                                         <input type="number" 
                                                :name="'productos[' + idx + '][cantidad_presentaciones]'" 
@@ -784,7 +784,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- Precio Unitario -->
                                     <div class="md:col-span-3">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Precio Unit. ($) <span class="text-rose-500">*</span>
+                                            Precio Unit. ($) <span class="text-red-900">*</span>
                                         </label>
                                         <input type="number" 
                                                step="0.01" 
@@ -799,7 +799,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- N° Lote -->
                                     <div class="md:col-span-6">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Número de Lote de Fabricación <span class="text-rose-500">*</span>
+                                            Número de Lote de Fabricación <span class="text-red-900">*</span>
                                         </label>
                                         <input type="text" 
                                                :name="'productos[' + idx + '][numero_lote]'" 
@@ -812,7 +812,7 @@ class="space-y-4 transition-all duration-200">
                                     <!-- Fecha Vencimiento -->
                                     <div class="md:col-span-6">
                                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Fecha de Vencimiento <span class="text-rose-500">*</span>
+                                            Fecha de Vencimiento <span class="text-red-900">*</span>
                                         </label>
                                         <input type="date" 
                                                :name="'productos[' + idx + '][fecha_vencimiento]'" 
@@ -828,18 +828,18 @@ class="space-y-4 transition-all duration-200">
 
                 <!-- Tarjeta 3: Totales y Acciones (Light Mode Blanco) -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-300 dark:border-slate-800 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center space-x-6 text-xs text-slate-600 dark:text-slate-300">
+                    <div class="flex items-center space-x-6 text-xs text-slate-700 dark:text-slate-300">
                         <div>
                             <span class="block text-slate-400 text-[11px]">Total de Líneas:</span>
                             <span class="font-bold text-slate-900 dark:text-white text-sm" x-text="items.length"></span>
                         </div>
                         <div>
                             <span class="block text-slate-400 text-[11px]">Unidades al Kardex:</span>
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
+                            <span class="font-bold text-emerald-900 dark:text-emerald-400 text-sm" x-text="calcularTotalUnidadesBase() + ' u.'"></span>
                         </div>
                         <div>
                             <span class="block text-slate-400 text-[11px]">Total Recalculado:</span>
-                            <span class="font-extrabold text-emerald-600 dark:text-emerald-400 text-xl">
+                            <span class="font-extrabold text-emerald-900 dark:text-emerald-400 text-xl">
                                 $<span x-text="calcularTotalGeneral()"></span>
                             </span>
                         </div>
@@ -847,7 +847,7 @@ class="space-y-4 transition-all duration-200">
 
                     <div class="flex items-center space-x-3 w-full md:w-auto">
                         <a href="{{ route('compras.show', $compra) }}" 
-                           class="flex-1 md:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center">
+                           class="flex-1 md:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center">
                             Cancelar
                         </a>
                         <button type="submit" 
@@ -879,7 +879,7 @@ class="space-y-4 transition-all duration-200">
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     </div>
                     <div>
@@ -891,13 +891,13 @@ class="space-y-4 transition-all duration-200">
             </div>
 
             <!-- Error Banner in Modal -->
-            <div x-show="nuevaPres.error" class="p-2.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200" x-text="nuevaPres.error"></div>
+            <div x-show="nuevaPres.error" class="p-2.5 rounded-lg bg-rose-50 text-red-900 text-xs font-medium border border-rose-200" x-text="nuevaPres.error"></div>
 
             <div class="space-y-3">
                 <!-- Nombre Presentación -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Nombre de la Presentación <span class="text-rose-500">*</span>
+                        Nombre de la Presentación <span class="text-red-900">*</span>
                     </label>
                     <input type="text" 
                            x-model="nuevaPres.nombre" 
@@ -909,7 +909,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Factor / Unidades -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            Unidades Contenidas <span class="text-rose-500">*</span>
+                            Unidades Contenidas <span class="text-red-900">*</span>
                         </label>
                         <input type="number" 
                                x-model.number="nuevaPres.unidades_por_presentacion" 
@@ -961,7 +961,7 @@ class="space-y-4 transition-all duration-200">
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button type="button" 
                         @click="modalNuevaPres = false" 
-                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                     Cancelar
                 </button>
                 <button type="button" 

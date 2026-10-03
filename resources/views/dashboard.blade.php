@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Dashboard - FarmaBien')
 
@@ -115,14 +115,14 @@ function dashboardLive() {
                     :disabled="cargando"
                     title="Actualizar datos en tiempo real"
                     class="inline-flex items-center space-x-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition cursor-pointer disabled:opacity-50">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" :class="{ 'animate-spin': cargando }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" :class="{ 'animate-spin': cargando }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 <span x-text="cargando ? 'Actualizando...' : 'Refrescar'">Refrescar</span>
             </button>
 
             <!-- Auto Refresh Toggle -->
             <button type="button" 
                     @click="toggleAutoRefresh()"
-                    :class="autoRefresh ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 font-bold' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'"
+                    :class="autoRefresh ? 'bg-emerald-50 text-emerald-900 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 font-bold' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'"
                     class="inline-flex items-center space-x-1.5 px-3 py-2 border rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer">
                 <span class="w-2 h-2 rounded-full" :class="autoRefresh ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'"></span>
                 <span x-text="autoRefresh ? 'Auto (30s) ON' : 'Auto'">Auto</span>
@@ -161,7 +161,7 @@ function dashboardLive() {
                         Ventas Hoy
                     @endif
                 </span>
-                <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-400 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
             </div>
@@ -174,7 +174,7 @@ function dashboardLive() {
                         <strong x-text="metricas.cantidadVentasHoy">{{ $cantidadVentasHoy }}</strong> tickets emitidos
                     </span>
                     @can('ver ventas')
-                    <a href="{{ route('ventas.index') }}" class="font-bold text-emerald-600 dark:text-emerald-400 hover:underline">Ver todas &rarr;</a>
+                    <a href="{{ route('ventas.index') }}" class="font-bold text-emerald-900 dark:text-emerald-400 hover:underline">Ver todas &rarr;</a>
                     @else
                     <span class="text-slate-400 dark:text-slate-500">Turno en curso</span>
                     @endcan
@@ -188,7 +188,7 @@ function dashboardLive() {
         <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition hover:shadow-md">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Compras del Mes</span>
-                <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
             </div>
@@ -214,7 +214,7 @@ function dashboardLive() {
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stock Crítico</span>
                 <div class="w-8 h-8 rounded-xl flex items-center justify-center" 
-                     :class="metricas.productosBajoStockCount > 0 ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'">
+                     :class="metricas.productosBajoStockCount > 0 ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
             </div>
@@ -230,9 +230,9 @@ function dashboardLive() {
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">Bajo el mínimo</span>
                     @can('ver alertas stock bajo')
-                    <a href="{{ route('inventario.alertas') }}" class="font-bold text-amber-600 dark:text-amber-400 hover:underline">Ver alertas &rarr;</a>
+                    <a href="{{ route('inventario.alertas') }}" class="font-bold text-amber-900 dark:text-amber-400 hover:underline">Ver alertas &rarr;</a>
                     @else
-                    <a href="{{ route('productos.index') }}" class="font-bold text-amber-600 dark:text-amber-400 hover:underline">Catálogo &rarr;</a>
+                    <a href="{{ route('productos.index') }}" class="font-bold text-amber-900 dark:text-amber-400 hover:underline">Catálogo &rarr;</a>
                     @endcan
                 </div>
             </div>
@@ -245,7 +245,7 @@ function dashboardLive() {
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Lotes &lt; 30 días</span>
                 <div class="w-8 h-8 rounded-xl flex items-center justify-center" 
-                     :class="metricas.lotesPorVencerCount > 0 ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'">
+                     :class="metricas.lotesPorVencerCount > 0 ? 'bg-rose-50 dark:bg-rose-950/50 text-red-900 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
             </div>
@@ -261,7 +261,7 @@ function dashboardLive() {
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">Por expirar</span>
                     @can('ver lotes')
-                    <a href="{{ route('inventario.lotes') }}" class="font-bold text-rose-600 dark:text-rose-400 hover:underline">Auditar &rarr;</a>
+                    <a href="{{ route('inventario.lotes') }}" class="font-bold text-red-900 dark:text-rose-400 hover:underline">Auditar &rarr;</a>
                     @else
                     <span class="text-slate-400 dark:text-slate-500">En monitoreo</span>
                     @endcan
@@ -277,12 +277,12 @@ function dashboardLive() {
          x-cloak 
          class="bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
         <div class="flex items-center space-x-3">
-            <span class="text-amber-600 dark:text-amber-400 text-xl">⚠️</span>
+            <span class="text-amber-900 dark:text-amber-400 text-xl">⚠️</span>
             <div>
                 <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">
                     Hay <span x-text="metricas.recetasPendientesCount"></span> receta(s) médica(s) pendiente(s) de validación
                 </h4>
-                <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                <p class="text-xs text-slate-700 dark:text-slate-400 mt-0.5">
                     Requiere confirmación farmacéutica antes del despacho en caja.
                 </p>
             </div>
@@ -317,7 +317,7 @@ function dashboardLive() {
                     </h3>
                 </div>
                 @can('ver ventas')
-                <a href="{{ route('ventas.index') }}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                <a href="{{ route('ventas.index') }}" class="text-xs font-bold text-emerald-900 dark:text-emerald-400 hover:underline">
                     Ver historial &rarr;
                 </a>
                 @endcan
@@ -337,7 +337,7 @@ function dashboardLive() {
                         <div class="text-right shrink-0 ml-4">
                             <span class="text-sm font-extrabold text-slate-900 dark:text-white block" x-text="'$' + venta.total"></span>
                             <div class="flex items-center justify-end space-x-1 mt-0.5">
-                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" x-text="venta.metodo_pago"></span>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" x-text="venta.metodo_pago"></span>
                                 @canany(['ver ventas', 'ver detalle ventas'])
                                 <a :href="venta.url" class="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs pl-1 font-bold">
                                     &rarr;
@@ -381,7 +381,7 @@ function dashboardLive() {
                         <div class="text-right shrink-0 ml-4">
                             <span class="text-sm font-extrabold text-slate-900 dark:text-white block" x-text="'$' + compra.total"></span>
                             <div class="flex items-center justify-end space-x-1 mt-0.5">
-                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300" x-text="compra.estado"></span>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-900 dark:bg-blue-950/50 dark:text-blue-300" x-text="compra.estado"></span>
                                 @can('ver detalle compras')
                                 <a :href="compra.url" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs pl-1 font-bold">
                                     &rarr;

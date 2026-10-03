@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Editar Proveedor: ' . $proveedor->nombre . ' - FarmaBien')
 
@@ -60,7 +60,7 @@ class="space-y-4 transition-all duration-200">
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Editar Proveedor: {{ $proveedor->nombre }}</span>
-                <span class="px-2 py-0.5 text-xs font-semibold rounded-full {{ $proveedor->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full {{ $proveedor->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
                     {{ $proveedor->activo ? 'Activo' : 'Inactivo' }}
                 </span>
             </h1>
@@ -82,7 +82,7 @@ class="space-y-4 transition-all duration-200">
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
@@ -105,14 +105,14 @@ class="space-y-4 transition-all duration-200">
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
-                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
-                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     <span>Compacta</span>
@@ -137,13 +137,13 @@ class="space-y-4 transition-all duration-200">
                     <div class="flex items-center space-x-2">
                         <span class="w-2.5 h-2.5 rounded-full {{ $proveedor->activo ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
                         <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">EDICIÓN RÁPIDA: {{ $proveedor->nombre }}</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono">Esc = Limpiar</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono">Esc = Limpiar</span>
                     </div>
 
                     <div class="flex items-center space-x-2">
                         <button type="button" 
                                 @click="limpiarFormulario()"
-                                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition cursor-pointer">
+                                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition cursor-pointer">
                             Limpiar (Esc)
                         </button>
                         <button type="submit" 
@@ -160,14 +160,14 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 1: Datos Fiscales -->
                     <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                             <span>Identificación Fiscal & Razón Social</span>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                             <div class="sm:col-span-5">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    RUC (11 Dígitos) <span class="text-rose-500">*</span>
+                                    RUC (11 Dígitos) <span class="text-red-900">*</span>
                                 </label>
                                 <input type="text" 
                                        name="ruc" 
@@ -180,7 +180,7 @@ class="space-y-4 transition-all duration-200">
 
                             <div class="sm:col-span-7">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Razón Social / Comercial <span class="text-rose-500">*</span>
+                                    Razón Social / Comercial <span class="text-red-900">*</span>
                                 </label>
                                 <input type="text" 
                                        name="nombre" 
@@ -205,8 +205,8 @@ class="space-y-4 transition-all duration-200">
 
                         <div class="pt-2">
                             <label class="inline-flex items-center space-x-2 cursor-pointer text-xs">
-                                <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
-                                <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Proveedor Habilitado para Órdenes de Compra</span>
+                                <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-900 w-3.5 h-3.5">
+                                <span class="text-[11px] font-semibold text-emerald-900 dark:text-emerald-400">Proveedor Habilitado para Órdenes de Compra</span>
                             </label>
                         </div>
                     </div>
@@ -214,7 +214,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 2: Contacto y Comunicaciones -->
                     <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             <span>Datos de Contacto y Ventas</span>
                         </div>
 
@@ -286,7 +286,7 @@ class="space-y-4 transition-all duration-200">
                         <!-- Razón Social / Nombre -->
                         <div class="md:col-span-2">
                             <label for="nombre_mod" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                                Razón Social / Nombre Comercial <span class="text-rose-500">*</span>
+                                Razón Social / Nombre Comercial <span class="text-red-900">*</span>
                             </label>
                             <input type="text" 
                                    id="nombre_mod" 
@@ -296,14 +296,14 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. Distribuidora Farmacéutica del Perú S.A.C." 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('nombre') border-rose-500 @enderror">
                             @error('nombre')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <!-- RUC -->
                         <div>
                             <label for="ruc_mod" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                                RUC (11 Dígitos) <span class="text-rose-500">*</span>
+                                RUC (11 Dígitos) <span class="text-red-900">*</span>
                             </label>
                             <input type="text" 
                                    id="ruc_mod" 
@@ -314,7 +314,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. 20123456789" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('ruc') border-rose-500 @enderror">
                             @error('ruc')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -330,7 +330,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. Av. Separadora Industrial 1450, Urb. Vulcano, Ate, Lima" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('direccion') border-rose-500 @enderror">
                             @error('direccion')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
@@ -359,7 +359,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. Lic. Roberto Gómez (Asesor Comercial)" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('contacto') border-rose-500 @enderror">
                             @error('contacto')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -375,7 +375,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="Ej. (01) 456-7890 / +51 987 654 321" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('telefono') border-rose-500 @enderror">
                             @error('telefono')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -391,7 +391,7 @@ class="space-y-4 transition-all duration-200">
                                    placeholder="ventas@drogueria.com" 
                                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition @error('email') border-rose-500 @enderror">
                             @error('email')
-                                <p class="text-rose-500 text-xs mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-xs mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
@@ -404,7 +404,7 @@ class="space-y-4 transition-all duration-200">
                                name="activo" 
                                x-model="formData.activo"
                                value="1" 
-                               class="w-4 h-4 rounded bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500">
+                               class="w-4 h-4 rounded bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-emerald-900 focus:ring-emerald-500">
                         <div>
                             <span class="text-sm font-semibold text-slate-800 dark:text-slate-200 block">Proveedor Activo para Órdenes de Compra</span>
                             <span class="text-xs text-slate-400">Permite registrar compras y recepcionar lotes de medicamentos de esta droguería.</span>

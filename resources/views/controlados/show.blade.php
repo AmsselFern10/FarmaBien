@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Detalle de Movimiento Controlado #' . str_pad($registro->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 
@@ -62,7 +62,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -70,7 +70,7 @@
             @if($registro->venta_id)
             <a href="{{ route('ventas.show', $registro->venta_id) }}"
                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-950 dark:text-indigo-200 text-xs font-semibold border border-indigo-200 dark:border-indigo-800 transition shadow-2xs">
-                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                <svg class="w-4 h-4 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 <span>Ver Venta</span>
             </a>
             @endif
@@ -79,7 +79,7 @@
             @if($registro->devolucion)
             <a href="{{ route('devoluciones.show', $registro->devolucion) }}"
                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900/60 text-red-950 dark:text-red-200 text-xs font-semibold border border-red-200 dark:border-red-800 transition shadow-2xs">
-                <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l3-3m-3 3l3 3m5 4v1a3 3 0 003 3h4"/></svg>
+                <svg class="w-4 h-4 text-red-900 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l3-3m-3 3l3 3m5 4v1a3 3 0 003 3h4"/></svg>
                 <span>Ver Devolución</span>
             </a>
             @endif
@@ -88,7 +88,7 @@
             @if($registro->compra)
             <a href="{{ route('compras.show', $registro->compra) }}"
                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-950 dark:text-teal-200 text-xs font-semibold border border-teal-200 dark:border-teal-800 transition shadow-2xs">
-                <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <svg class="w-4 h-4 text-teal-900 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 <span>Ver Compra</span>
             </a>
             @endif
@@ -97,7 +97,7 @@
             @if($recetaAsociada)
             <a href="{{ route('recetas.show', $recetaAsociada) }}"
                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-950 dark:text-indigo-200 text-xs font-semibold border border-indigo-200 dark:border-indigo-800 transition shadow-2xs">
-                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <svg class="w-4 h-4 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Ver Receta</span>
             </a>
             @endif
@@ -211,7 +211,7 @@
                 <!-- Paciente / Beneficiario -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
                     <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                         <span>Receptor / Entidad</span>
                     </h3>
                     <div class="space-y-2 text-xs">
@@ -260,7 +260,7 @@
                             @endif
                         @elseif($registro->motivo_omision)
                             <div>
-                                <span class="text-[11px] text-amber-700 dark:text-amber-400 font-bold block">Justificación Oficial Asentada:</span>
+                                <span class="text-[11px] text-amber-900 dark:text-amber-400 font-bold block">Justificación Oficial Asentada:</span>
                                 <p class="text-slate-800 dark:text-slate-200 italic mt-0.5 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
                                     {{ $registro->motivo_omision }}
                                 </p>
@@ -280,7 +280,7 @@
             <!-- Card: Trazabilidad Operativa -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
                 <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg class="w-4 h-4 text-indigo-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span>Auditoría & Vínculos del Sistema</span>
                 </h3>
 
@@ -288,7 +288,7 @@
                     @if($registro->venta_id)
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500">Ticket de Venta:</span>
-                        <a href="{{ route('ventas.show', $registro->venta_id) }}" class="font-mono font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                        <a href="{{ route('ventas.show', $registro->venta_id) }}" class="font-mono font-bold text-indigo-900 dark:text-indigo-400 hover:underline">
                             #{{ str_pad($registro->venta_id, 5, '0', STR_PAD_LEFT) }}
                         </a>
                     </div>
@@ -307,7 +307,7 @@
                     @if($registro->devolucion)
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500">Comprobante Devolución:</span>
-                        <a href="{{ route('devoluciones.show', $registro->devolucion) }}" class="font-mono font-bold text-rose-600 hover:underline">
+                        <a href="{{ route('devoluciones.show', $registro->devolucion) }}" class="font-mono font-bold text-red-900 hover:underline">
                             {{ $registro->devolucion->numero_devolucion }}
                         </a>
                     </div>
@@ -316,7 +316,7 @@
                     @if($registro->compra)
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500">Comprobante Compra:</span>
-                        <a href="{{ route('compras.show', $registro->compra) }}" class="font-mono font-bold text-teal-600 hover:underline">
+                        <a href="{{ route('compras.show', $registro->compra) }}" class="font-mono font-bold text-teal-900 hover:underline">
                             #{{ $registro->compra->numero_comprobante }}
                         </a>
                     </div>
@@ -338,11 +338,11 @@
             <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                     <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span>Evidencia Digital / Justificante</span>
                     </h3>
                     @if(!$registro->tieneRecetaAdjunta())
-                    <button type="button" @click="modalUpload = true" class="text-[10px] font-bold text-emerald-600 hover:underline cursor-pointer">
+                    <button type="button" @click="modalUpload = true" class="text-[10px] font-bold text-emerald-900 hover:underline cursor-pointer">
                         + Subir Archivo
                     </button>
                     @endif
@@ -350,7 +350,7 @@
 
                 @if($registro->tieneRecetaAdjunta())
                     <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-4 text-center space-y-3">
-                        <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         </div>
                         <div>
@@ -401,7 +401,7 @@
                  class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto">
                 <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                         <span>Adjuntar Evidencia o Justificante MINSA</span>
                     </h3>
                     <button type="button" @click="modalUpload = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>

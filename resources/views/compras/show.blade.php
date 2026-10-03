@@ -88,7 +88,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -97,7 +97,7 @@
                 @if($compra->estado !== 'anulada' && $compra->lotes->sum('stock_actual') > 0)
                 <a href="{{ route('compras.devoluciones.create', ['compra_id' => $compra->id]) }}" 
                    class="px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-900 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-300 transition">
-                    <svg class="w-3.5 h-3.5 text-indigo-700 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4-4m-4 4l4 4m6 4v1a3 3 0 003 3h3a3 3 0 003-3V7a3 3 0 00-3-3h-3a3 3 0 00-3 3v1"/></svg>
+                    <svg class="w-3.5 h-3.5 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4-4m-4 4l4 4m6 4v1a3 3 0 003 3h3a3 3 0 003-3V7a3 3 0 00-3-3h-3a3 3 0 00-3 3v1"/></svg>
                     <span>Procesar Devolución</span>
                 </a>
                 @endif
@@ -108,7 +108,7 @@
                 @can('registrar compras')
                 <a href="{{ route('compras.edit', $compra) }}" 
                    class="px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-300 transition">
-                    <svg class="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <svg class="w-3.5 h-3.5 text-amber-900 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     <span>Modificar</span>
                 </a>
                 @endcan
@@ -120,7 +120,7 @@
                 <button type="button" 
                         @click="modalAnular = true" 
                         class="px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-900 hover:bg-red-100 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 transition cursor-pointer">
-                    <svg class="w-3.5 h-3.5 text-rose-700 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <svg class="w-3.5 h-3.5 text-red-900 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     <span>Anular Compra</span>
                 </button>
                 @endcan
@@ -155,7 +155,7 @@
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                 <span>Esta compra fue <strong>modificada</strong> y ha sido sustituida por la nueva versión <strong>#{{ str_pad($compra->reemplazada_por, 5, '0', STR_PAD_LEFT) }}</strong>.</span>
             </div>
-            <a href="{{ route('compras.show', $compra->reemplazadaPor) }}" class="font-bold text-amber-700 dark:text-amber-300 underline hover:no-underline">
+            <a href="{{ route('compras.show', $compra->reemplazadaPor) }}" class="font-bold text-amber-900 dark:text-amber-300 underline hover:no-underline">
                 Ver Nueva Versión Activa &rarr;
             </a>
         </div>
@@ -164,7 +164,7 @@
     @if($compra->estado === 'anulada')
         <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1">
             <div class="font-bold flex items-center space-x-2">
-                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <svg class="w-4 h-4 text-red-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <span>COMPRA ANULADA</span>
             </div>
             <p class="text-[11px] text-rose-800 dark:text-rose-300">
@@ -179,7 +179,7 @@
         <!-- Proveedor -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
             <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                 <span>Datos del Proveedor</span>
             </div>
             <div>
@@ -197,10 +197,10 @@
         <!-- Comprobante y Registro -->
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2">
             <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Detalle Fiscal & Recepción</span>
             </div>
-            <div class="text-[11px] space-y-1 text-slate-600 dark:text-slate-300">
+            <div class="text-[11px] space-y-1 text-slate-700 dark:text-slate-300">
                 <div class="flex justify-between">
                     <span class="text-slate-400">N° Comprobante:</span>
                     <span class="font-bold text-slate-900 dark:text-white">{{ $compra->numero_comprobante ?: 'Sin número' }}</span>
@@ -223,25 +223,25 @@
         <!-- Totales Financieros -->
         <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-xl p-4 border border-slate-300 dark:border-slate-800 shadow-xs space-y-2 flex flex-col justify-between">
             <div class="flex items-center space-x-2 pb-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>Resumen de Liquidación</span>
             </div>
             <div class="space-y-1.5 text-xs">
-                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                <div class="flex justify-between text-slate-700 dark:text-slate-300">
                     <span>Condición de Pago:</span>
                     <span class="font-bold {{ $compra->condicion_pago === 'credito' ? 'text-amber-900 dark:text-amber-300' : 'text-slate-900 dark:text-white' }} uppercase">
                         {{ $compra->condicion_pago }} {{ $compra->condicion_pago === 'credito' ? '(' . $compra->dias_credito . 'd)' : '' }}
                     </span>
                 </div>
                 @if($compra->condicion_pago === 'credito')
-                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                <div class="flex justify-between text-slate-700 dark:text-slate-300">
                     <span>Saldo Pendiente:</span>
                     <span class="font-extrabold {{ $compra->saldo_pendiente > 0 ? 'text-rose-900 dark:text-rose-400' : 'text-emerald-900 dark:text-emerald-400' }}">
                         {{ formato_moneda($compra->saldo_pendiente) }}
                     </span>
                 </div>
                 @if($compra->saldo_pendiente < $compra->total)
-                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                <div class="flex justify-between text-slate-700 dark:text-slate-300">
                     <span>Total Abonado:</span>
                     <span class="font-bold text-emerald-900 dark:text-emerald-400">
                         {{ formato_moneda($compra->total - $compra->saldo_pendiente) }}
@@ -249,13 +249,13 @@
                 </div>
                 @endif
                 @endif
-                <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                <div class="flex justify-between text-slate-700 dark:text-slate-300">
                     <span>Unidades al Kardex:</span>
-                    <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $compra->detalles->sum('cantidad_unidades_base') }} u.</span>
+                    <span class="font-bold text-emerald-900 dark:text-emerald-400">{{ $compra->detalles->sum('cantidad_unidades_base') }} u.</span>
                 </div>
                 <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline">
-                    <span class="font-semibold text-slate-600 dark:text-slate-300">Monto Total:</span>
-                    <span class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ formato_moneda($compra->total) }}</span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-300">Monto Total:</span>
+                    <span class="text-xl font-extrabold text-emerald-900 dark:text-emerald-400">{{ formato_moneda($compra->total) }}</span>
                 </div>
             </div>
         </div>
@@ -282,7 +282,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                         <th class="py-2.5 px-3">#</th>
                         <th class="py-2.5 px-3">Medicamento / Fármaco</th>
                         <th class="py-2.5 px-3">Presentación</th>
@@ -290,7 +290,7 @@
                         <th class="py-2.5 px-3 text-center">Factor Conversión</th>
                         <th class="py-2.5 px-3 text-center">Total Unidades Base</th>
                         @if($compra->devoluciones->isNotEmpty())
-                            <th class="py-2.5 px-3 text-center text-rose-700 dark:text-rose-300">Devuelto</th>
+                            <th class="py-2.5 px-3 text-center text-red-900 dark:text-rose-300">Devuelto</th>
                         @endif
                         <th class="py-2.5 px-3">Lote & Vencimiento</th>
                         <th class="py-2.5 px-3 text-right">P. Compra (C$)</th>
@@ -335,13 +335,13 @@
                         </td>
 
                         <!-- Total Base -->
-                        <td class="py-3 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                        <td class="py-3 px-3 text-center font-bold text-emerald-900 dark:text-emerald-400">
                             {{ $detalle->cantidad_unidades_base }} u.
                         </td>
 
                         <!-- Devuelto -->
                         @if($compra->devoluciones->isNotEmpty())
-                            <td class="py-3 px-3 text-center font-bold text-rose-600 dark:text-rose-400">
+                            <td class="py-3 px-3 text-center font-bold text-red-900 dark:text-rose-400">
                                 @if($cantDevuelta > 0)
                                     <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50">
                                         -{{ $cantDevuelta }} u.
@@ -363,11 +363,11 @@
                                         Vence: {{ $detalle->lote->fecha_vencimiento ? $detalle->lote->fecha_vencimiento->format('d/m/Y') : '-' }}
                                     </span>
                                     @if($detalle->lote->estaVencido())
-                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-700">Vencido</span>
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-red-900">Vencido</span>
                                     @elseif($detalle->lote->proximoAVencer(30))
-                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-700">Próx. Vencer</span>
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900">Próx. Vencer</span>
                                     @else
-                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">Vigente</span>
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-900">Vigente</span>
                                     @endif
                                 </div>
                             @else
@@ -396,7 +396,7 @@
     <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs overflow-hidden space-y-0">
         <div class="p-3.5 bg-rose-50/70 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900/50 flex items-center justify-between">
             <div class="flex items-center space-x-2">
-                <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4-4m-4 4l4 4m6 4v1a3 3 0 003 3h3a3 3 0 003-3V7a3 3 0 00-3-3h-3a3 3 0 00-3 3v1"/></svg>
+                <svg class="w-4 h-4 text-red-900 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4-4m-4 4l4 4m6 4v1a3 3 0 003 3h3a3 3 0 003-3V7a3 3 0 00-3-3h-3a3 3 0 00-3 3v1"/></svg>
                 <h3 class="text-xs font-bold text-rose-950 dark:text-rose-200 uppercase tracking-wider">
                     Devoluciones a Proveedor Procesadas Sobre Esta Compra
                 </h3>
@@ -409,7 +409,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    <tr class="bg-slate-100 dark:bg-slate-800/80 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                         <th class="py-2.5 px-3">N° Devolución</th>
                         <th class="py-2.5 px-3">Fecha</th>
                         <th class="py-2.5 px-3">Motivo</th>
@@ -426,7 +426,7 @@
                         <td class="py-3 px-3 font-mono font-bold text-slate-900 dark:text-white">
                             {{ $dev->numero_devolucion ?? ('DEV-' . str_pad($dev->id, 6, '0', STR_PAD_LEFT)) }}
                         </td>
-                        <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                        <td class="py-3 px-3 text-slate-700 dark:text-slate-300">
                             {{ $dev->fecha ? $dev->fecha->format('d/m/Y') : ($dev->created_at ? $dev->created_at->format('d/m/Y') : '-') }}
                         </td>
                         <td class="py-3 px-3 text-slate-700 dark:text-slate-300 max-w-xs truncate" title="{{ $dev->motivo }}">
@@ -437,13 +437,13 @@
                                 {{ ucfirst($dev->tipo ?? 'parcial') }}
                             </span>
                         </td>
-                        <td class="py-3 px-3 text-center font-bold text-rose-600 dark:text-rose-400">
+                        <td class="py-3 px-3 text-center font-bold text-red-900 dark:text-rose-400">
                             -{{ $dev->detalles->sum('cantidad') }} u.
                         </td>
                         <td class="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
                             {{ formato_moneda($dev->total) }}
                         </td>
-                        <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+                        <td class="py-3 px-3 text-slate-700 dark:text-slate-300">
                             {{ $dev->usuario->name ?? 'Sistema' }}
                         </td>
                         <td class="py-3 px-3 text-right">
@@ -473,7 +473,7 @@
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-red-900 dark:text-rose-400 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white">Anular Compra #{{ str_pad($compra->id, 5, '0', STR_PAD_LEFT) }}</h3>
@@ -481,7 +481,7 @@
                 <button @click="modalAnular = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">✕</button>
             </div>
 
-            <p class="text-xs text-slate-600 dark:text-slate-300">
+            <p class="text-xs text-slate-700 dark:text-slate-300">
                 ¿Está completamente seguro de anular esta compra? El stock de todos los lotes asociados será revertido del Kardex.
             </p>
 
@@ -503,7 +503,7 @@
                 <div class="flex items-center justify-end space-x-2 pt-2">
                     <button type="button" 
                             @click="modalAnular = false" 
-                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit" 
