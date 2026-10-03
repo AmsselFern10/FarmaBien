@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Nuevo Medicamento - FarmaBien')
 
@@ -147,7 +147,7 @@ class="space-y-4 transition-all duration-200">
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
@@ -163,14 +163,14 @@ class="space-y-4 transition-all duration-200">
             <div class="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-2xs">
                 <button type="button" 
                         @click="setLayout('modern')"
-                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'modern' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     <span>Moderna</span>
                 </button>
                 <button type="button" 
                         @click="setLayout('compact')"
-                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                        :class="formLayout === 'compact' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
                         class="px-2.5 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     <span>Compacta</span>
@@ -220,14 +220,14 @@ class="space-y-4 transition-all duration-200">
                     <!-- Panel 1: Identificación Farmacológica y Clasificación -->
                     <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                             <span>1. Identificación Farmacológica & Clasificación</span>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                             <div class="sm:col-span-8">
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Nombre Comercial <span class="text-rose-500">*</span>
+                                    Nombre Comercial <span class="text-red-900">*</span>
                                 </label>
                                 <input type="text" 
                                        name="nombre" 
@@ -288,7 +288,7 @@ class="space-y-4 transition-all duration-200">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Categoría <span class="text-rose-500">*</span>
+                                    Categoría <span class="text-red-900">*</span>
                                 </label>
                                 <select name="categoria_id" 
                                         x-model="formData.categoria_id"
@@ -319,7 +319,7 @@ class="space-y-4 transition-all duration-200">
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Clasificación Sanitaria <span class="text-rose-500">*</span>
+                                    Clasificación Sanitaria <span class="text-red-900">*</span>
                                 </label>
                                 <select name="tipo_control" 
                                         x-model="formData.tipo_control"
@@ -357,8 +357,8 @@ class="space-y-4 transition-all duration-200">
 
                         <div class="flex items-center space-x-4 pt-1">
                             <label class="inline-flex items-center space-x-2 cursor-pointer text-xs">
-                                <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
-                                <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Producto Activo para Venta</span>
+                                <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-900 w-3.5 h-3.5">
+                                <span class="text-[11px] font-semibold text-emerald-900 dark:text-emerald-400">Producto Activo para Venta</span>
                             </label>
                         </div>
                     </div>
@@ -367,10 +367,10 @@ class="space-y-4 transition-all duration-200">
                     <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
                             <div class="flex items-center space-x-1.5">
-                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <span>2. Precios, Stock & Presentaciones</span>
                             </div>
-                            <span class="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">Unidad Base</span>
+                            <span class="text-[10px] text-emerald-900 dark:text-emerald-400 font-bold">Unidad Base</span>
                         </div>
 
                         <!-- Precios y Margen -->
@@ -390,7 +390,7 @@ class="space-y-4 transition-all duration-200">
 
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    P. Venta Base <span class="text-rose-500">*</span>
+                                    P. Venta Base <span class="text-red-900">*</span>
                                 </label>
                                 <input type="number" 
                                        step="0.01" 
@@ -399,14 +399,14 @@ class="space-y-4 transition-all duration-200">
                                        x-model="formData.precio_venta" 
                                        required 
                                        placeholder="0.00" 
-                                       class="w-full font-mono font-bold px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-emerald-500 rounded-lg text-xs text-emerald-700 dark:text-emerald-300 focus:ring-1 focus:ring-emerald-500">
+                                       class="w-full font-mono font-bold px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-emerald-500 rounded-lg text-xs text-emerald-900 dark:text-emerald-300 focus:ring-1 focus:ring-emerald-500">
                             </div>
 
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1 text-center">
                                     Margen
                                 </label>
-                                <div class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-xs font-bold text-emerald-700 dark:text-emerald-400 text-center">
+                                <div class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-xs font-bold text-emerald-900 dark:text-emerald-400 text-center">
                                     <span x-text="calcularMargen() + '%'">0%</span>
                                 </div>
                             </div>
@@ -457,14 +457,14 @@ class="space-y-4 transition-all duration-200">
                                         <input type="hidden" :name="'presentaciones[' + idx + '][precio_compra]'" :value="pres.es_unidad_base ? formData.precio_compra : pres.precio_compra">
                                         <div class="flex-1 min-w-0">
                                             <input type="text" :name="'presentaciones[' + idx + '][nombre]'" x-model="pres.nombre" required placeholder="Nombre presentación" class="w-full text-xs font-semibold bg-transparent border-0 p-0 focus:ring-0 text-slate-900 dark:text-slate-100">
-                                            <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                                            <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-700 dark:text-slate-400 mt-0.5">
                                                 <span>Factor: <input type="number" min="1" :name="'presentaciones[' + idx + '][unidades_por_presentacion]'" x-model="pres.unidades_por_presentacion" :readonly="!!pres.es_unidad_base" :class="pres.es_unidad_base ? 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed opacity-75' : 'bg-white dark:bg-slate-800 focus:ring-1 focus:ring-emerald-500'" class="w-14 text-center font-bold rounded px-1 py-0.5 border border-slate-300 dark:border-slate-600 text-xs"> unid.</span>
-                                                <span>P. Venta: S/ <input type="number" step="0.01" :name="'presentaciones[' + idx + '][precio_venta]'" x-model="pres.es_unidad_base ? formData.precio_venta : pres.precio_venta" required class="w-16 font-mono font-bold bg-slate-100 dark:bg-slate-700 rounded px-1 py-0.5 border border-slate-300 dark:border-slate-600 text-xs text-emerald-700 dark:text-emerald-400"></span>
+                                                <span>P. Venta: S/ <input type="number" step="0.01" :name="'presentaciones[' + idx + '][precio_venta]'" x-model="pres.es_unidad_base ? formData.precio_venta : pres.precio_venta" required class="w-16 font-mono font-bold bg-slate-100 dark:bg-slate-700 rounded px-1 py-0.5 border border-slate-300 dark:border-slate-600 text-xs text-emerald-900 dark:text-emerald-400"></span>
                                                 <span>Barra: <input type="text" :name="'presentaciones[' + idx + '][codigo_barras]'" x-model="pres.codigo_barras" placeholder="EAN / Barra" class="w-24 font-mono bg-slate-100 dark:bg-slate-700 rounded px-1 py-0.5 border border-slate-300 dark:border-slate-600 text-xs text-slate-800 dark:text-slate-200"></span>
                                             </div>
                                         </div>
                                         <template x-if="!pres.es_unidad_base">
-                                            <button type="button" @click="eliminarPresentacion(idx)" class="text-rose-600 hover:text-rose-800 p-1 cursor-pointer">
+                                            <button type="button" @click="eliminarPresentacion(idx)" class="text-red-900 hover:text-rose-800 p-1 cursor-pointer">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                             </button>
                                         </template>
@@ -491,7 +491,7 @@ class="space-y-4 transition-all duration-200">
                                        name="imagen" 
                                        accept="image/*"
                                        @change="previewFile"
-                                       class="w-full text-xs text-slate-600 dark:text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border file:border-emerald-300 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 dark:file:bg-slate-800 dark:file:text-emerald-400">
+                                       class="w-full text-xs text-slate-700 dark:text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border file:border-emerald-300 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 dark:file:bg-slate-800 dark:file:text-emerald-400">
                             </div>
                         </div>
                     </div>
@@ -505,7 +505,7 @@ class="space-y-4 transition-all duration-200">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
                             <input type="checkbox" name="crear_otro" value="1"
                                    {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                   class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                             <span>Guardar y crear otro</span>
                         </label>
                         <button type="submit" 
@@ -526,7 +526,7 @@ class="space-y-4 transition-all duration-200">
                 <!-- Tarjeta 1: Información Básica del Fármaco -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                             Datos Principales y Fórmula
                         </h2>
@@ -537,7 +537,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Nombre Comercial -->
                             <div class="md:col-span-8">
                                 <label for="nombre_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Nombre Comercial del Medicamento <span class="text-rose-500">*</span>
+                                    Nombre Comercial del Medicamento <span class="text-red-900">*</span>
                                 </label>
                                 <input type="text" 
                                        name="nombre" 
@@ -547,7 +547,7 @@ class="space-y-4 transition-all duration-200">
                                        placeholder="Ej: Panadol Antigripal NF, Amoxil, Ibuprofeno..." 
                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-semibold placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('nombre') border-rose-500 @enderror">
                                 @error('nombre')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
 
@@ -563,7 +563,7 @@ class="space-y-4 transition-all duration-200">
                                        placeholder="7751234567890" 
                                        class="w-full font-mono px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('codigo_barra') border-rose-500 @enderror">
                                 @error('codigo_barra')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
 
@@ -579,7 +579,7 @@ class="space-y-4 transition-all duration-200">
                                        placeholder="Ej: Paracetamol, Amoxicilina, Loratadina..." 
                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('principio_activo') border-rose-500 @enderror">
                                 @error('principio_activo')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
 
@@ -595,7 +595,7 @@ class="space-y-4 transition-all duration-200">
                                        placeholder="Ej: 500 mg, 1 g, 20 mg/5ml" 
                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('concentracion') border-rose-500 @enderror">
                                 @error('concentracion')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
 
@@ -611,7 +611,7 @@ class="space-y-4 transition-all duration-200">
                                        placeholder="Ej: Tabletas recubiertas, Jarabe, Gotas..." 
                                        class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('forma_farmaceutica') border-rose-500 @enderror">
                                 @error('forma_farmaceutica')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
 
@@ -627,7 +627,7 @@ class="space-y-4 transition-all duration-200">
                                           placeholder="Indicaciones clínicas, posología básica o advertencias..." 
                                           class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('descripcion') border-rose-500 @enderror"></textarea>
                                 @error('descripcion')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                         </div>
@@ -637,7 +637,7 @@ class="space-y-4 transition-all duration-200">
                 <!-- Tarjeta 2: Clasificación Farmacéutica y Régimen -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                             Clasificación, Laboratorio y Régimen Sanitario
                         </h2>
@@ -648,7 +648,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Categoría -->
                             <div>
                                 <label for="categoria_id_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Categoría <span class="text-rose-500">*</span>
+                                    Categoría <span class="text-red-900">*</span>
                                 </label>
                                 <select name="categoria_id" 
                                         id="categoria_id_mod" 
@@ -681,7 +681,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Clasificación Sanitaria Unificada -->
                             <div class="sm:col-span-2">
                                 <label for="tipo_control_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Clasificación Sanitaria <span class="text-rose-500">*</span>
+                                    Clasificación Sanitaria <span class="text-red-900">*</span>
                                 </label>
                                 <select name="tipo_control" 
                                         id="tipo_control_mod" 
@@ -715,8 +715,8 @@ class="space-y-4 transition-all duration-200">
                                        name="activo" 
                                        x-model="formData.activo"
                                        value="1" 
-                                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                                <span class="font-bold text-emerald-700 dark:text-emerald-400">Producto Activo en el Catálogo</span>
+                                       class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500 w-4 h-4">
+                                <span class="font-bold text-emerald-900 dark:text-emerald-400">Producto Activo en el Catálogo</span>
                             </label>
                         </div>
                     </div>
@@ -725,7 +725,7 @@ class="space-y-4 transition-all duration-200">
                 <!-- Tarjeta 3: Precios e Inventario Base -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                             Precios de Compra / Venta e Inventario Base
                         </h2>
@@ -751,7 +751,7 @@ class="space-y-4 transition-all duration-200">
                             <!-- Precio de Venta -->
                             <div>
                                 <label for="precio_venta_mod" class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                                    Precio Venta Unitario (S/) <span class="text-rose-500">*</span>
+                                    Precio Venta Unitario (S/) <span class="text-red-900">*</span>
                                 </label>
                                 <input type="number" 
                                        step="0.01" 
@@ -763,7 +763,7 @@ class="space-y-4 transition-all duration-200">
                                        placeholder="0.00" 
                                        class="w-full font-mono font-extrabold px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs @error('precio_venta') border-rose-500 @enderror">
                                 @error('precio_venta')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
 
@@ -774,7 +774,7 @@ class="space-y-4 transition-all duration-200">
                                 </label>
                                 <div class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center justify-between shadow-2xs">
                                     <span>Estimado:</span>
-                                    <span class="text-emerald-700 dark:text-emerald-400" x-text="calcularMargen() + '%'"></span>
+                                    <span class="text-emerald-900 dark:text-emerald-400" x-text="calcularMargen() + '%'"></span>
                                 </div>
                             </div>
 
@@ -811,7 +811,7 @@ class="space-y-4 transition-all duration-200">
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center space-x-2">
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                             <div>
                                 <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                                     Presentaciones Comerciales y Fraccionamiento de Venta
@@ -918,7 +918,7 @@ class="space-y-4 transition-all duration-200">
                                             <template x-if="!pres.es_unidad_base">
                                                 <button type="button" 
                                                         @click="eliminarPresentacion(idx)" 
-                                                        class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                                                        class="p-1.5 rounded-lg text-red-900 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition cursor-pointer"
                                                         title="Eliminar presentación">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 </button>
@@ -937,7 +937,7 @@ class="space-y-4 transition-all duration-200">
                 <!-- Tarjeta 5: Fotografía del Medicamento -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
                     <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-800/60 flex items-center space-x-2">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                             Fotografía del Medicamento
                         </h2>
@@ -954,10 +954,10 @@ class="space-y-4 transition-all duration-200">
                                        id="imagen_mod" 
                                        accept="image/*"
                                        @change="previewFile"
-                                       class="w-full text-xs text-slate-600 dark:text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-emerald-300 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 dark:file:bg-slate-800 dark:file:text-emerald-400">
+                                       class="w-full text-xs text-slate-700 dark:text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-emerald-300 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 dark:file:bg-slate-800 dark:file:text-emerald-400">
                                 <p class="text-[11px] text-slate-500 mt-1">La imagen se mostrará en la vista en cuadrícula del catálogo y en el terminal POS.</p>
                                 @error('imagen')
-                                <p class="text-rose-500 text-[11px] mt-1">{{ $message }}</p>
+                                <p class="text-red-900 text-[11px] mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
 
@@ -986,7 +986,7 @@ class="space-y-4 transition-all duration-200">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
                             <input type="checkbox" name="crear_otro" value="1"
                                    {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                   class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                             <span>Guardar y continuar registrando</span>
                         </label>
                         <button type="submit" 

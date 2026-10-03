@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', $laboratorio->nombre . ' - Ficha de Laboratorio - FarmaBien')
 
@@ -18,7 +18,7 @@
         <div>
             <div class="flex items-center space-x-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ $laboratorio->nombre }}</h1>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $laboratorio->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $laboratorio->activo ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
                     {{ $laboratorio->activo ? 'Activo' : 'Inactivo' }}
                 </span>
             </div>
@@ -40,7 +40,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs">
-                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span class="hidden sm:inline">Modo Full</span>
             </button>
 
@@ -70,7 +70,7 @@
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
                         <span>Copiar</span>
                     </span>
-                    <span x-show="copied" class="text-emerald-600 dark:text-emerald-400">✓ Copiado</span>
+                    <span x-show="copied" class="text-emerald-900 dark:text-emerald-400">✓ Copiado</span>
                 </button>
                 @endif
             </div>
@@ -84,7 +84,7 @@
 
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Medicamentos Registrados</p>
-            <p class="text-base font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ $productos->total() ?? 0 }} productos</p>
+            <p class="text-base font-black text-emerald-900 dark:text-emerald-400 mt-1">{{ $productos->total() ?? 0 }} productos</p>
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -119,7 +119,7 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Especialidades farmacéuticas vinculadas a este laboratorio.</p>
             </div>
             @can('crear productos')
-            <a href="{{ route('productos.create') }}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+            <a href="{{ route('productos.create') }}" class="text-xs font-bold text-emerald-900 dark:text-emerald-400 hover:underline">
                 + Nuevo Medicamento
             </a>
             @endcan
@@ -138,7 +138,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @forelse($productos as $prod)
                     <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
-                        <td class="px-5 py-3.5 font-mono text-slate-600 dark:text-slate-300">
+                        <td class="px-5 py-3.5 font-mono text-slate-700 dark:text-slate-300">
                             {{ $prod->codigo_barra ?? '#' . $prod->id }}
                         </td>
                         <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
@@ -152,7 +152,7 @@
                         </td>
                         <td class="px-5 py-3.5 text-center">
                             @can('ver productos')
-                            <a href="{{ route('productos.show', $prod) }}" class="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold">Ver Ficha &rarr;</a>
+                            <a href="{{ route('productos.show', $prod) }}" class="text-emerald-900 dark:text-emerald-400 hover:underline font-semibold">Ver Ficha &rarr;</a>
                             @endcan
                         </td>
                     </tr>

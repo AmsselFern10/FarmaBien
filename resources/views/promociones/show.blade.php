@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Detalle de Promoción - FarmaBien')
 
@@ -39,7 +39,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -59,7 +59,7 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
             <p class="text-xs text-slate-500 dark:text-slate-400">Tipo de Beneficio</p>
             <p class="text-lg font-bold text-slate-900 dark:text-white mt-1">{{ strtoupper($promocion->tipo) }}</p>
-            <p class="text-[11px] text-emerald-600 font-semibold">{{ $promocion->badge_texto }} de descuento</p>
+            <p class="text-[11px] text-emerald-900 font-semibold">{{ $promocion->badge_texto }} de descuento</p>
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -73,18 +73,18 @@
             <p class="text-lg font-bold text-slate-900 dark:text-white mt-1">
                 {{ $promocion->stock_consumido }} <span class="text-xs font-normal text-slate-400">/ {{ $promocion->stock_limite ?? '∞' }} unids</span>
             </p>
-            <p class="text-[11px] text-indigo-600 font-medium">Mín. {{ $promocion->min_unidades }} unids por ticket</p>
+            <p class="text-[11px] text-indigo-900 font-medium">Mín. {{ $promocion->min_unidades }} unids por ticket</p>
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs">
             <p class="text-xs text-slate-500 dark:text-slate-400">Estado Operativo</p>
             <p class="text-lg font-bold mt-1">
                 @if($promocion->esVigente())
-                    <span class="text-emerald-600 dark:text-emerald-400">● En Vigor (Activa)</span>
+                    <span class="text-emerald-900 dark:text-emerald-400">● En Vigor (Activa)</span>
                 @elseif(!$promocion->activo)
                     <span class="text-slate-400">Inactiva (Pausada)</span>
                 @else
-                    <span class="text-rose-500">Expirada / Fuera de Rango</span>
+                    <span class="text-red-900">Expirada / Fuera de Rango</span>
                 @endif
             </p>
             <p class="text-[11px] text-slate-500">Cierra: {{ $promocion->fecha_fin->diffForHumans() }}</p>
@@ -126,10 +126,10 @@
                         <td class="py-2.5 px-3 text-right font-mono line-through text-slate-400">
                             ${{ number_format($precioReg, 2) }}
                         </td>
-                        <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-900 dark:text-emerald-400">
                             ${{ number_format($precioOferta, 2) }}
                         </td>
-                        <td class="py-2.5 px-3 text-right font-mono text-rose-600 dark:text-rose-400 font-semibold">
+                        <td class="py-2.5 px-3 text-right font-mono text-red-900 dark:text-rose-400 font-semibold">
                             -${{ number_format($ahorro, 2) }} ({{ $promocion->badge_texto }})
                         </td>
                     </tr>

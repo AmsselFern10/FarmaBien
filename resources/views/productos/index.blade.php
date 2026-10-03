@@ -38,7 +38,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span>Modo Full</span>
             </button>
 
@@ -46,7 +46,7 @@
             <button type="button" 
                     onclick="abrirModalLupaIA()" 
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-violet-950 dark:text-violet-300 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-violet-700 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <svg class="w-4 h-4 text-violet-900 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span class="hidden sm:inline">Lupa Inteligente con IA</span>
                 <span class="sm:hidden">Lupa IA</span>
             </button>
@@ -68,7 +68,7 @@
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Medicamentos</p>
                 <p class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{{ $productos->total() }}</p>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+            <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             </div>
         </div>
@@ -76,9 +76,9 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">En esta Vista</p>
-                <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{{ $productos->count() }}</p>
+                <p class="text-lg font-bold text-emerald-900 dark:text-emerald-400 mt-0.5">{{ $productos->count() }}</p>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-400 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
@@ -88,7 +88,7 @@
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Categorías Disponibles</p>
                 <p class="text-lg font-bold text-slate-800 dark:text-slate-200 mt-0.5">{{ $categorias->count() }}</p>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+            <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
             </div>
         </div>
@@ -96,9 +96,9 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Control de Lotes</p>
-                <a href="{{ route('inventario.lotes') }}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline mt-0.5 block">Ver Vencimientos &rarr;</a>
+                <a href="{{ route('inventario.lotes') }}" class="text-xs font-bold text-emerald-900 dark:text-emerald-400 hover:underline mt-0.5 block">Ver Vencimientos &rarr;</a>
             </div>
-            <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-400 flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
@@ -165,7 +165,7 @@
                                value="1" 
                                {{ request('bajo_stock') ? 'checked' : '' }} 
                                onchange="this.form.submit()" 
-                               class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                               class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500 w-4 h-4">
                         <span class="font-medium">Solo productos en stock bajo</span>
                     </label>
 
@@ -175,7 +175,7 @@
                     </button>
 
                     @if(request()->hasAny(['buscar', 'categoria_id', 'laboratorio_id', 'tipo_control', 'bajo_stock']))
-                    <a href="{{ route('productos.index') }}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition flex items-center space-x-1 font-medium">
+                    <a href="{{ route('productos.index') }}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition flex items-center space-x-1 font-medium">
                         <span>Limpiar</span>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
@@ -189,7 +189,7 @@
                         <!-- Botón Vista Cuadrícula (Cards) -->
                         <button type="button" 
                                 @click="setViewMode('grid')"
-                                :class="viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+                                :class="viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
                                 class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs transition cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                             <span>Cuadrícula</span>
@@ -197,7 +197,7 @@
                         <!-- Botón Vista Lista (Tabla) -->
                         <button type="button" 
                                 @click="setViewMode('table')"
-                                :class="viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+                                :class="viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 shadow-xs font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
                                 class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs transition cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                             <span>Lista / Tabla</span>
@@ -236,7 +236,7 @@
                              decoding="async"
                              class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300">
                     @else
-                        <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-400 flex items-center justify-center">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
                         </div>
                     @endif
@@ -267,7 +267,7 @@
                                 data-name="{{ $producto->nombre }}"
                                 onclick="abrirModalProductoIA(this.dataset.id, this.dataset.name)" 
                                 title="Consultar Ficha IA (Posología, Contraindicaciones)"
-                                class="w-7 h-7 rounded-full bg-white/95 dark:bg-slate-900/95 text-violet-600 dark:text-violet-400 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white flex items-center justify-center text-xs shadow-xs transition cursor-pointer">
+                                class="w-7 h-7 rounded-full bg-white/95 dark:bg-slate-900/95 text-violet-900 dark:text-violet-400 hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white flex items-center justify-center text-xs shadow-xs transition cursor-pointer">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                         </button>
 
@@ -295,7 +295,7 @@
                     <div>
                         <!-- Categoría y Laboratorio -->
                         <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                            <span class="truncate max-w-[120px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <span class="truncate max-w-[120px] font-medium text-emerald-900 dark:text-emerald-400">
                                 {{ $producto->categoria?->nombre ?? 'General' }}
                             </span>
                             <span class="truncate max-w-[100px] text-slate-400 dark:text-slate-500">
@@ -329,7 +329,7 @@
                             @if($producto->tiene_oferta)
                                 <div class="flex items-baseline space-x-1.5">
                                     <span class="text-xs line-through text-slate-400 font-mono font-medium">{{ formato_moneda($producto->precio_venta) }}</span>
-                                    <span class="text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">{{ formato_moneda($producto->precio_oferta) }}</span>
+                                    <span class="text-base font-extrabold text-emerald-900 dark:text-emerald-400 font-mono">{{ formato_moneda($producto->precio_oferta) }}</span>
                                 </div>
                             @else
                                 <div class="text-base font-extrabold text-slate-900 dark:text-white font-mono">
@@ -357,7 +357,7 @@
                         <!-- Vender en POS -->
                         <a href="{{ route('ventas.create', ['producto_id' => $producto->id]) }}" 
                            title="Llevar a Caja / POS"
-                           class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition shrink-0">
+                           class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-900 dark:text-emerald-400 flex items-center justify-center transition shrink-0">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         </a>
                         @endcan
@@ -381,7 +381,7 @@
                             @method('DELETE')
                             <button type="submit" 
                                     title="{{ $producto->activo ? 'Desactivar' : 'Activar' }}" 
-                                    class="w-7 h-7 rounded-lg {{ $producto->activo ? 'bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-600' }} flex items-center justify-center transition shrink-0 cursor-pointer">
+                                    class="w-7 h-7 rounded-lg {{ $producto->activo ? 'bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-red-900 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-900' }} flex items-center justify-center transition shrink-0 cursor-pointer">
                                 @if($producto->activo)
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                 @else
@@ -400,7 +400,7 @@
                 </div>
                 <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">No se encontraron medicamentos</h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                    Prueba modificando los filtros o utiliza la <span class="font-semibold text-violet-600 dark:text-violet-400">Lupa Inteligente con IA</span> para buscar por síntomas clínicos.
+                    Prueba modificando los filtros o utiliza la <span class="font-semibold text-violet-900 dark:text-violet-400">Lupa Inteligente con IA</span> para buscar por síntomas clínicos.
                 </p>
             </div>
             @endforelse
@@ -468,7 +468,7 @@
                         </td>
 
                         <!-- Código Barra -->
-                        <td class="py-3 px-4 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap text-[11px]">
+                        <td class="py-3 px-4 font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap text-[11px]">
                             {{ $producto->codigo_barra ?: '—' }}
                         </td>
 
@@ -488,7 +488,7 @@
                         <!-- Stock Actual -->
                         <td class="py-3 px-4 text-right whitespace-nowrap">
                             @if($isAgotado)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-red-900 dark:text-rose-300">
                                     0 agotado
                                 </span>
                             @elseif($isBajo)
@@ -506,9 +506,9 @@
                         <td class="py-3 px-4 text-right whitespace-nowrap font-mono">
                             @if($producto->tiene_oferta)
                                 <div class="text-[11px] line-through text-slate-400">{{ formato_moneda($producto->precio_venta) }}</div>
-                                <div class="font-extrabold text-emerald-600 dark:text-emerald-400">
+                                <div class="font-extrabold text-emerald-900 dark:text-emerald-400">
                                     {{ formato_moneda($producto->precio_oferta) }}
-                                    <span class="ml-0.5 px-1 py-0.2 rounded text-[9px] bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold">{{ $producto->badge_oferta }}</span>
+                                    <span class="ml-0.5 px-1 py-0.2 rounded text-[9px] bg-rose-100 text-red-900 dark:bg-rose-950 dark:text-rose-300 font-bold">{{ $producto->badge_oferta }}</span>
                                 </div>
                             @else
                                 <span class="font-bold text-slate-900 dark:text-white">
@@ -519,7 +519,7 @@
 
                         <!-- Estado -->
                         <td class="py-3 px-4 text-center whitespace-nowrap">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold {{ $producto->activo ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }}">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold {{ $producto->activo ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400' }}">
                                 {{ $producto->activo ? 'Activo' : 'Inactivo' }}
                             </span>
                         </td>
@@ -538,7 +538,7 @@
                                 @can('crear ventas')
                                 <a href="{{ route('ventas.create', ['producto_id' => $producto->id]) }}" 
                                    title="Vender en POS" 
-                                   class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs">
+                                   class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 inline-flex items-center justify-center transition shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                 </a>
                                 @endcan
@@ -549,7 +549,7 @@
                                         data-name="{{ $producto->nombre }}"
                                         onclick="abrirModalProductoIA(this.dataset.id, this.dataset.name)" 
                                         title="Consultar Ficha IA" 
-                                        class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 border border-violet-200 dark:border-violet-800/60 inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
+                                        class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-900 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/60 border border-violet-200 dark:border-violet-800/60 inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                 </button>
 
@@ -574,7 +574,7 @@
                                     @method('DELETE')
                                     <button type="submit" 
                                             title="{{ $producto->activo ? 'Desactivar medicamento' : 'Activar medicamento' }}" 
-                                            class="w-8 h-8 rounded-lg {{ $producto->activo ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60' }} inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
+                                            class="w-8 h-8 rounded-lg {{ $producto->activo ? 'bg-rose-50 dark:bg-rose-950/60 text-red-900 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60' }} inline-flex items-center justify-center transition shadow-2xs cursor-pointer">
                                         @if($producto->activo)
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                         @else
@@ -649,10 +649,10 @@
                 <!-- Ejemplos rápidos -->
                 <div class="flex flex-wrap gap-1.5 mt-2">
                     <span class="text-[11px] text-slate-400 font-medium">Sugerencias:</span>
-                    <button type="button" onclick="probarSintoma('dolor de cabeza y fiebre')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Dolor de cabeza</button>
-                    <button type="button" onclick="probarSintoma('tos seca y garganta irritada')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Tos y garganta</button>
-                    <button type="button" onclick="probarSintoma('acidez estomacal y gastritis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Acidez / Gastritis</button>
-                    <button type="button" onclick="probarSintoma('alergia y rinitis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Alergia</button>
+                    <button type="button" onclick="probarSintoma('dolor de cabeza y fiebre')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Dolor de cabeza</button>
+                    <button type="button" onclick="probarSintoma('tos seca y garganta irritada')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Tos y garganta</button>
+                    <button type="button" onclick="probarSintoma('acidez estomacal y gastritis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Acidez / Gastritis</button>
+                    <button type="button" onclick="probarSintoma('alergia y rinitis')" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/50 text-[11px] transition cursor-pointer">Alergia</button>
                 </div>
             </div>
 
@@ -666,12 +666,12 @@
             <div id="lupa_results" class="max-h-80 overflow-y-auto space-y-2.5 pr-1"></div>
 
             <!-- Error Container -->
-            <div id="lupa_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
+            <div id="lupa_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-red-900 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
         </div>
 
         <!-- Footer -->
         <div class="px-6 py-3.5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <button type="button" onclick="usarTextoLupaEnFiltro()" class="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer flex items-center gap-1">
+            <button type="button" onclick="usarTextoLupaEnFiltro()" class="text-xs font-semibold text-violet-900 dark:text-violet-400 hover:underline cursor-pointer flex items-center gap-1">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <span>Filtrar con este texto en la página principal</span>
             </button>
@@ -721,7 +721,7 @@
                 <!-- Uso Clínico e Indicaciones -->
                 <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60">
                     <div class="flex items-center space-x-2 text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1">
-                        <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <svg class="w-4 h-4 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Uso Clínico e Indicaciones Terapéuticas</span>
                     </div>
                     <p id="ia_uso_clinico" class="text-xs text-indigo-950 dark:text-indigo-200 leading-relaxed"></p>
@@ -729,8 +729,8 @@
 
                 <!-- Posología -->
                 <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                    <div class="flex items-center space-x-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-                        <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="flex items-center space-x-2 text-xs font-bold text-emerald-900 dark:text-emerald-300 mb-1">
+                        <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Posología y Modo de Uso Recomendado</span>
                     </div>
                     <p id="ia_posologia" class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed"></p>
@@ -739,7 +739,7 @@
                 <!-- Recomendaciones Farmacéuticas -->
                 <div class="p-3.5 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60">
                     <div class="flex items-center space-x-2 text-xs font-bold text-teal-800 dark:text-teal-300 mb-1">
-                        <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <svg class="w-4 h-4 text-teal-900 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Recomendaciones del Farmacéutico al Paciente</span>
                     </div>
                     <p id="ia_recomendaciones" class="text-xs text-teal-950 dark:text-teal-200 leading-relaxed"></p>
@@ -748,7 +748,7 @@
                 <!-- Advertencias -->
                 <div class="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
                     <div class="flex items-center space-x-2 text-xs font-bold text-amber-800 dark:text-amber-300 mb-1">
-                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <svg class="w-4 h-4 text-amber-900 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         <span>Advertencias y Efectos Adversos</span>
                     </div>
                     <p id="ia_advertencias" class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed"></p>
@@ -756,8 +756,8 @@
 
                 <!-- Contraindicaciones -->
                 <div class="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60">
-                    <div class="flex items-center space-x-2 text-xs font-bold text-rose-700 dark:text-rose-300 mb-1">
-                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    <div class="flex items-center space-x-2 text-xs font-bold text-red-900 dark:text-rose-300 mb-1">
+                        <svg class="w-4 h-4 text-red-900 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                         <span>Contraindicaciones Clínicas e Interacciones</span>
                     </div>
                     <p id="ia_contraindicaciones" class="text-xs text-rose-800 dark:text-rose-200 leading-relaxed"></p>
@@ -774,7 +774,7 @@
             </div>
 
             <!-- Error Container -->
-            <div id="modalProductoIA_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
+            <div id="modalProductoIA_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-red-900 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
         </div>
 
         <!-- Footer -->
@@ -913,9 +913,9 @@ function renderResultadosLupa(items) {
                 <div class="text-[11px] text-slate-500 mt-0.5">
                     ${escapeHtml(p.principio_activo || 'Fórmula')} • ${escapeHtml(p.categoria)} • ${escapeHtml(p.laboratorio)}
                 </div>
-                ${p.explicacion ? `<div class="text-[11px] text-violet-700 dark:text-violet-300 mt-1 font-medium">${escapeHtml(p.explicacion)}</div>` : ''}
+                ${p.explicacion ? `<div class="text-[11px] text-violet-900 dark:text-violet-300 mt-1 font-medium">${escapeHtml(p.explicacion)}</div>` : ''}
                 <div class="mt-1 flex items-center space-x-3 text-xs">
-                    <span class="font-bold text-emerald-600 dark:text-emerald-400">C$ ${escapeHtml(p.precio_venta)}</span>
+                    <span class="font-bold text-emerald-900 dark:text-emerald-400">C$ ${escapeHtml(p.precio_venta)}</span>
                     <span class="text-slate-500">Stock: ${escapeHtml(p.stock_total)} unid.</span>
                 </div>
             </div>
@@ -923,14 +923,14 @@ function renderResultadosLupa(items) {
                 <a href="${escapeHtml(p.url_show)}" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-[11px] font-semibold text-center transition">
                     Ver
                 </a>
-                <a href="/ventas/crear?producto_id=${p.id}" class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold hover:bg-emerald-100 transition text-center">
+                <a href="/ventas/crear?producto_id=${p.id}" class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 text-[11px] font-semibold hover:bg-emerald-100 transition text-center">
                     POS
                 </a>
                 <button type="button" 
                         data-id="${p.id}" 
                         data-name="${escapeHtml(p.nombre)}" 
                         onclick="abrirModalProductoIA(this.dataset.id, this.dataset.name)" 
-                        class="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[11px] font-semibold hover:bg-violet-100 transition cursor-pointer">
+                        class="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/60 text-violet-900 dark:text-violet-300 text-[11px] font-semibold hover:bg-violet-100 transition cursor-pointer">
                     Ficha IA
                 </button>
             </div>
@@ -977,7 +977,7 @@ function abrirModalProductoIA(id, nombre) {
         const badge = document.getElementById('ia_status_badge');
         if (badge) {
             if (data.fuente_ia === 'api_externa') {
-                badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800';
+                badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 dark:bg-violet-950/60 text-violet-900 dark:text-violet-300 border border-violet-200 dark:border-violet-800';
                 badge.textContent = data.generado_por || 'IA Externa';
             } else {
                 badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
@@ -1003,7 +1003,7 @@ function abrirModalProductoIA(id, nombre) {
                     <a href="${escapeHtml(s.url)}" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition block">
                         <div class="font-bold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(s.nombre)}</div>
                         <div class="text-[11px] text-slate-500 truncate">${escapeHtml(s.principio || 'Equivalente')}</div>
-                        <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">C$ ${escapeHtml(s.precio)}</div>
+                        <div class="text-xs font-bold text-emerald-900 dark:text-emerald-400 mt-1">C$ ${escapeHtml(s.precio)}</div>
                     </a>
                 `).join('');
             } else {

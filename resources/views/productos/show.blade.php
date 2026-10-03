@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', $producto->nombre . ' - Detalle Farmacológico - FarmaBien')
 
@@ -21,7 +21,7 @@
                 <h1 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>{{ $producto->nombre }}</span>
                 </h1>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $producto->activo ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $producto->activo ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-700' }}">
                     {{ $producto->activo ? 'Activo' : 'Inactivo' }}
                 </span>
                 @if($producto->esControlado())
@@ -52,7 +52,7 @@
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -62,7 +62,7 @@
                     data-name="{{ $producto->nombre }}"
                     onclick="abrirModalProductoIA(this.dataset.id, this.dataset.name)"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-violet-950 dark:text-violet-300 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-violet-700 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <svg class="w-4 h-4 text-violet-900 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span>Ficha IA</span>
             </button>
 
@@ -71,7 +71,7 @@
             <a href="{{ route('ventas.create', ['producto_id' => $producto->id]) }}" 
                title="Cargar este producto directamente en el terminal POS"
                class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-950 dark:text-emerald-300 text-xs font-semibold shadow-2xs transition">
-                <svg class="w-4 h-4 text-emerald-700 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 <span>Vender en POS</span>
             </a>
             @endcan
@@ -140,8 +140,8 @@
             <!-- Bloque de Identificación, Código de Barras y Categorización -->
             <div class="lg:col-span-5 space-y-3.5">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <svg class="w-3.5 h-3.5 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                         <span>{{ $producto->categoria?->nombre ?? 'General' }}</span>
                     </span>
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
@@ -149,7 +149,7 @@
                         <span>Lab: {{ $producto->laboratorio?->nombre ?? 'N/A' }}</span>
                     </span>
                     @if($producto->ubicacion)
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                         <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         <span>Ubicación: {{ $producto->ubicacion }}</span>
                     </span>
@@ -172,7 +172,7 @@
                                 <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
                                 <span>Copiar</span>
                             </span>
-                            <span x-show="copied" class="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                            <span x-show="copied" class="text-emerald-900 dark:text-emerald-400 inline-flex items-center gap-1">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                 <span>¡Copiado!</span>
                             </span>
@@ -207,7 +207,7 @@
                 </div>
 
                 @if($producto->descripcion)
-                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 line-clamp-2">
+                <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 line-clamp-2">
                     {{ $producto->descripcion }}
                 </p>
                 @endif
@@ -218,12 +218,12 @@
                 <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                     <div>
                         <span class="text-[10px] uppercase font-bold text-slate-400">Precio Venta (Base)</span>
-                        <div class="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        <div class="text-xl font-black text-emerald-900 dark:text-emerald-400 mt-0.5">
                             {{ formato_moneda($producto->precio_venta) }}
                         </div>
                         <span class="text-[10px] text-slate-400">por unidad</span>
                     </div>
-                    <a href="{{ route('precios.show', $producto) }}" class="mt-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                    <a href="{{ route('precios.show', $producto) }}" class="mt-2 text-[11px] font-bold text-emerald-900 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
                         <span>Ver Historial de Precios</span>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
@@ -247,7 +247,7 @@
                     <div class="text-xl font-black text-slate-800 dark:text-slate-200 mt-0.5">
                         {{ number_format($margen, 1) }}%
                     </div>
-                    <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Rentabilidad</span>
+                    <span class="text-[10px] text-emerald-900 dark:text-emerald-400 font-semibold">Rentabilidad</span>
                 </div>
 
                 <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
@@ -267,7 +267,7 @@
         <!-- Ficha Técnica -->
         <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Ficha Técnica y Farmacológica</span>
             </h2>
 
@@ -311,7 +311,7 @@
         <!-- Panel de Stock Actual y Alertas -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 <span>Estado de Existencias</span>
             </h2>
 
@@ -328,17 +328,17 @@
                 </div>
 
                 @if($isAgotado)
-                <p class="text-xs text-rose-700 dark:text-rose-300 mt-2 font-medium flex items-center justify-center gap-1">
+                <p class="text-xs text-red-900 dark:text-rose-300 mt-2 font-medium flex items-center justify-center gap-1">
                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     <span>Producto sin existencias. Reabastecimiento urgente.</span>
                 </p>
                 @elseif($isBajo)
-                <p class="text-xs text-amber-700 dark:text-amber-300 mt-2 font-medium flex items-center justify-center gap-1">
+                <p class="text-xs text-amber-900 dark:text-amber-300 mt-2 font-medium flex items-center justify-center gap-1">
                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     <span>Stock por debajo del umbral mínimo de {{ $producto->stock_minimo }} unid.</span>
                 </p>
                 @else
-                <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-2 font-medium flex items-center justify-center gap-1">
+                <p class="text-xs text-emerald-900 dark:text-emerald-300 mt-2 font-medium flex items-center justify-center gap-1">
                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     <span>Nivel de existencias óptimo para la venta.</span>
                 </p>
@@ -346,15 +346,15 @@
             </div>
 
             <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs">
-                <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                <div class="flex justify-between text-slate-700 dark:text-slate-400">
                     <span>Lotes Activos:</span>
                     <span class="font-bold text-slate-900 dark:text-white">{{ $producto->lotes->where('activo', true)->count() }}</span>
                 </div>
-                <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                <div class="flex justify-between text-slate-700 dark:text-slate-400">
                     <span>Fecha Registro:</span>
                     <span class="font-bold text-slate-900 dark:text-white">{{ $producto->created_at->format('d/m/Y H:i') }}</span>
                 </div>
-                <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                <div class="flex justify-between text-slate-700 dark:text-slate-400">
                     <span>Último Movimiento:</span>
                     <span class="font-bold text-slate-900 dark:text-white">{{ $producto->updated_at->diffForHumans() }}</span>
                 </div>
@@ -367,14 +367,14 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                    <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                     <span>Presentaciones Comerciales y Venta Fraccionada (Caja, Blíster, Unidad)</span>
                 </h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Control de existencias unificado: el stock se descuenta en unidades base automáticamente al vender por caja, blíster o unidad.
                 </p>
             </div>
-            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
                 Stock Base: {{ $stockTotal }} unidades
             </span>
         </div>
@@ -396,7 +396,7 @@
                         @endif
                     </div>
                     <div class="flex items-baseline justify-between pt-1">
-                        <div class="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        <div class="text-base font-black text-emerald-900 dark:text-emerald-400 font-mono">
                             {{ formato_moneda($pres->precio_venta) }}
                         </div>
                         <div class="text-[11px] text-slate-400">
@@ -417,7 +417,7 @@
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">Base</span>
                     </div>
                     <div class="flex items-baseline justify-between pt-1">
-                        <div class="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        <div class="text-base font-black text-emerald-900 dark:text-emerald-400 font-mono">
                             {{ formato_moneda($producto->precio_venta) }}
                         </div>
                         <div class="text-[11px] text-slate-400">por unidad</div>
@@ -477,10 +477,10 @@
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <span>Lotes y Control de Vencimientos</span>
             </h2>
-            <a href="{{ route('inventario.lotes') }}" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+            <a href="{{ route('inventario.lotes') }}" class="text-xs font-semibold text-emerald-900 dark:text-emerald-400 hover:underline">
                 Gestionar Lotes &rarr;
             </a>
         </div>
@@ -517,7 +517,7 @@
                         </td>
                         <td class="py-2.5 px-3 text-center">
                             @if($diasRestantes < 0)
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-red-900 dark:text-rose-300">
                                     Vencido hace {{ abs((int)$diasRestantes) }} días
                                 </span>
                             @elseif($diasRestantes <= 60)
@@ -575,7 +575,7 @@
                     <!-- Uso Clínico -->
                     <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60">
                         <div class="flex items-center space-x-2 text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1">
-                            <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <svg class="w-4 h-4 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Uso Clínico e Indicaciones Terapéuticas</span>
                         </div>
                         <p id="ia_uso_clinico" class="text-xs text-indigo-950 dark:text-indigo-200 leading-relaxed"></p>
@@ -583,8 +583,8 @@
 
                     <!-- Posología -->
                     <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div class="flex items-center space-x-2 text-xs font-bold text-emerald-900 dark:text-emerald-300 mb-1">
+                            <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Posología y Modo de Uso Recomendado</span>
                         </div>
                         <p id="ia_posologia" class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed"></p>
@@ -593,7 +593,7 @@
                     <!-- Recomendaciones Farmacéuticas -->
                     <div class="p-3.5 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60">
                         <div class="flex items-center space-x-2 text-xs font-bold text-teal-800 dark:text-teal-300 mb-1">
-                            <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <svg class="w-4 h-4 text-teal-900 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Recomendaciones del Farmacéutico al Paciente</span>
                         </div>
                         <p id="ia_recomendaciones" class="text-xs text-teal-950 dark:text-teal-200 leading-relaxed"></p>
@@ -602,7 +602,7 @@
                     <!-- Advertencias -->
                     <div class="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
                         <div class="flex items-center space-x-2 text-xs font-bold text-amber-800 dark:text-amber-300 mb-1">
-                            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <svg class="w-4 h-4 text-amber-900 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                             <span>Advertencias y Efectos Adversos</span>
                         </div>
                         <p id="ia_advertencias" class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed"></p>
@@ -610,8 +610,8 @@
 
                     <!-- Contraindicaciones -->
                     <div class="p-3.5 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60">
-                        <div class="flex items-center space-x-2 text-xs font-bold text-rose-700 dark:text-rose-300 mb-1">
-                            <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                        <div class="flex items-center space-x-2 text-xs font-bold text-red-900 dark:text-rose-300 mb-1">
+                            <svg class="w-4 h-4 text-red-900 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                             <span>Contraindicaciones Clínicas e Interacciones</span>
                         </div>
                         <p id="ia_contraindicaciones" class="text-xs text-rose-800 dark:text-rose-200 leading-relaxed"></p>
@@ -627,7 +627,7 @@
                     </div>
                 </div>
 
-                <div id="modalProductoIA_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
+                <div id="modalProductoIA_error" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-red-900 dark:text-rose-300 text-xs border border-rose-200 dark:border-rose-800"></div>
             </div>
 
             <div class="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end">
@@ -685,7 +685,7 @@ function abrirModalProductoIA(id, nombre) {
         const badge = document.getElementById('ia_status_badge');
         if (badge) {
             if (data.fuente_ia === 'api_externa') {
-                badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800';
+                badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 dark:bg-violet-950/60 text-violet-900 dark:text-violet-300 border border-violet-200 dark:border-violet-800';
                 badge.textContent = data.generado_por || 'IA Externa';
             } else {
                 badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
@@ -705,7 +705,7 @@ function abrirModalProductoIA(id, nombre) {
                 <a href="${escapeHtml(s.url)}" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition block">
                     <div class="font-bold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(s.nombre)}</div>
                     <div class="text-[11px] text-slate-500 truncate">${escapeHtml(s.principio || 'Equivalente')}</div>
-                    <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">C$ ${escapeHtml(s.precio)}</div>
+                    <div class="text-xs font-bold text-emerald-900 dark:text-emerald-400 mt-1">C$ ${escapeHtml(s.precio)}</div>
                 </a>
             `).join('');
         } else {

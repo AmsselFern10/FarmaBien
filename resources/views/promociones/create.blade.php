@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Nueva Promoción - FarmaBien')
 
@@ -122,7 +122,7 @@ class="space-y-4 transition-all duration-200">
                     @click="$dispatch('toggle-pos-fullscreen')"
                     title="Modo Pantalla Completa / Ocultar Barras"
                     class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-2xs transition cursor-pointer">
-                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <svg class="w-4 h-4 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                 <span x-text="posFullscreen ? 'Salir Full' : 'Modo Full'">Modo Full</span>
             </button>
 
@@ -158,7 +158,7 @@ class="space-y-4 transition-all duration-200">
     @if($errors->any())
     <div class="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs shadow-xs">
         <p class="font-bold mb-1 flex items-center gap-1.5">
-            <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <svg class="w-4 h-4 text-red-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             Por favor corrige los siguientes errores:
         </p>
         <ul class="list-disc list-inside space-y-0.5 ml-1">
@@ -202,13 +202,13 @@ class="space-y-4 transition-all duration-200">
                 <!-- Panel Izquierdo (7 cols): Datos de Oferta & Reglas -->
                 <div class="lg:col-span-7 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                         <span>1. Nombre y Mecánica de Descuento</span>
                     </div>
 
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Nombre de la Promoción <span class="text-rose-500">*</span>
+                            Nombre de la Promoción <span class="text-red-900">*</span>
                         </label>
                         <input type="text" 
                                name="nombre" 
@@ -222,7 +222,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Selector de Tipo en Chips -->
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Tipo de Beneficio <span class="text-rose-500">*</span>
+                            Tipo de Beneficio <span class="text-red-900">*</span>
                         </label>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                             <button type="button" 
@@ -264,7 +264,7 @@ class="space-y-4 transition-all duration-200">
                                 <span x-show="formData.tipo === 'porcentaje'">Descuento (%)</span>
                                 <span x-show="formData.tipo === 'monto_fijo'">Descuento ($)</span>
                                 <span x-show="formData.tipo === '2x1' || formData.tipo === '3x2'">Valor Equivalente</span>
-                                <span class="text-rose-500">*</span>
+                                <span class="text-red-900">*</span>
                             </label>
                             <div class="relative">
                                 <input type="number" 
@@ -280,7 +280,7 @@ class="space-y-4 transition-all duration-200">
 
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Mínimo Unidades <span class="text-rose-500">*</span>
+                                Mínimo Unidades <span class="text-red-900">*</span>
                             </label>
                             <input type="number" 
                                    min="1" 
@@ -306,9 +306,9 @@ class="space-y-4 transition-all duration-200">
                     <!-- Mini Live Simulation Badge -->
                     <div class="p-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs">
                         <div class="flex items-center space-x-2">
-                            <span class="text-emerald-700 dark:text-emerald-300 font-bold text-[11px]">Simulación POS (Base $20):</span>
-                            <span class="text-slate-600 dark:text-slate-300 text-[11px]">
-                                1 unidad: <strong class="text-emerald-700 dark:text-emerald-400" x-text="'$' + (20.00 - calculateDiscount(1)).toFixed(2)"></strong>
+                            <span class="text-emerald-900 dark:text-emerald-300 font-bold text-[11px]">Simulación POS (Base $20):</span>
+                            <span class="text-slate-700 dark:text-slate-300 text-[11px]">
+                                1 unidad: <strong class="text-emerald-900 dark:text-emerald-400" x-text="'$' + (20.00 - calculateDiscount(1)).toFixed(2)"></strong>
                             </span>
                         </div>
                         <span class="text-[11px] font-extrabold px-2 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200"
@@ -332,14 +332,14 @@ class="space-y-4 transition-all duration-200">
                 <!-- Panel Derecho (5 cols): Alcance, Fechas y Estado -->
                 <div class="lg:col-span-5 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3">
                     <div class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5 border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
-                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <svg class="w-3.5 h-3.5 text-emerald-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span>2. Alcance & Vigencia</span>
                     </div>
 
                     <!-- Selector de Alcance -->
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Alcance de Aplicación <span class="text-rose-500">*</span>
+                            Alcance de Aplicación <span class="text-red-900">*</span>
                         </label>
                         <div class="grid grid-cols-2 gap-1.5">
                             <label class="flex items-center space-x-1.5 p-1.5 rounded-lg border cursor-pointer text-xs"
@@ -368,7 +368,7 @@ class="space-y-4 transition-all duration-200">
                     <!-- Target Selector Dinámico -->
                     <div x-show="formData.alcance === 'producto'" x-cloak>
                         <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Seleccionar Medicamento <span class="text-rose-500">*</span>
+                            Seleccionar Medicamento <span class="text-red-900">*</span>
                         </label>
                         <select name="producto_id" x-model="formData.producto_id" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                             <option value="">-- Selecciona medicamento --</option>
@@ -380,7 +380,7 @@ class="space-y-4 transition-all duration-200">
 
                     <div x-show="formData.alcance === 'categoria'" x-cloak>
                         <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Seleccionar Categoría <span class="text-rose-500">*</span>
+                            Seleccionar Categoría <span class="text-red-900">*</span>
                         </label>
                         <select name="categoria_id" x-model="formData.categoria_id" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                             <option value="">-- Selecciona categoría --</option>
@@ -392,7 +392,7 @@ class="space-y-4 transition-all duration-200">
 
                     <div x-show="formData.alcance === 'laboratorio'" x-cloak>
                         <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                            Seleccionar Laboratorio <span class="text-rose-500">*</span>
+                            Seleccionar Laboratorio <span class="text-red-900">*</span>
                         </label>
                         <select name="laboratorio_id" x-model="formData.laboratorio_id" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
                             <option value="">-- Selecciona laboratorio --</option>
@@ -406,7 +406,7 @@ class="space-y-4 transition-all duration-200">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Fecha Inicio <span class="text-rose-500">*</span>
+                                Fecha Inicio <span class="text-red-900">*</span>
                             </label>
                             <input type="datetime-local" 
                                    name="fecha_inicio" 
@@ -417,7 +417,7 @@ class="space-y-4 transition-all duration-200">
 
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Fecha Fin <span class="text-rose-500">*</span>
+                                Fecha Fin <span class="text-red-900">*</span>
                             </label>
                             <input type="datetime-local" 
                                    name="fecha_fin" 
@@ -429,8 +429,8 @@ class="space-y-4 transition-all duration-200">
 
                     <div class="pt-1">
                         <label class="inline-flex items-center space-x-2 cursor-pointer text-xs">
-                            <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-600 w-3.5 h-3.5">
-                            <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Activar campaña inmediatamente para ventas</span>
+                            <input type="checkbox" name="activo" x-model="formData.activo" value="1" class="rounded border-slate-300 text-emerald-900 w-3.5 h-3.5">
+                            <span class="text-[11px] font-semibold text-emerald-900 dark:text-emerald-400">Activar campaña inmediatamente para ventas</span>
                         </label>
                     </div>
                 </div>
@@ -443,7 +443,7 @@ class="space-y-4 transition-all duration-200">
                     <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium">
                         <input type="checkbox" name="crear_otro" value="1"
                                {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                               class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                               class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                         <span>Guardar y crear otra</span>
                     </label>
                     <button type="submit" 
@@ -469,14 +469,14 @@ class="space-y-4 transition-all duration-200">
                     <!-- Tarjeta 1: Información Básica -->
                     <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 space-y-4">
                         <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
-                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold">1</span>
+                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 text-xs font-bold">1</span>
                             Información General de la Campaña
                         </h2>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Nombre de la Promoción <span class="text-rose-500">*</span>
+                                    Nombre de la Promoción <span class="text-red-900">*</span>
                                 </label>
                                 <input type="text" name="nombre" x-model="formData.nombre" required maxlength="150"
                                        placeholder="Ej: Descuento de Temporada Antigripales, 2x1 Vitaminas C, 15% Laboratorios Bayer..."
@@ -497,36 +497,36 @@ class="space-y-4 transition-all duration-200">
                     <!-- Tarjeta 2: Tipo de Beneficio y Descuento -->
                     <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 space-y-4">
                         <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
-                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold">2</span>
+                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 text-xs font-bold">2</span>
                             Tipo de Descuento y Reglas Financieras
                         </h2>
 
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <label class="flex flex-col items-center p-3 rounded-xl border cursor-pointer transition text-center"
-                                   :class="formData.tipo === 'porcentaje' ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400'">
+                                   :class="formData.tipo === 'porcentaje' ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-400'">
                                 <input type="radio" name="tipo" value="porcentaje" class="sr-only" @click="updateTipo('porcentaje')">
-                                <svg class="w-5 h-5 mb-1 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                <svg class="w-5 h-5 mb-1 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                                 <span class="text-xs">Porcentual (%)</span>
                             </label>
 
                             <label class="flex flex-col items-center p-3 rounded-xl border cursor-pointer transition text-center"
-                                   :class="formData.tipo === 'monto_fijo' ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400'">
+                                   :class="formData.tipo === 'monto_fijo' ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-400'">
                                 <input type="radio" name="tipo" value="monto_fijo" class="sr-only" @click="updateTipo('monto_fijo')">
-                                <svg class="w-5 h-5 mb-1 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <svg class="w-5 h-5 mb-1 text-emerald-900 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <span class="text-xs">Monto Fijo ($)</span>
                             </label>
 
                             <label class="flex flex-col items-center p-3 rounded-xl border cursor-pointer transition text-center"
-                                   :class="formData.tipo === '2x1' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400'">
+                                   :class="formData.tipo === '2x1' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-400'">
                                 <input type="radio" name="tipo" value="2x1" class="sr-only" @click="updateTipo('2x1')">
-                                <svg class="w-5 h-5 mb-1 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
+                                <svg class="w-5 h-5 mb-1 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
                                 <span class="text-xs">2x1 Combo</span>
                             </label>
 
                             <label class="flex flex-col items-center p-3 rounded-xl border cursor-pointer transition text-center"
-                                   :class="formData.tipo === '3x2' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400'">
+                                   :class="formData.tipo === '3x2' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-bold shadow-xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-400'">
                                 <input type="radio" name="tipo" value="3x2" class="sr-only" @click="updateTipo('3x2')">
-                                <svg class="w-5 h-5 mb-1 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                <svg class="w-5 h-5 mb-1 text-indigo-900 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                 <span class="text-xs">3x2 Pack</span>
                             </label>
                         </div>
@@ -537,7 +537,7 @@ class="space-y-4 transition-all duration-200">
                                     <span x-show="formData.tipo === 'porcentaje'">Porcentaje de Descuento (%)</span>
                                     <span x-show="formData.tipo === 'monto_fijo'">Monto de Descuento ($)</span>
                                     <span x-show="formData.tipo === '2x1' || formData.tipo === '3x2'">Valor Equivalente</span>
-                                    <span class="text-rose-500">*</span>
+                                    <span class="text-red-900">*</span>
                                 </label>
                                 <div class="relative">
                                     <input type="number" step="0.01" min="0" name="valor" x-model="formData.valor" required
@@ -548,7 +548,7 @@ class="space-y-4 transition-all duration-200">
 
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Mínimo de Unidades <span class="text-rose-500">*</span>
+                                    Mínimo de Unidades <span class="text-red-900">*</span>
                                 </label>
                                 <input type="number" min="1" name="min_unidades" x-model="formData.min_unidades" required
                                        class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
@@ -570,32 +570,32 @@ class="space-y-4 transition-all duration-200">
                     <!-- Tarjeta 3: Alcance y Destino -->
                     <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 space-y-4">
                         <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
-                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold">3</span>
+                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 text-xs font-bold">3</span>
                             Alcance de Aplicación
                         </h2>
 
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <label class="flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition"
-                                   :class="formData.alcance === 'producto' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'">
-                                <input type="radio" name="alcance" value="producto" x-model="formData.alcance" class="text-emerald-600 focus:ring-emerald-500">
+                                   :class="formData.alcance === 'producto' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-400'">
+                                <input type="radio" name="alcance" value="producto" x-model="formData.alcance" class="text-emerald-900 focus:ring-emerald-500">
                                 <span class="text-xs">Por Medicamento</span>
                             </label>
 
                             <label class="flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition"
-                                   :class="formData.alcance === 'categoria' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'">
-                                <input type="radio" name="alcance" value="categoria" x-model="formData.alcance" class="text-emerald-600 focus:ring-emerald-500">
+                                   :class="formData.alcance === 'categoria' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-400'">
+                                <input type="radio" name="alcance" value="categoria" x-model="formData.alcance" class="text-emerald-900 focus:ring-emerald-500">
                                 <span class="text-xs">Por Categoría</span>
                             </label>
 
                             <label class="flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition"
-                                   :class="formData.alcance === 'laboratorio' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'">
-                                <input type="radio" name="alcance" value="laboratorio" x-model="formData.alcance" class="text-emerald-600 focus:ring-emerald-500">
+                                   :class="formData.alcance === 'laboratorio' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-400'">
+                                <input type="radio" name="alcance" value="laboratorio" x-model="formData.alcance" class="text-emerald-900 focus:ring-emerald-500">
                                 <span class="text-xs">Por Laboratorio</span>
                             </label>
 
                             <label class="flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition"
-                                   :class="formData.alcance === 'general' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'">
-                                <input type="radio" name="alcance" value="general" x-model="formData.alcance" class="text-emerald-600 focus:ring-emerald-500">
+                                   :class="formData.alcance === 'general' ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-400'">
+                                <input type="radio" name="alcance" value="general" x-model="formData.alcance" class="text-emerald-900 focus:ring-emerald-500">
                                 <span class="text-xs">Catálogo Global</span>
                             </label>
                         </div>
@@ -603,7 +603,7 @@ class="space-y-4 transition-all duration-200">
                         <!-- Selector Específico según Alcance -->
                         <div x-show="formData.alcance === 'producto'" x-cloak class="pt-2">
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Seleccionar Medicamento / Producto <span class="text-rose-500">*</span>
+                                Seleccionar Medicamento / Producto <span class="text-red-900">*</span>
                             </label>
                             <select name="producto_id" x-model="formData.producto_id" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs focus:ring-emerald-500 focus:border-emerald-500">
                                 <option value="">-- Seleccione un medicamento --</option>
@@ -617,7 +617,7 @@ class="space-y-4 transition-all duration-200">
 
                         <div x-show="formData.alcance === 'categoria'" x-cloak class="pt-2">
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Seleccionar Categoría Terapéutica <span class="text-rose-500">*</span>
+                                Seleccionar Categoría Terapéutica <span class="text-red-900">*</span>
                             </label>
                             <select name="categoria_id" x-model="formData.categoria_id" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs focus:ring-emerald-500 focus:border-emerald-500">
                                 <option value="">-- Seleccione una categoría --</option>
@@ -631,7 +631,7 @@ class="space-y-4 transition-all duration-200">
 
                         <div x-show="formData.alcance === 'laboratorio'" x-cloak class="pt-2">
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                Seleccionar Laboratorio Fabricante <span class="text-rose-500">*</span>
+                                Seleccionar Laboratorio Fabricante <span class="text-red-900">*</span>
                             </label>
                             <select name="laboratorio_id" x-model="formData.laboratorio_id" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs focus:ring-emerald-500 focus:border-emerald-500">
                                 <option value="">-- Seleccione un laboratorio --</option>
@@ -647,14 +647,14 @@ class="space-y-4 transition-all duration-200">
                     <!-- Tarjeta 4: Período de Vigencia -->
                     <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-5 space-y-4">
                         <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-2">
-                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold">4</span>
+                            <span class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 text-xs font-bold">4</span>
                             Período de Vigencia y Estado
                         </h2>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Fecha y Hora de Inicio <span class="text-rose-500">*</span>
+                                    Fecha y Hora de Inicio <span class="text-red-900">*</span>
                                 </label>
                                 <input type="datetime-local" name="fecha_inicio" required
                                        x-model="formData.fecha_inicio"
@@ -663,7 +663,7 @@ class="space-y-4 transition-all duration-200">
 
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                    Fecha y Hora de Finalización <span class="text-rose-500">*</span>
+                                    Fecha y Hora de Finalización <span class="text-red-900">*</span>
                                 </label>
                                 <input type="datetime-local" name="fecha_fin" required
                                        x-model="formData.fecha_fin"
@@ -673,7 +673,7 @@ class="space-y-4 transition-all duration-200">
                             <div class="sm:col-span-2 pt-2">
                                 <label class="inline-flex items-center space-x-2.5 cursor-pointer">
                                     <input type="checkbox" name="activo" value="1" x-model="formData.activo"
-                                           class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                           class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                                     <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">Activar campaña inmediatamente para ventas</span>
                                 </label>
                             </div>
@@ -703,7 +703,7 @@ class="space-y-4 transition-all duration-200">
                                     <span class="text-slate-500">Por 1 unidad:</span>
                                     <div class="text-right">
                                         <span class="line-through text-slate-400" x-show="calculateDiscount(1) > 0" x-text="'$' + Number(samplePrice).toFixed(2)"></span>
-                                        <span class="font-bold text-emerald-600 dark:text-emerald-400 ml-1" x-text="'$' + (samplePrice - calculateDiscount(1)).toFixed(2)"></span>
+                                        <span class="font-bold text-emerald-900 dark:text-emerald-400 ml-1" x-text="'$' + (samplePrice - calculateDiscount(1)).toFixed(2)"></span>
                                     </div>
                                 </div>
 
@@ -711,7 +711,7 @@ class="space-y-4 transition-all duration-200">
                                     <span class="text-slate-500" x-text="'Por ' + formData.min_unidades + ' unidades (Combo):'"></span>
                                     <div class="text-right">
                                         <span class="line-through text-slate-400" x-text="'$' + (samplePrice * formData.min_unidades).toFixed(2)"></span>
-                                        <span class="font-bold text-emerald-600 dark:text-emerald-400 ml-1" x-text="'$' + ((samplePrice * formData.min_unidades) - calculateDiscount(formData.min_unidades)).toFixed(2)"></span>
+                                        <span class="font-bold text-emerald-900 dark:text-emerald-400 ml-1" x-text="'$' + ((samplePrice * formData.min_unidades) - calculateDiscount(formData.min_unidades)).toFixed(2)"></span>
                                     </div>
                                 </div>
 
@@ -726,7 +726,7 @@ class="space-y-4 transition-all duration-200">
                             <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300 text-xs font-medium pb-1">
                                 <input type="checkbox" name="crear_otro" value="1"
                                        {{ configuracion('interfaz_mantener_en_crear') ? 'checked' : '' }}
-                                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                       class="rounded border-slate-300 text-emerald-900 focus:ring-emerald-500">
                                 <span>Guardar y crear otra</span>
                             </label>
 
@@ -737,7 +737,7 @@ class="space-y-4 transition-all duration-200">
                             </button>
 
                             <a href="{{ route('promociones.index') }}" 
-                               class="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-semibold transition text-center block">
+                               class="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-400 rounded-xl text-xs font-semibold transition text-center block">
                                 Cancelar
                             </a>
                         </div>
