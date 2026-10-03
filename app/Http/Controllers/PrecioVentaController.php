@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -13,7 +13,6 @@ use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PrecioVentaController extends Controller
 {
@@ -646,56 +645,17 @@ class PrecioVentaController extends Controller
             ->orderBy('nombre', 'asc')
             ->get();
 
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="precios_venta_' . now()->format('Ymd_His') . '.csv"',
-        ];
+        $filename = 'Precios_Venta_' . now()->format('Ymd_His') . '.xls';
 
-        $callback = function () use ($productos) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
+        $content = view('precios.excel.exportar', compact('productos'))->render();
 
-            fputcsv($file, [
-                'ID',
-                'Medicamento / Producto',
-                'Código de Barras',
-                'Categoría',
-                'Laboratorio',
-                'Costo Compra (C$)',
-                'Precio Venta Base (C$)',
-                'Margen Bruto (%)',
-                'Presentaciones (Nombre / Factor / Precio)',
-                'Estado Sanitario'
-            ]);
-
-            foreach ($productos as $p) {
-                $costo = (float)($p->precio_compra ?? 0);
-                $precio = (float)($p->precio_venta ?? 0);
-                $margen = $precio > 0 ? round((($precio - $costo) / $precio) * 100, 1) . '%' : '0%';
-
-                $presList = [];
-                foreach ($p->presentacionesActivas as $pres) {
-                    $presList[] = "{$pres->nombre} (x{$pres->unidades_por_presentacion}): C$ " . number_format($pres->precio_venta, 2);
-                }
-
-                fputcsv($file, [
-                    $p->id,
-                    $p->nombre,
-                    $p->codigo_barra ?? 'S/C',
-                    $p->categoria->nombre ?? 'Sin categoría',
-                    $p->laboratorio->nombre ?? 'Sin laboratorio',
-                    number_format($costo, 2),
-                    number_format($precio, 2),
-                    $margen,
-                    implode(' | ', $presList),
-                    $p->tipo_control ?? 'venta_libre',
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return new StreamedResponse($callback, 200, $headers);
+        return response($content, 200, [
+            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ]);
     }
 
     /**
