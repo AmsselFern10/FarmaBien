@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Services\InventarioService;
 use App\Http\Requests\AjusteInventarioRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\QueryException;
@@ -29,10 +30,14 @@ class InventarioController extends Controller
 
     public function index()
     {
-        $valorizacion = $this->inventarioService->valorizacionInventario(true);
+        // Valorización del inventario completa (SUM sobre lotes) — cacheada 60s
+        // Se invalida con Cache::forget('inventario_valorizacion') en movimientos de stock
+        $valorizacion = Cache::remember('inventario_valorizacion', 60, function () {
+            return $this->inventarioService->valorizacionInventario(true);
+        });
         $productosBajoStock = $this->inventarioService->productosConStockBajo();
-        $lotesPorVencer = $this->inventarioService->lotesProximosVencer(60);
-        $lotesVencidos = $this->inventarioService->lotesVencidos();
+        $lotesPorVencer    = $this->inventarioService->lotesProximosVencer(60);
+        $lotesVencidos     = $this->inventarioService->lotesVencidos();
 
         return view('inventario.index', compact('valorizacion', 'productosBajoStock', 'lotesPorVencer', 'lotesVencidos'));
     }

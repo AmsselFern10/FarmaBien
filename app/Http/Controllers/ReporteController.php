@@ -190,7 +190,7 @@ class ReporteController extends Controller
         $topProductos = DetalleVenta::join('productos', 'detalle_venta.producto_id', '=', 'productos.id')
             ->join('ventas', 'detalle_venta.venta_id', '=', 'ventas.id')
             ->where('ventas.estado', 'completada')
-            ->whereBetween(DB::raw('DATE(ventas.fecha)'), [$fechaDesde, $fechaHasta])
+            ->whereBetween('ventas.fecha', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"])
             ->when(!empty($metodoPago), fn($q) => $q->where('ventas.metodo_pago', $metodoPago))
             ->when(!empty($cajeroId), fn($q) => $q->where('ventas.user_id', $cajeroId))
             ->select(

@@ -489,6 +489,9 @@ class VentaService
         $lote->stock_actual = $stockPosterior;
         $lote->save();
 
+        // Invalidar caché de valorización del inventario tras cambio de stock
+        \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+
         // 6. Calcular subtotal de la línea (incluyendo promoción automática o descuento manual)
         $subtotalBruto = round($cantidadPresentaciones * $precioUnitario, 2);
         $descuentoLinea = 0;

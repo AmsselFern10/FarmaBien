@@ -136,6 +136,9 @@ class InventarioService
                 'user_id'         => $userId,
             ]);
 
+            // Invalidar caché de valorización del inventario
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+
             return $movimiento->load(['lote', 'producto', 'usuario']);
         });
     }
