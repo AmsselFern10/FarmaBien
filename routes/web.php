@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\InventarioController;
+use App\Http\Controllers\ConteoInventarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\LaboratorioController;
 use App\Http\Controllers\CategoriaController;
@@ -250,6 +251,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/kardex-producto/{producto}', [InventarioController::class, 'kardexProducto'])->name('kardex-producto');
         Route::get('/alertas', [InventarioController::class, 'alertas'])->name('alertas');
         Route::post('/baja-vencidos', [InventarioController::class, 'bajaVencidos'])->name('baja-vencidos');
+
+        // Conteos de inventario (toma física)
+        Route::prefix('conteos')->name('conteos.')->group(function () {
+            Route::get('/', [ConteoInventarioController::class, 'index'])->name('index');
+            Route::get('/nuevo', [ConteoInventarioController::class, 'create'])->name('create');
+            Route::post('/', [ConteoInventarioController::class, 'store'])->name('store');
+            Route::get('/{conteo}', [ConteoInventarioController::class, 'show'])->name('show');
+            Route::post('/{conteo}/guardar', [ConteoInventarioController::class, 'guardarConteo'])->name('guardar');
+            Route::post('/{conteo}/aprobar', [ConteoInventarioController::class, 'aprobar'])->name('aprobar');
+            Route::post('/{conteo}/cancelar', [ConteoInventarioController::class, 'cancelar'])->name('cancelar');
+        });
         Route::get('/ajustar', [InventarioController::class, 'ajustar'])->name('ajustar');
         Route::post('/ajustar', [InventarioController::class, 'storeAjuste'])->name('ajustar.store');
     });

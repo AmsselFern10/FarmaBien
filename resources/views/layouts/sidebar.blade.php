@@ -294,6 +294,12 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.ajustar*') ? '!bg-indigo-400' : '' }}"></span>
                     <span>Ajustes Físicos de Stock</span>
                 </a>
+
+                <a href="{{ route('inventario.conteos.index') }}" 
+                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('inventario.conteos.*') ? 'bg-indigo-600/20 text-indigo-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.conteos.*') ? '!bg-indigo-400' : '' }}"></span>
+                    <span>Toma de Inventario</span>
+                </a>
                 @endcan
             </div>
         </div>
