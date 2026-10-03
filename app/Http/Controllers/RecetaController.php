@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -143,7 +143,7 @@ class RecetaController extends Controller
                 break;
         }
 
-        $recetas = $query->paginate(15)->withQueryString();
+        $recetas = $query->paginate(perPage(15))->withQueryString();
 
         return view('recetas.index', compact('recetas'));
     }

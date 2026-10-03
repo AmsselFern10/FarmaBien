@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -77,7 +77,7 @@ class ProductoController extends Controller
             $query->bajoStock();
         }
 
-        $productos = $query->orderBy('nombre', 'asc')->paginate(12)->withQueryString();
+        $productos = $query->orderBy('nombre', 'asc')->paginate(perPage(12))->withQueryString();
         
         $categorias = Cache::remember('catalog_categorias_base', 300, function () {
             return Categoria::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();

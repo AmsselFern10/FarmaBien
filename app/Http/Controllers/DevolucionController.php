@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -57,7 +57,7 @@ class DevolucionController extends Controller
         $totalMonto = (clone $query)->sum('monto_total');
         $totalDevoluciones = (clone $query)->count();
 
-        $devoluciones = $query->paginate(15)->withQueryString();
+        $devoluciones = $query->paginate(perPage(15))->withQueryString();
 
         return view('devoluciones.index', compact('devoluciones', 'totalMonto', 'totalDevoluciones'));
     }

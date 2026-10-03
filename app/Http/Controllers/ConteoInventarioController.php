@@ -1,10 +1,13 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
 use App\Models\ConteoInventario;
 use App\Models\DetalleConteo;
 use App\Models\Lote;
+use App\Models\Producto;
+use App\Models\Laboratorio;
+use App\Models\Categoria;
 use App\Models\MovimientoInventario;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
@@ -20,56 +23,204 @@ class ConteoInventarioController extends Controller
     }
 
     /**
-     * Lista de sesiones de conteo
+     * Lista de tomas / sesiones de conteo físico
      */
     public function index()
     {
         $conteos = ConteoInventario::with(['usuario', 'aprobadoPor'])
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(perPage(15));
 
-        return view('inventario.conteos.index', compact('conteos'));
+        $tomasEnProcesoCount = ConteoInventario::where('estado', 'en_proceso')->count();
+
+        return view('inventario.conteos.index', compact('conteos', 'tomasEnProcesoCount'));
     }
 
     /**
-     * Formulario para nueva sesión de conteo
+     * Formulario para nueva toma de inventario con filtros de alcance
      */
     public function create()
     {
         $totalLotesActivos = Lote::where('activo', true)->where('stock_actual', '>', 0)->count();
-        return view('inventario.conteos.create', compact('totalLotesActivos'));
+        $totalMedicamentosActivos = Producto::where('activo', true)
+            ->whereHas('lotes', function ($q) {
+                $q->where('activo', true)->where('stock_actual', '>', 0);
+            })->count();
+
+        $tomasEnProceso = ConteoInventario::where('estado', 'en_proceso')->get(['id', 'nombre', 'created_at']);
+
+        return view('inventario.conteos.create', compact(
+            'totalLotesActivos',
+            'totalMedicamentosActivos',
+            'tomasEnProceso'
+        ));
     }
 
     /**
-     * Crear sesión y generar snapshot de todos los lotes activos con stock
+     * Endpoint AJAX para conteo en vivo según filtros de alcance seleccionados
+     */
+    public function conteoPrevio(Request $request)
+    {
+        $laboratoriosIds = $request->input('laboratorios_ids', []);
+        $categoriasIds   = $request->input('categorias_ids', []);
+        $regimenVenta    = $request->input('regimen_venta', 'todos');
+
+        // Limpiar arrays si vienen como strings vacíos
+        if (!is_array($laboratoriosIds)) {
+            $laboratoriosIds = array_filter(explode(',', (string)$laboratoriosIds));
+        }
+        if (!is_array($categoriasIds)) {
+            $categoriasIds = array_filter(explode(',', (string)$categoriasIds));
+        }
+
+        $query = Lote::where('lotes.activo', true)
+            ->where('lotes.stock_actual', '>', 0)
+            ->join('productos', 'lotes.producto_id', '=', 'productos.id')
+            ->where('productos.activo', true);
+
+        if (!empty($laboratoriosIds)) {
+            $query->whereIn('productos.laboratorio_id', $laboratoriosIds);
+        }
+
+        if (!empty($categoriasIds)) {
+            $query->whereIn('productos.categoria_id', $categoriasIds);
+        }
+
+        if ($regimenVenta === 'venta_libre') {
+            $query->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('productos.tipo_control', 'libre')
+                        ->orWhereNull('productos.tipo_control');
+                })->where('productos.requiere_receta', false);
+            });
+        } elseif ($regimenVenta === 'controlados') {
+            $query->where(function ($q) {
+                $q->where('productos.tipo_control', 'controlado')
+                  ->orWhere('productos.requiere_receta', true);
+            });
+        }
+
+        $totalLotes = (clone $query)->count('lotes.id');
+        $totalMedicamentos = (clone $query)->distinct('lotes.producto_id')->count('lotes.producto_id');
+
+        return response()->json([
+            'total_lotes'        => $totalLotes,
+            'total_medicamentos' => $totalMedicamentos,
+        ]);
+    }
+
+    /**
+     * Crear sesión de toma y generar snapshot de lotes según alcance
      */
     public function store(Request $request)
     {
+        // 1. Verificación de Idempotencia y Protección de doble clic
+        $idempotencyKey = $request->input('idempotency_key');
+        if ($idempotencyKey) {
+            $existente = ConteoInventario::where('idempotency_key', $idempotencyKey)->first();
+            if ($existente) {
+                return redirect()->route('inventario.conteos.show', $existente)
+                    ->with('success', "Toma de inventario '{$existente->nombre}' ya iniciada.");
+            }
+        }
+
         $validated = $request->validate([
-            'nombre' => ['required', 'string', 'max:200'],
-            'notas'  => ['nullable', 'string', 'max:1000'],
+            'nombre'            => ['required', 'string', 'max:200'],
+            'notas'             => ['nullable', 'string', 'max:1000'],
+            'laboratorios_ids'  => ['nullable', 'array'],
+            'laboratorios_ids.*'=> ['integer', 'exists:laboratorios,id'],
+            'categorias_ids'    => ['nullable', 'array'],
+            'categorias_ids.*'  => ['integer', 'exists:categorias,id'],
+            'regimen_venta'     => ['nullable', 'string', 'in:todos,venta_libre,controlados'],
+            'alcance_resumen'   => ['nullable', 'array'],
+            'idempotency_key'   => ['nullable', 'string', 'max:100'],
         ], [
             'nombre.required' => 'El nombre del conteo es obligatorio.',
         ]);
 
+        $laboratoriosIds = $validated['laboratorios_ids'] ?? [];
+        $categoriasIds   = $validated['categorias_ids'] ?? [];
+        $regimenVenta    = $validated['regimen_venta'] ?? 'todos';
+
         try {
-            $conteo = DB::transaction(function () use ($validated) {
-                // Snapshot de lotes activos con stock
-                $lotes = Lote::with('producto')
+            $conteo = DB::transaction(function () use ($validated, $laboratoriosIds, $categoriasIds, $regimenVenta) {
+                // Snapshot de lotes activos con stock que cumplen el alcance
+                $query = Lote::with(['producto.laboratorio', 'producto.categoria'])
                     ->where('activo', true)
                     ->where('stock_actual', '>', 0)
+                    ->whereHas('producto', function ($qp) use ($laboratoriosIds, $categoriasIds, $regimenVenta) {
+                        $qp->where('activo', true);
+
+                        if (!empty($laboratoriosIds)) {
+                            $qp->whereIn('laboratorio_id', $laboratoriosIds);
+                        }
+
+                        if (!empty($categoriasIds)) {
+                            $qp->whereIn('categoria_id', $categoriasIds);
+                        }
+
+                        if ($regimenVenta === 'venta_libre') {
+                            $qp->where(function ($sub) {
+                                $sub->where(function ($s) {
+                                    $s->where('tipo_control', 'libre')
+                                      ->orWhereNull('tipo_control');
+                                })->where('requiere_receta', false);
+                            });
+                        } elseif ($regimenVenta === 'controlados') {
+                            $qp->where(function ($sub) {
+                                $sub->where('tipo_control', 'controlado')
+                                    ->orWhere('requiere_receta', true);
+                            });
+                        }
+                    })
                     ->orderBy('producto_id')
                     ->orderBy('fecha_vencimiento')
-                    ->get();
+                    ->lockForUpdate();
+
+                $lotes = $query->get();
+
+                if ($lotes->isEmpty()) {
+                    throw new Exception('No hay lotes activos con stock para el alcance seleccionado.');
+                }
+
+                // Generar chips descriptivos del alcance
+                $chips = [];
+                if (empty($laboratoriosIds) && empty($categoriasIds) && ($regimenVenta === 'todos' || empty($regimenVenta))) {
+                    $chips[] = 'Todo el inventario';
+                } else {
+                    if (!empty($laboratoriosIds)) {
+                        $labs = Laboratorio::whereIn('id', $laboratoriosIds)->pluck('nombre')->toArray();
+                        foreach ($labs as $lab) {
+                            $chips[] = "Lab: {$lab}";
+                        }
+                    }
+                    if (!empty($categoriasIds)) {
+                        $cats = Categoria::whereIn('id', $categoriasIds)->pluck('nombre')->toArray();
+                        foreach ($cats as $cat) {
+                            $chips[] = "Categoría: {$cat}";
+                        }
+                    }
+                    if ($regimenVenta === 'venta_libre') {
+                        $chips[] = 'Venta Libre';
+                    } elseif ($regimenVenta === 'controlados') {
+                        $chips[] = 'Controlados';
+                    }
+                }
 
                 $conteo = ConteoInventario::create([
-                    'nombre'      => $validated['nombre'],
-                    'notas'       => $validated['notas'] ?? null,
-                    'estado'      => 'en_proceso',
-                    'usuario_id'  => auth()->id(),
-                    'total_lotes' => $lotes->count(),
-                    'lotes_contados' => 0,
-                    'iniciado_en' => now(),
+                    'nombre'           => $validated['nombre'],
+                    'notas'            => $validated['notas'] ?? null,
+                    'estado'           => 'en_proceso',
+                    'usuario_id'       => auth()->id() ?? 1,
+                    'laboratorios_ids' => !empty($laboratoriosIds) ? $laboratoriosIds : null,
+                    'categorias_ids'   => !empty($categoriasIds) ? $categoriasIds : null,
+                    'regimen_venta'    => $regimenVenta,
+                    'alcance_resumen'  => $chips,
+                    'idempotency_key'  => $validated['idempotency_key'] ?? null,
+                    'total_lotes'      => $lotes->count(),
+                    'lotes_contados'   => 0,
+                    'diferencia_total_unidades' => 0,
+                    'iniciado_en'      => now(),
                 ]);
 
                 $detalles = $lotes->map(fn ($lote) => [
@@ -89,8 +240,14 @@ class ConteoInventarioController extends Controller
                 return $conteo;
             });
 
+            AuditLog::log('inventario', 'conteo_iniciado', "Toma de inventario iniciada: {$conteo->nombre}", [
+                'conteo_id'   => $conteo->id,
+                'total_lotes' => $conteo->total_lotes,
+                'alcance'     => $conteo->alcance_resumen,
+            ]);
+
             return redirect()->route('inventario.conteos.show', $conteo)
-                ->with('success', "Sesión de conteo '{$conteo->nombre}' iniciada con {$conteo->total_lotes} lotes.");
+                ->with('success', "Toma de inventario '{$conteo->nombre}' iniciada con {$conteo->total_lotes} lotes en el snapshot.");
 
         } catch (Exception $e) {
             Log::error('Error al crear conteo de inventario', [
@@ -102,13 +259,17 @@ class ConteoInventarioController extends Controller
     }
 
     /**
-     * Vista de conteo con formulario de cantidades físicas
+     * Vista de conteo físico con filtros dinámicos, guardado en tiempo real y modal de aprobación
      */
     public function show(ConteoInventario $conteo)
     {
         $conteo->load(['usuario', 'aprobadoPor']);
 
-        $detalles = DetalleConteo::with(['lote', 'producto.laboratorio'])
+        $detalles = DetalleConteo::with([
+            'lote',
+            'producto.laboratorio:id,nombre',
+            'producto.categoria:id,nombre'
+        ])
             ->where('conteo_id', $conteo->id)
             ->orderBy('producto_id')
             ->orderBy('lote_id')
@@ -116,17 +277,83 @@ class ConteoInventarioController extends Controller
 
         $contados = $detalles->whereNotNull('stock_fisico')->count();
         $conDiferencia = $detalles->where('diferencia', '!=', 0)->whereNotNull('stock_fisico')->count();
+        $diferenciaNeta = $detalles->whereNotNull('stock_fisico')->sum('diferencia');
         $progresoPct = $conteo->total_lotes > 0
             ? round(($contados / $conteo->total_lotes) * 100)
             : 0;
 
+        // Lista de laboratorios y categorías presentes en este conteo para los filtros de la barra
+        $laboratoriosEnConteo = $detalles->pluck('producto.laboratorio')->filter()->unique('id')->values();
+        $categoriasEnConteo   = $detalles->pluck('producto.categoria')->filter()->unique('id')->values();
+
         return view('inventario.conteos.show', compact(
-            'conteo', 'detalles', 'contados', 'conDiferencia', 'progresoPct'
+            'conteo',
+            'detalles',
+            'contados',
+            'conDiferencia',
+            'diferenciaNeta',
+            'progresoPct',
+            'laboratoriosEnConteo',
+            'categoriasEnConteo'
         ));
     }
 
     /**
-     * Guardar cantidades físicas ingresadas por el usuario
+     * Guardar una sola fila por AJAX (auto-guardado en blur/change)
+     */
+    public function guardarFila(Request $request, ConteoInventario $conteo)
+    {
+        if ($conteo->estado !== 'en_proceso') {
+            return response()->json(['error' => 'La toma ya no está en proceso.'], 422);
+        }
+
+        $validated = $request->validate([
+            'detalle_id'   => ['required', 'integer', 'exists:detalles_conteo,id'],
+            'stock_fisico' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $detalle = DetalleConteo::where('id', $validated['detalle_id'])
+            ->where('conteo_id', $conteo->id)
+            ->firstOrFail();
+
+        $stockFisico = $validated['stock_fisico'] !== null && $validated['stock_fisico'] !== ''
+            ? (int)$validated['stock_fisico']
+            : null;
+
+        $detalle->stock_fisico = $stockFisico;
+        $detalle->diferencia   = $stockFisico !== null ? ($stockFisico - $detalle->stock_sistema) : 0;
+        $detalle->save();
+
+        // Recalcular métricas generales del conteo
+        $contados = DetalleConteo::where('conteo_id', $conteo->id)->whereNotNull('stock_fisico')->count();
+        $difNeta  = DetalleConteo::where('conteo_id', $conteo->id)->whereNotNull('stock_fisico')->sum('diferencia');
+        $conDif   = DetalleConteo::where('conteo_id', $conteo->id)->whereNotNull('stock_fisico')->where('diferencia', '!=', 0)->count();
+
+        $conteo->update([
+            'lotes_contados'            => $contados,
+            'diferencia_total_unidades' => $difNeta,
+        ]);
+
+        $faltantes = $conteo->total_lotes - $contados;
+        $progresoPct = $conteo->total_lotes > 0 ? round(($contados / $conteo->total_lotes) * 100) : 0;
+
+        return response()->json([
+            'success'          => true,
+            'detalle_id'       => $detalle->id,
+            'stock_fisico'     => $detalle->stock_fisico,
+            'diferencia'       => $detalle->stock_fisico !== null ? $detalle->diferencia : null,
+            'contados'         => $contados,
+            'total_lotes'      => $conteo->total_lotes,
+            'faltantes'        => $faltantes,
+            'con_diferencia'   => $conDif,
+            'diferencia_neta'  => $difNeta,
+            'progreso_pct'     => $progresoPct,
+            'listo_aprobar'    => ($contados === $conteo->total_lotes && $conteo->total_lotes > 0),
+        ]);
+    }
+
+    /**
+     * Guardar avance manual de cantidades físicas en lote
      */
     public function guardarConteo(Request $request, ConteoInventario $conteo)
     {
@@ -147,21 +374,23 @@ class ConteoInventarioController extends Controller
                 $cantidades = $request->input('cantidades', []);
 
                 foreach ($cantidades as $detalleId => $fisico) {
-                    if ($fisico === null || $fisico === '') continue;
-
                     $detalle = DetalleConteo::where('id', $detalleId)
                         ->where('conteo_id', $conteo->id)
                         ->first();
 
                     if (!$detalle) continue;
 
-                    $fisico = (int) $fisico;
-                    $detalle->stock_fisico = $fisico;
-                    $detalle->diferencia   = $fisico - $detalle->stock_sistema;
+                    if ($fisico === null || $fisico === '') {
+                        $detalle->stock_fisico = null;
+                        $detalle->diferencia   = 0;
+                    } else {
+                        $val = (int)$fisico;
+                        $detalle->stock_fisico = $val;
+                        $detalle->diferencia   = $val - $detalle->stock_sistema;
+                    }
                     $detalle->save();
                 }
 
-                // Recalcular resumen
                 $contados = DetalleConteo::where('conteo_id', $conteo->id)
                     ->whereNotNull('stock_fisico')
                     ->count();
@@ -177,7 +406,7 @@ class ConteoInventarioController extends Controller
             });
 
             return redirect()->route('inventario.conteos.show', $conteo)
-                ->with('success', 'Cantidades guardadas. Revisa las diferencias antes de aprobar.');
+                ->with('success', 'Avance guardado correctamente.');
 
         } catch (Exception $e) {
             Log::error('Error al guardar conteo', [
@@ -190,7 +419,7 @@ class ConteoInventarioController extends Controller
     }
 
     /**
-     * Aprobar conteo: aplicar diferencias como ajustes en Kardex
+     * Aprobar toma: en una sola transacción aplica ajustes a cada lote con diferencia y genera Kardex
      */
     public function aprobar(ConteoInventario $conteo)
     {
@@ -224,13 +453,13 @@ class ConteoInventarioController extends Controller
                     MovimientoInventario::create([
                         'producto_id'      => $det->producto_id,
                         'lote_id'          => $det->lote_id,
-                        'usuario_id'       => auth()->id(),
+                        'user_id'          => auth()->id() ?? 1,
                         'tipo'             => $tipo,
                         'subtipo'          => 'ajuste_manual',
                         'cantidad'         => abs($det->diferencia),
                         'stock_anterior'   => $lote->stock_actual,
-                        'stock_nuevo'      => $det->stock_fisico,
-                        'motivo'           => "Toma de inventario: {$conteo->nombre}",
+                        'stock_posterior'  => $det->stock_fisico,
+                        'motivo'           => "Ajuste por toma física: {$conteo->nombre}",
                         'fecha_movimiento' => now(),
                     ]);
 
@@ -260,7 +489,7 @@ class ConteoInventarioController extends Controller
             ]);
 
             return redirect()->route('inventario.conteos.show', $conteo)
-                ->with('success', "Conteo '{$conteo->nombre}' aprobado. Se aplicaron ajustes a {$conDif} lote(s) con diferencia.");
+                ->with('success', "Toma '{$conteo->nombre}' aprobada exitosamente. Se aplicaron ajustes en Kardex a {$conDif} lote(s) con diferencia.");
 
         } catch (Exception $e) {
             Log::error('Error al aprobar conteo', [
@@ -268,26 +497,26 @@ class ConteoInventarioController extends Controller
                 'user_id'   => auth()->id(),
                 'message'   => $e->getMessage(),
             ]);
-            return back()->with('error', 'Error al aprobar el conteo: ' . $e->getMessage());
+            return back()->with('error', 'Error al aprobar la toma: ' . $e->getMessage());
         }
     }
 
     /**
-     * Cancelar conteo sin aplicar ajustes
+     * Cancelar toma sin aplicar ajustes
      */
     public function cancelar(ConteoInventario $conteo)
     {
         if ($conteo->estado === 'completado') {
-            return back()->with('error', 'No se puede cancelar un conteo ya completado.');
+            return back()->with('error', 'No se puede cancelar una toma ya aprobada y completada.');
         }
 
         $conteo->update(['estado' => 'cancelado']);
 
-        AuditLog::log('inventario', 'conteo_cancelado', "Conteo cancelado: {$conteo->nombre}", [
+        AuditLog::log('inventario', 'conteo_cancelado', "Toma cancelada: {$conteo->nombre}", [
             'conteo_id' => $conteo->id,
         ]);
 
         return redirect()->route('inventario.conteos.index')
-            ->with('success', "Conteo '{$conteo->nombre}' cancelado sin aplicar ajustes.");
+            ->with('success', "Toma '{$conteo->nombre}' cancelada sin aplicar ajustes.");
     }
 }

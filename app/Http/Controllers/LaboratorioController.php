@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -45,7 +45,7 @@ class LaboratorioController extends Controller
             }
         }
 
-        $laboratorios = $query->orderBy('nombre', 'asc')->paginate(15)->withQueryString();
+        $laboratorios = $query->orderBy('nombre', 'asc')->paginate(perPage(15))->withQueryString();
 
         return view('laboratorios.index', compact('laboratorios'));
     }
@@ -104,7 +104,7 @@ class LaboratorioController extends Controller
 
     public function show(Laboratorio $laboratorio)
     {
-        $productos = $laboratorio->productos()->with('categoria')->paginate(10);
+        $productos = $laboratorio->productos()->with('categoria')->paginate(perPage(10));
 
         return view('laboratorios.show', compact('laboratorio', 'productos'));
     }

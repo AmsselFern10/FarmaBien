@@ -12,6 +12,18 @@ if (!function_exists('configuracion')) {
     }
 }
 
+if (!function_exists('perPage')) {
+    /**
+     * Registros por página según la preferencia global de interfaz (Ajustes → Diseño).
+     * Si no está configurado usa el $default recibido.
+     */
+    function perPage(int $default = 15): int
+    {
+        $val = (int) configuracion('interfaz_registros_por_pagina', 0);
+        return $val >= 10 ? $val : $default;
+    }
+}
+
 if (!function_exists('formato_moneda')) {
     /**
      * Helper global para formatear montos en moneda local (Córdoba por defecto)

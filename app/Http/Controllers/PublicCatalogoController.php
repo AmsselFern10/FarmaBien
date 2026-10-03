@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -52,7 +52,7 @@ class PublicCatalogoController extends Controller
             });
         }
 
-        $productos = $query->orderBy('nombre')->paginate(24)->withQueryString();
+        $productos = $query->orderBy('nombre')->paginate(perPage(24))->withQueryString();
 
         $mostrarPrecios = Configuracion::get('catalogo_publico_mostrar_precios', true);
         $mostrarStock = Configuracion::get('catalogo_publico_mostrar_stock', true);

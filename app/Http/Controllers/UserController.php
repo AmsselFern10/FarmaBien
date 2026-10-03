@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -35,7 +35,7 @@ class UserController extends Controller
             });
         }
 
-        $usuarios    = $query->orderBy('name', 'asc')->paginate(15)->withQueryString();
+        $usuarios    = $query->orderBy('name', 'asc')->paginate(perPage(15))->withQueryString();
         $totalActivos = User::where('active', true)->count();
         $totalRoles   = Role::count();
 
@@ -90,7 +90,7 @@ class UserController extends Controller
             $logsQuery->whereDate('created_at', '<=', $request->input('hasta'));
         }
 
-        $loginLogs = $logsQuery->paginate(25)->withQueryString();
+        $loginLogs = $logsQuery->paginate(perPage(25))->withQueryString();
 
         return view('usuarios.show', compact('usuario', 'loginLogs'));
     }

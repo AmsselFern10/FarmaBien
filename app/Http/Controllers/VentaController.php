@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -85,7 +85,7 @@ class VentaController extends Controller
                 break;
         }
 
-        $ventas = $query->paginate(15)->withQueryString();
+        $ventas = $query->paginate(perPage(15))->withQueryString();
 
         // Una sola query para todas las estadísticas (antes eran 4 queries separadas)
         $statsRaw = Venta::selectRaw("

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -629,7 +629,7 @@ class PrecioVentaController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        $historial = $query->orderByDesc('vigente_desde')->orderByDesc('id')->paginate(25)->withQueryString();
+        $historial = $query->orderByDesc('vigente_desde')->orderByDesc('id')->paginate(perPage(25))->withQueryString();
         $usuarios = \App\Models\User::orderBy('name')->get(['id', 'name']);
 
         return view('precios.historial', compact('historial', 'usuarios'));

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -60,7 +60,7 @@ class CuentaPorPagarController extends Controller
         }
 
         $metricas = $this->cuentaPorPagarService->getMetricas();
-        $compras = $query->paginate(15)->withQueryString();
+        $compras = $query->paginate(perPage(15))->withQueryString();
         $proveedores = Proveedor::activos()->orderBy('nombre')->get();
         $sesionCaja = \App\Models\SesionCaja::with('caja')
             ->where('user_id', auth()->id())

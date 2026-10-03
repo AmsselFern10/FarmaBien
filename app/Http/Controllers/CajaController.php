@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -243,7 +243,7 @@ class CajaController extends Controller
             $sesion->refresh();
         }
 
-        $ventas = $sesion->ventas()->with('cliente')->latest('fecha')->paginate(15);
+        $ventas = $sesion->ventas()->with('cliente')->latest('fecha')->paginate(perPage(15));
         $movimientos = $sesion->movimientos()->with('usuario')->latest('created_at')->get();
 
         return view('cajas.show', compact('sesion', 'ventas', 'movimientos'));
@@ -383,7 +383,7 @@ class CajaController extends Controller
             $query->where('estado', $estado);
         }
 
-        $sesiones = $query->orderByDesc('fecha_apertura')->paginate(20)->withQueryString();
+        $sesiones = $query->orderByDesc('fecha_apertura')->paginate(perPage(20))->withQueryString();
         $cajas = Caja::orderBy('nombre')->get(['id', 'nombre', 'codigo']);
         $cajeros = User::whereHas('sesionesCaja')->orderBy('name')->get(['id', 'name']);
 

@@ -1,10 +1,12 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
 use App\Models\Lote;
 use App\Models\Proveedor;
+use App\Models\Laboratorio;
+use App\Models\Categoria;
 use App\Models\MovimientoInventario;
 use App\Models\AuditLog;
 use App\Services\InventarioService;
@@ -74,7 +76,7 @@ class InventarioController extends Controller
 
         $movimientos = $query->orderBy('fecha_movimiento', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(20)
+            ->paginate(perPage(20))
             ->withQueryString();
 
         $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
@@ -136,7 +138,7 @@ class InventarioController extends Controller
                 break;
         }
 
-        $lotes = $query->paginate(15)->withQueryString();
+        $lotes = $query->paginate(perPage(15))->withQueryString();
         $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
 
         return view('inventario.lotes', compact('lotes', 'proveedores'));
@@ -320,12 +322,12 @@ class InventarioController extends Controller
                 MovimientoInventario::create([
                     'producto_id'       => $lote->producto_id,
                     'lote_id'           => $lote->id,
-                    'usuario_id'        => auth()->id(),
+                    'user_id'           => auth()->id() ?? 1,
                     'tipo'              => 'entrada',
                     'subtipo'           => 'ajuste_manual',
                     'cantidad'          => $validated['cantidad'],
                     'stock_anterior'    => 0,
-                    'stock_nuevo'       => $validated['cantidad'],
+                    'stock_posterior'   => $validated['cantidad'],
                     'motivo'            => 'Lote manual: ' . $validated['motivo'],
                     'fecha_movimiento'  => now(),
                 ]);
@@ -352,5 +354,111 @@ class InventarioController extends Controller
 
             return back()->withInput()->with('error', 'Error al crear el lote: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Búsqueda AJAX de Medicamentos (Componente C)
+     */
+    public function buscarMedicamentosAjax(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $medicamentos = Producto::with(['laboratorio:id,nombre'])
+            ->where('activo', true)
+            ->where(function ($query) use ($q) {
+                $query->where('nombre', 'like', "%{$q}%")
+                      ->orWhere('principio_activo', 'like', "%{$q}%")
+                      ->orWhere('codigo_barras', 'like', "%{$q}%");
+            })
+            ->limit(10)
+            ->get(['id', 'nombre', 'presentacion', 'principio_activo', 'laboratorio_id', 'codigo_barras', 'tipo_control', 'requiere_receta', 'precio_venta'])
+            ->map(function ($med) {
+                return [
+                    'id' => $med->id,
+                    'nombre' => $med->nombre . ($med->presentacion ? " - {$med->presentacion}" : ''),
+                    'nombre_simple' => $med->nombre,
+                    'presentacion' => $med->presentacion,
+                    'principio_activo' => $med->principio_activo,
+                    'laboratorio' => $med->laboratorio->nombre ?? 'Sin laboratorio',
+                    'codigo_barras' => $med->codigo_barras ?? 'S/C',
+                    'tipo_control' => $med->tipo_control,
+                    'requiere_receta' => $med->requiere_receta,
+                    'precio_venta' => $med->precio_venta,
+                ];
+            });
+
+        return response()->json($medicamentos);
+    }
+
+    /**
+     * Búsqueda AJAX de Proveedores (Componente C)
+     */
+    public function buscarProveedoresAjax(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        $query = Proveedor::where('activo', true);
+
+        if (strlen($q) >= 2) {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('nombre', 'like', "%{$q}%")
+                    ->orWhere('ruc', 'like', "%{$q}%")
+                    ->orWhere('contacto', 'like', "%{$q}%")
+                    ->orWhere('ciudad', 'like', "%{$q}%");
+            });
+        }
+
+        $proveedores = $query->limit(10)
+            ->get(['id', 'nombre', 'contacto', 'ciudad', 'ruc', 'telefono'])
+            ->map(function ($prov) {
+                return [
+                    'id' => $prov->id,
+                    'nombre' => $prov->nombre,
+                    'contacto' => $prov->contacto ?: ($prov->ciudad ?: 'Proveedor Nacional'),
+                    'ruc' => $prov->ruc ? "RUC: {$prov->ruc}" : ($prov->telefono ? "Tel: {$prov->telefono}" : 'S/RUC'),
+                ];
+            });
+
+        return response()->json($proveedores);
+    }
+
+    /**
+     * Búsqueda AJAX de Laboratorios (Componente C)
+     */
+    public function buscarLaboratoriosAjax(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        $query = Laboratorio::where('activo', true);
+
+        if (strlen($q) > 0) {
+            $query->where('nombre', 'like', "%{$q}%");
+        }
+
+        $labs = $query->orderBy('nombre')
+            ->limit(15)
+            ->get(['id', 'nombre']);
+
+        return response()->json($labs);
+    }
+
+    /**
+     * Búsqueda AJAX de Categorías (Componente C)
+     */
+    public function buscarCategoriasAjax(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        $query = Categoria::where('activa', true);
+
+        if (strlen($q) > 0) {
+            $query->where('nombre', 'like', "%{$q}%");
+        }
+
+        $categorias = $query->orderBy('nombre')
+            ->limit(15)
+            ->get(['id', 'nombre']);
+
+        return response()->json($categorias);
     }
 }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -94,7 +94,7 @@ class PromocionController extends Controller
         $promociones = $query->orderBy('activo', 'desc')
             ->orderBy('fecha_fin', 'asc')
             ->orderBy('id', 'desc')
-            ->paginate(15)
+            ->paginate(perPage(15))
             ->withQueryString();
 
         // Estadísticas rápidas para las KPI cards

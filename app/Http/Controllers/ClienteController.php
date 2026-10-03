@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -50,7 +50,7 @@ class ClienteController extends Controller
             }
         }
 
-        $clientes = $query->orderBy('nombre', 'asc')->paginate(15)->withQueryString();
+        $clientes = $query->orderBy('nombre', 'asc')->paginate(perPage(15))->withQueryString();
 
         return view('clientes.index', compact('clientes'));
     }

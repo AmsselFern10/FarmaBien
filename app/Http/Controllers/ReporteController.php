@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -205,7 +205,7 @@ class ReporteController extends Controller
             ->take(10)
             ->get();
 
-        $ventas = $query->orderBy('fecha', 'desc')->paginate(25)->withQueryString();
+        $ventas = $query->orderBy('fecha', 'desc')->paginate(perPage(25))->withQueryString();
         $cajeros = User::whereHas('ventas')->orderBy('name')->get(['id', 'name']);
 
         return view('reportes.ventas', compact(
@@ -365,7 +365,7 @@ class ReporteController extends Controller
         }
 
         $totalProductosBajoStock = Producto::activos()->bajoStock()->count();
-        $lotes = $query->orderBy('fecha_vencimiento', 'asc')->paginate(25)->withQueryString();
+        $lotes = $query->orderBy('fecha_vencimiento', 'asc')->paginate(perPage(25))->withQueryString();
         $categorias = Categoria::activos()->orderBy('nombre')->get(['id', 'nombre']);
         $laboratorios = Laboratorio::activos()->orderBy('nombre')->get(['id', 'nombre']);
 
@@ -496,7 +496,7 @@ class ReporteController extends Controller
             return $pdf->stream("reporte_compras_{$fechaDesde}_al_{$fechaHasta}.pdf");
         }
 
-        $compras = $query->orderBy('fecha', 'desc')->paginate(20)->withQueryString();
+        $compras = $query->orderBy('fecha', 'desc')->paginate(perPage(20))->withQueryString();
 
         return view('reportes.compras', compact('compras', 'totalComprado', 'fechaDesde', 'fechaHasta'));
     }
@@ -820,7 +820,7 @@ class ReporteController extends Controller
             return $pdf->stream("reporte_recetas_{$fechaDesde}_al_{$fechaHasta}.pdf");
         }
 
-        $recetas = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+        $recetas = $query->orderBy('created_at', 'desc')->paginate(perPage(20))->withQueryString();
 
         return view('reportes.recetas', compact(
             'recetas',
@@ -935,7 +935,7 @@ class ReporteController extends Controller
             return $pdf->stream("reporte_cajas_{$fechaDesde}_al_{$fechaHasta}.pdf");
         }
 
-        $sesiones = $query->orderBy('fecha_apertura', 'desc')->paginate(20)->withQueryString();
+        $sesiones = $query->orderBy('fecha_apertura', 'desc')->paginate(perPage(20))->withQueryString();
         $cajas = Caja::orderBy('nombre')->get(['id', 'nombre', 'numero']);
         $cajeros = User::whereHas('sesionesCaja')->orderBy('name')->get(['id', 'name']);
 
@@ -1076,7 +1076,7 @@ class ReporteController extends Controller
             return $pdf->stream("reporte_auditoria_{$fechaDesde}_al_{$fechaHasta}.pdf");
         }
 
-        $logs = $query->orderBy('created_at', 'desc')->paginate(30)->withQueryString();
+        $logs = $query->orderBy('created_at', 'desc')->paginate(perPage(30))->withQueryString();
         $modulos = AuditLog::select('modulo')->distinct()->whereNotNull('modulo')->orderBy('modulo')->pluck('modulo');
         $acciones = AuditLog::select('accion')->distinct()->whereNotNull('accion')->orderBy('accion')->pluck('accion');
         $usuarios = User::whereHas('auditLogs')->orWhereIn('id', AuditLog::select('user_id')->distinct())->orderBy('name')->get(['id', 'name', 'email']);

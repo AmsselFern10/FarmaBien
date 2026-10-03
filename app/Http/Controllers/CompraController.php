@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -77,7 +77,7 @@ class CompraController extends Controller
                 break;
         }
 
-        $compras = $query->paginate(15)->withQueryString();
+        $compras = $query->paginate(perPage(15))->withQueryString();
 
         return view('compras.index', compact('compras'));
     }
@@ -110,15 +110,21 @@ class CompraController extends Controller
                 $preloadedDiasCredito = $ordenCompra->dias_credito;
 
                 foreach ($ordenCompra->detalles as $det) {
-                    $cantPendiente = max(1, (int)$det->cantidad_solicitada - (int)$det->cantidad_recibida);
-                    $preloadedItems[] = [
-                        'producto_id'     => $det->producto_id,
-                        'presentacion_id' => '',
-                        'cantidad'        => $cantPendiente,
-                        'precio_unitario' => (float) $det->precio_unitario_estimado,
-                        'numero_lote'     => '',
-                        'fecha_vencimiento' => '',
-                    ];
+                    $cantPendiente = max(0, (int)$det->cantidad_solicitada - (int)$det->cantidad_recibida);
+                    if ($cantPendiente > 0) {
+                        $preloadedItems[] = [
+                            'producto_id'             => $det->producto_id,
+                            'presentacion_id'         => '',
+                            'detalle_orden_compra_id' => $det->id,
+                            'cantidad'                => $cantPendiente,
+                            'precio_unitario'         => (float) $det->precio_unitario_estimado,
+                            'numero_lote'             => '',
+                            'fecha_vencimiento'       => '',
+                            'pedido'                  => (int) $det->cantidad_solicitada,
+                            'recibido'                => (int) $det->cantidad_recibida,
+                            'pendiente'               => $cantPendiente,
+                        ];
+                    }
                 }
             }
         } elseif ($request->filled('items')) {
@@ -233,7 +239,11 @@ class CompraController extends Controller
             'detalles.presentacion',
             'lotes',
             'compraOriginal',
-            'reemplazadaPor'
+            'reemplazadaPor',
+            'ordenCompra',
+            'devoluciones.detalles.producto',
+            'devoluciones.usuario',
+            'devoluciones.proveedor',
         ]);
 
         return view('compras.show', compact('compra'));

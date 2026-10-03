@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -51,7 +51,7 @@ class CategoriaController extends Controller
             }
         }
 
-        $categorias = $query->orderBy('nombre', 'asc')->paginate(15)->withQueryString();
+        $categorias = $query->orderBy('nombre', 'asc')->paginate(perPage(15))->withQueryString();
 
         return view('categorias.index', compact('categorias'));
     }
@@ -109,7 +109,7 @@ class CategoriaController extends Controller
     public function show(Categoria $categoria)
     {
         $categoria->loadCount('productos');
-        $productos = $categoria->productos()->with('laboratorio')->paginate(10);
+        $productos = $categoria->productos()->with('laboratorio')->paginate(perPage(10));
         return view('categorias.show', compact('categoria', 'productos'));
     }
 

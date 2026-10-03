@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -46,7 +46,7 @@ class PresentacionController extends Controller
             $query->where('activo', $request->estado === 'activos');
         }
 
-        $presentaciones = $query->orderBy('producto_id')->orderBy('orden')->paginate(20)->withQueryString();
+        $presentaciones = $query->orderBy('producto_id')->orderBy('orden')->paginate(perPage(20))->withQueryString();
         $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
 
         return view('presentaciones.index', compact('presentaciones', 'productos'));

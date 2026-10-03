@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -43,7 +43,7 @@ class ProveedorController extends Controller
             }
         }
 
-        $proveedores = $query->orderBy('nombre', 'asc')->paginate(15)->withQueryString();
+        $proveedores = $query->orderBy('nombre', 'asc')->paginate(perPage(15))->withQueryString();
 
         return view('proveedores.index', compact('proveedores'));
     }

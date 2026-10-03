@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -86,7 +86,7 @@ class HistorialPrecioController extends Controller
                 $historialQuery->where('proveedor_id', $proveedorId);
             }
 
-            $historialDetallado = $historialQuery->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(10)->withQueryString();
+            $historialDetallado = $historialQuery->orderBy('fecha', 'desc')->orderBy('id', 'desc')->paginate(perPage(10))->withQueryString();
 
             if ($comparativa->isNotEmpty()) {
                 $mejorPrecio = $comparativa->min('mejor_precio_base');
@@ -106,7 +106,7 @@ class HistorialPrecioController extends Controller
                 ->whereIn('id', $productoIdsConHistorial)
                 ->activos()
                 ->orderBy('nombre')
-                ->paginate(12)
+                ->paginate(perPage(12))
                 ->withQueryString();
         }
 

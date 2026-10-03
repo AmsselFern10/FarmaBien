@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -102,7 +102,7 @@ class ControladoController extends Controller
             RegistroVentaControlado::TIPO_AJUSTE_EGRESO,
         ])->sum('cantidad');
 
-        $registros = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
+        $registros = $query->orderByDesc('created_at')->paginate(perPage(20))->withQueryString();
 
         // Para selector de productos controlados
         $productosControlados = Producto::controlados()

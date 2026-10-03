@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -50,7 +50,7 @@ class OrdenCompraController extends Controller
         $totalOrdenes = (clone $query)->count();
         $totalMonto = (clone $query)->where('estado', '!=', 'cancelada')->sum('total');
 
-        $ordenes = $query->paginate(15)->withQueryString();
+        $ordenes = $query->paginate(perPage(15))->withQueryString();
         $proveedores = Proveedor::activos()->orderBy('nombre')->get();
 
         return view('compras.ordenes.index', compact('ordenes', 'totalOrdenes', 'totalMonto', 'proveedores'));
@@ -152,7 +152,14 @@ class OrdenCompraController extends Controller
     public function show(OrdenCompra $ordenes_compra)
     {
         $orden = $ordenes_compra;
-        $orden->load(['proveedor', 'usuario', 'detalles.producto.laboratorio', 'compra']);
+        $orden->load([
+            'proveedor',
+            'usuario',
+            'cerradaPor',
+            'detalles.producto.laboratorio',
+            'compras.usuario',
+            'compras.detalles.producto',
+        ]);
 
         // Generar texto para enviar por WhatsApp
         $lineas = [];
@@ -209,8 +216,8 @@ class OrdenCompraController extends Controller
     public function cancelar(Request $request, OrdenCompra $ordenes_compra)
     {
         $orden = $ordenes_compra;
-        if ($orden->estado === 'recibida_total') {
-            return back()->with('error', 'No se puede cancelar una orden que ya fue recibida.');
+        if ($orden->estado === 'recibida_total' || $orden->estado === 'recibida_parcial' || $orden->compras()->exists()) {
+            return back()->with('error', 'No se puede cancelar una orden que ya tiene recepciones registradas.');
         }
 
         $orden->update(['estado' => 'cancelada']);
