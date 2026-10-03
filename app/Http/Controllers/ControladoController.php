@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -260,88 +260,17 @@ class ControladoController extends Controller
 
         $registros = $query->orderBy('created_at')->get();
 
-        $filename = "Libro_Controlados_MINSA_{$desde}_al_{$hasta}.csv";
+        $filename = "Libro_Controlados_MINSA_{$desde}_al_{$hasta}.xls";
 
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+        $content = view('controlados.excel.libro', compact('registros', 'desde', 'hasta'))->render();
+
+        return response($content, 200, [
+            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0',
-        ];
-
-        $callback = function () use ($registros) {
-            $file = fopen('php://output', 'w');
-            // BOM UTF-8 for native Excel open
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($file, [
-                'N° Folio',
-                'Fecha',
-                'Hora',
-                'Tipo Operación',
-                'Efecto',
-                'Medicamento',
-                'Principio Activo',
-                'Concentración',
-                'Laboratorio',
-                'Lote FEFO',
-                'Vencimiento Lote',
-                'Cantidad',
-                'Unidad',
-                'Paciente / Beneficiario',
-                'Cédula Paciente',
-                'Edad Paciente',
-                'Médico Prescriptor',
-                'Cédula Médico',
-                'N° Registro MINSA',
-                'Diagnóstico / Justificación Oficial',
-                'Responsable / Farmacéutico',
-                'Documento Referencia'
-            ]);
-
-            foreach ($registros as $reg) {
-                $docRef = '';
-                if ($reg->venta_id) {
-                    $docRef = 'Venta #' . str_pad($reg->venta_id, 5, '0', STR_PAD_LEFT);
-                } elseif ($reg->devolucion) {
-                    $docRef = $reg->devolucion->numero_devolucion;
-                } elseif ($reg->compra) {
-                    $docRef = 'Compra #' . $reg->compra->numero_comprobante;
-                } elseif ($reg->movimiento_inventario_id) {
-                    $docRef = 'Ajuste #' . $reg->movimiento_inventario_id;
-                }
-
-                fputcsv($file, [
-                    $reg->id,
-                    $reg->created_at->format('d/m/Y'),
-                    $reg->created_at->format('H:i'),
-                    $reg->tipo_etiqueta,
-                    $reg->esEntrada() ? 'ENTRADA (+)' : 'SALIDA (-)',
-                    $reg->producto->nombre ?? 'N/A',
-                    $reg->producto?->principio_activo ?? '',
-                    $reg->producto?->concentracion ?? '',
-                    $reg->producto?->laboratorio?->nombre ?? '',
-                    $reg->lote?->numero_lote ?? '',
-                    $reg->lote?->fecha_vencimiento ? $reg->lote->fecha_vencimiento->format('d/m/Y') : '',
-                    ($reg->esEntrada() ? '+' : '-') . number_format($reg->cantidad, 0),
-                    $reg->unidad ?: 'unidades',
-                    $reg->paciente_nombre,
-                    $reg->paciente_cedula ?? '',
-                    $reg->paciente_edad ? $reg->paciente_edad . ' años' : '',
-                    $reg->medico_nombre ?? '',
-                    $reg->medico_cedula ?? '',
-                    $reg->medico_num_registro ?? '',
-                    $reg->motivo_omision ?: ($reg->diagnostico ?: 'Tratamiento prescrito'),
-                    $reg->despachador->name ?? 'Sistema',
-                    $docRef
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ]);
     }
 
     /**
