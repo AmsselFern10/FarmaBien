@@ -88,23 +88,22 @@
         <!-- Alpine x-cloak: oculta elementos hasta que Alpine termine de inicializar -->
         <style>[x-cloak] { display: none !important; }</style>
 
-        <!--
-            View Transitions: bloquea el render hasta que el contenido
-            principal esté parseado, para evitar un cross-fade a página vacía.
-        -->
-        <link rel="expect" href="#main-content" blocking="render">
+
 
         <!--
             Speculation Rules API (Chrome 109+): prerender de las páginas
-            del menú lateral al hacer hover, reduciendo el tiempo de navegación
-            a ~0ms en la mayoría de los casos. Sin efecto en Firefox/Safari.
+            del menú lateral con eagerness "eager" (solo al hacer clic, no
+            al hover). Con "moderate" Chrome prerenderizaba al hover y activaba
+            el prerender ANTES de que el listener JS corriera — causando el
+            rebote de navegación. "eager" = prerender se activa junto con el
+            clic nativo, sin carrera.
         -->
         <script type="speculationrules">
         {
             "prerender": [
                 {
                     "where": { "selector_matches": "nav a[href], aside a[href]" },
-                    "eagerness": "moderate"
+                    "eagerness": "eager"
                 }
             ],
             "prefetch": [

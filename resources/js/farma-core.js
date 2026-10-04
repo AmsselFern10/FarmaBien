@@ -77,15 +77,18 @@ window.farmaHasDirtyDraft = function(url) {
 // ==========================================
 class FarmaProgressBar {
     constructor() {
-        this.bar          = null;
-        this.timer        = null;
-        this.navLock      = false;       // true desde el click hasta que la nueva página carga
-        this.navTarget    = null;        // URL hacia donde se está navegando
-        this.navLockTimer = null;        // fallback: libera el lock si la navegación no ocurre
+        this.bar        = null;
+        this.timer      = null;
+        // Set de URLs en vuelo — permite múltiples navegaciones concurrentes
+        // pero evita disparar la misma URL dos veces seguidas.
+        this._inFlight  = new Set();
+        this._lastNav   = null;   // última URL que se inició
+        this._lockTimer = null;
         this.init();
     }
 
     init() {
+        // Crear / rehusar la barra de progreso
         if (document.getElementById('farma-progress-bar')) {
             this.bar = document.getElementById('farma-progress-bar');
         } else {
@@ -97,110 +100,125 @@ class FarmaProgressBar {
             this.bar = bar;
         }
 
-        // --- window.farmaNavigate: función global para navegación con transición ---
-        // Todos los elementos del sistema (tabs, sidebar, atajos) deben usarla.
+        // ----------------------------------------------------------------
+        // window.farmaNavigate — punto único de navegación interna.
+        //
+        // DISEÑO "gana el último clic":
+        //   • Ignora clics duplicados al destino exactamente activo.
+        //   • Si hay una navegación en vuelo hacia la misma URL, la ignora.
+        //   • Para URLs distintas cancela el _lockTimer anterior y arranca
+        //     una nueva navegación (el browser solo puede navegar hacia un
+        //     lugar a la vez de todas formas).
+        //
+        // YA NO interceptamos <a> click globalmente.  Motivo: Speculation Rules
+        // API prerenderiza páginas en background; cuando el usuario hace clic
+        // Chrome activa el prerender ANTES de que nuestro listener corra, de
+        // modo que window.location ya cambió → la comparación curPath === destPath
+        // falla → se dispara una segunda navegación → rebote visible.
+        //
+        // Ahora:  farmaNavigate solo se llama desde código JS explícito
+        //         (keyboard shortcuts, closeTab, navigateToTab, etc.).
+        //         Los <a href> normales del sidebar/topbar navegan de forma nativa
+        //         y la barra de progreso se activa vía Navigation API / beforeunload.
+        // ----------------------------------------------------------------
         window.farmaNavigate = (url) => {
             if (!url) return;
             const dest = String(url);
 
-            // Mismo origen: anti-rebote — ignora clic duplicado al mismo destino
             try {
-                const destUrl = new URL(dest, window.location.origin);
-                const curPath = window.location.pathname + window.location.search;
+                const destUrl  = new URL(dest, window.location.origin);
+                const curPath  = window.location.pathname + window.location.search;
                 const destPath = destUrl.pathname + destUrl.search;
 
-                if (destPath === curPath) return;               // ya estamos aquí
-                if (this.navLock && this.navTarget === dest) return; // ya navegando al mismo destino
+                // Ya estamos en la URL de destino
+                if (destPath === curPath) return;
+
+                // Ya hay una petición en vuelo exactamente hacia esta URL
+                if (this._inFlight.has(destPath)) return;
+
+                this._inFlight.add(destPath);
+                this._lastNav = destPath;
             } catch (_) {}
 
-            this.navLock   = true;
-            this.navTarget = dest;
-
-            // Inicia barra de progreso (feedback visual inmediato)
             this.start();
 
-            // *** NAVEGACIÓN INSTANTÁNEA ***
-            // La View Transitions API (Chrome 126+, Safari 18.2+) maneja la
-            // animación de salida automáticamente — no necesitamos setTimeout.
-            // En Firefox/browsers sin soporte: navegación normal sin animación.
-            const supportsViewTransitions = typeof document.startViewTransition === 'function' ||
-                CSS.supports('@view-transition { navigation: auto; }');
-
-            if (!supportsViewTransitions) {
-                // Fallback: aplicar clase de salida y navegar tras el frame
+            // Fallback visual para browsers sin View Transitions
+            const supportsVT = typeof document.startViewTransition === 'function' ||
+                (typeof CSS !== 'undefined' && CSS.supports?.('@view-transition { navigation: auto; }'));
+            if (!supportsVT) {
                 const main = document.querySelector('main.page-fade-in, main');
                 if (main) main.classList.add('page-navigating-out');
             }
 
-            // Navegar en el próximo frame (garantiza que la barra de progreso se pintó)
-            requestAnimationFrame(() => {
-                window.location.href = dest;
-            });
+            requestAnimationFrame(() => { window.location.href = dest; });
 
-            // Fallback: si tras 8s no hubo unload, libera el lock
-            clearTimeout(this.navLockTimer);
-            this.navLockTimer = setTimeout(() => {
-                this.navLock   = false;
-                this.navTarget = null;
-                const main = document.querySelector('main');
-                if (main) main.classList.remove('page-navigating-out');
-                this.finish();
-            }, 8000);
+            // Guardia: libera el estado si tras 10 s no se completó la navegación
+            clearTimeout(this._lockTimer);
+            this._lockTimer = setTimeout(() => this._resetState(), 10000);
         };
 
-        // --- Click delegado: intercepta <a> normales y activa farmaNavigate ---
-        document.addEventListener('click', (e) => {
-            if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-            const link = e.target.closest('a[href]');
-            if (!link) return;
+        // ----------------------------------------------------------------
+        // Barra de progreso via Navigation API (Chrome 102+, sin Firefox aún)
+        // Captura TODAS las navegaciones nativas (incluye clicks en <a>,
+        // Speculation Rules activations, history.pushState, etc.) sin
+        // necesidad de interceptar clics.
+        // ----------------------------------------------------------------
+        if (window.navigation) {
+            window.navigation.addEventListener('navigate', (e) => {
+                if (!e.canIntercept || e.hashChange || e.downloadRequest !== null) return;
+                // Solo navegaciones same-origin
+                try {
+                    const dest = new URL(e.destination.url);
+                    if (dest.origin !== window.location.origin) return;
+                    // No mostrar barra para misma ruta
+                    if (dest.pathname + dest.search === window.location.pathname + window.location.search) return;
+                } catch (_) { return; }
 
-            const target = link.getAttribute('target');
-            if (target === '_blank' || target === '_parent' || target === '_top') return;
+                this.start();
 
-            const rawHref = link.getAttribute('href') || '';
-            if (!rawHref || rawHref === '#' || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) return;
+                e.intercept({
+                    handler: async () => {
+                        // La navegación la maneja el browser — solo rastreamos
+                    },
+                    focusReset: 'after-transition',
+                    scroll: 'after-transition'
+                });
+            });
 
-            // Solo misma origin
-            try {
-                const destUrl = new URL(link.href, window.location.origin);
-                if (destUrl.origin !== window.location.origin) return;
+            window.navigation.addEventListener('navigatesuccess', () => this._onNavComplete());
+            window.navigation.addEventListener('navigateerror',   () => this._onNavComplete());
+        } else {
+            // Fallback: beforeunload + load para browsers sin Navigation API
+            window.addEventListener('beforeunload', () => this.progressTo(95, 80));
+        }
 
-                // Enlace con hash al mismo path (scroll interno)
-                if (destUrl.pathname === window.location.pathname && destUrl.hash) return;
-            } catch (_) { return; }
+        // load: siempre completa la barra al montar la nueva página
+        window.addEventListener('load', () => this._onNavComplete());
 
-            e.preventDefault();
-            window.farmaNavigate(link.href);
-        }, true);
-
-        // --- beforeunload: barra al 95% cuando el browser confirma la salida ---
-        window.addEventListener('beforeunload', () => {
-            this.progressTo(95, 80);
-        });
-
-        // --- load: completa la barra al llegar la nueva página ---
-        window.addEventListener('load', () => {
-            this.finish();
-        });
-
-        // --- pageshow: maneja BFCache (página restaurada desde caché del browser) ---
+        // pageshow: BFCache restore — resetea estado y re-anima entrada
         window.addEventListener('pageshow', (event) => {
-            // event.persisted = true → página viene del BFCache
-            this.navLock   = false;
-            this.navTarget = null;
-            clearTimeout(this.navLockTimer);
-
+            this._resetState();
             if (event.persisted) {
-                // Fuerza re-animación de entrada para que no parezca "congelada"
                 const main = document.querySelector('main');
                 if (main) {
                     main.classList.remove('page-navigating-out', 'page-fade-in');
-                    void main.offsetHeight; // reflow para reiniciar animación
+                    void main.offsetHeight;
                     main.classList.add('page-fade-in');
                 }
                 this.finish();
             }
         });
+    }  // end init()
+
+    _resetState() {
+        clearTimeout(this._lockTimer);
+        this._inFlight.clear();
+        this._lastNav = null;
+    }
+
+    _onNavComplete() {
+        this._resetState();
+        this.finish();
     }
 
     start() {
@@ -817,21 +835,17 @@ class FarmaModalWatcher {
             window.addEventListener(evt, () => this.triggerCollapse());
         });
 
+        // MutationObserver: solo observa childList en body (NO subtree, NO attributes).
+        // El observer anterior con subtree:true + attributes:true bloqueaba el hilo
+        // principal en cada cambio de clase de Tailwind/Alpine durante navegaciones.
+        // Los modales se detectan por eventos personalizados (arriba) y por inserción
+        // directa en body (childList), que es suficiente para el caso de uso real.
         const observer = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
-                if (mutation.type === 'childList') {
-                    for (const node of mutation.addedNodes) {
-                        if (node.nodeType === Node.ELEMENT_NODE && this.isModalElement(node)) {
-                            if (this.isElementVisible(node)) {
-                                this.triggerCollapse();
-                                return;
-                            }
-                        }
-                    }
-                } else if (mutation.type === 'attributes' && (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
-                    const target = mutation.target;
-                    if (target.nodeType === Node.ELEMENT_NODE && this.isModalElement(target)) {
-                        if (this.isElementVisible(target)) {
+                if (mutation.type !== 'childList') continue;
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE && this.isModalElement(node)) {
+                        if (this.isElementVisible(node)) {
                             this.triggerCollapse();
                             return;
                         }
@@ -840,22 +854,15 @@ class FarmaModalWatcher {
             }
         });
 
+        const observeBody = () => observer.observe(document.body, {
+            childList: true,
+            subtree: false   // Solo hijos directos de body — costo mínimo
+        });
+
         if (document.body) {
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['style', 'class']
-            });
+            observeBody();
         } else {
-            document.addEventListener('DOMContentLoaded', () => {
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true,
-                    attributeFilter: ['style', 'class']
-                });
-            });
+            document.addEventListener('DOMContentLoaded', observeBody);
         }
     }
 
