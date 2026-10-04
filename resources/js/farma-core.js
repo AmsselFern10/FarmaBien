@@ -916,10 +916,203 @@ class FarmaModalWatcher {
 }
 
 // Instantiate systems
-window.farmaProgressBar = new FarmaProgressBar();
-window.farmaDraftEngine = new FarmaDraftEngine();
-window.farmaToast = new FarmaToastEngine();
+window.farmaProgressBar  = new FarmaProgressBar();
+window.farmaDraftEngine  = new FarmaDraftEngine();
+window.farmaToast        = new FarmaToastEngine();
 window.farmaModalWatcher = new FarmaModalWatcher();
 setupGlobalHttpInterceptors();
 
+// ==========================================
+// NAVBAR TABS — Alpine component factory
+// Movido desde topbar.blade.php al bundle cacheado.
+// El topbar solo inyecta window._farmaPage (Blade).
+// ==========================================
+window.farmaNavbarTabs = function farmaNavbarTabs() {
+    const page = window._farmaPage || {};
+    return {
+        tabs: [],
+        currentUrl:   window.location.pathname + window.location.search,
+        currentPath:  window.location.pathname,
+        currentTitle: (page.title || 'Dashboard').trim() || 'Dashboard',
+        _dashUrl:     page.dashboardUrl || '/dashboard',
+        _savedJson:   '',
 
+        init() {
+            try {
+                const raw = localStorage.getItem('farma_open_tabs') || '[]';
+                this._savedJson = raw;
+                const parsed = JSON.parse(raw);
+                this.tabs = Array.isArray(parsed) ? parsed : [];
+            } catch (_) { this.tabs = []; }
+
+            // Dashboard siempre pinned en indice 0
+            const dashIdx = this.tabs.findIndex(
+                t => t.url === this._dashUrl || t.url === '/dashboard'
+            );
+            if (dashIdx < 0) {
+                this.tabs.unshift({
+                    id: 'dashboard', title: 'Dashboard',
+                    url: this._dashUrl, pinned: true, openedAt: 0, lastVisited: 0
+                });
+            } else {
+                this.tabs[dashIdx].pinned = true;
+                if (dashIdx > 0) {
+                    const [d] = this.tabs.splice(dashIdx, 1);
+                    this.tabs.unshift(d);
+                }
+            }
+
+            // Registrar vista actual (si no es dashboard)
+            const isDash = this.currentPath === this._dashUrl ||
+                           this.currentPath === '/dashboard' ||
+                           this.currentPath === '/';
+
+            if (!isDash) {
+                const exactIdx = this.tabs.findIndex(
+                    t => t.url.split('?')[0] === this.currentPath
+                );
+                if (exactIdx >= 0) {
+                    this.tabs[exactIdx].url         = this.currentUrl;
+                    this.tabs[exactIdx].title       = this.currentTitle;
+                    this.tabs[exactIdx].lastVisited = Date.now();
+                } else {
+                    // FIFO: max 5 tabs dinamicas
+                    const dynamic = this.tabs.filter(t => !t.pinned);
+                    if (dynamic.length >= 5) {
+                        const sorted = [...dynamic].sort(
+                            (a, b) => (a.lastVisited || a.openedAt || 0) -
+                                      (b.lastVisited || b.openedAt || 0)
+                        );
+                        const evict = sorted.find(
+                            c => !(window.farmaHasDirtyDraft?.(c.url))
+                        ) || sorted[0];
+                        this.tabs = this.tabs.filter(t => t.url !== evict.url);
+                    }
+                    this.tabs.push({
+                        id: this.currentPath, title: this.currentTitle,
+                        url: this.currentUrl, pinned: false,
+                        openedAt: Date.now(), lastVisited: Date.now()
+                    });
+                }
+            }
+
+            this.saveTabs();
+            window.addEventListener('farma:draft-changed', () => {
+                this.tabs = [...this.tabs];
+            });
+        },
+
+        saveTabs() {
+            try {
+                const json = JSON.stringify(this.tabs);
+                if (json === this._savedJson) return; // sin cambios — no escribir
+                this._savedJson = json;
+                localStorage.setItem('farma_open_tabs', json);
+            } catch (_) {}
+        },
+
+        // CRITICO: considera tab activa si path exacto O si currentPath es sub-ruta.
+        // Ej: tab '/recetas' queda activa en '/recetas/create' y '/recetas/1/edit'.
+        // Esto evita que el click en la tab activa dispare una navegacion de vuelta.
+        isTabActive(tab) {
+            const tabPath = tab.url.split('?')[0].replace(/\/$/, '');
+            const cur     = this.currentPath.replace(/\/$/, '');
+            if (cur === tabPath) return true;
+            if (tabPath && tabPath !== '/' && tabPath !== this._dashUrl) {
+                return cur.startsWith(tabPath + '/');
+            }
+            return false;
+        },
+
+        hasDirtyDraft(tab) {
+            return window.farmaHasDirtyDraft?.(tab.url) ?? false;
+        },
+
+        navigateToTab(tab) {
+            if (this.isTabActive(tab)) return; // ya activa — no navegar
+            window.location.href = tab.url;
+        },
+
+        async closeTab(index, event) {
+            event.stopPropagation();
+            event.preventDefault();
+            const closed = this.tabs[index];
+            if (!closed || closed.pinned) return;
+
+            if (this.hasDirtyDraft(closed)) {
+                const ok = await window.farmaConfirm?.({
+                    title: 'Cambios sin guardar',
+                    body:  `La pestana "${closed.title}" tiene cambios sin guardar. Descartar y cerrar?`,
+                    type:  'warning',
+                    ok:    'Si, descartar y cerrar'
+                });
+                if (!ok) return;
+                const p = closed.url.split('?')[0];
+                sessionStorage.removeItem('farma_draft:' + p);
+                try {
+                    const dl = JSON.parse(
+                        sessionStorage.getItem('farma_dirty_drafts') || '[]'
+                    );
+                    sessionStorage.setItem('farma_dirty_drafts',
+                        JSON.stringify(dl.filter(x => x !== p)));
+                } catch(_) {}
+            }
+
+            const wasActive = this.isTabActive(closed);
+            this.tabs.splice(index, 1);
+            this.saveTabs();
+            if (wasActive) {
+                const next = this.tabs[Math.max(0, index - 1)] || this.tabs[0];
+                window.location.href = next.url;
+            }
+        }
+    };
+};
+
+// ==========================================
+// CENTRO DE NOTIFICACIONES — Alpine component factory
+// Sin dependencias Blade — completamente cacheable.
+// ==========================================
+window.farmaCentroNotificaciones = function farmaCentroNotificaciones() {
+    return {
+        abierto: false, cargando: false, tabActivo: 'todos',
+        notificaciones: {
+            total_count: 0, stock: [], stock_count: 0,
+            vencimientos: [], vencimientos_count: 0,
+            cuentas_pagar: [], cuentas_pagar_count: 0,
+            reorden: [], reorden_count: 0
+        },
+
+        init() {
+            this.cargarNotificaciones();
+            setInterval(() => this.cargarNotificaciones(true), 3_600_000); // 1 hora
+        },
+
+        toggleOpen() {
+            this.abierto = !this.abierto;
+            if (this.abierto) this.cargarNotificaciones();
+        },
+
+        async cargarNotificaciones(silencioso = false) {
+            if (!silencioso) this.cargando = true;
+            try {
+                const res = await fetch('/api/notificaciones/resumen',
+                    { headers: { Accept: 'application/json' } });
+                if (res.ok) this.notificaciones = await res.json();
+            } catch (_) {
+            } finally { this.cargando = false; }
+        },
+
+        itemsFiltrados() {
+            const n = this.notificaciones;
+            if (this.tabActivo === 'stock')         return n.stock || [];
+            if (this.tabActivo === 'vencimientos')  return n.vencimientos || [];
+            if (this.tabActivo === 'cuentas_pagar') return n.cuentas_pagar || [];
+            const o = { critica:1, alta:2, media:3, baja:4 };
+            return [
+                ...(n.stock || []), ...(n.vencimientos || []),
+                ...(n.cuentas_pagar || []), ...(n.reorden || [])
+            ].sort((a, b) => (o[a.urgencia] || 5) - (o[b.urgencia] || 5));
+        }
+    };
+};

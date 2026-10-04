@@ -91,19 +91,18 @@
 
 
         <!--
-            Speculation Rules API (Chrome 109+): prerender de las páginas
-            del menú lateral con eagerness "eager" (solo al hacer clic, no
-            al hover). Con "moderate" Chrome prerenderizaba al hover y activaba
-            el prerender ANTES de que el listener JS corriera — causando el
-            rebote de navegación. "eager" = prerender se activa junto con el
-            clic nativo, sin carrera.
+            Speculation Rules API (Chrome 109+): prerender solo al hacer clic
+            ('conservative'). 'eager' era tan agresivo como 'immediate' —
+            prerenderizaba TODO el sidebar en cuanto cargaba la pagina, causando
+            uso excesivo de CPU/RAM y posibles races en create/edit/show.
+            'conservative' = prerender arranca exactamente con el clic real.
         -->
         <script type="speculationrules">
         {
             "prerender": [
                 {
                     "where": { "selector_matches": "nav a[href], aside a[href]" },
-                    "eagerness": "eager"
+                    "eagerness": "conservative"
                 }
             ],
             "prefetch": [
