@@ -4,35 +4,55 @@
 
 /* ============================================================
    View Transitions API — Cross-Document (Chrome 126+, Safari 18.2+)
-   Navegación suave entre páginas sin JavaScript, sin setTimeout.
+   Solo anima #main-content — sidebar y topbar NO se mueven.
    En Firefox: degradación graceful → navegación normal sin animación.
    ============================================================ */
 @view-transition {
     navigation: auto;
 }
 
-/* Animación de salida de la página actual (old) */
-::view-transition-old(root) {
-    animation: farmaPageOut 0.15s ease-in both;
+/* Congelar sidebar y topbar — no deben animar entre páginas */
+aside, header {
+    view-transition-name: farma-shell;
 }
 
-/* Animación de entrada de la página nueva (new) */
-::view-transition-new(root) {
-    animation: farmaPageIn 0.2s ease-out both;
+/* Animar solo el contenido principal */
+#main-content {
+    view-transition-name: farma-content;
 }
 
-/* Reducir movimiento para usuarios que lo prefieren (accesibilidad) */
+/* Old page sale: solo el contenido */
+::view-transition-old(farma-content) {
+    animation: farmaPageOut 0.12s ease-in both;
+}
+
+/* New page entra: solo el contenido */
+::view-transition-new(farma-content) {
+    animation: farmaPageIn 0.18s ease-out both;
+}
+
+/* Shell (sidebar+topbar): sin animación — congelar en su lugar */
+::view-transition-old(farma-shell),
+::view-transition-new(farma-shell) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+/* Reducir movimiento — accesibilidad */
 @media (prefers-reduced-motion: reduce) {
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
+    ::view-transition-old(farma-content),
+    ::view-transition-new(farma-content) {
         animation-duration: 0.01ms !important;
     }
 }
 
 @layer utilities {
-    /* Fallback para browsers sin View Transitions — fade-in al cargar */
-    .page-fade-in {
-        animation: farmaPageIn 0.18s ease-out both;
+    /* Fallback para browsers sin View Transitions — fade-in al cargar.
+       Se suprime si View Transitions está activo (el browser ya animó). */
+    @supports not (view-transition-name: none) {
+        .page-fade-in {
+            animation: farmaPageIn 0.18s ease-out both;
+        }
     }
 
     /* Clase de salida — solo usada como fallback sin View Transitions */

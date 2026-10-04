@@ -1,3 +1,10 @@
+{{-- Data bridge: debe ir ANTES del header para que Alpine lo lea al inicializar farmaNavbarTabs() --}}
+@php
+    $pageTitle = trim(str_replace(' - FarmaBien', '', strip_tags($__env->yieldContent('title', ''))));
+    if (!$pageTitle) $pageTitle = 'Dashboard';
+@endphp
+<script>window._farmaPage = { dashboardUrl: '{{ route('dashboard', [], false) }}', title: '{{ addslashes($pageTitle) }}' };</script>
+
 <header x-show="!posFullscreen" class="h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 sm:px-6 z-20 shrink-0 select-none transition-colors">
     <!-- Left: Mobile Menu Trigger & Tabs Bar -->
     <div class="flex items-center flex-1 min-w-0 mr-3">
@@ -199,16 +206,6 @@
     </div>
 </header>
 
-{{-- Data bridge: inyecta datos dinamicos de Blade para los Alpine components en farma-core.js --}}
-@php
-    $pageTitle = trim(str_replace(' - FarmaBien', '', strip_tags($__env->yieldContent('title', ''))));
-    if (!$pageTitle) $pageTitle = 'Dashboard';
-@endphp
-<script>
-window._farmaPage = {
-    dashboardUrl: '{{ route('dashboard', [], false) }}',
-    title: '{{ addslashes($pageTitle) }}'
-};
-</script>
+
 
 

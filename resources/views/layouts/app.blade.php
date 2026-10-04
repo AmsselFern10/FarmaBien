@@ -91,11 +91,11 @@
 
 
         <!--
-            Speculation Rules API (Chrome 109+): prerender solo al hacer clic
-            ('conservative'). 'eager' era tan agresivo como 'immediate' —
-            prerenderizaba TODO el sidebar en cuanto cargaba la pagina, causando
-            uso excesivo de CPU/RAM y posibles races en create/edit/show.
-            'conservative' = prerender arranca exactamente con el clic real.
+            Speculation Rules API (Chrome 109+).
+            Prerender: al hacer clic en un link del sidebar/nav → la página siguiente
+            ya está renderizada antes de que el browser la muestre ('conservative').
+            Prefetch: mismo scope que prerender — solo links de navegación.
+            NUNCA aplicar a links de formularios, acciones o scope global.
         -->
         <script type="speculationrules">
         {
@@ -107,7 +107,7 @@
             ],
             "prefetch": [
                 {
-                    "where": { "selector_matches": "a[href]", "not": { "selector_matches": "a[href^='#'], a[href^='mailto:'], a[href^='tel:'], a[href*='/logout'], a[href*='/delete'], a[href*='/destroy']" } },
+                    "where": { "selector_matches": "nav a[href], aside a[href]" },
                     "eagerness": "conservative"
                 }
             ]

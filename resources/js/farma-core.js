@@ -1029,7 +1029,8 @@ window.farmaNavbarTabs = function farmaNavbarTabs() {
         },
 
         navigateToTab(tab) {
-            if (this.isTabActive(tab)) return; // ya activa — no navegar
+            if (this.isTabActive(tab)) return; // ya activa (exacta o sub-ruta) — no navegar
+            if (window.farmaProgressBar) window.farmaProgressBar.start();
             window.location.href = tab.url;
         },
 
@@ -1063,6 +1064,7 @@ window.farmaNavbarTabs = function farmaNavbarTabs() {
             this.saveTabs();
             if (wasActive) {
                 const next = this.tabs[Math.max(0, index - 1)] || this.tabs[0];
+                if (window.farmaProgressBar) window.farmaProgressBar.start();
                 window.location.href = next.url;
             }
         }
