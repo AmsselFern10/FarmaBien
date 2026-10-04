@@ -158,41 +158,69 @@ class FarmaProgressBar {
         };
 
         // ----------------------------------------------------------------
-        // Barra de progreso via Navigation API (Chrome 102+, sin Firefox aún)
-        // Captura TODAS las navegaciones nativas (incluye clicks en <a>,
-        // Speculation Rules activations, history.pushState, etc.) sin
-        // necesidad de interceptar clics.
+        // Feedback visual INMEDIATO en click (<50 ms)
+        //
+        // Problema que causé en el commit anterior: eliminé el click listener
+        // y confié en Navigation API + e.intercept() para iniciar la barra.
+        // Error: e.intercept() en navegación cross-document (recarga completa)
+        // hace que Chrome espere al handler JS → CONGELAMIENTO de 10 segundos.
+        // Además e.canIntercept=false en full-page-loads → barra nunca arrancaba.
+        //
+        // Solución: escuchar clicks para mostrar la barra (SOLO visual, sin
+        // e.preventDefault — el browser navega normalmente). Navigation API solo
+        // se usa para OBSERVAR, nunca para interceptar navegaciones completas.
         // ----------------------------------------------------------------
+        document.addEventListener('click', (e) => {
+            if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+            const link = e.target.closest('a[href]');
+            if (!link) return;
+
+            const target = link.getAttribute('target');
+            if (target === '_blank' || target === '_parent' || target === '_top') return;
+
+            const rawHref = link.getAttribute('href') || '';
+            if (!rawHref || rawHref === '#' || rawHref.startsWith('#') ||
+                rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:') ||
+                rawHref.startsWith('tel:')) return;
+
+            try {
+                const destUrl = new URL(link.href, window.location.origin);
+                if (destUrl.origin !== window.location.origin) return;
+                // Scroll interno al mismo path → no mostrar barra
+                if (destUrl.pathname === window.location.pathname && destUrl.hash) return;
+                // Ya estamos en esta URL → no mostrar barra
+                if (destUrl.pathname + destUrl.search ===
+                    window.location.pathname + window.location.search) return;
+            } catch (_) { return; }
+
+            // Iniciar barra SOLO como feedback visual — NO hacer e.preventDefault()
+            // El browser maneja la navegación nativamente (Speculation Rules, etc.)
+            this.start();
+        }, { passive: true, capture: true });
+
+        // Navigation API (Chrome 102+): observar navegaciones sin interceptar.
+        // Útil para detectar navegaciones disparadas por JS (history.pushState,
+        // farmaNavigate, etc.) que el click listener no capturaría.
         if (window.navigation) {
             window.navigation.addEventListener('navigate', (e) => {
-                if (!e.canIntercept || e.hashChange || e.downloadRequest !== null) return;
-                // Solo navegaciones same-origin
+                if (e.hashChange || e.downloadRequest !== null) return;
                 try {
                     const dest = new URL(e.destination.url);
                     if (dest.origin !== window.location.origin) return;
-                    // No mostrar barra para misma ruta
-                    if (dest.pathname + dest.search === window.location.pathname + window.location.search) return;
+                    if (dest.pathname + dest.search ===
+                        window.location.pathname + window.location.search) return;
                 } catch (_) { return; }
 
+                // NUNCA llamar e.intercept() — dejamos que el browser navegue
+                // Cross-document navigation: e.intercept() causaba freeze de 10s
                 this.start();
-
-                e.intercept({
-                    handler: async () => {
-                        // La navegación la maneja el browser — solo rastreamos
-                    },
-                    focusReset: 'after-transition',
-                    scroll: 'after-transition'
-                });
             });
-
-            window.navigation.addEventListener('navigatesuccess', () => this._onNavComplete());
-            window.navigation.addEventListener('navigateerror',   () => this._onNavComplete());
-        } else {
-            // Fallback: beforeunload + load para browsers sin Navigation API
-            window.addEventListener('beforeunload', () => this.progressTo(95, 80));
         }
 
-        // load: siempre completa la barra al montar la nueva página
+        // beforeunload: avanzar barra al 90% cuando el browser confirma la salida
+        window.addEventListener('beforeunload', () => this.progressTo(90, 60));
+
+        // load: completar barra al montar la nueva página
         window.addEventListener('load', () => this._onNavComplete());
 
         // pageshow: BFCache restore — resetea estado y re-anima entrada

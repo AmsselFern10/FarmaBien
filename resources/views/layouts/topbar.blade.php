@@ -371,10 +371,11 @@ function farmaCentroNotificaciones() {
 
         init() {
             this.cargarNotificaciones();
-            // Polling suave cada 45 segundos
+            // Polling cada 1 hora — la BD ya cachea 30s; no tiene sentido saturar
+            // con peticiones cada 45s cuando el stock farmacéutico cambia cada horas.
             setInterval(() => {
                 this.cargarNotificaciones(true);
-            }, 45000);
+            }, 3_600_000);
         },
 
         toggleOpen() {
