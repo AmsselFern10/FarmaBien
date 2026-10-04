@@ -22,7 +22,12 @@ class CuentaPorPagarController extends Controller
 
     public function index(Request $request)
     {
-        $query = Compra::with(['proveedor', 'usuario', 'pagos'])
+        $query = Compra::with([
+                'proveedor:id,nombre,ruc',
+                'usuario:id,name',
+            ])
+            ->withCount('pagos')
+            ->withSum('pagos', 'monto')
             ->where('condicion_pago', 'credito')
             ->where('estado', 'recibida')
             ->orderBy('fecha_vencimiento_pago', 'asc');

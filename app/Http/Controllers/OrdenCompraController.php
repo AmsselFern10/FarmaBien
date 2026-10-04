@@ -26,7 +26,12 @@ class OrdenCompraController extends Controller
 
     public function index(Request $request)
     {
-        $query = OrdenCompra::with(['proveedor', 'usuario', 'detalles.producto', 'compra'])
+        $query = OrdenCompra::with([
+                'proveedor:id,nombre,ruc',
+                'usuario:id,name',
+                'compra:id,numero_comprobante,estado',
+            ])
+            ->withCount('detalles')
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('buscar')) {
