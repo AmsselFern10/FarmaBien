@@ -449,7 +449,7 @@ class InventarioController extends Controller
     public function buscarCategoriasAjax(Request $request)
     {
         $q = trim($request->input('q', ''));
-        $query = Categoria::where('activa', true);
+        $query = Categoria::activas();
 
         if (strlen($q) > 0) {
             $query->where('nombre', 'like', "%{$q}%");

@@ -563,7 +563,7 @@ class="space-y-5">
                         </div>
                         <div>
                             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-400 block uppercase">Sin Diferencia</span>
-                            <span class="text-lg font-black text-emerald-900 dark:text-emerald-400" x-text="totalLotes - conDiferencia">{{ $conteo->total_lotes - conDiferencia }}</span>
+                            <span class="text-lg font-black text-emerald-900 dark:text-emerald-400" x-text="totalLotes - conDiferencia">{{ $conteo->total_lotes - $conDiferencia }}</span>
                         </div>
                     </div>
 

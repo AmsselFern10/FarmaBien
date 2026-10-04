@@ -85,6 +85,8 @@
         <!-- Scripts & Styles -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @stack('styles')
+        <!-- Alpine x-cloak: oculta elementos hasta que Alpine termine de inicializar -->
+        <style>[x-cloak] { display: none !important; }</style>
 
         <!--
             View Transitions: bloquea el render hasta que el contenido

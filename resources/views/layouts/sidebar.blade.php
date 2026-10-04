@@ -1,5 +1,6 @@
 <!-- Desktop Collapsible Sidebar with Accordion Submenus -->
 <aside x-show="!posFullscreen"
+       x-cloak
        :class="sidebarCollapsed ? 'w-16' : 'w-64'"
        x-data="{
            openMenus: {
@@ -105,7 +106,6 @@
 
             <!-- Submenu -->
             <div x-show="openMenus.ventas && !sidebarCollapsed" 
-                 x-collapse
                  class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-3.5">
                 @canany(['ver ventas', 'ver ventas propias'])
                 <a href="{{ route('ventas.index') }}" 
@@ -155,7 +155,6 @@
 
             <!-- Submenu -->
             <div x-show="openMenus.clinica && !sidebarCollapsed" 
-                 x-collapse
                  class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-3.5">
                 @can('ver recetas')
                 <a href="{{ route('recetas.index') }}" 
@@ -167,12 +166,12 @@
 
                 {{-- Medicamentos Controlados MINSA --}}
                 <a href="{{ route('controlados.index') }}" 
-                   class="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('controlados.*') ? 'bg-rose-600/20 text-rose-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                   class="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('controlados.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
                     <div class="flex items-center min-w-0">
-                        <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('controlados.*') ? 'bg-rose-400' : 'bg-slate-500' }} mr-2 shrink-0"></span>
+                        <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('controlados.*') ? 'bg-emerald-400' : 'bg-slate-500' }} mr-2 shrink-0"></span>
                         <span class="truncate">Libro Oficial MINSA</span>
                     </div>
-                    <span class="text-[8px] font-bold px-1 py-0.5 rounded bg-rose-900/60 text-rose-300 border border-rose-800 leading-none shrink-0 ml-1">Regulado</span>
+                    <span class="text-[8px] font-bold px-1 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 leading-none shrink-0 ml-1">Regulado</span>
                 </a>
             </div>
         </div>
@@ -201,7 +200,6 @@
 
             <!-- Submenu -->
             <div x-show="openMenus.compras && !sidebarCollapsed" 
-                 x-collapse
                  class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-3.5">
                 <a href="{{ route('compras.index') }}" 
                    class="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('compras.index') || request()->routeIs('compras.create') || request()->routeIs('compras.show') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
@@ -231,8 +229,8 @@
                 </a>
 
                 <a href="{{ route('compras.devoluciones.index') }}" 
-                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('compras.devoluciones.*') ? 'bg-rose-600/20 text-rose-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('compras.devoluciones.*') ? '!bg-rose-400' : '' }}"></span>
+                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('compras.devoluciones.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('compras.devoluciones.*') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Dev. a Proveedor</span>
                 </a>
 
@@ -268,7 +266,6 @@
 
             <!-- Submenu -->
             <div x-show="openMenus.inventario && !sidebarCollapsed" 
-                 x-collapse
                  class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-3.5">
                 <a href="{{ route('inventario.index') }}" 
                    class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('inventario.index') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
@@ -296,14 +293,14 @@
 
                 @can('ajustar inventario')
                 <a href="{{ route('inventario.ajustar') }}" 
-                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('inventario.ajustar*') ? 'bg-indigo-600/20 text-indigo-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.ajustar*') ? '!bg-indigo-400' : '' }}"></span>
+                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('inventario.ajustar*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.ajustar*') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Ajustes Físicos de Stock</span>
                 </a>
 
                 <a href="{{ route('inventario.conteos.index') }}" 
-                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('inventario.conteos.*') ? 'bg-indigo-600/20 text-indigo-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.conteos.*') ? '!bg-indigo-400' : '' }}"></span>
+                   class="flex items-center px-2 py-1.5 rounded-lg text-xs font-medium transition {{ request()->routeIs('inventario.conteos.*') ? 'bg-emerald-600/20 text-emerald-400 font-semibold' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white' }}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500 mr-2 {{ request()->routeIs('inventario.conteos.*') ? '!bg-emerald-400' : '' }}"></span>
                     <span>Toma de Inventario</span>
                 </a>
                 @endcan
@@ -334,7 +331,6 @@
 
             <!-- Submenu -->
             <div x-show="openMenus.catalogos && !sidebarCollapsed" 
-                 x-collapse
                  class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-3.5">
                 @can('ver productos')
                 <a href="{{ route('productos.index') }}" 
@@ -427,7 +423,6 @@
 
             <!-- Submenu -->
             <div x-show="openMenus.administracion && !sidebarCollapsed" 
-                 x-collapse
                  class="pl-4 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-3.5">
                 @canany(['ver reportes ventas', 'ver reportes inventario', 'ver reportes compras'])
                 <a href="{{ route('reportes.index') }}" 
