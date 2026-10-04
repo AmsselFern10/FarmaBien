@@ -20,8 +20,8 @@
             <!-- Value Propositions -->
             <div class="space-y-6 mt-10">
                 <div class="flex items-start space-x-3.5">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 text-lg shadow-inner">
-                        ⚡
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 shadow-inner">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     </div>
                     <div>
                         <h3 class="text-white text-base font-bold">Punto de Venta Rápido (POS)</h3>
@@ -32,8 +32,8 @@
                 </div>
 
                 <div class="flex items-start space-x-3.5">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 text-lg shadow-inner">
-                        ⏳
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 shadow-inner">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </div>
                     <div>
                         <h3 class="text-white text-base font-bold">Control de Lotes y Vencimientos</h3>
@@ -44,8 +44,8 @@
                 </div>
 
                 <div class="flex items-start space-x-3.5">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 text-lg shadow-inner">
-                        📦
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 shadow-inner">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                     </div>
                     <div>
                         <h3 class="text-white text-base font-bold">Venta Fraccionada y Kardex</h3>
@@ -56,8 +56,8 @@
                 </div>
 
                 <div class="flex items-start space-x-3.5">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 text-lg shadow-inner">
-                        📋
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300 shadow-inner">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </div>
                     <div>
                         <h3 class="text-white text-base font-bold">Validación de Recetas Médicas</h3>
@@ -113,7 +113,7 @@
                 class="mb-4 p-4 rounded-xl bg-red-950/70 border border-red-700/60 flex items-start space-x-3"
                 role="alert"
             >
-                <span class="text-red-400 text-xl mt-0.5">🔒</span>
+                <svg class="w-5 h-5 text-red-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                 <div>
                     <p class="text-red-300 font-bold text-sm">Acceso bloqueado temporalmente</p>
                     <p class="text-red-400/80 text-xs mt-0.5">
@@ -234,44 +234,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-
-        <!-- Quick Access Roles for Testing -->
-        <div class="mt-8 pt-6 border-t border-slate-800">
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                Selecciona un rol para probar (Demo):
-            </p>
-            <div class="grid grid-cols-2 gap-2.5">
-                <button type="button"
-                        @click="if(!locked){ email='admin@farmabien.com'; password='password'; }"
-                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
-                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
-                    <span>👑 Administrador</span>
-                    <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
-                </button>
-                <button type="button"
-                        @click="if(!locked){ email='farmaceutico@farmabien.com'; password='password'; }"
-                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
-                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
-                    <span>💊 Farmacéutico</span>
-                    <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
-                </button>
-                <button type="button"
-                        @click="if(!locked){ email='cajero@farmabien.com'; password='password'; }"
-                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
-                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
-                    <span>🧾 Cajero / POS</span>
-                    <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
-                </button>
-                <button type="button"
-                        @click="if(!locked){ email='inventario@farmabien.com'; password='password'; }"
-                        :class="locked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-700/80'"
-                        class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold text-left flex items-center justify-between transition">
-                    <span>📦 Inventario</span>
-                    <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">Rellenar</span>
-                </button>
-            </div>
-        </div>
     </div>
 
     <script>
