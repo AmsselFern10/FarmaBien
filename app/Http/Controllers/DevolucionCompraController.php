@@ -69,8 +69,16 @@ class DevolucionCompraController extends Controller
             $compra = Compra::with(['proveedor', 'usuario', 'lotes.producto.laboratorio'])->find($compraId);
             if ($compra) {
                 $proveedorSeleccionado = $compra->proveedor;
+
+                // Fix N+1: una sola query agrupada en vez de 1 query por lote
+                $loteIds = $compra->lotes->pluck('id');
+                $devueltasPorLote = DetalleDevolucionCompra::whereIn('lote_id', $loteIds)
+                    ->groupBy('lote_id')
+                    ->selectRaw('lote_id, SUM(cantidad) as total')
+                    ->pluck('total', 'lote_id');
+
                 foreach ($compra->lotes as $lote) {
-                    $yaDevuelta = (int) DetalleDevolucionCompra::where('lote_id', $lote->id)->sum('cantidad');
+                    $yaDevuelta = (int)($devueltasPorLote[$lote->id] ?? 0);
                     $disponible = max(0, min($lote->stock_inicial - $yaDevuelta, $lote->stock_actual));
 
                     $detallesDisponibles[] = [
@@ -83,12 +91,20 @@ class DevolucionCompraController extends Controller
                     ];
                 }
             }
+
         } elseif (!empty($loteIds)) {
             $lotesSel = Lote::with(['producto.laboratorio', 'proveedor', 'compra'])->whereIn('id', (array)$loteIds)->get();
             if ($lotesSel->isNotEmpty()) {
                 $proveedorSeleccionado = $lotesSel->first()->proveedor;
+
+                // Fix N+1: una sola query agrupada en vez de 1 query por lote
+                $devueltasPorLote = DetalleDevolucionCompra::whereIn('lote_id', $lotesSel->pluck('id'))
+                    ->groupBy('lote_id')
+                    ->selectRaw('lote_id, SUM(cantidad) as total')
+                    ->pluck('total', 'lote_id');
+
                 foreach ($lotesSel as $lote) {
-                    $yaDevuelta = (int) DetalleDevolucionCompra::where('lote_id', $lote->id)->sum('cantidad');
+                    $yaDevuelta = (int)($devueltasPorLote[$lote->id] ?? 0);
                     $disponible = max(0, min($lote->stock_inicial - $yaDevuelta, $lote->stock_actual));
 
                     $detallesDisponibles[] = [

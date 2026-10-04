@@ -63,8 +63,11 @@ class OrdenCompraController extends Controller
 
     public function create(Request $request)
     {
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
-        $productos = Producto::activos()->with(['laboratorio', 'categoria'])->orderBy('nombre')->get();
+        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc']);
+        $productos = Producto::activos()
+            ->select(['id', 'nombre', 'codigo_barra', 'precio_compra', 'precio_venta'])
+            ->orderBy('nombre')
+            ->get();
 
         // Si viene desde sugerencias de reorden
         $preloadedItems = [];

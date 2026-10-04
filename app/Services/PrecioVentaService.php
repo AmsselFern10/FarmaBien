@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class PrecioVentaService
@@ -75,23 +76,25 @@ class PrecioVentaService
      */
     public function obtenerMetricasPrecios(): array
     {
-        $stats = Producto::whereNull('deleted_at')
-            ->where('precio_venta', '>', 0)
-            ->selectRaw('
-                COUNT(*) as total_con_precio,
-                AVG(CASE WHEN precio_compra > 0 THEN ((precio_venta - precio_compra) / precio_venta) * 100 ELSE NULL END) as margen_prom,
-                COUNT(CASE WHEN ((precio_venta - COALESCE(precio_compra, 0)) / NULLIF(precio_venta, 0)) * 100 < 25 THEN 1 ELSE NULL END) as productos_margen_bajo
-            ')
-            ->first();
+        return Cache::remember('precio_metricas_v1', 900, function () {
+            $stats = Producto::whereNull('deleted_at')
+                ->where('precio_venta', '>', 0)
+                ->selectRaw('
+                    COUNT(*) as total_con_precio,
+                    AVG(CASE WHEN precio_compra > 0 THEN ((precio_venta - precio_compra) / precio_venta) * 100 ELSE NULL END) as margen_prom,
+                    COUNT(CASE WHEN ((precio_venta - COALESCE(precio_compra, 0)) / NULLIF(precio_venta, 0)) * 100 < 25 THEN 1 ELSE NULL END) as productos_margen_bajo
+                ')
+                ->first();
 
-        $cambiosUltimos30Dias = PrecioVenta::where('vigente_desde', '>=', now()->subDays(30))->count();
+            $cambiosUltimos30Dias = PrecioVenta::where('vigente_desde', '>=', now()->subDays(30))->count();
 
-        return [
-            'totalProductosConPrecio' => (int)($stats->total_con_precio ?? 0),
-            'margenPromedio'          => round((float)($stats->margen_prom ?? 0), 1),
-            'productosMargenBajo'     => (int)($stats->productos_margen_bajo ?? 0),
-            'cambiosUltimos30Dias'    => (int)$cambiosUltimos30Dias,
-        ];
+            return [
+                'totalProductosConPrecio' => (int)($stats->total_con_precio ?? 0),
+                'margenPromedio'          => round((float)($stats->margen_prom ?? 0), 1),
+                'productosMargenBajo'     => (int)($stats->productos_margen_bajo ?? 0),
+                'cambiosUltimos30Dias'    => (int)$cambiosUltimos30Dias,
+            ];
+        });
     }
 
     /**
