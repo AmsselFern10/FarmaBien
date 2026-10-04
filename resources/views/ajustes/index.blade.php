@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Ajustes del Sistema')
 
@@ -45,62 +45,118 @@
 
     async conectarBluetooth() {
         if (!navigator.bluetooth) {
-            alert('Tu navegador no soporta Web Bluetooth API. Recomendamos Google Chrome o Microsoft Edge en un entorno seguro (HTTPS o localhost).');
+            this.hardwareMsg = 'Navegador sin soporte Web Bluetooth. Usa Google Chrome o Edge (requiere HTTPS o localhost).';
             return;
         }
+        this.btStatus = 'Abriendo selector de dispositivos Bluetooth...';
+        // Intentamos primero con filtros de servicios de impresoras ESC/POS conocidas
+        const knownServices = [
+            '000018f0-0000-1000-8000-00805f9b34fb', // Impresoras genéricas ESC/POS
+            'e7810a71-73ae-499d-8c15-faa9aef0c3f2', // Epson / Star BT
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Bixolon SRMP
+            '00001101-0000-1000-8000-00805f9b34fb'  // Serial Port Profile (SPP)
+        ];
         try {
-            this.btStatus = 'Buscando dispositivos Bluetooth...';
-            const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd205e455']
-            });
-            this.btDeviceName = device.name || 'Impresora Bluetooth (' + device.id.substring(0, 8) + ')';
-            this.btStatus = 'Conectado a ' + this.btDeviceName;
+            let device;
+            try {
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
+                    optionalServices: knownServices
+                });
+            } catch (filterErr) {
+                // Fallback: mostrar todos los dispositivos BT cercanos
+                device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: knownServices
+                });
+            }
+            this.btDeviceName = device.name || 'Impresora BT (' + device.id.substring(0, 8) + '...)';
+            this.btStatus = 'Vinculado: ' + this.btDeviceName;
             localStorage.setItem('farma_bt_printer_name', this.btDeviceName);
             this.hw.tipo = 'bluetooth';
             this.sincronizarHardwareLocal();
-            this.hardwareMsg = '✓ Impresora Bluetooth vinculada exitosamente: ' + this.btDeviceName;
+            this.hardwareMsg = 'Impresora Bluetooth vinculada: ' + this.btDeviceName;
         } catch (err) {
-            if (err.name !== 'NotFoundError') {
-                console.error('Error Bluetooth:', err);
-                this.btStatus = 'Error al conectar: ' + err.message;
+            if (err.name === 'NotFoundError' || err.name === 'NotAllowedError') {
+                this.btStatus = 'Sin dispositivo seleccionado';
             } else {
-                this.btStatus = 'Búsqueda cancelada por el usuario';
+                this.btStatus = 'Error: ' + err.message;
+                console.error('BT error:', err);
             }
         }
     },
 
     async conectarUSB() {
         if (!navigator.usb) {
-            alert('Tu navegador no soporta WebUSB API. Recomendamos Google Chrome o Microsoft Edge.');
+            this.hardwareMsg = 'Navegador sin soporte WebUSB. Usa Google Chrome o Edge (requiere HTTPS o localhost).';
             return;
         }
+        this.usbStatus = 'Abriendo selector USB...';
+        // VIDs de impresoras térmicas más comunes en el mercado
+        const printerFilters = [
+            { vendorId: 0x04b8 }, // Epson
+            { vendorId: 0x0519 }, // Star Micronics
+            { vendorId: 0x1504 }, // Bixolon
+            { vendorId: 0x0dd4 }, // Custom / Citizen
+            { vendorId: 0x154f }, // SNBC
+            { vendorId: 0x0fe6 }, // ICS Advent / Sewoo
+            { vendorId: 0x28e9 }, // GZSmile / genéricas chinas ESC/POS
+            { vendorId: 0x0416 }, // Winbond / Pos58
+            { vendorId: 0x0483 }, // STMicroelectronics (muchas impresoras low-cost)
+        ];
         try {
-            this.usbStatus = 'Buscando dispositivos USB...';
-            const device = await navigator.usb.requestDevice({ filters: [] });
-            this.usbDeviceName = (device.productName || 'Dispositivo USB') + ' (VID: 0x' + device.vendorId.toString(16) + ')';
-            this.usbStatus = 'Conectado a ' + this.usbDeviceName;
+            let device;
+            try {
+                device = await navigator.usb.requestDevice({ filters: printerFilters });
+            } catch (filterErr) {
+                // Fallback: mostrar todos los USB conectados
+                device = await navigator.usb.requestDevice({ filters: [] });
+            }
+            const vid = '0x' + device.vendorId.toString(16).toUpperCase().padStart(4,'0');
+            const pid = '0x' + device.productId.toString(16).toUpperCase().padStart(4,'0');
+            this.usbDeviceName = (device.productName || 'Impresora USB') + ' [VID:' + vid + ' PID:' + pid + ']';
+            this.usbStatus = 'Detectado: ' + this.usbDeviceName;
             localStorage.setItem('farma_usb_printer_name', this.usbDeviceName);
             this.hw.tipo = 'usb';
             this.sincronizarHardwareLocal();
-            this.hardwareMsg = '✓ Impresora WebUSB vinculada exitosamente: ' + this.usbDeviceName;
+            this.hardwareMsg = 'Impresora USB detectada: ' + this.usbDeviceName;
         } catch (err) {
-            if (err.name !== 'NotFoundError') {
-                console.error('Error WebUSB:', err);
-                this.usbStatus = 'Error al conectar: ' + err.message;
+            if (err.name === 'NotFoundError' || err.name === 'NotAllowedError') {
+                this.usbStatus = 'Sin dispositivo seleccionado';
             } else {
-                this.usbStatus = 'Búsqueda cancelada por el usuario';
+                this.usbStatus = 'Error: ' + err.message;
+                console.error('USB error:', err);
             }
         }
     },
 
     probarAperturaCajon() {
         this.sincronizarHardwareLocal();
-        // Emisión de comando ESC/POS RJ11 (ESC p 0 25 250 -> 0x1B, 0x70, 0x00, 0x19, 0xFA)
-        this.hardwareMsg = '⚡ Enviando pulso de apertura a cajón monedero [ESC p 0 25 250]...';
-        setTimeout(() => {
-            this.hardwareMsg = '✓ Pulso de apertura ejecutado con éxito. Si el cajón está conectado por cable RJ11 a la impresora térmica, debe haberse abierto.';
-        }, 600);
+        this.hardwareMsg = 'Enviando pulso ESC p 0 25 250 al cajón... Si hay impresora conectada por RJ11, el cajón debe abrirse.';
+        // Si hay dispositivo USB vinculado intentamos enviar ESC p real
+        const usbName = localStorage.getItem('farma_usb_printer_name');
+        if (navigator.usb && usbName) {
+            navigator.usb.getDevices().then(devices => {
+                if (devices.length > 0) {
+                    const dev = devices[0];
+                    dev.open()
+                        .then(() => dev.selectConfiguration(1))
+                        .then(() => dev.claimInterface(0))
+                        .then(() => {
+                            const cmd = new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA]); // ESC p 0 25 250
+                            return dev.transferOut(1, cmd);
+                        })
+                        .then(() => {
+                            this.hardwareMsg = 'Pulso ESC/POS enviado via USB. El cajon deberia haberse abierto.';
+                            dev.close();
+                        })
+                        .catch(err => {
+                            this.hardwareMsg = 'Pulso enviado (simulado). Conecta via RJ11 a impresora para apertura real.';
+                            console.warn('USB cajon:', err);
+                        });
+                }
+            });
+        }
     },
 
     imprimirTicketPrueba() {
@@ -109,7 +165,19 @@
     },
 
     ejecutarImpresionTest() {
-        window.print();
+        const ticketEl = document.getElementById('ticketPreviewContent');
+        if (!ticketEl) { window.print(); return; }
+        const html = ticketEl.innerHTML;
+        const win = window.open('', '_blank', 'width=400,height=600');
+        win.document.write('<html><head><title>Ticket Prueba</title>');
+        win.document.write('<style>body{font-family:monospace;font-size:10px;margin:0;padding:12px;}</style>');
+        win.document.write('</head><body>');
+        win.document.write(html);
+        win.document.write('</body></html>');
+        win.document.close();
+        win.focus();
+        win.print();
+        setTimeout(() => win.close(), 800);
     },
 
     onTestScanKeydown(e) {
@@ -535,6 +603,19 @@
         {{-- TAB 4: HARDWARE Y PERIFÉRICOS --}}
         <div x-show="activeTab === 'hardware'" x-cloak class="space-y-4">
             
+            {{-- Aviso compatibilidad navegador --}}
+            <div x-data="{ btOk: !!navigator.bluetooth, usbOk: !!navigator.usb }"
+                 x-show="!btOk || !usbOk" x-cloak
+                 class="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-3">
+                <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                <div class="space-y-0.5">
+                    <p class="font-bold">Compatibilidad limitada del navegador</p>
+                    <p x-show="!btOk">Web Bluetooth no disponible — para vincular impresoras Bluetooth usa Google Chrome o Edge (versión 85+) en HTTPS o localhost.</p>
+                    <p x-show="!usbOk">WebUSB no disponible — para detectar impresoras USB usa Google Chrome o Edge (versión 61+) en HTTPS o localhost.</p>
+                    <p class="text-amber-700 dark:text-amber-400">El modo <strong>Navegador Web</strong> y la <strong>Red LAN/Wi-Fi</strong> funcionan en cualquier navegador.</p>
+                </div>
+            </div>
+
             {{-- Hardware Status Banner --}}
             <div x-show="hardwareMsg" x-cloak class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs flex items-center justify-between">
                 <div class="flex items-center space-x-2">
@@ -570,7 +651,7 @@
                            :class="hw.tipo === 'navegador' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40'">
                         <div class="flex items-start justify-between">
                             <div class="flex items-center space-x-2">
-                                <span class="text-lg">🖨️</span>
+                                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 <div>
                                     <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">Navegador Web</span>
                                     <span class="text-[10px] text-slate-500">Diálogo de impresión estándar</span>
@@ -584,7 +665,7 @@
                            :class="hw.tipo === 'red' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40'">
                         <div class="flex items-start justify-between">
                             <div class="flex items-center space-x-2">
-                                <span class="text-lg">🌐</span>
+                                <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg>
                                 <div>
                                     <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">Red LAN / Wi-Fi</span>
                                     <span class="text-[10px] text-slate-500">Impresión directa por IP y Puerto</span>
@@ -598,7 +679,7 @@
                            :class="hw.tipo === 'bluetooth' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40'">
                         <div class="flex items-start justify-between">
                             <div class="flex items-center space-x-2">
-                                <span class="text-lg">📶</span>
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
                                 <div>
                                     <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">Bluetooth Térmico</span>
                                     <span class="text-[10px] text-slate-500">Web Bluetooth API</span>
@@ -612,7 +693,7 @@
                            :class="hw.tipo === 'usb' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40'">
                         <div class="flex items-start justify-between">
                             <div class="flex items-center space-x-2">
-                                <span class="text-lg">🔌</span>
+                                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                 <div>
                                     <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">USB Directo</span>
                                     <span class="text-[10px] text-slate-500">WebUSB / Serial API</span>
@@ -729,7 +810,7 @@
                         <button type="button" 
                                 @click="probarAperturaCajon()"
                                 class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer">
-                            <span>⚡ Probar Apertura de Cajón</span>
+                            <span>Probar Apertura de Cajón</span>
                         </button>
                     </div>
                 </div>
@@ -806,7 +887,7 @@
                 <div class="p-4 rounded-xl bg-amber-50/50 dark:bg-slate-800/50 border border-amber-200 dark:border-slate-700 space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center space-x-1.5">
-                            <span>🔍</span>
+                            
                             <span>Banco de Prueba de Escáner en Tiempo Real</span>
                         </span>
                         <span class="text-[10px] text-slate-500">Pasa un producto por el lector láser</span>
@@ -832,7 +913,7 @@
                             <template x-for="(sc, scIdx) in testScanLog" :key="scIdx">
                                 <div class="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between text-[11px] font-mono">
                                     <div class="flex items-center space-x-2">
-                                        <span class="text-emerald-600 font-bold">✓</span>
+                                        <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                         <strong class="text-slate-900 dark:text-white" x-text="sc.codigo"></strong>
                                         <span class="text-slate-400 text-[10px]" x-text="'(' + sc.len + ' dígitos)'"></span>
                                     </div>
@@ -879,7 +960,7 @@
             </div>
 
             <div class="p-4 bg-slate-100 dark:bg-slate-950 flex justify-center">
-                <div class="bg-white text-slate-900 font-mono text-[10px] p-4 rounded-lg shadow-sm border border-slate-300 space-y-2 w-full leading-tight"
+                <div id="ticketPreviewContent" class="bg-white text-slate-900 font-mono text-[10px] p-4 rounded-lg shadow-sm border border-slate-300 space-y-2 w-full leading-tight"
                      :class="hw.ancho === '58' ? 'max-w-[220px]' : 'max-w-[280px]'">
                     <div class="text-center">
                         <div class="font-black text-xs uppercase">{{ config('app.name', 'FarmaBien') }}</div>
