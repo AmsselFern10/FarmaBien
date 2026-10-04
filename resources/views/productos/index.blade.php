@@ -430,7 +430,7 @@
                         <th class="py-3 px-4 text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                <tbody class="table-cv divide-y divide-slate-100 dark:divide-slate-800/60">
                     @forelse($productos as $producto)
                     @php
                         $stock = $producto->stock_total ?? 0;

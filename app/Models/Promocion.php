@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Carbon\Carbon;
 
 class Promocion extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'promociones';
 
@@ -82,6 +83,49 @@ class Promocion extends Model
                 $q->whereNull('stock_limite')
                   ->orWhereRaw('stock_consumido < stock_limite');
             });
+    }
+
+    public function scopeBuscar($query, string $buscar)
+    {
+        $buscar = trim($buscar);
+        if ($buscar === '') return $query;
+
+        return $query->where(function ($q) use ($buscar) {
+            $q->where('nombre', 'like', "%{$buscar}%")
+              ->orWhere('descripcion', 'like', "%{$buscar}%")
+              ->orWhereHas('producto', function ($qp) use ($buscar) {
+                  $qp->where('nombre', 'like', "%{$buscar}%")
+                     ->orWhere('codigo_barra', 'like', "%{$buscar}%");
+              })
+              ->orWhereHas('categoria', function ($qc) use ($buscar) {
+                  $qc->where('nombre', 'like', "%{$buscar}%");
+              })
+              ->orWhereHas('laboratorio', function ($ql) use ($buscar) {
+                  $ql->where('nombre', 'like', "%{$buscar}%");
+              });
+        });
+    }
+
+    public function scopePorTipo($query, string $tipo)
+    {
+        return $query->where('tipo', $tipo);
+    }
+
+    public function scopePorAlcance($query, string $alcance)
+    {
+        return $query->where('alcance', $alcance);
+    }
+
+    public function scopePorEstado($query, string $estado)
+    {
+        $now = now();
+        return match ($estado) {
+            'vigentes'   => $query->vigentes(),
+            'programadas'=> $query->where('activo', true)->where('fecha_inicio', '>', $now),
+            'vencidas'   => $query->where('fecha_fin', '<', $now),
+            'inactivas'  => $query->where('activo', false),
+            default      => $query,
+        };
     }
 
     // Helpers de Negocio

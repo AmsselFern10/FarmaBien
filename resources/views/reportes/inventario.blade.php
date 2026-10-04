@@ -206,7 +206,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @foreach($lotes as $l)
                     @php
-                        $dias = (int) now()->diffInDays($l->fecha_vencimiento, false);
+                        $dias = (int) $l->dias_restantes;
                         [$sem, $semClass] = $dias < 0
                             ? ['VENCIDO', 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300']
                             : ($dias <= 30

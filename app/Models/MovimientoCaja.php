@@ -12,6 +12,21 @@ class MovimientoCaja extends Model
 
     protected $table = 'movimientos_caja';
 
+    /**
+     * Los movimientos de caja son registros contables inmutables (Append-Only).
+     * No se permite su modificación ni eliminación física.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function () {
+            throw new \DomainException('Los movimientos de caja son registros contables inmutables y no pueden ser modificados.');
+        });
+
+        static::deleting(function () {
+            throw new \DomainException('Los movimientos de caja son inmutables y no pueden ser eliminados.');
+        });
+    }
+
     protected $fillable = [
         'sesion_caja_id',
         'user_id',

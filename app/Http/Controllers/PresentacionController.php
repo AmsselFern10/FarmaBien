@@ -4,19 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\PresentacionProducto;
 use App\Models\Producto;
-use App\Models\AuditLog;
 use App\Http\Requests\StorePresentacionRequest;
 use App\Http\Requests\UpdatePresentacionRequest;
+use App\Services\PresentacionService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\QueryException;
 use Exception;
 
 class PresentacionController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        protected PresentacionService $presentacionService
+    ) {
         $this->middleware('permission:ver presentaciones|ver productos')->only(['index', 'show']);
         $this->middleware('permission:crear presentaciones|crear productos')->only(['create', 'store']);
         $this->middleware('permission:editar presentaciones|editar productos')->only(['edit', 'update', 'toggleActivo']);
@@ -25,28 +25,8 @@ class PresentacionController extends Controller
 
     public function index(Request $request)
     {
-        $query = PresentacionProducto::with('producto')
-            ->withCount(['detallesVentas', 'detallesCompras']);
-
-        if ($request->filled('buscar')) {
-            $buscar = trim($request->input('buscar'));
-            $query->where(function ($q) use ($buscar) {
-                $q->where('nombre', 'like', "%{$buscar}%")
-                  ->orWhere('descripcion', 'like', "%{$buscar}%")
-                  ->orWhere('codigo_barras', 'like', "%{$buscar}%")
-                  ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$buscar}%"));
-            });
-        }
-
-        if ($request->filled('producto_id')) {
-            $query->where('producto_id', $request->input('producto_id'));
-        }
-
-        if ($request->filled('estado')) {
-            $query->where('activo', $request->estado === 'activos');
-        }
-
-        $presentaciones = $query->orderBy('producto_id')->orderBy('orden')->paginate(perPage(20))->withQueryString();
+        $filtros = $request->only(['buscar', 'producto_id', 'estado']);
+        $presentaciones = $this->presentacionService->listarPresentaciones($filtros, perPage(20))->withQueryString();
         $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
 
         return view('presentaciones.index', compact('presentaciones', 'productos'));
@@ -56,41 +36,14 @@ class PresentacionController extends Controller
     {
         $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
         $productosJson = json_encode($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());
+
         return view('presentaciones.create', compact('productos', 'productosJson'));
     }
 
     public function store(StorePresentacionRequest $request)
     {
         try {
-            $presentacion = DB::transaction(function () use ($request) {
-                $data = $request->validated();
-
-                // Si se marca como unidad base, actualizar atómicamente las demás presentaciones del producto
-                if (!empty($data['es_unidad_base'])) {
-                    PresentacionProducto::where('producto_id', $data['producto_id'])
-                        ->lockForUpdate()
-                        ->update(['es_unidad_base' => false]);
-                }
-
-                $presentacion = PresentacionProducto::create($data);
-
-                Log::info('Presentación comercial registrada', [
-                    'presentacion_id' => $presentacion->id,
-                    'producto_id' => $presentacion->producto_id,
-                    'nombre' => $presentacion->nombre,
-                    'unidades' => $presentacion->unidades_por_presentacion,
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log('presentaciones', 'crear', "Presentación '{$presentacion->nombre}' registrada para producto #{$presentacion->producto_id}", [
-                    'presentacion_id'          => $presentacion->id,
-                    'producto_id'              => $presentacion->producto_id,
-                    'unidades_por_presentacion'=> $presentacion->unidades_por_presentacion,
-                    'precio_venta'             => $presentacion->precio_venta,
-                ]);
-
-                return $presentacion;
-            });
+            $presentacion = $this->presentacionService->crearPresentacion($request->validated());
 
             if ($request->boolean('crear_otro')) {
                 return redirect()->route('presentaciones.create')
@@ -135,46 +88,22 @@ class PresentacionController extends Controller
         $presentacion->load('producto');
         $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
         $productosJson = json_encode($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());
+
         return view('presentaciones.edit', compact('presentacion', 'productos', 'productosJson'));
     }
 
     public function update(UpdatePresentacionRequest $request, PresentacionProducto $presentacion)
     {
         try {
-            DB::transaction(function () use ($request, $presentacion) {
-                $locked = PresentacionProducto::where('id', $presentacion->id)->lockForUpdate()->firstOrFail();
-                $data = $request->validated();
-
-                if (!empty($data['es_unidad_base'])) {
-                    PresentacionProducto::where('producto_id', $locked->producto_id)
-                        ->where('id', '!=', $locked->id)
-                        ->lockForUpdate()
-                        ->update(['es_unidad_base' => false]);
-                }
-
-                $locked->update($data);
-
-                Log::info('Presentación comercial actualizada', [
-                    'presentacion_id' => $locked->id,
-                    'producto_id' => $locked->producto_id,
-                    'nombre' => $locked->nombre,
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log('presentaciones', 'editar', "Presentación '{$locked->nombre}' actualizada (producto #{$locked->producto_id})", [
-                    'presentacion_id' => $locked->id,
-                    'producto_id'     => $locked->producto_id,
-                    'cambios'         => array_keys($data),
-                ]);
-            });
+            $this->presentacionService->actualizarPresentacion($presentacion, $request->validated());
 
             return redirect()->route('presentaciones.show', $presentacion)
                 ->with('success', "Presentación '{$presentacion->nombre}' actualizada correctamente.");
         } catch (Exception $e) {
             Log::error('Error al actualizar presentación', [
                 'presentacion_id' => $presentacion->id,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'user_id'         => auth()->id(),
+                'message'         => $e->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'Error al actualizar la presentación: ' . $e->getMessage());
@@ -184,38 +113,15 @@ class PresentacionController extends Controller
     public function destroy(PresentacionProducto $presentacion)
     {
         try {
-            DB::transaction(function () use ($presentacion) {
-                $locked = PresentacionProducto::where('id', $presentacion->id)->lockForUpdate()->firstOrFail();
-
-                // Validación estricta de integridad referencial
-                if ($locked->detallesVentas()->exists() || $locked->detallesCompras()->exists()) {
-                    throw new Exception("No se puede eliminar la presentación '{$locked->nombre}' porque cuenta con registros históricos en ventas o compras. Desactívala para ocultarla.");
-                }
-
-                $nombre = $locked->nombre;
-                $productoId = $locked->producto_id;
-                $locked->delete();
-
-                Log::info('Presentación eliminada exitosamente', [
-                    'presentacion_id' => $presentacion->id,
-                    'nombre' => $nombre,
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log('presentaciones', 'eliminar', "Presentación '{$nombre}' eliminada (producto #{$productoId})", [
-                    'presentacion_id' => $presentacion->id,
-                    'producto_id'     => $productoId,
-                    'nombre'          => $nombre,
-                ]);
-            });
+            $this->presentacionService->eliminarPresentacion($presentacion);
 
             return redirect()->route('presentaciones.index')
                 ->with('success', "Presentación '{$presentacion->nombre}' eliminada correctamente.");
         } catch (Exception $e) {
             Log::warning('Intento fallido de eliminación de presentación', [
                 'presentacion_id' => $presentacion->id,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'user_id'         => auth()->id(),
+                'message'         => $e->getMessage(),
             ]);
 
             return back()->with('error', $e->getMessage());
@@ -225,34 +131,14 @@ class PresentacionController extends Controller
     public function toggleActivo(PresentacionProducto $presentacion)
     {
         try {
-            $estado = DB::transaction(function () use ($presentacion) {
-                $locked = PresentacionProducto::where('id', $presentacion->id)->lockForUpdate()->firstOrFail();
-                $nuevoEstado = !$locked->activo;
-                $locked->update(['activo' => $nuevoEstado]);
-
-                Log::info('Estado de presentación modificado', [
-                    'presentacion_id' => $locked->id,
-                    'nombre' => $locked->nombre,
-                    'nuevo_estado' => $nuevoEstado ? 'activada' : 'desactivada',
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log(
-                    'presentaciones',
-                    $nuevoEstado ? 'activar' : 'desactivar',
-                    "Presentación '{$locked->nombre}' " . ($nuevoEstado ? 'activada' : 'desactivada'),
-                    ['presentacion_id' => $locked->id, 'producto_id' => $locked->producto_id]
-                );
-
-                return $nuevoEstado ? 'activada' : 'desactivada';
-            });
+            $estado = $this->presentacionService->cambiarEstado($presentacion);
 
             return back()->with('success', "Presentación '{$presentacion->nombre}' {$estado} correctamente.");
         } catch (Exception $e) {
             Log::error('Error al modificar estado de presentación', [
                 'presentacion_id' => $presentacion->id,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'user_id'         => auth()->id(),
+                'message'         => $e->getMessage(),
             ]);
 
             return back()->with('error', 'No se pudo modificar el estado de la presentación: ' . $e->getMessage());

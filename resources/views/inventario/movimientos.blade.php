@@ -138,7 +138,7 @@
                             <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold {{ $tipoBadge }}">{{ ucfirst($mov->tipo) }}</span>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="text-[10px] text-slate-700 dark:text-slate-300 font-medium">{{ str_replace('_', ' ', $mov->subtipo) }}</span>
+                            <span class="text-[10px] text-slate-700 dark:text-slate-300 font-medium">{{ $mov->subtipo_etiqueta }}</span>
                         </td>
                         <td class="px-4 py-3 text-right font-mono font-bold {{ $cantClass }}">
                             {{ $mov->cantidad > 0 ? '+' : '' }}{{ number_format($mov->cantidad) }}

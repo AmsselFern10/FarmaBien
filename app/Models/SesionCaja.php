@@ -51,6 +51,26 @@ class SesionCaja extends Model
         'fecha_cierre'                => 'datetime',
     ];
 
+    /**
+     * Blindaje: Las sesiones de caja cerradas o con transacciones vinculadas son inmutables ante borrado físico.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function ($sesion) {
+            if ($sesion->estado === 'cerrada') {
+                throw new \DomainException("No se puede eliminar una sesión de caja formalmente cerrada y arqueada.");
+            }
+
+            if ($sesion->ventas()->exists()) {
+                throw new \DomainException("No se puede eliminar una sesión de caja que cuenta con ventas registradas.");
+            }
+
+            if ($sesion->movimientos()->exists()) {
+                throw new \DomainException("No se puede eliminar una sesión de caja que cuenta con movimientos de efectivo.");
+            }
+        });
+    }
+
     public function caja(): BelongsTo
     {
         return $this->belongsTo(Caja::class, 'caja_id');

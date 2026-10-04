@@ -150,6 +150,9 @@ class CompraService
                 }
             }
 
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
+
             return $compra->load([
                 'detalles.producto.laboratorio',
                 'detalles.lote',
@@ -476,6 +479,9 @@ class CompraService
                 'fecha_anulacion'  => now(),
                 'motivo_anulacion' => $motivo,
             ]);
+
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
 
             return $compra->fresh(['detalles', 'lotes', 'anuladoPor']);
         });

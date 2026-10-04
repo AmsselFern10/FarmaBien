@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Laboratorio;
-use App\Models\AuditLog;
+use App\Services\LaboratorioService;
 use App\Http\Requests\StoreLaboratorioRequest;
 use App\Http\Requests\UpdateLaboratorioRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class LaboratorioController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permission:ver laboratorios')->only(['index', 'show']);
+    public function __construct(
+        protected LaboratorioService $laboratorioService
+    ) {
+        $this->middleware('permission:ver laboratorios')->only(['index', 'show', 'buscarAjax']);
         $this->middleware('permission:crear laboratorios')->only(['create', 'store']);
         $this->middleware('permission:editar laboratorios')->only(['edit', 'update']);
         $this->middleware('permission:desactivar laboratorios')->only(['destroy']);
@@ -25,27 +25,7 @@ class LaboratorioController extends Controller
 
     public function index(Request $request)
     {
-        $query = Laboratorio::withCount('productos');
-
-        if ($request->filled('buscar')) {
-            $buscar = trim($request->input('buscar'));
-            $query->where(function ($q) use ($buscar) {
-                $q->where('nombre', 'like', "%{$buscar}%")
-                  ->orWhere('codigo', 'like', "%{$buscar}%")
-                  ->orWhere('pais_origen', 'like', "%{$buscar}%")
-                  ->orWhere('contacto', 'like', "%{$buscar}%");
-            });
-        }
-
-        if ($request->filled('estado')) {
-            if ($request->estado === 'activos') {
-                $query->where('activo', true);
-            } elseif ($request->estado === 'inactivos') {
-                $query->where('activo', false);
-            }
-        }
-
-        $laboratorios = $query->orderBy('nombre', 'asc')->paginate(perPage(15))->withQueryString();
+        $laboratorios = $this->laboratorioService->listar($request->all(), perPage(15));
 
         return view('laboratorios.index', compact('laboratorios'));
     }
@@ -58,25 +38,7 @@ class LaboratorioController extends Controller
     public function store(StoreLaboratorioRequest $request)
     {
         try {
-            $laboratorio = DB::transaction(function () use ($request) {
-                $laboratorio = Laboratorio::create($request->validated());
-
-                Log::info('Laboratorio registrado exitosamente', [
-                    'laboratorio_id' => $laboratorio->id,
-                    'nombre' => $laboratorio->nombre,
-                    'codigo' => $laboratorio->codigo,
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log('laboratorios', 'crear', "Laboratorio '{$laboratorio->nombre}' creado", [
-                    'laboratorio_id' => $laboratorio->id,
-                    'codigo' => $laboratorio->codigo,
-                ]);
-
-                Cache::forget('catalog_laboratorios_base');
-
-                return $laboratorio;
-            });
+            $laboratorio = $this->laboratorioService->crear($request->validated());
 
             if ($request->boolean('crear_otro')) {
                 return redirect()->route('laboratorios.create')
@@ -86,16 +48,16 @@ class LaboratorioController extends Controller
             return redirect()->route('laboratorios.index')
                 ->with('success', "Laboratorio '{$laboratorio->nombre}' registrado correctamente.");
         } catch (QueryException $qe) {
-            Log::error('Error de base de datos al registrar laboratorio', [
+            Log::error('Error de unicidad al registrar laboratorio', [
                 'user_id' => auth()->id(),
-                'message' => $qe->getMessage(),
+                'error'   => $qe->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'No se pudo guardar el laboratorio. El nombre o código ingresado ya existe.');
         } catch (Exception $e) {
             Log::error('Error al registrar laboratorio', [
                 'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'Error al guardar el laboratorio: ' . $e->getMessage());
@@ -117,38 +79,23 @@ class LaboratorioController extends Controller
     public function update(UpdateLaboratorioRequest $request, Laboratorio $laboratorio)
     {
         try {
-            DB::transaction(function () use ($request, $laboratorio) {
-                $locked = Laboratorio::where('id', $laboratorio->id)->lockForUpdate()->firstOrFail();
-                $locked->update($request->validated());
-
-                Log::info('Laboratorio actualizado exitosamente', [
-                    'laboratorio_id' => $locked->id,
-                    'nombre' => $locked->nombre,
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log('laboratorios', 'actualizar', "Laboratorio '{$locked->nombre}' actualizado", [
-                    'laboratorio_id' => $locked->id,
-                ]);
-
-                Cache::forget('catalog_laboratorios_base');
-            });
+            $this->laboratorioService->actualizar($laboratorio, $request->validated());
 
             return redirect()->route('laboratorios.index')
                 ->with('success', "Laboratorio '{$laboratorio->nombre}' actualizado correctamente.");
         } catch (QueryException $qe) {
-            Log::error('Error de base de datos al actualizar laboratorio', [
+            Log::error('Error de unicidad al actualizar laboratorio', [
                 'laboratorio_id' => $laboratorio->id,
-                'user_id' => auth()->id(),
-                'message' => $qe->getMessage(),
+                'user_id'        => auth()->id(),
+                'error'          => $qe->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'No se pudo actualizar el laboratorio. Conflicto de nombre o código duplicado.');
         } catch (Exception $e) {
             Log::error('Error al actualizar laboratorio', [
                 'laboratorio_id' => $laboratorio->id,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'user_id'        => auth()->id(),
+                'error'          => $e->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'Error al actualizar el laboratorio: ' . $e->getMessage());
@@ -158,40 +105,29 @@ class LaboratorioController extends Controller
     public function destroy(Laboratorio $laboratorio)
     {
         try {
-            $estado = DB::transaction(function () use ($laboratorio) {
-                $locked = Laboratorio::where('id', $laboratorio->id)->lockForUpdate()->firstOrFail();
-                $nuevoEstado = !$locked->activo;
-                $locked->update(['activo' => $nuevoEstado]);
-
-                Log::info('Estado de laboratorio modificado', [
-                    'laboratorio_id' => $locked->id,
-                    'nombre' => $locked->nombre,
-                    'nuevo_estado' => $nuevoEstado ? 'activado' : 'desactivado',
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log(
-                    'laboratorios',
-                    $nuevoEstado ? 'activar' : 'desactivar',
-                    "Laboratorio '{$locked->nombre}' " . ($nuevoEstado ? 'activado' : 'desactivado'),
-                    ['laboratorio_id' => $locked->id]
-                );
-
-                Cache::forget('catalog_laboratorios_base');
-
-                return $nuevoEstado ? 'activado' : 'desactivado';
-            });
+            $estado = $this->laboratorioService->toggleEstado($laboratorio);
 
             return redirect()->route('laboratorios.index')
                 ->with('success', "Laboratorio '{$laboratorio->nombre}' {$estado} correctamente.");
         } catch (Exception $e) {
             Log::error('Error al modificar estado de laboratorio', [
                 'laboratorio_id' => $laboratorio->id,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'user_id'        => auth()->id(),
+                'error'          => $e->getMessage(),
             ]);
 
             return back()->with('error', 'No se pudo modificar el estado del laboratorio: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Búsqueda AJAX de Laboratorios (Componente C / Filtros).
+     */
+    public function buscarAjax(Request $request): JsonResponse
+    {
+        $q = trim((string)$request->input('q', ''));
+        $laboratorios = $this->laboratorioService->buscarAjax($q, 15);
+
+        return response()->json($laboratorios);
     }
 }

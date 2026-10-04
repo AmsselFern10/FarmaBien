@@ -100,7 +100,7 @@
         <tbody>
             @forelse($lotes as $l)
             @php
-                $dias = (int) now()->diffInDays($l->fecha_vencimiento, false);
+                $dias = (int) $l->dias_restantes;
                 [$sem, $bClass] = $dias < 0
                     ? ['Vencido', 'badge-danger']
                     : ($dias <= 30

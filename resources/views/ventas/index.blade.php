@@ -228,7 +228,7 @@
                         <th class="px-5 py-3.5 text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
+                <tbody class="table-cv divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @forelse($ventas as $venta)
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition {{ $venta->estado === 'anulada' ? 'opacity-60 bg-slate-50/30 dark:bg-slate-950/30' : '' }}">
                         <!-- Comprobante -->

@@ -63,7 +63,7 @@
         @php
             $hoy = now()->toDateString();
             $venc = $lote->fecha_vencimiento->toDateString();
-            $dias = (int)now()->diffInDays($lote->fecha_vencimiento, false);
+            $dias = (int) $lote->dias_restantes;
             $stockColor = $lote->stock_actual == 0 ? 'text-red-950 dark:text-rose-400' : ($dias <= 0 ? 'text-red-950 dark:text-rose-400' : 'text-emerald-950 dark:text-emerald-400');
         @endphp
         <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs">
@@ -180,7 +180,7 @@
                         <td class="px-4 py-3 font-mono text-slate-500 dark:text-slate-400">{{ $mov->lote->numero_lote ?? '—' }}</td>
                         <td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold {{ $tipoBadge }}">{{ ucfirst($mov->tipo) }}</span></td>
                         <td class="px-4 py-3">
-                            <p class="text-slate-700 dark:text-slate-300 capitalize font-medium">{{ str_replace('_', ' ', $mov->subtipo) }}</p>
+                            <p class="text-slate-700 dark:text-slate-300 font-medium">{{ $mov->subtipo_etiqueta }}</p>
                             @if($mov->motivo)<p class="text-[10px] text-slate-400 italic truncate max-w-40" title="{{ $mov->motivo }}">{{ $mov->motivo }}</p>@endif
                         </td>
                         <td class="px-4 py-3 text-right font-mono font-bold {{ $cantClass }}">{{ $mov->cantidad > 0 ? '+' : '' }}{{ number_format($mov->cantidad) }}</td>

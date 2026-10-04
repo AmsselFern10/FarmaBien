@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Producto extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     public const TIPO_VENTA_LIBRE = 'venta_libre';
     public const TIPO_CONTROLADO = 'controlado';
@@ -115,6 +116,11 @@ class Producto extends Model
         return $this->hasOne(PrecioVenta::class)->whereNull('presentacion_id')->whereNull('vigente_hasta');
     }
 
+    public function unidadBase()
+    {
+        return $this->hasOne(PresentacionProducto::class)->where('es_unidad_base', true);
+    }
+
     // Helpers de Control Sanitario
     public function esControlado(): bool
     {
@@ -126,6 +132,15 @@ class Producto extends Model
         return !$this->esControlado();
     }
 
+    /**
+     * Calcula la cantidad equivalente en unidades base
+     */
+    public function calcularUnidadesBase(int $cantidad, ?PresentacionProducto $presentacion = null): int
+    {
+        $factor = $presentacion ? $presentacion->unidades_por_presentacion : 1;
+        return $cantidad * max(1, $factor);
+    }
+
     // Scopes
     public function scopeActivos($query)
     {
@@ -135,6 +150,50 @@ class Producto extends Model
     public function scopeActivo($query)
     {
         return $query->where('activo', true);
+    }
+
+    public function scopeBuscar($query, string $buscar, array $principiosIa = [])
+    {
+        $buscar = trim($buscar);
+        if ($buscar === '') {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($buscar, $principiosIa) {
+            $q->where('nombre', 'like', "%{$buscar}%")
+              ->orWhere('principio_activo', 'like', "%{$buscar}%")
+              ->orWhere('descripcion', 'like', "%{$buscar}%")
+              ->orWhere('codigo_barra', 'like', "%{$buscar}%");
+
+            if (!empty($principiosIa)) {
+                foreach ($principiosIa as $pActivo) {
+                    $q->orWhere('principio_activo', 'like', "%{$pActivo}%");
+                }
+            }
+        });
+    }
+
+    public function scopePorCategoria($query, int $categoriaId)
+    {
+        return $query->where('categoria_id', $categoriaId);
+    }
+
+    public function scopePorLaboratorio($query, int $laboratorioId)
+    {
+        return $query->where('laboratorio_id', $laboratorioId);
+    }
+
+    public function scopePorRegimen($query, string $regimen)
+    {
+        if ($regimen === 'controlado' || $regimen === 'controlados') {
+            return $this->scopeControlados($query);
+        }
+
+        if ($regimen === 'venta_libre') {
+            return $this->scopeVentaLibre($query);
+        }
+
+        return $query;
     }
 
     public function scopeControlados($query)
@@ -165,7 +224,7 @@ class Producto extends Model
             WHERE lotes.producto_id = productos.id 
             AND lotes.activo = 1
             AND lotes.fecha_vencimiento > ?
-        ) < stock_minimo', [$today]);
+        ) <= stock_minimo', [$today]);
     }
 
     // Accessors

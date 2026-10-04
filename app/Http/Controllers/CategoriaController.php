@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Categoria;
-use App\Models\AuditLog;
+use App\Services\CategoriaService;
 use App\Http\Requests\StoreCategoriaRequest;
 use App\Http\Requests\UpdateCategoriaRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class CategoriaController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permission:ver categorias')->only(['index', 'show']);
+    public function __construct(
+        protected CategoriaService $categoriaService
+    ) {
+        $this->middleware('permission:ver categorias')->only(['index', 'show', 'buscarAjax']);
         $this->middleware('permission:crear categorias')->only(['create', 'store']);
         $this->middleware('permission:editar categorias')->only(['edit', 'update']);
         $this->middleware('permission:desactivar categorias')->only(['destroy']);
@@ -25,33 +25,7 @@ class CategoriaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Categoria::withCount('productos');
-
-        if ($request->filled('buscar')) {
-            $buscar = trim($request->input('buscar'));
-            $query->where(function ($q) use ($buscar) {
-                $q->where('nombre', 'like', "%{$buscar}%")
-                  ->orWhere('descripcion', 'like', "%{$buscar}%");
-            });
-        }
-
-        if ($request->filled('estado')) {
-            if ($request->estado === 'activos') {
-                $query->where('activo', true);
-            } elseif ($request->estado === 'inactivos') {
-                $query->where('activo', false);
-            }
-        }
-
-        if ($request->filled('con_productos')) {
-            if ($request->con_productos === 'si') {
-                $query->has('productos');
-            } elseif ($request->con_productos === 'no') {
-                $query->doesntHave('productos');
-            }
-        }
-
-        $categorias = $query->orderBy('nombre', 'asc')->paginate(perPage(15))->withQueryString();
+        $categorias = $this->categoriaService->listar($request->all(), perPage(15));
 
         return view('categorias.index', compact('categorias'));
     }
@@ -64,23 +38,7 @@ class CategoriaController extends Controller
     public function store(StoreCategoriaRequest $request)
     {
         try {
-            $categoria = DB::transaction(function () use ($request) {
-                $categoria = Categoria::create($request->validated());
-
-                Log::info('Categoría registrada exitosamente', [
-                    'categoria_id' => $categoria->id,
-                    'nombre' => $categoria->nombre,
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log('categorias', 'crear', "Categoría '{$categoria->nombre}' creada", [
-                    'categoria_id' => $categoria->id,
-                ]);
-
-                Cache::forget('catalog_categorias_base');
-
-                return $categoria;
-            });
+            $categoria = $this->categoriaService->crear($request->validated());
 
             if ($request->boolean('crear_otro')) {
                 return redirect()->route('categorias.create')
@@ -90,16 +48,16 @@ class CategoriaController extends Controller
             return redirect()->route('categorias.index')
                 ->with('success', "Categoría '{$categoria->nombre}' creada exitosamente.");
         } catch (QueryException $qe) {
-            Log::error('Error de base de datos al crear categoría', [
+            Log::error('Error de unicidad al crear categoría', [
                 'user_id' => auth()->id(),
-                'message' => $qe->getMessage(),
+                'error'   => $qe->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'No se pudo registrar la categoría. Ya existe un registro con ese nombre.');
         } catch (Exception $e) {
             Log::error('Error al registrar categoría', [
                 'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'Error al guardar la categoría: ' . $e->getMessage());
@@ -110,6 +68,7 @@ class CategoriaController extends Controller
     {
         $categoria->loadCount('productos');
         $productos = $categoria->productos()->with('laboratorio')->paginate(perPage(10));
+
         return view('categorias.show', compact('categoria', 'productos'));
     }
 
@@ -121,38 +80,23 @@ class CategoriaController extends Controller
     public function update(UpdateCategoriaRequest $request, Categoria $categoria)
     {
         try {
-            DB::transaction(function () use ($request, $categoria) {
-                $locked = Categoria::where('id', $categoria->id)->lockForUpdate()->firstOrFail();
-                $locked->update($request->validated());
-
-                Log::info('Categoría actualizada exitosamente', [
-                    'categoria_id' => $locked->id,
-                    'nombre' => $locked->nombre,
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log('categorias', 'actualizar', "Categoría '{$locked->nombre}' actualizada", [
-                    'categoria_id' => $locked->id,
-                ]);
-
-                Cache::forget('catalog_categorias_base');
-            });
+            $this->categoriaService->actualizar($categoria, $request->validated());
 
             return redirect()->route('categorias.index')
                 ->with('success', "Categoría '{$categoria->nombre}' actualizada exitosamente.");
         } catch (QueryException $qe) {
-            Log::error('Error de base de datos al actualizar categoría', [
+            Log::error('Error de unicidad al actualizar categoría', [
                 'categoria_id' => $categoria->id,
-                'user_id' => auth()->id(),
-                'message' => $qe->getMessage(),
+                'user_id'      => auth()->id(),
+                'error'        => $qe->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'No se pudo actualizar la categoría debido a un conflicto de duplicidad de nombre.');
         } catch (Exception $e) {
             Log::error('Error al actualizar categoría', [
                 'categoria_id' => $categoria->id,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'user_id'      => auth()->id(),
+                'error'        => $e->getMessage(),
             ]);
 
             return back()->withInput()->with('error', 'Error al actualizar la categoría: ' . $e->getMessage());
@@ -162,40 +106,29 @@ class CategoriaController extends Controller
     public function destroy(Categoria $categoria)
     {
         try {
-            $estado = DB::transaction(function () use ($categoria) {
-                $locked = Categoria::where('id', $categoria->id)->lockForUpdate()->firstOrFail();
-                $nuevoEstado = !$locked->activo;
-                $locked->update(['activo' => $nuevoEstado]);
-
-                Log::info('Estado de categoría modificado', [
-                    'categoria_id' => $locked->id,
-                    'nombre' => $locked->nombre,
-                    'nuevo_estado' => $nuevoEstado ? 'activada' : 'desactivada',
-                    'user_id' => auth()->id(),
-                ]);
-
-                AuditLog::log(
-                    'categorias',
-                    $nuevoEstado ? 'activar' : 'desactivar',
-                    "Categoría '{$locked->nombre}' " . ($nuevoEstado ? 'activada' : 'desactivada'),
-                    ['categoria_id' => $locked->id]
-                );
-
-                Cache::forget('catalog_categorias_base');
-
-                return $nuevoEstado ? 'activada' : 'desactivada';
-            });
+            $estado = $this->categoriaService->toggleEstado($categoria);
 
             return redirect()->route('categorias.index')
                 ->with('success', "Categoría '{$categoria->nombre}' {$estado} correctamente.");
         } catch (Exception $e) {
             Log::error('Error al modificar estado de categoría', [
                 'categoria_id' => $categoria->id,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
+                'user_id'      => auth()->id(),
+                'error'        => $e->getMessage(),
             ]);
 
             return back()->with('error', 'No se pudo modificar el estado de la categoría: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Búsqueda AJAX de Categorías (Componente C / Tomas / POS).
+     */
+    public function buscarAjax(Request $request): JsonResponse
+    {
+        $q = trim((string)$request->input('q', ''));
+        $categorias = $this->categoriaService->buscarAjax($q, 15);
+
+        return response()->json($categorias);
     }
 }

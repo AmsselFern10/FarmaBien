@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lote extends Model
 {
+    use HasFactory;
+
     protected $table = 'lotes';
 
     protected $fillable = [
@@ -106,6 +109,35 @@ class Lote extends Model
             ->where('stock_actual', '>', 0);
     }
 
+    public function scopeBuscar($query, ?string $termino)
+    {
+        if (empty($termino)) {
+            return $query;
+        }
+
+        $buscar = trim($termino);
+        return $query->where(function ($q) use ($buscar) {
+            $q->where('numero_lote', 'like', "%{$buscar}%")
+              ->orWhereHas('producto', function ($qp) use ($buscar) {
+                  $qp->where('nombre', 'like', "%{$buscar}%")
+                     ->orWhere('principio_activo', 'like', "%{$buscar}%")
+                     ->orWhere('codigo_barra', 'like', "%{$buscar}%");
+              });
+        });
+    }
+
+    public function scopeOrdenarPor($query, string $criterio = 'vencimiento_asc')
+    {
+        return match ($criterio) {
+            'vencimiento_desc' => $query->orderBy('fecha_vencimiento', 'desc'),
+            'ingreso_desc'     => $query->orderBy('created_at', 'desc')->orderBy('id', 'desc'),
+            'ingreso_asc'      => $query->orderBy('created_at', 'asc')->orderBy('id', 'asc'),
+            'stock_desc'       => $query->orderBy('stock_actual', 'desc'),
+            'stock_asc'        => $query->orderBy('stock_actual', 'asc'),
+            default            => $query->orderBy('fecha_vencimiento', 'asc'),
+        };
+    }
+
     // Métodos
     public function estaVencido(): bool
     {
@@ -121,5 +153,17 @@ class Lote extends Model
     public function tieneStock(int $cantidad = 1): bool
     {
         return $this->stock_actual >= $cantidad;
+    }
+
+    /**
+     * Cálculo único y homogéneo de días restantes sin desviación horaria
+     */
+    public function getDiasRestantesAttribute(): int
+    {
+        if (!$this->fecha_vencimiento) {
+            return 0;
+        }
+
+        return (int) now()->startOfDay()->diffInDays($this->fecha_vencimiento->startOfDay(), false);
     }
 }

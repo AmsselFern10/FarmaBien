@@ -11,6 +11,8 @@ use App\Models\MovimientoInventario;
 use App\Models\AuditLog;
 use App\Services\InventarioService;
 use App\Http\Requests\AjusteInventarioRequest;
+use App\Http\Requests\StoreLoteManualRequest;
+use App\Http\Requests\UpdateLoteRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -93,16 +95,8 @@ class InventarioController extends Controller
             'proveedor:id,nombre',
         ])->where('activo', true);
 
-
         if ($request->filled('buscar')) {
-            $buscar = trim($request->input('buscar'));
-            $query->where(function ($q) use ($buscar) {
-                $q->where('numero_lote', 'like', "%{$buscar}%")
-                  ->orWhereHas('producto', function ($qp) use ($buscar) {
-                      $qp->where('nombre', 'like', "%{$buscar}%")
-                         ->orWhere('principio_activo', 'like', "%{$buscar}%");
-                  });
-            });
+            $query->buscar($request->input('buscar'));
         }
 
         if ($request->filled('filtro_vencimiento')) {
@@ -116,27 +110,7 @@ class InventarioController extends Controller
         }
 
         $orden = $request->input('orden', 'vencimiento_asc');
-        switch ($orden) {
-            case 'vencimiento_desc':
-                $query->orderBy('fecha_vencimiento', 'desc');
-                break;
-            case 'ingreso_desc':
-                $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
-                break;
-            case 'ingreso_asc':
-                $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
-                break;
-            case 'stock_desc':
-                $query->orderBy('stock_actual', 'desc');
-                break;
-            case 'stock_asc':
-                $query->orderBy('stock_actual', 'asc');
-                break;
-            case 'vencimiento_asc':
-            default:
-                $query->orderBy('fecha_vencimiento', 'asc');
-                break;
-        }
+        $query->ordenarPor($orden);
 
         $lotes = $query->paginate(perPage(15))->withQueryString();
         $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
@@ -147,22 +121,10 @@ class InventarioController extends Controller
     /**
      * Actualizar metadatos de un lote (número de lote, fecha de vencimiento, proveedor)
      */
-    public function updateLote(Request $request, Lote $lote)
+    public function updateLote(UpdateLoteRequest $request, Lote $lote)
     {
-        $validated = $request->validate([
-            'numero_lote'       => 'required|string|max:100',
-            'fecha_vencimiento' => 'required|date',
-            'proveedor_id'      => 'nullable|exists:proveedores,id',
-            'motivo_cambio'     => 'required|string|min:5|max:255',
-        ], [
-            'numero_lote.required'       => 'El número de lote es obligatorio.',
-            'fecha_vencimiento.required' => 'La fecha de vencimiento es obligatoria.',
-            'motivo_cambio.required'     => 'El motivo de la modificación es obligatorio para auditoría regulatoria.',
-            'motivo_cambio.min'          => 'El motivo debe tener al menos 5 caracteres.',
-        ]);
-
         try {
-            $this->inventarioService->actualizarMetadatosLote($lote, $validated);
+            $this->inventarioService->actualizarMetadatosLote($lote, $request->validated());
 
             return redirect()->route('inventario.lotes')
                 ->with('success', "Los metadatos del lote '{$lote->numero_lote}' han sido actualizados exitosamente con auditoría.");
@@ -283,67 +245,13 @@ class InventarioController extends Controller
     /**
      * Guardar lote manual con movimiento de entrada en Kardex
      */
-    public function storeLote(Request $request)
+    public function storeLote(StoreLoteManualRequest $request)
     {
-        $validated = $request->validate([
-            'producto_id'       => ['required', 'integer', 'exists:productos,id'],
-            'numero_lote'       => ['required', 'string', 'max:100'],
-            'fecha_vencimiento' => ['required', 'date', 'after:today'],
-            'cantidad'          => ['required', 'integer', 'min:1'],
-            'precio_compra'     => ['nullable', 'numeric', 'min:0'],
-            'proveedor_id'      => ['nullable', 'integer', 'exists:proveedores,id'],
-            'motivo'            => ['required', 'string', 'min:5', 'max:500'],
-        ], [
-            'producto_id.required'       => 'Selecciona el medicamento.',
-            'producto_id.exists'         => 'El medicamento no existe.',
-            'numero_lote.required'       => 'El número de lote es obligatorio.',
-            'fecha_vencimiento.required' => 'La fecha de vencimiento es obligatoria.',
-            'fecha_vencimiento.after'    => 'La fecha de vencimiento debe ser una fecha futura.',
-            'cantidad.required'          => 'La cantidad inicial es obligatoria.',
-            'cantidad.min'               => 'La cantidad debe ser al menos 1 unidad.',
-            'motivo.required'            => 'El motivo es obligatorio para auditoría regulatoria.',
-            'motivo.min'                 => 'El motivo debe tener al menos 5 caracteres.',
-        ]);
-
         try {
-            $lote = DB::transaction(function () use ($validated) {
-                $lote = Lote::create([
-                    'producto_id'       => $validated['producto_id'],
-                    'compra_id'         => null,
-                    'proveedor_id'      => $validated['proveedor_id'] ?? null,
-                    'numero_lote'       => $validated['numero_lote'],
-                    'fecha_vencimiento' => $validated['fecha_vencimiento'],
-                    'stock_inicial'     => $validated['cantidad'],
-                    'stock_actual'      => $validated['cantidad'],
-                    'precio_compra'     => $validated['precio_compra'] ?? 0,
-                    'activo'            => true,
-                ]);
-
-                MovimientoInventario::create([
-                    'producto_id'       => $lote->producto_id,
-                    'lote_id'           => $lote->id,
-                    'user_id'           => auth()->id() ?? 1,
-                    'tipo'              => 'entrada',
-                    'subtipo'           => 'ajuste_manual',
-                    'cantidad'          => $validated['cantidad'],
-                    'stock_anterior'    => 0,
-                    'stock_posterior'   => $validated['cantidad'],
-                    'motivo'            => 'Lote manual: ' . $validated['motivo'],
-                    'fecha_movimiento'  => now(),
-                ]);
-
-                return $lote;
-            });
-
-            AuditLog::log('inventario', 'lote_manual', "Lote manual creado: {$lote->numero_lote} ({$lote->producto->nombre})", [
-                'lote_id'    => $lote->id,
-                'producto_id'=> $lote->producto_id,
-                'cantidad'   => $validated['cantidad'],
-                'motivo'     => $validated['motivo'],
-            ]);
+            $lote = $this->inventarioService->crearLoteManual($request->validated());
 
             return redirect()->route('inventario.lotes')
-                ->with('success', "Lote '{$lote->numero_lote}' de {$lote->producto->nombre} creado con {$validated['cantidad']} unidades en inventario.");
+                ->with('success', "Lote '{$lote->numero_lote}' de {$lote->producto->nombre} creado con {$lote->stock_actual} unidades en inventario.");
 
         } catch (Exception $e) {
             Log::error('Error al crear lote manual', [
@@ -361,36 +269,9 @@ class InventarioController extends Controller
      */
     public function buscarMedicamentosAjax(Request $request)
     {
-        $q = trim($request->input('q', ''));
-        if (strlen($q) < 2) {
-            return response()->json([]);
-        }
-
-        $medicamentos = Producto::with(['laboratorio:id,nombre'])
-            ->where('activo', true)
-            ->where(function ($query) use ($q) {
-                $query->where('nombre', 'like', "%{$q}%")
-                      ->orWhere('principio_activo', 'like', "%{$q}%")
-                      ->orWhere('codigo_barras', 'like', "%{$q}%");
-            })
-            ->limit(10)
-            ->get(['id', 'nombre', 'presentacion', 'principio_activo', 'laboratorio_id', 'codigo_barras', 'tipo_control', 'requiere_receta', 'precio_venta'])
-            ->map(function ($med) {
-                return [
-                    'id' => $med->id,
-                    'nombre' => $med->nombre . ($med->presentacion ? " - {$med->presentacion}" : ''),
-                    'nombre_simple' => $med->nombre,
-                    'presentacion' => $med->presentacion,
-                    'principio_activo' => $med->principio_activo,
-                    'laboratorio' => $med->laboratorio->nombre ?? 'Sin laboratorio',
-                    'codigo_barras' => $med->codigo_barras ?? 'S/C',
-                    'tipo_control' => $med->tipo_control,
-                    'requiere_receta' => $med->requiere_receta,
-                    'precio_venta' => $med->precio_venta,
-                ];
-            });
-
-        return response()->json($medicamentos);
+        $q = trim((string)$request->input('q', ''));
+        $productoService = app(\App\Services\ProductoService::class);
+        return response()->json($productoService->buscarAjax($q, 10));
     }
 
     /**
@@ -398,30 +279,9 @@ class InventarioController extends Controller
      */
     public function buscarProveedoresAjax(Request $request)
     {
-        $q = trim($request->input('q', ''));
-        $query = Proveedor::where('activo', true);
-
-        if (strlen($q) >= 2) {
-            $query->where(function ($sub) use ($q) {
-                $sub->where('nombre', 'like', "%{$q}%")
-                    ->orWhere('ruc', 'like', "%{$q}%")
-                    ->orWhere('contacto', 'like', "%{$q}%")
-                    ->orWhere('ciudad', 'like', "%{$q}%");
-            });
-        }
-
-        $proveedores = $query->limit(10)
-            ->get(['id', 'nombre', 'contacto', 'ciudad', 'ruc', 'telefono'])
-            ->map(function ($prov) {
-                return [
-                    'id' => $prov->id,
-                    'nombre' => $prov->nombre,
-                    'contacto' => $prov->contacto ?: ($prov->ciudad ?: 'Proveedor Nacional'),
-                    'ruc' => $prov->ruc ? "RUC: {$prov->ruc}" : ($prov->telefono ? "Tel: {$prov->telefono}" : 'S/RUC'),
-                ];
-            });
-
-        return response()->json($proveedores);
+        $q = trim((string)$request->input('q', ''));
+        $proveedorService = app(\App\Services\ProveedorService::class);
+        return response()->json($proveedorService->buscarAjax($q, 15));
     }
 
     /**
@@ -429,18 +289,9 @@ class InventarioController extends Controller
      */
     public function buscarLaboratoriosAjax(Request $request)
     {
-        $q = trim($request->input('q', ''));
-        $query = Laboratorio::where('activo', true);
-
-        if (strlen($q) > 0) {
-            $query->where('nombre', 'like', "%{$q}%");
-        }
-
-        $labs = $query->orderBy('nombre')
-            ->limit(15)
-            ->get(['id', 'nombre']);
-
-        return response()->json($labs);
+        $q = trim((string)$request->input('q', ''));
+        $laboratorioService = app(\App\Services\LaboratorioService::class);
+        return response()->json($laboratorioService->buscarAjax($q, 15));
     }
 
     /**
@@ -448,17 +299,8 @@ class InventarioController extends Controller
      */
     public function buscarCategoriasAjax(Request $request)
     {
-        $q = trim($request->input('q', ''));
-        $query = Categoria::activas();
-
-        if (strlen($q) > 0) {
-            $query->where('nombre', 'like', "%{$q}%");
-        }
-
-        $categorias = $query->orderBy('nombre')
-            ->limit(15)
-            ->get(['id', 'nombre']);
-
-        return response()->json($categorias);
+        $q = trim((string)$request->input('q', ''));
+        $categoriaService = app(\App\Services\CategoriaService::class);
+        return response()->json($categoriaService->buscarAjax($q, 15));
     }
 }

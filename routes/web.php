@@ -165,11 +165,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/notificaciones/resumen', [NotificacionController::class, 'resumen'])
             ->name('notificaciones.resumen');
 
-        // Búsqueda AJAX Genérica (Componente C)
+        // Búsqueda AJAX Catálogos y Medicamentos (Componente C / Filtros / POS)
+        Route::get('/clientes/buscar-ajax', [ClienteController::class, 'buscarAjax'])->name('clientes.buscar-ajax');
         Route::get('/medicamentos/buscar-ajax', [InventarioController::class, 'buscarMedicamentosAjax'])->name('medicamentos.buscar-ajax');
-        Route::get('/proveedores/buscar-ajax', [InventarioController::class, 'buscarProveedoresAjax'])->name('proveedores.buscar-ajax');
-        Route::get('/laboratorios/buscar-ajax', [InventarioController::class, 'buscarLaboratoriosAjax'])->name('laboratorios.buscar-ajax');
-        Route::get('/categorias/buscar-ajax', [InventarioController::class, 'buscarCategoriasAjax'])->name('categorias.buscar-ajax');
+        Route::get('/proveedores/buscar-ajax', [ProveedorController::class, 'buscarAjax'])->name('proveedores.buscar-ajax');
+        Route::get('/laboratorios/buscar-ajax', [LaboratorioController::class, 'buscarAjax'])->name('laboratorios.buscar-ajax');
+        Route::get('/categorias/buscar-ajax', [CategoriaController::class, 'buscarAjax'])->name('categorias.buscar-ajax');
     });
 
     /*
@@ -290,6 +291,10 @@ Route::middleware('auth')->group(function () {
         });
         Route::get('/ajustar', [InventarioController::class, 'ajustar'])->name('ajustar');
         Route::post('/ajustar', [InventarioController::class, 'storeAjuste'])->name('ajustar.store');
+        Route::get('/buscar-medicamentos-ajax', [InventarioController::class, 'buscarMedicamentosAjax'])->name('buscar-medicamentos-ajax');
+        Route::get('/buscar-proveedores-ajax', [InventarioController::class, 'buscarProveedoresAjax'])->name('buscar-proveedores-ajax');
+        Route::get('/buscar-laboratorios-ajax', [InventarioController::class, 'buscarLaboratoriosAjax'])->name('buscar-laboratorios-ajax');
+        Route::get('/buscar-categorias-ajax', [InventarioController::class, 'buscarCategoriasAjax'])->name('buscar-categorias-ajax');
     });
 
     /*

@@ -146,7 +146,7 @@
                     @php
                         $hoy = now()->toDateString();
                         $venc = $lote->fecha_vencimiento->toDateString();
-                        $dias = (int) now()->diffInDays($lote->fecha_vencimiento, false);
+                        $dias = (int) $lote->dias_restantes;
                         $estadoClass = $venc < $hoy ? 'bg-rose-50 dark:bg-rose-950/60 text-red-950 dark:text-rose-300 border-rose-200 dark:border-rose-800' : ($dias <= 30 ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800');
                         $estadoLabel = $venc < $hoy ? 'Vencido' : ($dias <= 30 ? 'Por vencer' : 'Vigente');
                     @endphp

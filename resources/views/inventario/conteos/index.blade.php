@@ -179,11 +179,22 @@
                         {{-- 8. Acciones --}}
                         <td class="px-5 py-3.5 text-right whitespace-nowrap">
                             @if($conteo->estado === 'en_proceso')
-                            <a href="{{ route('inventario.conteos.show', $conteo) }}"
-                               class="h-8 px-3 rounded-full text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
-                                <span>Continuar</span>
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                            </a>
+                            <div class="inline-flex items-center gap-1.5">
+                                <a href="{{ route('inventario.conteos.show', $conteo) }}"
+                                   class="h-8 px-3 rounded-full text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                                    <span>Continuar</span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                </a>
+                                <form method="POST" action="{{ route('inventario.conteos.cancelar', $conteo) }}" onsubmit="return confirm('¿Estás seguro de cancelar esta toma de inventario? No se aplicará ningún ajuste.');" class="inline">
+                                    @csrf
+                                    <button type="submit"
+                                            class="h-8 px-2.5 rounded-full text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                                            title="Cancelar toma">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span>Cancelar</span>
+                                    </button>
+                                </form>
+                            </div>
                             @else
                             <a href="{{ route('inventario.conteos.show', $conteo) }}"
                                class="w-8 h-8 rounded-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition inline-flex items-center justify-center cursor-pointer shadow-2xs"

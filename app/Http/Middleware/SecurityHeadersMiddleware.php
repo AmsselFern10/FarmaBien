@@ -18,6 +18,16 @@ class SecurityHeadersMiddleware
         /** @var Response $response */
         $response = $next($request);
 
+        // Assets Vite — hash en el nombre garantiza contenido inmutable.
+        // El browser NO re-valida estos archivos en ninguna navegación posterior.
+        if (str_starts_with($request->getPathInfo(), '/build/')) {
+            $response->headers->set(
+                'Cache-Control',
+                'public, max-age=31536000, immutable'
+            );
+            return $response;
+        }
+
         // 1. Prevenir Clickjacking
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
 

@@ -437,7 +437,7 @@ class ConteoInventarioController extends Controller
 
         try {
             DB::transaction(function () use ($conteo) {
-                $detalles = DetalleConteo::with('lote')
+                $detalles = DetalleConteo::with(['lote', 'producto'])
                     ->where('conteo_id', $conteo->id)
                     ->where('diferencia', '!=', 0)
                     ->where('ajustado', false)
@@ -449,19 +449,47 @@ class ConteoInventarioController extends Controller
                     if (!$lote) continue;
 
                     $tipo = $det->diferencia > 0 ? 'entrada' : 'salida';
+                    $userId = auth()->id() ?? 1;
 
-                    MovimientoInventario::create([
+                    $costoUnitario = (float) $lote->precio_compra;
+                    $costoTotal = round(abs($det->diferencia) * $costoUnitario, 2);
+
+                    $movimiento = MovimientoInventario::create([
                         'producto_id'      => $det->producto_id,
                         'lote_id'          => $det->lote_id,
-                        'user_id'          => auth()->id() ?? 1,
+                        'user_id'          => $userId,
                         'tipo'             => $tipo,
                         'subtipo'          => 'ajuste_manual',
-                        'cantidad'         => abs($det->diferencia),
+                        'cantidad'         => $det->diferencia,
                         'stock_anterior'   => $lote->stock_actual,
                         'stock_posterior'  => $det->stock_fisico,
+                        'costo_unitario'   => $costoUnitario,
+                        'costo_total'      => $costoTotal,
+                        'origen'           => 'toma_inventario',
+                        'origen_id'        => $conteo->id,
                         'motivo'           => "Ajuste por toma física: {$conteo->nombre}",
                         'fecha_movimiento' => now(),
                     ]);
+
+                    // Asentar en Libro Oficial MINSA si el producto es controlado
+                    if ($det->producto && $det->producto->esControlado()) {
+                        $tipoMovCtrl = $det->diferencia > 0
+                            ? \App\Models\RegistroVentaControlado::TIPO_AJUSTE_INGRESO
+                            : \App\Models\RegistroVentaControlado::TIPO_AJUSTE_EGRESO;
+
+                        \App\Models\RegistroVentaControlado::create([
+                            'tipo_movimiento'          => $tipoMovCtrl,
+                            'movimiento_inventario_id' => $movimiento->id,
+                            'producto_id'              => $det->producto_id,
+                            'lote_id'                  => $det->lote_id,
+                            'nivel_controlado'         => 1,
+                            'paciente_nombre'          => 'Regencia Farmacéutica / Auditoría',
+                            'motivo_omision'           => "Ajuste por toma física: {$conteo->nombre}",
+                            'cantidad'                 => abs($det->diferencia),
+                            'unidad'                   => 'unidad',
+                            'user_id'                  => $userId,
+                        ]);
+                    }
 
                     $lote->stock_actual = $det->stock_fisico;
                     if ($det->stock_fisico === 0) {
@@ -478,6 +506,9 @@ class ConteoInventarioController extends Controller
                     'aprobado_por_id' => auth()->id(),
                     'completado_en'   => now(),
                 ]);
+
+                \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+                \App\Services\NotificacionService::clearCache();
             });
 
             $conDif = DetalleConteo::where('conteo_id', $conteo->id)

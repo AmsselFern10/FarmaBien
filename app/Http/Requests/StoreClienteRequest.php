@@ -28,8 +28,25 @@ class StoreClienteRequest extends FormRequest
         return [
             'nombre.required' => 'El nombre del cliente es obligatorio.',
             'nombre.max' => 'El nombre no puede exceder 150 caracteres.',
-            'documento.unique' => 'El documento ya está registrado.',
+            'documento.unique' => 'El documento ya está registrado en otro cliente.',
             'email.email' => 'El email no tiene un formato válido.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $documento = trim((string)$this->input('documento', ''));
+        $telefono  = trim((string)$this->input('telefono', ''));
+        $email     = trim((string)$this->input('email', ''));
+        $direccion = trim((string)$this->input('direccion', ''));
+
+        $this->merge([
+            'nombre'    => trim((string)$this->input('nombre', '')),
+            'documento' => $documento !== '' ? $documento : null,
+            'telefono'  => $telefono !== '' ? $telefono : null,
+            'email'     => $email !== '' ? $email : null,
+            'direccion' => $direccion !== '' ? $direccion : null,
+            'activo'    => $this->has('activo') ? $this->boolean('activo') : true,
+        ]);
     }
 }

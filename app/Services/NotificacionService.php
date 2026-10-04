@@ -45,16 +45,26 @@ class NotificacionService
     }
 
     /**
+     * Invalidar la caché de notificaciones ante cualquier mutación de stock o compras
+     */
+    public static function clearCache(): void
+    {
+        Cache::forget('farma_notificaciones_resumen');
+    }
+
+    /**
      * Alertas de Stock Crítico y Agotado
      */
     protected function getStockAlerts(): array
     {
+        $today = now()->toDateString();
         $productos = DB::table('productos as p')
             ->select('p.id', 'p.nombre', 'p.stock_minimo',
                 DB::raw('COALESCE(SUM(l.stock_actual), 0) as stock_total'))
-            ->leftJoin('lotes as l', function ($join) {
+            ->leftJoin('lotes as l', function ($join) use ($today) {
                 $join->on('p.id', '=', 'l.producto_id')
                      ->where('l.activo', '=', 1)
+                     ->where('l.fecha_vencimiento', '>', $today)
                      ->where('l.stock_actual', '>', 0);
             })
             ->where('p.activo', true)
@@ -160,13 +170,16 @@ class NotificacionService
      */
     protected function getReordenAlerts(): array
     {
+        $today = now()->toDateString();
         $sugerenciasCount = DB::table('productos as p')
-            ->leftJoin('lotes as l', function ($join) {
+            ->leftJoin('lotes as l', function ($join) use ($today) {
                 $join->on('p.id', '=', 'l.producto_id')
                      ->where('l.activo', '=', 1)
+                     ->where('l.fecha_vencimiento', '>', $today)
                      ->where('l.stock_actual', '>', 0);
             })
             ->where('p.activo', true)
+            ->whereNull('p.deleted_at')
             ->groupBy('p.id', 'p.nombre', 'p.stock_minimo')
             ->havingRaw('COALESCE(SUM(l.stock_actual), 0) <= p.stock_minimo')
             ->count();

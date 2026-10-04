@@ -125,7 +125,12 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @foreach($lotesVencidos as $lote)
                     <tr class="hover:bg-rose-50/30 dark:hover:bg-rose-950/10 transition">
-                        <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">{{ $lote->producto->nombre ?? 'N/A' }}</td>
+                        <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
+                            <span>{{ $lote->producto->nombre ?? 'N/A' }}</span>
+                            @if($lote->producto && $lote->producto->esControlado())
+                                <span class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700">Controlado</span>
+                            @endif
+                        </td>
                         <td class="px-5 py-3.5 font-mono text-slate-600 dark:text-slate-400">{{ $lote->numero_lote }}</td>
                         <td class="px-5 py-3.5 text-slate-500 dark:text-slate-400">{{ $lote->proveedor->nombre ?? '—' }}</td>
                         <td class="px-5 py-3.5 text-red-950 dark:text-rose-400 font-semibold">{{ $lote->fecha_vencimiento->format('d/m/Y') }}</td>
@@ -176,9 +181,14 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @foreach($lotesPorVencer as $lote)
-                    @php $dias = $lote->dias_para_vencer ?? 0; $diasColor = $dias <= 15 ? 'text-rose-900 dark:text-rose-400' : ($dias <= 30 ? 'text-amber-900 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'); @endphp
+                    @php $dias = $lote->dias_restantes ?? 0; $diasColor = $dias <= 15 ? 'text-rose-900 dark:text-rose-400' : ($dias <= 30 ? 'text-amber-900 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'); @endphp
                     <tr class="hover:bg-amber-50/20 dark:hover:bg-amber-950/10 transition">
-                        <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">{{ $lote->producto->nombre ?? 'N/A' }}</td>
+                        <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
+                            <span>{{ $lote->producto->nombre ?? 'N/A' }}</span>
+                            @if($lote->producto && $lote->producto->esControlado())
+                                <span class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700">Controlado</span>
+                            @endif
+                        </td>
                         <td class="px-5 py-3.5 font-mono text-slate-600 dark:text-slate-400">{{ $lote->numero_lote }}</td>
                         <td class="px-5 py-3.5 text-right font-bold {{ $diasColor }}">{{ $dias }} días</td>
                         <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">{{ $lote->fecha_vencimiento->format('d/m/Y') }}</td>
@@ -211,7 +221,7 @@
                 @can('registrar compras')
                 @if($bajoStockCount > 0)
                 <a href="{{ route('compras.sugerencias-reorden') }}" 
-                   class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-300 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/60 transition shadow-2xs">
+                    class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-300 text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/60 transition shadow-2xs">
                     <svg class="w-3.5 h-3.5 text-amber-950 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <span>Reorden Inteligente</span>
                 </a>
@@ -235,7 +245,12 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @foreach($productosBajoStock as $producto)
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
-                        <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">{{ $producto->nombre }}</td>
+                        <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
+                            <span>{{ $producto->nombre }}</span>
+                            @if($producto->esControlado())
+                                <span class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700">Controlado</span>
+                            @endif
+                        </td>
                         <td class="px-5 py-3.5 text-slate-500 dark:text-slate-400">{{ $producto->categoria->nombre ?? '—' }}</td>
                         <td class="px-5 py-3.5 text-right font-mono text-slate-500 dark:text-slate-400">{{ $producto->stock_minimo }}</td>
                         <td class="px-5 py-3.5 text-right font-mono font-bold text-amber-950 dark:text-amber-400">{{ $producto->stock_disponible }}</td>

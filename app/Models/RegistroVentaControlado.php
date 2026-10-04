@@ -48,6 +48,38 @@ class RegistroVentaControlado extends Model
         'cantidad'         => 'decimal:2',
     ];
 
+    /**
+     * El Libro Oficial MINSA es un registro contable-sanitario strictly Append-Only.
+     * Queda prohibido eliminar asientos físicos o mutar sus importes, referencias o entidades.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function ($registro) {
+            $inmutables = [
+                'tipo_movimiento',
+                'venta_id',
+                'devolucion_id',
+                'compra_id',
+                'movimiento_inventario_id',
+                'producto_id',
+                'lote_id',
+                'cantidad',
+                'unidad',
+                'user_id',
+            ];
+
+            foreach ($inmutables as $campo) {
+                if ($registro->isDirty($campo)) {
+                    throw new \DomainException("No se permite modificar datos contables o fiscales de un asiento del Libro Oficial MINSA (campo '{$campo}'). Registre un contra-asiento de ajuste o anulación.");
+                }
+            }
+        });
+
+        static::deleting(function ($registro) {
+            throw new \DomainException("Los asientos del Libro Oficial de Medicamentos Controlados (MINSA) son inmutables y no pueden ser eliminados.");
+        });
+    }
+
     // Relaciones
     public function venta(): BelongsTo
     {

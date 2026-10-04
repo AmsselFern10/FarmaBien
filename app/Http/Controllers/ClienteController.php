@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
-use App\Models\AuditLog;
+use App\Services\ClienteService;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class ClienteController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('permission:ver clientes')->only(['index', 'show']);
+    public function __construct(
+        protected ClienteService $clienteService
+    ) {
+        $this->middleware('permission:ver clientes')->only(['index', 'show', 'buscarAjax']);
         $this->middleware('permission:crear clientes')->only(['create', 'store']);
         $this->middleware('permission:editar clientes')->only(['edit', 'update']);
         $this->middleware('permission:desactivar clientes')->only(['destroy']);
@@ -21,36 +22,7 @@ class ClienteController extends Controller
 
     public function index(Request $request)
     {
-        $query = Cliente::withCount(['ventas', 'recetas']);
-
-        if ($request->filled('buscar')) {
-            $buscar = trim($request->input('buscar'));
-            $query->where(function ($q) use ($buscar) {
-                $q->where('nombre', 'like', "%{$buscar}%")
-                  ->orWhere('documento', 'like', "%{$buscar}%")
-                  ->orWhere('telefono', 'like', "%{$buscar}%")
-                  ->orWhere('email', 'like', "%{$buscar}%")
-                  ->orWhere('direccion', 'like', "%{$buscar}%");
-            });
-        }
-
-        if ($request->filled('estado')) {
-            if ($request->estado === 'activos') {
-                $query->where('activo', true);
-            } elseif ($request->estado === 'inactivos') {
-                $query->where('activo', false);
-            }
-        }
-
-        if ($request->filled('con_recetas')) {
-            if ($request->con_recetas === 'si') {
-                $query->has('recetas');
-            } elseif ($request->con_recetas === 'no') {
-                $query->doesntHave('recetas');
-            }
-        }
-
-        $clientes = $query->orderBy('nombre', 'asc')->paginate(perPage(15))->withQueryString();
+        $clientes = $this->clienteService->listar($request->all(), perPage(15));
 
         return view('clientes.index', compact('clientes'));
     }
@@ -62,16 +34,7 @@ class ClienteController extends Controller
 
     public function store(StoreClienteRequest $request)
     {
-        $cliente = DB::transaction(function () use ($request) {
-            $cliente = Cliente::create($request->validated());
-
-            AuditLog::log('clientes', 'crear', "Cliente '{$cliente->nombre}' registrado", [
-                'cliente_id' => $cliente->id,
-                'documento' => $cliente->documento,
-            ]);
-
-            return $cliente;
-        });
+        $cliente = $this->clienteService->crear($request->validated());
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -111,14 +74,7 @@ class ClienteController extends Controller
 
     public function update(UpdateClienteRequest $request, Cliente $cliente)
     {
-        DB::transaction(function () use ($request, $cliente) {
-            $locked = Cliente::where('id', $cliente->id)->lockForUpdate()->firstOrFail();
-            $locked->update($request->validated());
-
-            AuditLog::log('clientes', 'actualizar', "Cliente '{$locked->nombre}' actualizado", [
-                'cliente_id' => $locked->id,
-            ]);
-        });
+        $this->clienteService->actualizar($cliente, $request->validated());
 
         return redirect()->route('clientes.index')
             ->with('success', "Cliente '{$cliente->nombre}' actualizado exitosamente.");
@@ -126,22 +82,20 @@ class ClienteController extends Controller
 
     public function destroy(Cliente $cliente)
     {
-        $nuevoEstado = DB::transaction(function () use ($cliente) {
-            $locked = Cliente::where('id', $cliente->id)->lockForUpdate()->firstOrFail();
-            $estadoBool = !$locked->activo;
-            $locked->update(['activo' => $estadoBool]);
-
-            AuditLog::log(
-                'clientes',
-                $estadoBool ? 'activar' : 'desactivar',
-                "Cliente '{$locked->nombre}' " . ($estadoBool ? 'activado' : 'desactivado'),
-                ['cliente_id' => $locked->id]
-            );
-
-            return $estadoBool ? 'activado' : 'desactivado';
-        });
+        $nuevoEstado = $this->clienteService->toggleEstado($cliente);
 
         return redirect()->route('clientes.index')
             ->with('success', "Cliente '{$cliente->nombre}' {$nuevoEstado} correctamente.");
+    }
+
+    /**
+     * Búsqueda AJAX de clientes para POS y selección reactiva.
+     */
+    public function buscarAjax(Request $request): JsonResponse
+    {
+        $q = trim((string)$request->input('q', ''));
+        $clientes = $this->clienteService->buscarAjax($q, 15);
+
+        return response()->json($clientes);
     }
 }

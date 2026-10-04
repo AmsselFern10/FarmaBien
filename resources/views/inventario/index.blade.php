@@ -164,7 +164,7 @@
             <div class="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-72 overflow-y-auto">
                 @forelse($lotesPorVencer as $lote)
                 @php
-                    $dias = $lote->dias_para_vencer ?? 0;
+                    $dias = $lote->dias_restantes ?? 0;
                     $color = $dias <= 15 ? 'text-red-900 dark:text-rose-400' : ($dias <= 30 ? 'text-amber-900 dark:text-amber-400' : 'text-emerald-900 dark:text-emerald-400');
                 @endphp
                 <div class="px-4 py-3 flex items-start justify-between gap-2 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
@@ -253,7 +253,7 @@
                         <th class="px-5 py-3.5 text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
+                <tbody class="table-cv divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @forelse(collect($valorizacion['detalles'] ?? [])->take(15) as $item)
                     <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
                         <td class="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">{{ $item['producto'] }}</td>

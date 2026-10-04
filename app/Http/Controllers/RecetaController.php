@@ -195,9 +195,9 @@ class RecetaController extends Controller
             $receta = $this->recetaService->registrarReceta($data);
 
             AuditLog::log('recetas', 'crear', "Receta médica #{$receta->numero_receta} registrada", [
-                'receta_id' => $receta->id,
-                'paciente' => $receta->paciente_nombre,
-                'medico' => $receta->medico_nombre,
+                'receta_id'     => $receta->id,
+                'numero_receta' => $receta->numero_receta,
+                'user_id'       => auth()->id(),
             ]);
 
             Cache::forget('dashboard_recetas_pendientes_count');

@@ -99,6 +99,18 @@ header {
 }
 
 
+/* ============================================================
+   content-visibility: auto — Tablas largas (inventario, ventas, etc.)
+   Chrome saltea el layout de filas que están fuera del viewport.
+   Añadir clase "table-cv" al <tbody> de cualquier tabla con 50+ filas.
+   contain-intrinsic-size 0 44px = altura estimada de fila para que
+   el scrollbar tenga tamaño correcto aunque las filas no estén pintadas.
+   ============================================================ */
+tbody.table-cv > tr {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 44px;
+}
+
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
     width: 6px;

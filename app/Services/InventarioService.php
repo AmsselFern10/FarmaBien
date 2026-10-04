@@ -136,10 +136,96 @@ class InventarioService
                 'user_id'         => $userId,
             ]);
 
-            // Invalidar caché de valorización del inventario
+            // Invalidar caché de valorización del inventario y notificaciones
             \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
 
             return $movimiento->load(['lote', 'producto', 'usuario']);
+        });
+    }
+
+    /**
+     * Registra un nuevo lote manual (stock de apertura, donación, migración)
+     * y genera su correspondiente movimiento de entrada en Kardex y Libro MINSA si aplica.
+     * 
+     * @param array $data ['producto_id', 'numero_lote', 'fecha_vencimiento', 'cantidad', 'precio_compra', 'proveedor_id', 'motivo']
+     * @return Lote
+     * @throws Exception
+     */
+    public function crearLoteManual(array $data): Lote
+    {
+        return DB::transaction(function () use ($data) {
+            $producto = Producto::where('id', $data['producto_id'])->lockForUpdate()->firstOrFail();
+            $cantidad = (int) $data['cantidad'];
+            $precioCompra = !empty($data['precio_compra']) ? (float) $data['precio_compra'] : (float) ($producto->precio_compra ?? 0);
+            $userId = Auth::id() ?? 1;
+
+            $lote = Lote::create([
+                'producto_id'       => $producto->id,
+                'compra_id'         => null,
+                'proveedor_id'      => !empty($data['proveedor_id']) ? (int) $data['proveedor_id'] : null,
+                'numero_lote'       => trim($data['numero_lote']),
+                'fecha_vencimiento' => $data['fecha_vencimiento'],
+                'stock_inicial'     => $cantidad,
+                'stock_actual'      => $cantidad,
+                'precio_compra'     => $precioCompra,
+                'activo'            => true,
+            ]);
+
+            $costoTotal = round($cantidad * $precioCompra, 2);
+
+            $movimiento = MovimientoInventario::create([
+                'producto_id'      => $producto->id,
+                'lote_id'          => $lote->id,
+                'user_id'          => $userId,
+                'tipo'             => 'entrada',
+                'subtipo'          => 'ajuste_manual',
+                'cantidad'         => $cantidad,
+                'stock_anterior'   => 0,
+                'stock_posterior'  => $cantidad,
+                'costo_unitario'   => $precioCompra,
+                'costo_total'      => $costoTotal,
+                'origen'           => 'lote_manual',
+                'origen_id'        => $lote->id,
+                'motivo'           => 'Apertura / Lote manual: ' . trim($data['motivo']),
+                'fecha_movimiento' => now(),
+            ]);
+
+            // Asentar en Libro Oficial MINSA si el producto es controlado
+            if ($producto->esControlado()) {
+                \App\Models\RegistroVentaControlado::create([
+                    'tipo_movimiento'          => \App\Models\RegistroVentaControlado::TIPO_AJUSTE_INGRESO,
+                    'movimiento_inventario_id' => $movimiento->id,
+                    'producto_id'              => $producto->id,
+                    'lote_id'                  => $lote->id,
+                    'nivel_controlado'         => 1,
+                    'paciente_nombre'          => 'Stock Inicial / Ingreso Manual',
+                    'motivo_omision'           => "Ingreso de Lote Manual [{$lote->numero_lote}]: " . trim($data['motivo']),
+                    'cantidad'                 => $cantidad,
+                    'unidad'                   => 'unidad',
+                    'user_id'                  => $userId,
+                ]);
+            }
+
+            \App\Models\AuditLog::log('inventario', 'lote_manual', "Lote manual creado: {$lote->numero_lote} ({$producto->nombre})", [
+                'lote_id'     => $lote->id,
+                'producto_id' => $producto->id,
+                'cantidad'    => $cantidad,
+                'motivo'      => $data['motivo'],
+            ]);
+
+            Log::info('Lote manual registrado en inventario y Kardex', [
+                'lote_id'       => $lote->id,
+                'producto_id'   => $producto->id,
+                'movimiento_id' => $movimiento->id,
+                'cantidad'      => $cantidad,
+                'user_id'       => $userId,
+            ]);
+
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
+
+            return $lote;
         });
     }
 
@@ -356,14 +442,14 @@ class InventarioService
      * @param int $dias
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function lotesProximosVencer(int $dias = 30)
+    public function lotesProximosVencer(int $dias = 60)
     {
         return Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
             ->proximosVencer($dias)
             ->orderBy('fecha_vencimiento', 'asc')
             ->get()
             ->map(function ($lote) {
-                $lote->dias_para_vencer = (int) now()->diffInDays($lote->fecha_vencimiento, false);
+                $lote->dias_para_vencer = (int) $lote->dias_restantes;
                 return $lote;
             });
     }
@@ -477,11 +563,13 @@ class InventarioService
                 'user_id'          => $userId,
             ]);
 
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
+
             return $contador;
         });
     }
 
-    /**
     /**
      * Valorización integral del inventario (PEPS / Costo de adquisición por lote)
      * Utiliza agregación SQL directa de alto rendimiento para 0 consumo de memoria RAM.

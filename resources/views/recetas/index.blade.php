@@ -156,7 +156,7 @@
                         <th class="px-5 py-3.5 text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
+                <tbody class="table-cv divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                     @forelse($recetas as $rec)
                     <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
                         <td class="px-5 py-3.5">

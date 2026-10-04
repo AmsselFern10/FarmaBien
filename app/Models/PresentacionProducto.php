@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PresentacionProducto extends Model
 {
+    use HasFactory;
+
     protected $table = 'presentaciones_producto';
 
     protected $fillable = [
@@ -70,6 +73,26 @@ class PresentacionProducto extends Model
     public function scopeActivas($query)
     {
         return $query->where('activo', true);
+    }
+
+    public function scopePorProducto($query, int $productoId)
+    {
+        return $query->where('producto_id', $productoId);
+    }
+
+    public function scopeBuscar($query, string $buscar)
+    {
+        $buscar = trim($buscar);
+        if ($buscar === '') {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($buscar) {
+            $q->where('nombre', 'like', "%{$buscar}%")
+              ->orWhere('descripcion', 'like', "%{$buscar}%")
+              ->orWhere('codigo_barras', 'like', "%{$buscar}%")
+              ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$buscar}%"));
+        });
     }
 
     public function scopeOrdenado($query)

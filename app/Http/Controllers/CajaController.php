@@ -43,13 +43,9 @@ class CajaController extends Controller
         $cajasAbiertas = $cajas->filter(fn($c) => $c->sesionActiva !== null)->count();
         $cajasCerradas = $totalCajas - $cajasAbiertas;
 
-        $efectivoTotalCajas = 0;
-        foreach ($cajas as $caja) {
-            if ($caja->sesionActiva) {
-                $this->cajaService->recalcularTotales($caja->sesionActiva);
-                $efectivoTotalCajas += (float) $caja->sesionActiva->monto_esperado_efectivo;
-            }
-        }
+        $efectivoTotalCajas = (float) $cajas->reduce(function ($carry, $caja) {
+            return $carry + ($caja->sesionActiva ? (float) $caja->sesionActiva->monto_esperado_efectivo : 0);
+        }, 0);
 
         $cajasDisponiblesParaAbrir = $cajas->filter(fn($c) => $c->activo && $c->sesionActiva === null);
 
