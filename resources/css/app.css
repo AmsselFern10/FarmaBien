@@ -4,38 +4,51 @@
 
 /* ============================================================
    View Transitions API — Cross-Document (Chrome 126+, Safari 18.2+)
-   Solo anima #main-content — sidebar y topbar NO se mueven.
+   Solo anima #main-content — sidebar y topbar quedan completamente quietos.
+   REGLA: cada elemento necesita un view-transition-name ÚNICO.
+          Dos elementos con el mismo nombre = Chrome descarta esa
+          transición y los vuelve a animar via ::root → parpadeo.
    En Firefox: degradación graceful → navegación normal sin animación.
    ============================================================ */
 @view-transition {
     navigation: auto;
 }
 
-/* Congelar sidebar y topbar — no deben animar entre páginas */
-aside, header {
-    view-transition-name: farma-shell;
+/* Nombres únicos: un solo elemento por nombre */
+aside {
+    view-transition-name: farma-sidebar;
 }
-
-/* Animar solo el contenido principal */
+header {
+    view-transition-name: farma-topbar;
+}
 #main-content {
     view-transition-name: farma-content;
 }
 
-/* Old page sale: solo el contenido */
+/* Sidebar — inmóvil */
+::view-transition-old(farma-sidebar),
+::view-transition-new(farma-sidebar) {
+    animation: none;
+}
+
+/* Topbar — inmóvil */
+::view-transition-old(farma-topbar),
+::view-transition-new(farma-topbar) {
+    animation: none;
+}
+
+/* Root restante — sin animación (evita que nodos no nombrados parpadeen) */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+}
+
+/* Solo el contenido principal transiciona */
 ::view-transition-old(farma-content) {
     animation: farmaPageOut 0.12s ease-in both;
 }
-
-/* New page entra: solo el contenido */
 ::view-transition-new(farma-content) {
     animation: farmaPageIn 0.18s ease-out both;
-}
-
-/* Shell (sidebar+topbar): sin animación — congelar en su lugar */
-::view-transition-old(farma-shell),
-::view-transition-new(farma-shell) {
-    animation: none;
-    mix-blend-mode: normal;
 }
 
 /* Reducir movimiento — accesibilidad */
