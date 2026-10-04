@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Top Medicamentos Más Vendidos - FarmaBien')
 @section('content')
 <div class="space-y-5" x-data="{ setDates(p){ const n=new Date(),f=new Date(),t=new Date(); if(p==='7d'){f.setDate(n.getDate()-6);}else if(p==='mes'){f.setDate(1);t.setMonth(n.getMonth()+1,0);}else if(p==='mesant'){f.setMonth(n.getMonth()-1,1);t.setMonth(n.getMonth(),0);}else if(p==='anio'){f.setMonth(0,1);t.setMonth(11,31);}const fmt=d=>d.toISOString().split('T')[0]; document.getElementById('pmv_d').value=fmt(f); document.getElementById('pmv_h').value=fmt(t); } }">

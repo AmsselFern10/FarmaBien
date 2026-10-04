@@ -164,6 +164,12 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/notificaciones/resumen', [NotificacionController::class, 'resumen'])
             ->name('notificaciones.resumen');
+
+        // Búsqueda AJAX Genérica (Componente C)
+        Route::get('/medicamentos/buscar-ajax', [InventarioController::class, 'buscarMedicamentosAjax'])->name('medicamentos.buscar-ajax');
+        Route::get('/proveedores/buscar-ajax', [InventarioController::class, 'buscarProveedoresAjax'])->name('proveedores.buscar-ajax');
+        Route::get('/laboratorios/buscar-ajax', [InventarioController::class, 'buscarLaboratoriosAjax'])->name('laboratorios.buscar-ajax');
+        Route::get('/categorias/buscar-ajax', [InventarioController::class, 'buscarCategoriasAjax'])->name('categorias.buscar-ajax');
     });
 
     /*
@@ -265,13 +271,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/alertas', [InventarioController::class, 'alertas'])->name('alertas');
         Route::post('/baja-vencidos', [InventarioController::class, 'bajaVencidos'])->name('baja-vencidos');
 
-        // Conteos de inventario (toma física)
+        // Conteos / Tomas de inventario físico
+        Route::get('/tomas', [ConteoInventarioController::class, 'index'])->name('tomas.index');
+        Route::get('/tomas/crear', [ConteoInventarioController::class, 'create'])->name('tomas.create');
+        Route::post('/tomas', [ConteoInventarioController::class, 'store'])->name('tomas.store');
+        Route::get('/tomas/{conteo}', [ConteoInventarioController::class, 'show'])->name('tomas.show');
+
         Route::prefix('conteos')->name('conteos.')->group(function () {
             Route::get('/', [ConteoInventarioController::class, 'index'])->name('index');
             Route::get('/nuevo', [ConteoInventarioController::class, 'create'])->name('create');
             Route::post('/', [ConteoInventarioController::class, 'store'])->name('store');
+            Route::post('/conteo-previo', [ConteoInventarioController::class, 'conteoPrevio'])->name('conteo-previo');
             Route::get('/{conteo}', [ConteoInventarioController::class, 'show'])->name('show');
             Route::post('/{conteo}/guardar', [ConteoInventarioController::class, 'guardarConteo'])->name('guardar');
+            Route::post('/{conteo}/guardar-fila', [ConteoInventarioController::class, 'guardarFila'])->name('guardar-fila');
             Route::post('/{conteo}/aprobar', [ConteoInventarioController::class, 'aprobar'])->name('aprobar');
             Route::post('/{conteo}/cancelar', [ConteoInventarioController::class, 'cancelar'])->name('cancelar');
         });

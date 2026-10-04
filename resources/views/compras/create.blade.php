@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Registrar Compra e Ingreso de Lotes - FarmaBien')
 

@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Reporte de Clientes y Frecuencia - FarmaBien')
 

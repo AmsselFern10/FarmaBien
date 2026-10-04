@@ -29,6 +29,7 @@ class Compra extends Model
         'motivo_anulacion',
         'compra_original_id',
         'reemplazada_por',
+        'orden_compra_id',
     ];
 
     protected $casts = [
@@ -72,9 +73,29 @@ class Compra extends Model
         return $this->hasMany(PagoCuentaPorPagar::class, 'compra_id');
     }
 
-    public function ordenCompra(): HasMany
+    public function ordenCompra(): BelongsTo
     {
-        return $this->hasMany(OrdenCompra::class, 'compra_id');
+        return $this->belongsTo(OrdenCompra::class, 'orden_compra_id');
+    }
+
+    public function devoluciones(): HasMany
+    {
+        return $this->hasMany(DevolucionCompra::class, 'compra_id');
+    }
+
+    public function totalDevuelto(): float
+    {
+        return (float) $this->devoluciones->sum('total_devolucion');
+    }
+
+    public function esDevuelta(): bool
+    {
+        return $this->devoluciones->isNotEmpty() && $this->totalDevuelto() >= (float) $this->total;
+    }
+
+    public function esDevueltaParcial(): bool
+    {
+        return $this->devoluciones->isNotEmpty() && $this->totalDevuelto() < (float) $this->total;
     }
 
     public function compraOriginal(): BelongsTo

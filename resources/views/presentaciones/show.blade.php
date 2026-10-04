@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', $presentacion->nombre . ' - Ficha de Presentación - FarmaBien')
 

@@ -20,6 +20,7 @@ class DetalleCompra extends Model
         'cantidad_unidades_base',
         'precio_unitario',
         'subtotal',
+        'detalle_orden_compra_id',
     ];
 
     protected $casts = [
@@ -33,6 +34,11 @@ class DetalleCompra extends Model
     public function compra(): BelongsTo
     {
         return $this->belongsTo(Compra::class);
+    }
+
+    public function detalleOrdenCompra(): BelongsTo
+    {
+        return $this->belongsTo(DetalleOrdenCompra::class, 'detalle_orden_compra_id');
     }
 
     public function producto(): BelongsTo

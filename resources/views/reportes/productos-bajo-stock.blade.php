@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Stock Mínimo - Alertas de Reposición - FarmaBien')
 @section('content')
 <div class="space-y-5">

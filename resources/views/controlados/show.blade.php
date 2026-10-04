@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Detalle de Movimiento Controlado #' . str_pad($registro->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 

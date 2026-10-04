@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Libro de Medicamentos Controlados (MINSA) - FarmaBien')
 

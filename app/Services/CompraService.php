@@ -46,6 +46,7 @@ class CompraService
             $compra = Compra::create([
                 'proveedor_id'           => $proveedor->id,
                 'user_id'                => Auth::id() ?? 1,
+                'orden_compra_id'        => !empty($data['orden_compra_id']) ? (int) $data['orden_compra_id'] : null,
                 'numero_comprobante'     => $data['numero_comprobante'] ?? null,
                 'subtotal'               => 0,
                 'impuesto'               => 0,
@@ -79,34 +80,73 @@ class CompraService
             if (!empty($data['orden_compra_id'])) {
                 $ordenCompra = \App\Models\OrdenCompra::with('detalles')->find($data['orden_compra_id']);
                 if ($ordenCompra) {
-                    // Construir mapa producto_id → unidades_base recibidas en esta compra
-                    // Los productos en $data['productos'] llevan cantidad en unidades base
+                    $recibidosPorDetalleId = [];
                     $recibidosPorProducto = [];
+
                     foreach ($data['productos'] as $item) {
                         $pid = (int) $item['producto_id'];
-                        // cantidad puede venir como unidades base directas o via presentación
-                        // La unidad que llega en $item['cantidad'] son unidades base (CompraService::procesarDetalleCompra lo convierte)
-                        $cantidadBase = (int) ($item['cantidad'] ?? 0);
+                        $cantidadPresentaciones = (int) ($item['cantidad_presentaciones'] ?? $item['cantidad'] ?? 0);
+                        $factor = 1;
+                        if (!empty($item['presentacion_id'])) {
+                            $pres = PresentacionProducto::find($item['presentacion_id']);
+                            if ($pres) {
+                                $factor = max(1, (int)$pres->unidades_por_presentacion);
+                            }
+                        }
+                        $cantidadBase = $cantidadPresentaciones * $factor;
+
+                        if (!empty($item['detalle_orden_compra_id'])) {
+                            $detId = (int) $item['detalle_orden_compra_id'];
+                            $recibidosPorDetalleId[$detId] = ($recibidosPorDetalleId[$detId] ?? 0) + $cantidadBase;
+                        }
                         $recibidosPorProducto[$pid] = ($recibidosPorProducto[$pid] ?? 0) + $cantidadBase;
                     }
 
+                    $faltanteTotal = 0;
                     $hayPendientes = false;
 
                     foreach ($ordenCompra->detalles as $ordDet) {
-                        $recibido = $recibidosPorProducto[$ordDet->producto_id] ?? 0;
-                        // Sumar a lo ya recibido en recepciones anteriores (recibida_parcial)
-                        $totalRecibido = $ordDet->cantidad_recibida + $recibido;
+                        $recibido = 0;
+                        if (isset($recibidosPorDetalleId[$ordDet->id])) {
+                            $recibido = $recibidosPorDetalleId[$ordDet->id];
+                        } elseif (isset($recibidosPorProducto[$ordDet->producto_id])) {
+                            $recibido = $recibidosPorProducto[$ordDet->producto_id];
+                            unset($recibidosPorProducto[$ordDet->producto_id]);
+                        }
+
+                        $totalRecibido = (int)$ordDet->cantidad_recibida + $recibido;
                         $ordDet->update(['cantidad_recibida' => $totalRecibido]);
 
-                        if ($totalRecibido < $ordDet->cantidad_solicitada) {
+                        $pendiente = max(0, (int)$ordDet->cantidad_solicitada - $totalRecibido);
+                        if ($pendiente > 0) {
                             $hayPendientes = true;
+                            $faltanteTotal += $pendiente;
                         }
                     }
 
-                    $ordenCompra->update([
-                        'compra_id' => $compra->id,
-                        'estado'    => $hayPendientes ? 'recibida_parcial' : 'recibida_total',
-                    ]);
+                    $cerrarOrdenCompleta = !empty($data['cerrar_orden_completa']) && ($data['cerrar_orden_completa'] == '1' || $data['cerrar_orden_completa'] === true || $data['cerrar_orden_completa'] === 'true');
+
+                    if (!$hayPendientes) {
+                        $ordenCompra->update([
+                            'compra_id' => $compra->id,
+                            'estado'    => 'recibida_total',
+                        ]);
+                    } elseif ($cerrarOrdenCompleta) {
+                        $ordenCompra->update([
+                            'compra_id'            => $compra->id,
+                            'estado'               => 'recibida_total',
+                            'cerrada_con_faltante' => true,
+                            'faltante_unidades'    => $faltanteTotal,
+                            'cerrada_por_id'       => Auth::id() ?? 1,
+                            'fecha_cierre'         => now(),
+                            'motivo_faltante'      => !empty($data['motivo_faltante']) ? trim($data['motivo_faltante']) : 'Cierre de orden con faltante autorizado por el usuario',
+                        ]);
+                    } else {
+                        $ordenCompra->update([
+                            'compra_id' => $compra->id,
+                            'estado'    => 'recibida_parcial',
+                        ]);
+                    }
                 }
             }
 
@@ -221,6 +261,7 @@ class CompraService
             'producto_id'               => $producto->id,
             'lote_id'                   => $lote->id,
             'presentacion_id'           => $presentacionId,
+            'detalle_orden_compra_id'   => !empty($item['detalle_orden_compra_id']) ? (int) $item['detalle_orden_compra_id'] : null,
             'tipo_presentacion'         => $tipoPresentacion,
             'unidades_por_presentacion' => $unidadesPorPresentacion,
             'cantidad_presentaciones'   => $cantidadPresentaciones,

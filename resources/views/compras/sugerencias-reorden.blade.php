@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Sugerencias de Reorden Automáticas - FarmaBien')
 

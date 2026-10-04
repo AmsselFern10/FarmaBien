@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Nueva Presentacion - FarmaBien')
 @push('scripts')
 <script>

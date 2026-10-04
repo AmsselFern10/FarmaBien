@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Usuarios del Sistema - FarmaBien')
 @section('content')
 <div class="space-y-5">

@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Terminal Punto de Venta (POS) - FarmaBien')
 

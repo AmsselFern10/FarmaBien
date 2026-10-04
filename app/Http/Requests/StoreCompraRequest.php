@@ -16,6 +16,8 @@ class StoreCompraRequest extends FormRequest
         return [
             'proveedor_id'                        => ['required', 'integer', 'exists:proveedores,id'],
             'orden_compra_id'                     => ['nullable', 'integer', 'exists:ordenes_compras,id'],
+            'cerrar_orden_completa'               => ['nullable'],
+            'motivo_faltante'                     => ['nullable', 'string', 'max:500'],
             'numero_comprobante'                  => ['nullable', 'string', 'max:50'],
             'fecha'                               => ['required', 'date'],
             'condicion_pago'                      => ['nullable', 'string', 'in:contado,credito'],
@@ -24,6 +26,7 @@ class StoreCompraRequest extends FormRequest
             'productos'                           => ['required', 'array', 'min:1'],
             'productos.*.producto_id'             => ['required', 'integer', 'exists:productos,id'],
             'productos.*.presentacion_id'         => ['nullable', 'integer', 'exists:presentaciones_producto,id'],
+            'productos.*.detalle_orden_compra_id' => ['nullable', 'integer', 'exists:detalle_ordenes_compras,id'],
             'productos.*.cantidad_presentaciones' => ['nullable', 'integer', 'min:1'],
             'productos.*.cantidad'                => ['nullable', 'integer', 'min:1'],
             'productos.*.precio_unitario'         => ['required', 'numeric', 'min:0'],

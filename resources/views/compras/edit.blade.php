@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Modificar Compra #' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . ' - FarmaBien')
 

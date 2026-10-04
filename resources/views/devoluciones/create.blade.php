@@ -137,9 +137,9 @@
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <a href="{{ route('devoluciones.create', ['venta_id' => $v->id]) }}" 
-                                   class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition">
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition shadow-2xs">
                                     <span>Seleccionar</span>
-                                    <svg class="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                 </a>
                             </td>
                         </tr>
@@ -357,22 +357,22 @@
                         <p class="text-[11px] text-slate-400">Calculado en base a productos devueltos</p>
                     </div>
                     <div class="text-right">
-                        <span class="text-xl font-black text-rose-900 dark:text-rose-400 font-mono" x-text="formatoMoneda(totalReembolso)">C$ 0.00</span>
+                        <span class="text-xl font-bold text-red-950 dark:text-red-400 font-mono" x-text="formatoMoneda(totalReembolso)">C$ 0.00</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Submit Button -->
-        <div class="flex items-center justify-end gap-3 pt-2">
-            <a href="{{ route('devoluciones.create') }}" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition">
+        <div class="flex items-center justify-end gap-2 pt-2">
+            <a href="{{ route('devoluciones.create') }}" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition">
                 Cancelar
             </a>
             <button type="submit" 
                     :disabled="totalReembolso <= 0"
-                    :class="totalReembolso <= 0 ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-rose-600 hover:bg-rose-700 shadow-sm shadow-rose-600/30 cursor-pointer'"
-                    class="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition">
-                Confirmar y Procesar Devolución
+                    class="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Confirmar y Procesar Devolución</span>
             </button>
         </div>
     </form>
