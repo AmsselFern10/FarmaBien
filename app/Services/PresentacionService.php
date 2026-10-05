@@ -169,86 +169,88 @@ class PresentacionService
      */
     public function sincronizarPresentacionesDeProducto(Producto $producto, array $presentacionesInput): void
     {
-        if (empty($presentacionesInput)) {
-            // Si el producto no tiene presentaciones registradas, asegurar la Unidad Base por defecto
-            if ($producto->presentaciones()->count() === 0) {
-                PresentacionProducto::create([
-                    'producto_id'               => $producto->id,
-                    'nombre'                    => 'Unidad Base',
-                    'descripcion'               => 'Unidad individual / pastilla / ampolla',
-                    'unidades_por_presentacion' => 1,
-                    'precio_compra'             => $producto->precio_compra,
-                    'precio_venta'              => $producto->precio_venta,
-                    'es_unidad_base'            => true,
-                    'activo'                    => true,
-                    'orden'                     => 1,
-                ]);
+        DB::transaction(function () use ($producto, $presentacionesInput) {
+            if (empty($presentacionesInput)) {
+                // Si el producto no tiene presentaciones registradas, asegurar la Unidad Base por defecto
+                if ($producto->presentaciones()->count() === 0) {
+                    PresentacionProducto::create([
+                        'producto_id'               => $producto->id,
+                        'nombre'                    => 'Unidad Base',
+                        'descripcion'               => 'Unidad individual / pastilla / ampolla',
+                        'unidades_por_presentacion' => 1,
+                        'precio_compra'             => $producto->precio_compra,
+                        'precio_venta'              => $producto->precio_venta,
+                        'es_unidad_base'            => true,
+                        'activo'                    => true,
+                        'orden'                     => 1,
+                    ]);
+                }
+                return;
             }
-            return;
-        }
 
-        $processedIds = [];
-        $orden = 1;
-        $hasBase = false;
+            $processedIds = [];
+            $orden = 1;
+            $hasBase = false;
 
-        foreach ($presentacionesInput as $p) {
-            if (empty($p['nombre'])) continue;
+            foreach ($presentacionesInput as $p) {
+                if (empty($p['nombre'])) continue;
 
-            $esBase = !empty($p['es_unidad_base']) || ((int)($p['unidades_por_presentacion'] ?? 1) === 1 && !$hasBase);
-            if ($esBase) $hasBase = true;
+                $esBase = !empty($p['es_unidad_base']) || ((int)($p['unidades_por_presentacion'] ?? 1) === 1 && !$hasBase);
+                if ($esBase) $hasBase = true;
 
-            $presentacionData = [
-                'producto_id'               => $producto->id,
-                'nombre'                    => trim($p['nombre']),
-                'descripcion'               => !empty($p['descripcion']) ? trim($p['descripcion']) : null,
-                'unidades_por_presentacion' => max(1, (int)($p['unidades_por_presentacion'] ?? 1)),
-                'precio_compra'             => !empty($p['precio_compra']) ? (float)$p['precio_compra'] : ($esBase ? $producto->precio_compra : null),
-                'precio_venta'              => !empty($p['precio_venta']) ? (float)$p['precio_venta'] : ($esBase ? $producto->precio_venta : null),
-                'codigo_barras'             => !empty($p['codigo_barras']) ? trim($p['codigo_barras']) : null,
-                'es_unidad_base'            => $esBase,
-                'activo'                    => true,
-                'orden'                     => $orden++,
-            ];
+                $presentacionData = [
+                    'producto_id'               => $producto->id,
+                    'nombre'                    => trim($p['nombre']),
+                    'descripcion'               => !empty($p['descripcion']) ? trim($p['descripcion']) : null,
+                    'unidades_por_presentacion' => max(1, (int)($p['unidades_por_presentacion'] ?? 1)),
+                    'precio_compra'             => !empty($p['precio_compra']) ? (float)$p['precio_compra'] : ($esBase ? $producto->precio_compra : null),
+                    'precio_venta'              => !empty($p['precio_venta']) ? (float)$p['precio_venta'] : ($esBase ? $producto->precio_venta : null),
+                    'codigo_barras'             => !empty($p['codigo_barras']) ? trim($p['codigo_barras']) : null,
+                    'es_unidad_base'            => $esBase,
+                    'activo'                    => true,
+                    'orden'                     => $orden++,
+                ];
 
-            if (!empty($p['id'])) {
-                $existing = PresentacionProducto::where('id', $p['id'])
-                    ->where('producto_id', $producto->id)
-                    ->lockForUpdate()
-                    ->first();
+                if (!empty($p['id'])) {
+                    $existing = PresentacionProducto::where('id', $p['id'])
+                        ->where('producto_id', $producto->id)
+                        ->lockForUpdate()
+                        ->first();
 
-                if ($existing) {
-                    $existing->update($presentacionData);
-                    $processedIds[] = $existing->id;
+                    if ($existing) {
+                        $existing->update($presentacionData);
+                        $processedIds[] = $existing->id;
+                    } else {
+                        $newP = PresentacionProducto::create($presentacionData);
+                        $processedIds[] = $newP->id;
+                    }
                 } else {
                     $newP = PresentacionProducto::create($presentacionData);
                     $processedIds[] = $newP->id;
                 }
-            } else {
-                $newP = PresentacionProducto::create($presentacionData);
-                $processedIds[] = $newP->id;
             }
-        }
 
-        // Manejo de presentaciones no enviadas: desactivar si tienen historial, eliminar si están limpias
-        $presentacionesNoEnviadas = PresentacionProducto::where('producto_id', $producto->id)
-            ->whereNotIn('id', $processedIds)
-            ->get();
+            // Manejo de presentaciones no enviadas: desactivar si tienen historial, eliminar si están limpias
+            $presentacionesNoEnviadas = PresentacionProducto::where('producto_id', $producto->id)
+                ->whereNotIn('id', $processedIds)
+                ->get();
 
-        foreach ($presentacionesNoEnviadas as $pBorrar) {
-            $tieneVentas = $pBorrar->detallesVentas()->exists();
-            $tieneCompras = $pBorrar->detallesCompras()->exists();
+            foreach ($presentacionesNoEnviadas as $pBorrar) {
+                $tieneVentas = $pBorrar->detallesVentas()->exists();
+                $tieneCompras = $pBorrar->detallesCompras()->exists();
 
-            if ($tieneVentas || $tieneCompras) {
-                $pBorrar->update(['activo' => false]);
-            } else {
-                $pBorrar->delete();
+                if ($tieneVentas || $tieneCompras) {
+                    $pBorrar->update(['activo' => false]);
+                } else {
+                    $pBorrar->delete();
+                }
             }
-        }
 
-        // Garantizar al menos una unidad base
-        if (!$hasBase && count($processedIds) > 0) {
-            PresentacionProducto::where('id', $processedIds[0])->update(['es_unidad_base' => true]);
-        }
+            // Garantizar al menos una unidad base
+            if (!$hasBase && count($processedIds) > 0) {
+                PresentacionProducto::where('id', $processedIds[0])->update(['es_unidad_base' => true]);
+            }
+        });
     }
 
     /**

@@ -113,7 +113,7 @@ class PresentacionProducto extends Model
     {
         $label = $this->nombre_completo;
         if ($this->precio_venta) {
-            $label .= " - Venta: $" . number_format($this->precio_venta, 2);
+            $label .= ' - Venta: C$' . number_format($this->precio_venta, 2);
         }
         return $label;
     }
