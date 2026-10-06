@@ -858,10 +858,8 @@ class VentaService
             ->limit($limit)
             ->get();
 
-        // Optimización de promociones: 1 sola consulta en memoria o desde caché en lugar de N*4 queries (N+1)
-        $promociones = \Illuminate\Support\Facades\Cache::remember('promociones_vigentes_pos', 60, function () {
-            return \App\Models\Promocion::vigentes()->orderBy('id', 'desc')->get();
-        });
+        // Optimización de promociones: 1 sola consulta en memoria/caché estática per-request
+        $promociones = Producto::getPromocionesVigentes();
 
         $productos->each(function ($prod) use ($promociones) {
             $promo = $promociones->first(function ($p) use ($prod) {

@@ -61,14 +61,14 @@ class OrdenCompraController extends Controller
         $totalMonto = (clone $query)->where('estado', '!=', 'cancelada')->sum('total');
 
         $ordenes = $query->paginate(perPage(15))->withQueryString();
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc']);
+        $proveedores = Proveedor::getCachedActivos();
 
         return view('compras.ordenes.index', compact('ordenes', 'totalOrdenes', 'totalMonto', 'proveedores'));
     }
 
     public function create(Request $request)
     {
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc', 'contacto', 'telefono', 'email']);
+        $proveedores = Proveedor::getCachedActivos();
         $productos = Producto::activos()
             ->with(['laboratorio:id,nombre'])
             ->select(['id', 'nombre', 'principio_activo', 'laboratorio_id', 'codigo_barra', 'precio_compra', 'precio_venta'])
@@ -83,19 +83,28 @@ class OrdenCompraController extends Controller
             $rawItems = $request->input('items');
             $decoded = is_string($rawItems) ? json_decode($rawItems, true) : $rawItems;
             if (is_array($decoded)) {
+                $itemMap = [];
                 foreach ($decoded as $item) {
-                    $prodId = (int) ($item['producto_id'] ?? $item['id'] ?? 0);
-                    if ($prodId > 0) {
-                        $prod = Producto::with(['laboratorio:id,nombre'])->find($prodId);
-                        if ($prod) {
-                            $preloadedItems[] = [
-                                'producto_id'     => $prod->id,
-                                'nombre'          => $prod->nombre,
-                                'laboratorio'     => $prod->laboratorio->nombre ?? 'Sin Lab',
-                                'cantidad'        => max(1, (int) ($item['cantidad'] ?? 10)),
-                                'precio_estimado' => (float) ($item['precio_unitario'] ?? ($prod->precio_compra > 0 ? $prod->precio_compra : $prod->precio_venta * 0.7)),
-                            ];
-                        }
+                    $pId = (int) ($item['producto_id'] ?? $item['id'] ?? 0);
+                    if ($pId > 0) {
+                        $itemMap[$pId] = $item;
+                    }
+                }
+
+                if (!empty($itemMap)) {
+                    $foundProds = Producto::with(['laboratorio:id,nombre'])
+                        ->whereIn('id', array_keys($itemMap))
+                        ->get();
+
+                    foreach ($foundProds as $prod) {
+                        $itemData = $itemMap[$prod->id];
+                        $preloadedItems[] = [
+                            'producto_id'     => $prod->id,
+                            'nombre'          => $prod->nombre,
+                            'laboratorio'     => $prod->laboratorio->nombre ?? 'Sin Lab',
+                            'cantidad'        => max(1, (int) ($itemData['cantidad'] ?? 10)),
+                            'precio_estimado' => (float) ($itemData['precio_unitario'] ?? ($prod->precio_compra > 0 ? $prod->precio_compra : $prod->precio_venta * 0.7)),
+                        ];
                     }
                 }
             }

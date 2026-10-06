@@ -140,16 +140,24 @@ class Venta extends Model
     // Métodos
     public function puedeAnularse(): bool
     {
+        $tieneDev = isset($this->tiene_devoluciones_activas)
+            ? (bool) $this->tiene_devoluciones_activas
+            : $this->devoluciones()->where('estado', '!=', 'anulada')->exists();
+
         return $this->estado === 'completada' 
             && is_null($this->reemplazada_por)
-            && !$this->devoluciones()->where('estado', '!=', 'anulada')->exists();
+            && !$tieneDev;
     }
 
     public function puedeModificarse(): bool
     {
+        $tieneDev = isset($this->tiene_devoluciones_activas)
+            ? (bool) $this->tiene_devoluciones_activas
+            : $this->devoluciones()->where('estado', '!=', 'anulada')->exists();
+
         return $this->estado === 'completada' 
             && is_null($this->reemplazada_por)
-            && !$this->devoluciones()->where('estado', '!=', 'anulada')->exists();
+            && !$tieneDev;
     }
 
     public function esModificacion(): bool

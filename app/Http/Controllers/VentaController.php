@@ -33,7 +33,11 @@ class VentaController extends Controller
         $query = Venta::with([
             'cliente:id,nombre,documento',
             'usuario:id,name',
-        ])->withCount('detalles');
+        ])
+        ->withCount('detalles')
+        ->withExists(['devoluciones as tiene_devoluciones_activas' => function ($q) {
+            $q->where('estado', '!=', 'anulada');
+        }]);
 
         // Si es cajero sin permiso de ver todas las ventas, solo ve las suyas
         if (!$request->user()->can('ver ventas') && $request->user()->can('ver ventas propias')) {
@@ -116,12 +120,8 @@ class VentaController extends Controller
                 ->with('error', 'Atención: Se requiere apertura de caja activa para operar el POS.');
         }
 
-        $clientes = \Illuminate\Support\Facades\Cache::remember('pos_clientes_init_50', 60, function () {
-            return Cliente::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
-        });
-        $categorias = \Illuminate\Support\Facades\Cache::remember('catalog_categorias_base', 300, function () {
-            return Categoria::activas()->orderBy('nombre')->get(['id', 'nombre']);
-        });
+        $clientes = Cliente::getCachedPosClientes();
+        $categorias = Categoria::getCachedActivos();
         $productos = $this->ventaService->buscarProductosParaVenta('', null, 24);
 
         // Cargar recetas recientes vigentes para vincular rápido en POS
@@ -245,8 +245,8 @@ class VentaController extends Controller
             'recetas'
         ]);
 
-        $clientes = Cliente::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
-        $categorias = Categoria::activas()->orderBy('nombre')->get(['id', 'nombre']);
+        $clientes = Cliente::getCachedPosClientes();
+        $categorias = Categoria::getCachedActivos();
         
         // Incluir productos de la venta actual + catálogo inicial limitado
         $productosVenta = $venta->detalles->map(fn($d) => $d->producto)->filter()->unique('id');

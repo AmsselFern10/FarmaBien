@@ -61,7 +61,7 @@ class DevolucionCompraController extends Controller
 
     public function create(Request $request)
     {
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc']);
+        $proveedores = Proveedor::getCachedActivos();
 
         $compraId = $request->input('compra_id');
         $loteIds = $request->input('lote_ids');

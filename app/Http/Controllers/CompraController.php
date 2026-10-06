@@ -84,7 +84,7 @@ class CompraController extends Controller
 
     public function create(Request $request)
     {
-        $proveedores = Proveedor::select(['id', 'nombre', 'ruc', 'telefono'])->activos()->orderBy('nombre')->get();
+        $proveedores = Proveedor::getCachedActivos();
         $productos = Producto::select(['id', 'nombre', 'codigo_barra', 'principio_activo', 'laboratorio_id', 'precio_compra'])
             ->with([
                 'presentacionesActivas:id,producto_id,nombre,unidades_por_presentacion,precio_compra',
@@ -223,7 +223,7 @@ class CompraController extends Controller
         }
 
         $compra->load(['detalles.producto.presentacionesActivas', 'proveedor', 'lotes']);
-        $proveedores = Proveedor::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
+        $proveedores = Proveedor::getCachedActivos();
         $productos = Producto::select(['id', 'nombre', 'codigo_barra', 'principio_activo', 'laboratorio_id', 'precio_compra'])
             ->with([
                 'presentacionesActivas:id,producto_id,nombre,unidades_por_presentacion,precio_compra',

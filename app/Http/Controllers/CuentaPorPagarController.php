@@ -75,7 +75,7 @@ class CuentaPorPagarController extends Controller
 
         $metricas = $this->cuentaPorPagarService->getMetricas();
         $compras = $query->paginate(perPage(15))->withQueryString();
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc', 'contacto', 'telefono']);
+        $proveedores = Proveedor::getCachedActivos();
 
         $sesionCaja = SesionCaja::with('caja')
             ->where('user_id', Auth::id())
