@@ -77,7 +77,7 @@
         </button>
 
         <!-- Centro de Notificaciones (Campana) -->
-        <div x-data="farmaCentroNotificaciones()" x-init="init()" class="relative shrink-0">
+        <div x-data="farmaCentroNotificaciones()" class="relative shrink-0">
             <button @click="toggleOpen()" 
                     type="button" 
                     class="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition"
