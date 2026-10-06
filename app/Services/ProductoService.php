@@ -30,6 +30,9 @@ class ProductoService
             'presentacionesActivas:id,producto_id,nombre,unidades_por_presentacion,precio_compra,precio_venta,activo,es_unidad_base'
         ])->withSum(['lotes as stock_total' => function ($q) {
             $q->where('activo', true);
+        }], 'stock_actual')
+        ->withSum(['lotes as stock_disponible' => function ($q) {
+            $q->disponibles();
         }], 'stock_actual');
 
         if (!empty($filtros['buscar'])) {

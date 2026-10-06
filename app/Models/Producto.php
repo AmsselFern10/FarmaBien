@@ -229,6 +229,14 @@ class Producto extends Model
     // Accessors
     public function getStockTotalAttribute(): int
     {
+        if (array_key_exists('stock_total', $this->attributes) && $this->attributes['stock_total'] !== null) {
+            return (int) $this->attributes['stock_total'];
+        }
+
+        if ($this->relationLoaded('lotes')) {
+            return (int) $this->lotes->where('activo', true)->sum('stock_actual');
+        }
+
         return (int) $this->lotes()
             ->where('activo', true)
             ->sum('stock_actual');
@@ -236,6 +244,15 @@ class Producto extends Model
 
     public function getStockDisponibleAttribute(): int
     {
+        if (array_key_exists('stock_disponible', $this->attributes) && $this->attributes['stock_disponible'] !== null) {
+            return (int) $this->attributes['stock_disponible'];
+        }
+
+        if ($this->relationLoaded('lotes')) {
+            $today = now()->toDateString();
+            return (int) $this->lotes->where('activo', true)->where('fecha_vencimiento', '>', $today)->sum('stock_actual');
+        }
+
         return (int) $this->lotes()
             ->disponibles()
             ->sum('stock_actual');
