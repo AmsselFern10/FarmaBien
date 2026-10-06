@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cliente_id')->nullable()->constrained('clientes')->nullOnDelete();
             $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
-            $table->foreignId('sesion_caja_id')->nullable()->constrained('sesiones_caja')->nullOnDelete();
+            $table->unsignedBigInteger('sesion_caja_id')->nullable();
 
             // Facturación / Comprobante
             $table->enum('tipo_comprobante', ['ticket', 'boleta', 'factura', 'credito_fiscal'])->default('ticket');

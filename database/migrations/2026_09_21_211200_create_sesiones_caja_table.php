@@ -45,10 +45,22 @@ return new class extends Migration
             $table->index(['user_id', 'estado']);
             $table->index('fecha_apertura');
         });
+
+        if (Schema::hasTable('ventas')) {
+            Schema::table('ventas', function (Blueprint $table) {
+                $table->foreign('sesion_caja_id')->references('id')->on('sesiones_caja')->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void
     {
+        if (Schema::hasTable('ventas')) {
+            Schema::table('ventas', function (Blueprint $table) {
+                $table->dropForeign(['sesion_caja_id']);
+            });
+        }
+
         Schema::dropIfExists('sesiones_caja');
     }
 };

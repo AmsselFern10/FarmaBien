@@ -53,10 +53,22 @@ return new class extends Migration
 
             $table->index(['devolucion_venta_id', 'producto_id'], 'det_dev_prod_idx');
         });
+
+        if (Schema::hasTable('registros_venta_controlados')) {
+            Schema::table('registros_venta_controlados', function (Blueprint $table) {
+                $table->foreign('devolucion_id')->references('id')->on('devoluciones_ventas')->nullOnDelete();
+            });
+        }
     }
 
     public function down(): void
     {
+        if (Schema::hasTable('registros_venta_controlados')) {
+            Schema::table('registros_venta_controlados', function (Blueprint $table) {
+                $table->dropForeign(['devolucion_id']);
+            });
+        }
+
         Schema::dropIfExists('detalle_devoluciones_ventas');
         Schema::dropIfExists('devoluciones_ventas');
     }

@@ -16,7 +16,7 @@ return new class extends Migration
 
             // Vínculos a documentos de origen
             $table->foreignId('venta_id')->nullable()->constrained('ventas')->nullOnDelete();
-            $table->foreignId('devolucion_id')->nullable()->constrained('devoluciones_ventas')->nullOnDelete();
+            $table->unsignedBigInteger('devolucion_id')->nullable();
             $table->foreignId('compra_id')->nullable()->constrained('compras')->nullOnDelete();
             $table->foreignId('movimiento_inventario_id')->nullable()->constrained('movimientos_inventario')->nullOnDelete();
 
