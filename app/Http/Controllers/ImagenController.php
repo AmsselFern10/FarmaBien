@@ -42,6 +42,16 @@ class ImagenController extends Controller
 
         $mimeType = $this->detectMime($path);
         $size     = $disk->size($path);
+        $lastModified = $disk->lastModified($path);
+        $etag = '"' . md5($path . $lastModified) . '"';
+
+        $ifNoneMatch = request()->header('If-None-Match');
+        if ($ifNoneMatch === $etag) {
+            return response('', 304, [
+                'ETag'          => $etag,
+                'Cache-Control' => 'private, max-age=604800, immutable',
+            ]);
+        }
 
         return response()->stream(function () use ($disk, $path) {
             $stream = $disk->readStream($path);
@@ -52,7 +62,8 @@ class ImagenController extends Controller
         }, 200, [
             'Content-Type'        => $mimeType,
             'Content-Length'      => $size,
-            'Cache-Control'       => 'private, max-age=86400', // 24h caché en navegador, no en proxies
+            'ETag'                => $etag,
+            'Cache-Control'       => 'private, max-age=604800, immutable', // 7 días en navegador
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
@@ -85,6 +96,16 @@ class ImagenController extends Controller
 
         $mimeType = $this->detectMime($path);
         $size     = $disk->size($path);
+        $lastModified = $disk->lastModified($path);
+        $etag = '"' . md5($path . $lastModified) . '"';
+
+        $ifNoneMatch = request()->header('If-None-Match');
+        if ($ifNoneMatch === $etag) {
+            return response('', 304, [
+                'ETag'          => $etag,
+                'Cache-Control' => 'public, max-age=604800, immutable',
+            ]);
+        }
 
         return response()->stream(function () use ($disk, $path) {
             $stream = $disk->readStream($path);
@@ -95,7 +116,8 @@ class ImagenController extends Controller
         }, 200, [
             'Content-Type'        => $mimeType,
             'Content-Length'      => $size,
-            'Cache-Control'       => 'public, max-age=86400', // público: 24h en CDN/proxy también
+            'ETag'                => $etag,
+            'Cache-Control'       => 'public, max-age=604800, immutable',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }

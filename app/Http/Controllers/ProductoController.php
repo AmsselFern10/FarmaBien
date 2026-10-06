@@ -31,13 +31,8 @@ class ProductoController extends Controller
         $filtros = $request->only(['buscar', 'categoria_id', 'laboratorio_id', 'tipo_control', 'bajo_stock']);
         $productos = $this->productoService->listarProductos($filtros, perPage(12))->withQueryString();
 
-        $categorias = Cache::remember('catalog_categorias_base', 300, function () {
-            return Categoria::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
-        });
-
-        $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {
-            return Laboratorio::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
-        });
+        $categorias = Categoria::getCachedActivos();
+        $laboratorios = Laboratorio::getCachedActivos();
 
         return view('productos.index', compact('productos', 'categorias', 'laboratorios'));
     }
@@ -70,13 +65,8 @@ class ProductoController extends Controller
 
     public function create()
     {
-        $categorias = Cache::remember('catalog_categorias_base', 300, function () {
-            return Categoria::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
-        });
-
-        $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {
-            return Laboratorio::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
-        });
+        $categorias = Categoria::getCachedActivos();
+        $laboratorios = Laboratorio::getCachedActivos();
 
         return view('productos.create', compact('categorias', 'laboratorios'));
     }
@@ -124,13 +114,8 @@ class ProductoController extends Controller
 
     public function edit(Producto $producto)
     {
-        $categorias = Cache::remember('catalog_categorias_base', 300, function () {
-            return Categoria::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
-        });
-
-        $laboratorios = Cache::remember('catalog_laboratorios_base', 300, function () {
-            return Laboratorio::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
-        });
+        $categorias = Categoria::getCachedActivos();
+        $laboratorios = Laboratorio::getCachedActivos();
 
         $producto->load('presentaciones');
 

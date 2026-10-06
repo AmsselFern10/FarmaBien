@@ -51,6 +51,11 @@ Route::get('/img/{path}', [ImagenController::class, 'serve'])
 */
 Route::get('/img-producto/{path}', [ImagenController::class, 'servePublic'])
     ->where('path', '.+')
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+    ])
     ->name('img.producto.public');
 
 /*

@@ -230,7 +230,7 @@
                 <!-- Imagen del Fármaco y Badges Flotantes -->
                 <div class="relative h-44 bg-gradient-to-br from-slate-100 to-slate-200/70 dark:from-slate-800 dark:to-slate-800/80 flex items-center justify-center p-4 overflow-hidden">
                     @if($producto->imagen)
-                        <img src="{{ route('img.serve', ['path' => $producto->imagen]) }}" 
+                        <img src="{{ route('img.producto.public', ['path' => $producto->imagen]) }}" 
                              alt="{{ $producto->nombre }}" 
                              loading="lazy"
                              decoding="async"
@@ -444,7 +444,7 @@
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
                                     @if($producto->imagen)
-                                        <img src="{{ route('img.serve', ['path' => $producto->imagen]) }}" alt="{{ $producto->nombre }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                        <img src="{{ route('img.producto.public', ['path' => $producto->imagen]) }}" alt="{{ $producto->nombre }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                     @else
                                         <span class="text-xs font-bold text-slate-400">Rx</span>
                                     @endif

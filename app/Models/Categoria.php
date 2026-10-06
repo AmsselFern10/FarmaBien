@@ -21,6 +21,35 @@ class Categoria extends Model
         'activo' => 'boolean',
     ];
 
+    protected static ?\Illuminate\Database\Eloquent\Collection $cachedActivos = null;
+
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            static::clearCache();
+        });
+        static::deleted(function () {
+            static::clearCache();
+        });
+    }
+
+    public static function getCachedActivos(): \Illuminate\Database\Eloquent\Collection
+    {
+        if (static::$cachedActivos !== null) {
+            return static::$cachedActivos;
+        }
+
+        return static::$cachedActivos = \Illuminate\Support\Facades\Cache::remember('catalog_categorias_base', 300, function () {
+            return static::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
+        });
+    }
+
+    public static function clearCache(): void
+    {
+        static::$cachedActivos = null;
+        \Illuminate\Support\Facades\Cache::forget('catalog_categorias_base');
+    }
+
     // Relaciones
     public function productos(): HasMany
     {
