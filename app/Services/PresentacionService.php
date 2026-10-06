@@ -49,6 +49,23 @@ class PresentacionService
 
             $presentacion = PresentacionProducto::create($data);
 
+            // Registrar precio inicial de la presentación en SCD Tipo 2
+            if (!empty($presentacion->precio_venta) && $presentacion->precio_venta > 0) {
+                \App\Models\PrecioVenta::create([
+                    'producto_id'     => $presentacion->producto_id,
+                    'presentacion_id' => $presentacion->id,
+                    'precio'          => $presentacion->precio_venta,
+                    'vigente_desde'   => now(),
+                    'vigente_hasta'   => null,
+                    'motivo'          => "Alta inicial de presentación '{$presentacion->nombre}'",
+                    'user_id'         => auth()->id(),
+                ]);
+
+                if (!empty($data['es_unidad_base'])) {
+                    Producto::where('id', $presentacion->producto_id)->update(['precio_venta' => $presentacion->precio_venta]);
+                }
+            }
+
             Log::info('Presentación comercial registrada', [
                 'presentacion_id' => $presentacion->id,
                 'producto_id'     => $presentacion->producto_id,
@@ -75,6 +92,8 @@ class PresentacionService
     {
         return DB::transaction(function () use ($presentacion, $data) {
             $locked = PresentacionProducto::where('id', $presentacion->id)->lockForUpdate()->firstOrFail();
+            $precioAnterior = (float)($locked->precio_venta ?? 0);
+            $precioNuevo = isset($data['precio_venta']) ? (float)$data['precio_venta'] : $precioAnterior;
 
             if (!empty($data['es_unidad_base'])) {
                 PresentacionProducto::where('producto_id', $locked->producto_id)
@@ -84,6 +103,29 @@ class PresentacionService
             }
 
             $locked->update($data);
+
+            // Registrar cambio de precio de presentación en SCD Tipo 2
+            if (abs($precioNuevo - $precioAnterior) >= 0.01) {
+                \App\Models\PrecioVenta::where('producto_id', $locked->producto_id)
+                    ->where('presentacion_id', $locked->id)
+                    ->whereNull('vigente_hasta')
+                    ->update(['vigente_hasta' => now()]);
+
+                \App\Models\PrecioVenta::create([
+                    'producto_id'     => $locked->producto_id,
+                    'presentacion_id' => $locked->id,
+                    'precio'          => $precioNuevo,
+                    'vigente_desde'   => now(),
+                    'vigente_hasta'   => null,
+                    'motivo'          => "Actualización de precio de presentación '{$locked->nombre}'",
+                    'user_id'         => auth()->id(),
+                ]);
+
+                // Sincronizar precio_venta del producto si es la unidad base
+                if ($locked->es_unidad_base || !empty($data['es_unidad_base'])) {
+                    Producto::where('id', $locked->producto_id)->update(['precio_venta' => $precioNuevo]);
+                }
+            }
 
             Log::info('Presentación comercial actualizada', [
                 'presentacion_id' => $locked->id,
@@ -180,6 +222,7 @@ class PresentacionService
                         'unidades_por_presentacion' => 1,
                         'precio_compra'             => $producto->precio_compra,
                         'precio_venta'              => $producto->precio_venta,
+                        'codigo_barras'             => $producto->codigo_barra,
                         'es_unidad_base'            => true,
                         'activo'                    => true,
                         'orden'                     => 1,
@@ -205,7 +248,7 @@ class PresentacionService
                     'unidades_por_presentacion' => max(1, (int)($p['unidades_por_presentacion'] ?? 1)),
                     'precio_compra'             => !empty($p['precio_compra']) ? (float)$p['precio_compra'] : ($esBase ? $producto->precio_compra : null),
                     'precio_venta'              => !empty($p['precio_venta']) ? (float)$p['precio_venta'] : ($esBase ? $producto->precio_venta : null),
-                    'codigo_barras'             => !empty($p['codigo_barras']) ? trim($p['codigo_barras']) : null,
+                    'codigo_barras'             => !empty($p['codigo_barras']) ? trim($p['codigo_barras']) : ($esBase ? $producto->codigo_barra : null),
                     'es_unidad_base'            => $esBase,
                     'activo'                    => true,
                     'orden'                     => $orden++,

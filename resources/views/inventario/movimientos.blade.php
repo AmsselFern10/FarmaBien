@@ -124,6 +124,10 @@
                         };
                         $cantClass = $mov->cantidad > 0 ? 'text-emerald-900 dark:text-emerald-300' : 'text-red-900 dark:text-rose-400';
                         $moneda = config('app.moneda', 'C$');
+                        $detCompraMov = null;
+                        if ($mov->origen === 'compra' && $mov->lote) {
+                            $detCompraMov = $mov->lote->detallesCompra->where('compra_id', $mov->origen_id)->first();
+                        }
                     @endphp
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition {{ $rowClass }}">
                         <td class="px-4 py-3 whitespace-nowrap">
@@ -132,13 +136,26 @@
                         </td>
                         <td class="px-4 py-3">
                             <a href="{{ route('inventario.kardex-producto', $mov->producto_id) }}" class="font-semibold text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition">{{ $mov->producto->nombre ?? 'N/A' }}</a>
+                            <p class="text-[10px] text-slate-400">{{ $mov->producto->principio_activo ?? '' }} · {{ $mov->producto->laboratorio->nombre ?? '' }}</p>
                         </td>
-                        <td class="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">{{ $mov->lote->numero_lote ?? '—' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs text-slate-700 dark:text-slate-300 font-semibold">{{ $mov->lote->numero_lote ?? '—' }}</span>
+                            @if($detCompraMov && $detCompraMov->tipo_presentacion && $detCompraMov->tipo_presentacion !== 'Unidad Base')
+                                <span class="block text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate max-w-[120px]">
+                                    {{ $detCompraMov->tipo_presentacion }}
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3">
                             <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold {{ $tipoBadge }}">{{ ucfirst($mov->tipo) }}</span>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="text-[10px] text-slate-700 dark:text-slate-300 font-medium">{{ $mov->subtipo_etiqueta }}</span>
+                            <span class="text-[10px] text-slate-700 dark:text-slate-300 font-medium block">{{ $mov->subtipo_etiqueta }}</span>
+                            @if($detCompraMov && $detCompraMov->tipo_presentacion && $detCompraMov->tipo_presentacion !== 'Unidad Base')
+                                <span class="text-[9px] text-emerald-800 dark:text-emerald-400 font-semibold block mt-0.5">
+                                    {{ $detCompraMov->cantidad_presentaciones }} {{ $detCompraMov->tipo_presentacion }} (x{{ $detCompraMov->unidades_por_presentacion }})
+                                </span>
+                            @endif
                         </td>
                         <td class="px-4 py-3 text-right font-mono font-bold {{ $cantClass }}">
                             {{ $mov->cantidad > 0 ? '+' : '' }}{{ number_format($mov->cantidad) }}

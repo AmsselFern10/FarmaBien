@@ -479,7 +479,7 @@ class InventarioService
      */
     public function kardexProducto(int $productoId, ?string $fechaInicio = null, ?string $fechaFin = null)
     {
-        $query = MovimientoInventario::with(['lote', 'usuario'])
+        $query = MovimientoInventario::with(['lote.detallesCompra', 'usuario'])
             ->where('producto_id', $productoId);
 
         if ($fechaInicio) {

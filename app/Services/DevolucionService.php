@@ -89,8 +89,11 @@ class DevolucionService
                     throw new Exception("No puede devolver {$cantidadDevolver} unidades de '{$detalleVenta->producto->nombre}'. Disponible para devolver: {$disponibleParaDevolver}.");
                 }
 
-                $precioUnitario = (float) $detalleVenta->precio_unitario;
-                $subtotalItem = round($cantidadDevolver * $precioUnitario, 2);
+                $precioUnitarioOriginal = (float) $detalleVenta->precio_unitario;
+                $precioUnitarioEfectivo = $detalleVenta->cantidad > 0
+                    ? round((float) $detalleVenta->subtotal / (float) $detalleVenta->cantidad, 2)
+                    : $precioUnitarioOriginal;
+                $subtotalItem = round($cantidadDevolver * $precioUnitarioEfectivo, 2);
                 $unidadesBasePorPres = (int) ($detalleVenta->unidades_por_presentacion ?: 1);
                 $unidadesBaseDevolver = $cantidadDevolver * $unidadesBasePorPres;
 
@@ -104,7 +107,7 @@ class DevolucionService
                     'cantidad'                  => $cantidadDevolver,
                     'unidades_por_presentacion' => $unidadesBasePorPres,
                     'cantidad_unidades_base'    => $unidadesBaseDevolver,
-                    'precio_unitario'           => $precioUnitario,
+                    'precio_unitario'           => $precioUnitarioEfectivo,
                     'subtotal'                  => $subtotalItem,
                     'reingresa_a_stock'         => $reingresaAStock,
                     'estado_producto'           => $estadoProducto,
@@ -149,6 +152,8 @@ class DevolucionService
                 $itemData['devolucion_venta_id'] = $devolucion->id;
                 $detDev = DetalleDevolucionVenta::create($itemData);
 
+                $detalleVentaOriginal = $venta->detalles->firstWhere('id', $itemData['detalle_venta_id']);
+
                 $lote = Lote::find($itemData['lote_id']);
                 if ($lote) {
                     if ($itemData['reingresa_a_stock']) {
@@ -161,6 +166,18 @@ class DevolucionService
                             $devolucion->id,
                             "Devolución de venta {$numeroDevolucion}"
                         );
+
+                        // Revertir dispensación de receta si el detalle estaba vinculado
+                        if ($detalleVentaOriginal && $detalleVentaOriginal->receta_detalle_id && class_exists(\App\Services\RecetaService::class)) {
+                            try {
+                                app(\App\Services\RecetaService::class)->revertirDispensacion(
+                                    $detalleVentaOriginal->receta_detalle_id,
+                                    $itemData['cantidad_unidades_base']
+                                );
+                            } catch (\Throwable $th) {
+                                Log::warning("No se pudo revertir dispensación de receta en devolución: " . $th->getMessage());
+                            }
+                        }
                     } else {
                         // Si no reingresa a stock (dañado o vencido), registrar merma/descarte en Kardex
                         $costoUnitario = (float) $lote->precio_compra;
@@ -211,7 +228,7 @@ class DevolucionService
                 }
             }
 
-            // Si el reembolso es en efectivo y hay caja abierta, registrar egreso de caja
+            // Si el reembolso es en efectivo y hay caja abierta, registrar egreso de caja y recalcular
             if ($devolucion->metodo_reembolso === 'efectivo' && $sesionCaja) {
                 MovimientoCaja::create([
                     'sesion_caja_id'         => $sesionCaja->id,
@@ -221,7 +238,14 @@ class DevolucionService
                     'concepto'               => "Reembolso por Devolución {$numeroDevolucion} (Venta #{$venta->numero_comprobante})",
                     'comprobante_referencia' => $numeroDevolucion,
                 ]);
+
+                if (class_exists(\App\Services\CajaService::class)) {
+                    app(\App\Services\CajaService::class)->recalcularTotales($sesionCaja);
+                }
             }
+
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
 
             Log::info("Devolución {$numeroDevolucion} procesada exitosamente.", [
                 'devolucion_id' => $devolucion->id,

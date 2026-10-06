@@ -141,13 +141,15 @@ class Venta extends Model
     public function puedeAnularse(): bool
     {
         return $this->estado === 'completada' 
-            && is_null($this->reemplazada_por);
+            && is_null($this->reemplazada_por)
+            && !$this->devoluciones()->where('estado', '!=', 'anulada')->exists();
     }
 
     public function puedeModificarse(): bool
     {
         return $this->estado === 'completada' 
-            && is_null($this->reemplazada_por);
+            && is_null($this->reemplazada_por)
+            && !$this->devoluciones()->where('estado', '!=', 'anulada')->exists();
     }
 
     public function esModificacion(): bool

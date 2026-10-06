@@ -85,6 +85,11 @@ class LaboratorioService
         return DB::transaction(function () use ($laboratorio, $userId) {
             $locked = Laboratorio::where('id', $laboratorio->id)->lockForUpdate()->firstOrFail();
             $nuevoEstado = !$locked->activo;
+
+            if (!$nuevoEstado && $locked->productos()->where('activo', true)->exists()) {
+                throw new \Exception("No se puede desactivar el laboratorio '{$locked->nombre}' porque cuenta con medicamentos activos asociados. Reasigna los productos antes de desactivarlo.");
+            }
+
             $locked->update(['activo' => $nuevoEstado]);
 
             $accion = $nuevoEstado ? 'activar' : 'desactivar';

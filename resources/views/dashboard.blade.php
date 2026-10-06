@@ -167,7 +167,7 @@ function dashboardLive() {
             </div>
             <div class="mt-3">
                 <div class="text-2xl font-black text-slate-900 dark:text-white">
-                    $<span x-text="metricas.ventasHoyFormateado">{{ number_format($ventasHoy, 2) }}</span>
+                    <span class="text-base font-bold text-slate-500 dark:text-slate-400 mr-0.5">C$</span><span x-text="metricas.ventasHoyFormateado">{{ number_format($ventasHoy, 2) }}</span>
                 </div>
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">
@@ -194,7 +194,7 @@ function dashboardLive() {
             </div>
             <div class="mt-3">
                 <div class="text-2xl font-black text-slate-900 dark:text-white">
-                    $<span x-text="metricas.comprasMesFormateado">{{ number_format($comprasMes, 2) }}</span>
+                    <span class="text-base font-bold text-slate-500 dark:text-slate-400 mr-0.5">C$</span><span x-text="metricas.comprasMesFormateado">{{ number_format($comprasMes, 2) }}</span>
                 </div>
                 <div class="flex items-center justify-between mt-2 text-xs">
                     <span class="text-slate-500 dark:text-slate-400">Inversión acumulada</span>
@@ -277,7 +277,9 @@ function dashboardLive() {
          x-cloak 
          class="bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
         <div class="flex items-center space-x-3">
-            <span class="text-amber-900 dark:text-amber-400 text-xl">⚠️</span>
+            <div class="shrink-0 w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-700 dark:text-amber-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
             <div>
                 <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">
                     Hay <span x-text="metricas.recetasPendientesCount"></span> receta(s) médica(s) pendiente(s) de validación
@@ -335,7 +337,9 @@ function dashboardLive() {
                             </div>
                         </div>
                         <div class="text-right shrink-0 ml-4">
-                            <span class="text-sm font-extrabold text-slate-900 dark:text-white block" x-text="'$' + venta.total"></span>
+                            <span class="text-sm font-extrabold text-slate-900 dark:text-white block">
+                                <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">C$ </span><span x-text="venta.total"></span>
+                            </span>
                             <div class="flex items-center justify-end space-x-1 mt-0.5">
                                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" x-text="venta.metodo_pago"></span>
                                 @canany(['ver ventas', 'ver detalle ventas'])
@@ -379,7 +383,9 @@ function dashboardLive() {
                             </div>
                         </div>
                         <div class="text-right shrink-0 ml-4">
-                            <span class="text-sm font-extrabold text-slate-900 dark:text-white block" x-text="'$' + compra.total"></span>
+                            <span class="text-sm font-extrabold text-slate-900 dark:text-white block">
+                                <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">C$ </span><span x-text="compra.total"></span>
+                            </span>
                             <div class="flex items-center justify-end space-x-1 mt-0.5">
                                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-900 dark:bg-blue-950/50 dark:text-blue-300" x-text="compra.estado"></span>
                                 @can('ver detalle compras')

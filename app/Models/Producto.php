@@ -137,19 +137,18 @@ class Producto extends Model
      */
     public function calcularUnidadesBase(int $cantidad, ?PresentacionProducto $presentacion = null): int
     {
-        $factor = $presentacion ? $presentacion->unidades_por_presentacion : 1;
-        return $cantidad * max(1, $factor);
+        return $presentacion ? $presentacion->calcularUnidadesBase($cantidad) : $cantidad;
     }
 
     // Scopes
     public function scopeActivos($query)
     {
-        return $query->where('activo', true);
+        return $query->where('productos.activo', true);
     }
 
     public function scopeActivo($query)
     {
-        return $query->where('activo', true);
+        return $query->where('productos.activo', true);
     }
 
     public function scopeBuscar($query, string $buscar, array $principiosIa = [])

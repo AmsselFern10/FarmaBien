@@ -149,9 +149,17 @@
                         $dias = (int) $lote->dias_restantes;
                         $estadoClass = $venc < $hoy ? 'bg-rose-50 dark:bg-rose-950/60 text-red-950 dark:text-rose-300 border-rose-200 dark:border-rose-800' : ($dias <= 30 ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800');
                         $estadoLabel = $venc < $hoy ? 'Vencido' : ($dias <= 30 ? 'Por vencer' : 'Vigente');
+                        $detCompraLote = $lote->detallesCompra->sortByDesc('id')->first();
                     @endphp
                     <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition {{ $venc < $hoy ? 'bg-rose-50/30 dark:bg-rose-950/10' : '' }}">
-                        <td class="px-5 py-3.5 font-mono font-bold text-slate-900 dark:text-white">{{ $lote->numero_lote }}</td>
+                        <td class="px-5 py-3.5">
+                            <span class="font-mono font-bold text-slate-900 dark:text-white">{{ $lote->numero_lote }}</span>
+                            @if($detCompraLote && $detCompraLote->tipo_presentacion && $detCompraLote->tipo_presentacion !== 'Unidad Base')
+                                <span class="block text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate max-w-[120px]" title="Presentación: {{ $detCompraLote->tipo_presentacion }}">
+                                    {{ $detCompraLote->tipo_presentacion }} (x{{ $detCompraLote->unidades_por_presentacion }})
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-5 py-3.5">
                             <p class="font-semibold text-slate-900 dark:text-white">{{ $lote->producto->nombre ?? 'N/A' }}</p>
                             <p class="text-[10px] text-slate-500 dark:text-slate-400">{{ $lote->producto->categoria->nombre ?? '' }} · {{ $lote->producto->laboratorio->nombre ?? '' }}</p>

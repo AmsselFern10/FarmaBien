@@ -48,6 +48,7 @@ class AjusteController extends Controller
         if (!$isAdmin && in_array($tab, ['empresa', 'modulos'])) {
             abort(403, 'No tiene permisos para modificar la información fiscal del local o el control de módulos.');
         }
+
         $request->validate([
             'empresa_nombre'                     => ['nullable', 'string', 'max:100'],
             'empresa_razon_social'               => ['nullable', 'string', 'max:150'],
@@ -81,22 +82,22 @@ class AjusteController extends Controller
             'lector_sufijo'                      => ['nullable', 'string', 'in:enter,tab,none'],
         ]);
 
-        $tab = $request->input('tab', 'empresa');
-
-        // Manejo de carga de logo
-        if ($request->hasFile('empresa_logo')) {
-            $path = $request->file('empresa_logo')->store('logos', 'public');
-            Configuracion::set('empresa_logo', $path, 'empresa', 'image', 'Logotipo oficial de la farmacia');
-        } elseif ($request->boolean('eliminar_logo')) {
-            $logoAnterior = Configuracion::get('empresa_logo');
-            if ($logoAnterior && Storage::disk('public')->exists($logoAnterior)) {
-                Storage::disk('public')->delete($logoAnterior);
+        // Manejo de carga de logo (solo administradores autorizados)
+        if ($isAdmin && $tab === 'empresa') {
+            if ($request->hasFile('empresa_logo')) {
+                $path = $request->file('empresa_logo')->store('logos', 'public');
+                Configuracion::set('empresa_logo', $path, 'empresa', 'image', 'Logotipo oficial de la farmacia');
+            } elseif ($request->boolean('eliminar_logo')) {
+                $logoAnterior = Configuracion::get('empresa_logo');
+                if ($logoAnterior && Storage::disk('public')->exists($logoAnterior)) {
+                    Storage::disk('public')->delete($logoAnterior);
+                }
+                Configuracion::set('empresa_logo', null, 'empresa', 'image', 'Logotipo oficial de la farmacia');
             }
-            Configuracion::set('empresa_logo', null, 'empresa', 'image', 'Logotipo oficial de la farmacia');
         }
 
-        // Empresa
-        if ($tab === 'empresa') {
+        // Empresa (solo administradores)
+        if ($isAdmin && $tab === 'empresa') {
             if ($request->has('empresa_nombre')) Configuracion::set('empresa_nombre', $request->input('empresa_nombre'), 'empresa');
             if ($request->has('empresa_razon_social')) Configuracion::set('empresa_razon_social', $request->input('empresa_razon_social'), 'empresa');
             if ($request->has('empresa_ruc')) Configuracion::set('empresa_ruc', $request->input('empresa_ruc'), 'empresa');

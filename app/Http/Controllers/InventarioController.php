@@ -52,6 +52,7 @@ class InventarioController extends Controller
             'producto:id,nombre,principio_activo,laboratorio_id',
             'producto.laboratorio:id,nombre',
             'lote:id,numero_lote,fecha_vencimiento',
+            'lote.detallesCompra',
             'usuario:id,name',
         ]);
 
@@ -93,6 +94,7 @@ class InventarioController extends Controller
             'producto.categoria:id,nombre',
             'producto.laboratorio:id,nombre',
             'proveedor:id,nombre',
+            'detallesCompra',
         ])->where('activo', true);
 
         if ($request->filled('buscar')) {
@@ -145,7 +147,7 @@ class InventarioController extends Controller
         $fechaHasta = $request->input('fecha_hasta');
 
         $movimientos = $this->inventarioService->kardexProducto($producto->id, $fechaDesde, $fechaHasta);
-        $producto->load(['categoria', 'laboratorio', 'presentacionesActivas', 'lotes']);
+        $producto->load(['categoria', 'laboratorio', 'presentacionesActivas', 'lotes.detallesCompra', 'lotes.compra']);
 
         return view('inventario.kardex-producto', compact('producto', 'movimientos'));
     }

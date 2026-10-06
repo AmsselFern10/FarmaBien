@@ -81,4 +81,38 @@ class StoreProductoRequest extends FormRequest
             'activo' => $this->has('activo') ? $this->boolean('activo') : true,
         ]);
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($v) {
+            $presentaciones = $this->input('presentaciones', []);
+            $codigos = [];
+            $prodCodigo = $this->input('codigo_barra');
+
+            if (!empty($prodCodigo)) {
+                $existeEnPresentacion = \App\Models\PresentacionProducto::where('codigo_barras', $prodCodigo)->exists();
+                if ($existeEnPresentacion) {
+                    $v->errors()->add('codigo_barra', "El código de barra '{$prodCodigo}' ya está asignado a una presentación de otro medicamento.");
+                }
+            }
+
+            foreach ($presentaciones as $idx => $p) {
+                $cb = !empty($p['codigo_barras']) ? trim($p['codigo_barras']) : null;
+                if (!$cb) continue;
+
+                if (in_array($cb, $codigos)) {
+                    $v->errors()->add("presentaciones.{$idx}.codigo_barras", "El código de barra '{$cb}' está duplicado entre las presentaciones de este producto.");
+                }
+                $codigos[] = $cb;
+
+                if (\App\Models\Producto::where('codigo_barra', $cb)->exists()) {
+                    $v->errors()->add("presentaciones.{$idx}.codigo_barras", "El código de barra '{$cb}' ya está registrado como código principal de otro medicamento.");
+                }
+
+                if (\App\Models\PresentacionProducto::where('codigo_barras', $cb)->exists()) {
+                    $v->errors()->add("presentaciones.{$idx}.codigo_barras", "El código de barra '{$cb}' ya está asignado a otra presentación comercial existente.");
+                }
+            }
+        });
+    }
 }

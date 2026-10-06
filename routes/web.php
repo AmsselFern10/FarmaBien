@@ -65,31 +65,37 @@ Route::get('/', function () {
 // Catálogo Público de Medicamentos para Clientes
 Route::get('/catalogo', [PublicCatalogoController::class, 'index'])->name('catalogo.publico');
 
-// Telemetría y Métricas de Rendimiento ISO/IEC 25023 (Para Render, Local y Monitoreo)
-Route::get('/benchmark/metricas', [BenchmarkController::class, 'metricas'])->name('benchmark.metricas');
+// Telemetría y Métricas de Rendimiento ISO/IEC 25023 (requiere autenticación — expone KPIs internos)
+Route::get('/benchmark/metricas', [BenchmarkController::class, 'metricas'])
+    ->middleware(['auth', 'role:Admin'])
+    ->name('benchmark.metricas');
 
 // Health Check Endpoint (Para Monitoreo, Docker, Render y Cloud Hosting)
+// Solo devuelve status/timestamp en producción para no exponer stack tecnológico
 Route::get('/health', function () {
     $dbConnected = false;
-    $dbDriver = config('database.default');
     try {
         \Illuminate\Support\Facades\DB::connection()->getPdo();
         $dbConnected = true;
     } catch (\Throwable $e) {}
 
     $status = $dbConnected ? 200 : 503;
-    return response()->json([
-        'status'      => $dbConnected ? 'healthy' : 'unhealthy',
-        'app'         => config('app.name', 'FarmaBien'),
-        'version'     => '2.0.0',
-        'environment' => config('app.env'),
-        'database'    => [
-            'driver'    => $dbDriver,
-            'connected' => $dbConnected,
-        ],
-        'cache'       => config('cache.default'),
-        'timestamp'   => now()->toIso8601String(),
-    ], $status);
+
+    $payload = [
+        'status'    => $dbConnected ? 'healthy' : 'unhealthy',
+        'timestamp' => now()->toIsoString(),
+    ];
+
+    // En entornos no-producción se añade info de diagnóstico (útil en local/staging)
+    if (!app()->environment('production')) {
+        $payload['app']      = config('app.name', 'FarmaBien');
+        $payload['version']  = '2.0.0';
+        $payload['env']      = config('app.env');
+        $payload['database'] = ['driver' => config('database.default'), 'connected' => $dbConnected];
+        $payload['cache']    = config('cache.default');
+    }
+
+    return response()->json($payload, $status);
 })->name('health');
 
 /*
@@ -194,6 +200,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{devolucionCompra}', [DevolucionCompraController::class, 'show'])->name('show');
         Route::post('/{devolucionCompra}/enviar', [DevolucionCompraController::class, 'marcarEnviada'])->name('enviar');
         Route::post('/{devolucionCompra}/confirmar', [DevolucionCompraController::class, 'confirmar'])->name('confirmar');
+        Route::post('/{devolucionCompra}/anular', [DevolucionCompraController::class, 'anular'])->name('anular');
     });
 
 

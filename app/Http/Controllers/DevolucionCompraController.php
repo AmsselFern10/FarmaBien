@@ -7,27 +7,34 @@ use App\Models\DetalleDevolucionCompra;
 use App\Models\Lote;
 use App\Models\Proveedor;
 use App\Models\Compra;
-use App\Models\MovimientoInventario;
-use App\Models\RegistroVentaControlado;
-use App\Models\AuditLog;
+use App\Services\DevolucionCompraService;
+use App\Http\Requests\StoreDevolucionCompraRequest;
+use App\Http\Requests\AnularDevolucionCompraRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
 class DevolucionCompraController extends Controller
 {
-    public function __construct()
+    protected DevolucionCompraService $devolucionService;
+
+    public function __construct(DevolucionCompraService $devolucionService)
     {
-        $this->middleware('permission:ajustar inventario');
+        $this->devolucionService = $devolucionService;
+
+        $this->middleware('permission:ver compras')->only(['index', 'show']);
+        $this->middleware('permission:registrar compras')->only(['create', 'store', 'marcarEnviada', 'confirmar']);
+        $this->middleware('permission:anular compras')->only(['anular']);
     }
 
     public function index(Request $request)
     {
-        $query = DevolucionCompra::with(['proveedor', 'usuario']);
+        $query = DevolucionCompra::with(['proveedor', 'usuario', 'detalles.producto'])
+            ->withCount('detalles');
 
         if ($request->filled('buscar')) {
-            $buscar = trim($request->buscar);
+            $buscar = trim($request->input('buscar'));
             $query->where(function ($q) use ($buscar) {
                 $q->where('numero_devolucion', 'like', "%{$buscar}%")
                   ->orWhereHas('proveedor', fn($p) => $p->where('nombre', 'like', "%{$buscar}%")->orWhere('ruc', 'like', "%{$buscar}%"));
@@ -35,25 +42,26 @@ class DevolucionCompraController extends Controller
         }
 
         if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
+            $query->where('estado', $request->input('estado'));
         }
 
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('created_at', '>=', $request->fecha_desde);
+            $query->whereDate('created_at', '>=', $request->input('fecha_desde'));
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+            $query->whereDate('created_at', '<=', $request->input('fecha_hasta'));
         }
 
         $devoluciones = $query->orderBy('created_at', 'desc')->paginate(perPage(20))->withQueryString();
+        $metricas = $this->devolucionService->getMetricas();
 
-        return view('compras.devoluciones.index', compact('devoluciones'));
+        return view('compras.devoluciones.index', compact('devoluciones', 'metricas'));
     }
 
     public function create(Request $request)
     {
-        $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc']);
 
         $compraId = $request->input('compra_id');
         $loteIds = $request->input('lote_ids');
@@ -70,15 +78,15 @@ class DevolucionCompraController extends Controller
             if ($compra) {
                 $proveedorSeleccionado = $compra->proveedor;
 
-                // Fix N+1: una sola query agrupada en vez de 1 query por lote
                 $loteIds = $compra->lotes->pluck('id');
                 $devueltasPorLote = DetalleDevolucionCompra::whereIn('lote_id', $loteIds)
+                    ->whereHas('devolucionCompra', fn($q) => $q->where('estado', '!=', 'rechazada'))
                     ->groupBy('lote_id')
                     ->selectRaw('lote_id, SUM(cantidad) as total')
                     ->pluck('total', 'lote_id');
 
                 foreach ($compra->lotes as $lote) {
-                    $yaDevuelta = (int)($devueltasPorLote[$lote->id] ?? 0);
+                    $yaDevuelta = (int) ($devueltasPorLote[$lote->id] ?? 0);
                     $disponible = max(0, min($lote->stock_inicial - $yaDevuelta, $lote->stock_actual));
 
                     $detallesDisponibles[] = [
@@ -97,14 +105,14 @@ class DevolucionCompraController extends Controller
             if ($lotesSel->isNotEmpty()) {
                 $proveedorSeleccionado = $lotesSel->first()->proveedor;
 
-                // Fix N+1: una sola query agrupada en vez de 1 query por lote
                 $devueltasPorLote = DetalleDevolucionCompra::whereIn('lote_id', $lotesSel->pluck('id'))
+                    ->whereHas('devolucionCompra', fn($q) => $q->where('estado', '!=', 'rechazada'))
                     ->groupBy('lote_id')
                     ->selectRaw('lote_id, SUM(cantidad) as total')
                     ->pluck('total', 'lote_id');
 
                 foreach ($lotesSel as $lote) {
-                    $yaDevuelta = (int)($devueltasPorLote[$lote->id] ?? 0);
+                    $yaDevuelta = (int) ($devueltasPorLote[$lote->id] ?? 0);
                     $disponible = max(0, min($lote->stock_inicial - $yaDevuelta, $lote->stock_actual));
 
                     $detallesDisponibles[] = [
@@ -123,9 +131,7 @@ class DevolucionCompraController extends Controller
         $buscarCompra = $request->input('buscar_compra');
         $comprasRecientesQuery = Compra::with(['proveedor', 'usuario', 'lotes'])
             ->where('estado', 'recibida')
-            ->whereHas('lotes', function($q) {
-                $q->where('stock_actual', '>', 0);
-            });
+            ->whereHas('lotes', fn($q) => $q->where('stock_actual', '>', 0));
 
         if (!empty($buscarCompra)) {
             $comprasRecientesQuery->where(function($q) use ($buscarCompra) {
@@ -169,136 +175,20 @@ class DevolucionCompraController extends Controller
         ));
     }
 
-    public function store(Request $request)
+    public function store(StoreDevolucionCompraRequest $request)
     {
-        $request->validate([
-            'proveedor_id'              => ['required', 'integer', 'exists:proveedores,id'],
-            'motivo'                    => ['required', 'string', 'min:5', 'max:1000'],
-            'compra_id'                 => ['nullable', 'integer', 'exists:compras,id'],
-            'items'                     => ['required', 'array', 'min:1'],
-            'items.*.lote_id'           => ['required', 'integer', 'exists:lotes,id'],
-            'items.*.cantidad'          => ['required', 'integer', 'min:1'],
-            'items.*.precio_unitario'   => ['nullable', 'numeric', 'min:0'],
-            'items.*.motivo_detalle'    => ['nullable', 'string', 'max:300'],
-        ], [
-            'proveedor_id.required' => 'Selecciona el proveedor.',
-            'motivo.required'       => 'El motivo es obligatorio.',
-            'motivo.min'            => 'El motivo debe tener al menos 5 caracteres.',
-            'items.required'        => 'Agrega al menos un lote a devolver.',
-            'items.min'             => 'Agrega al menos un lote a devolver.',
-            'items.*.lote_id.required'  => 'Selecciona el lote.',
-            'items.*.cantidad.required' => 'La cantidad es obligatoria.',
-            'items.*.cantidad.min'      => 'La cantidad debe ser al menos 1.',
-        ]);
-
         try {
-            $devolucion = DB::transaction(function () use ($request) {
-                $userId = auth()->id() ?? 1;
-
-                $devolucion = DevolucionCompra::create([
-                    'numero_devolucion' => DevolucionCompra::generarNumero(),
-                    'proveedor_id'      => $request->proveedor_id,
-                    'compra_id'         => $request->compra_id ?: null,
-                    'usuario_id'        => $userId,
-                    'estado'            => 'pendiente',
-                    'motivo'            => $request->motivo,
-                    'total_devolucion'  => 0,
-                ]);
-
-                $total = 0;
-
-                foreach ($request->items as $item) {
-                    $lote = Lote::with('producto')->where('id', $item['lote_id'])->lockForUpdate()->firstOrFail();
-
-                    $cantidad = (int) $item['cantidad'];
-                    if ($cantidad <= 0) {
-                        continue;
-                    }
-
-                    if ($cantidad > $lote->stock_actual) {
-                        throw new Exception(
-                            "Stock insuficiente para el lote {$lote->numero_lote} del producto {$lote->producto->nombre}. "
-                          . "Stock actual: {$lote->stock_actual}, solicitado: {$cantidad}."
-                        );
-                    }
-
-                    $precioUnitario = (float) ($item['precio_unitario'] ?? $lote->precio_compra ?? 0);
-                    $subtotal       = $precioUnitario * $cantidad;
-                    $total         += $subtotal;
-
-                    // 1. Guardar detalle
-                    DetalleDevolucionCompra::create([
-                        'devolucion_compra_id' => $devolucion->id,
-                        'lote_id'              => $lote->id,
-                        'producto_id'          => $lote->producto_id,
-                        'cantidad'             => $cantidad,
-                        'precio_unitario'      => $precioUnitario,
-                        'subtotal'             => $subtotal,
-                        'motivo_detalle'       => $item['motivo_detalle'] ?? null,
-                    ]);
-
-                    // 2. Descontar stock del lote (salida)
-                    $stockAntes = $lote->stock_actual;
-                    $lote->stock_actual -= $cantidad;
-                    if ($lote->stock_actual === 0) {
-                        $lote->activo = false;
-                    }
-                    $lote->save();
-
-                    // 3. Registrar movimiento Kardex
-                    $mov = MovimientoInventario::create([
-                        'producto_id'      => $lote->producto_id,
-                        'lote_id'          => $lote->id,
-                        'user_id'          => $userId,
-                        'tipo'             => 'salida',
-                        'subtipo'          => 'ajuste_manual',
-                        'cantidad'         => $cantidad,
-                        'stock_anterior'   => $stockAntes,
-                        'stock_posterior'  => $lote->stock_actual,
-                        'costo_unitario'   => $precioUnitario,
-                        'costo_total'      => $subtotal,
-                        'origen'           => 'devolucion_compra',
-                        'origen_id'        => $devolucion->id,
-                        'motivo'           => 'Dev. proveedor ' . $devolucion->numero_devolucion . ': ' . $request->motivo,
-                        'fecha_movimiento' => now(),
-                    ]);
-
-                    // 4. Si el producto es controlado MINSA -> AJUSTE_EGRESO en libro de controlados
-                    $producto = $lote->producto;
-                    if ($producto && $producto->esControlado()) {
-                        RegistroVentaControlado::create([
-                            'tipo_movimiento'          => RegistroVentaControlado::TIPO_AJUSTE_EGRESO,
-                            'movimiento_inventario_id' => $mov->id,
-                            'producto_id'              => $producto->id,
-                            'lote_id'                  => $lote->id,
-                            'nivel_controlado'         => $producto->nivel_controlado ?? 1,
-                            'cantidad'                 => $cantidad,
-                            'unidad'                   => $producto->unidad_medida ?? 'unidad',
-                            'motivo_omision'           => 'Devolucion a proveedor: ' . $devolucion->numero_devolucion,
-                            'user_id'                  => $userId,
-                        ]);
-                    }
-                }
-
-                $devolucion->update(['total_devolucion' => $total]);
-
-                return $devolucion;
-            });
-
-            AuditLog::log('compras', 'devolucion_compra', "Devolucion a proveedor: {$devolucion->numero_devolucion}", [
-                'devolucion_id' => $devolucion->id,
-                'proveedor_id'  => $devolucion->proveedor_id,
-                'total'         => $devolucion->total_devolucion,
-            ]);
+            $devolucion = $this->devolucionService->registrarDevolucion($request->validated(), Auth::id() ?? 1);
 
             return redirect()->route('compras.devoluciones.show', $devolucion)
-                ->with('success', "Devolucion {$devolucion->numero_devolucion} registrada. Stock descontado y Kardex actualizado.");
+                ->with('success', "Devolución {$devolucion->numero_devolucion} registrada. Stock descontado y Kardex actualizado.");
 
         } catch (Exception $e) {
-            Log::error('Error al registrar devolucion a proveedor', [
-                'user_id' => auth()->id(),
+            Log::error('Error al registrar devolución a proveedor', [
+                'user_id' => Auth::id(),
                 'message' => $e->getMessage(),
             ]);
+
             return back()->withInput()->with('error', $e->getMessage());
         }
     }
@@ -313,37 +203,42 @@ class DevolucionCompraController extends Controller
         return view('compras.devoluciones.show', compact('devolucionCompra'));
     }
 
-    /**
-     * Marcar como enviada al proveedor
-     */
     public function marcarEnviada(DevolucionCompra $devolucionCompra)
     {
-        if ($devolucionCompra->estado !== 'pendiente') {
-            return back()->with('error', 'Solo se pueden enviar devoluciones en estado pendiente.');
+        try {
+            $this->devolucionService->marcarEnviada($devolucionCompra);
+
+            return back()->with('success', "Devolución {$devolucionCompra->numero_devolucion} marcada como enviada al proveedor.");
+        } catch (Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        $devolucionCompra->update([
-            'estado'      => 'enviada',
-            'fecha_envio' => now(),
-        ]);
-
-        return back()->with('success', 'Devolucion marcada como enviada al proveedor.');
     }
 
-    /**
-     * Confirmar que el proveedor acepto
-     */
     public function confirmar(DevolucionCompra $devolucionCompra)
     {
-        if (!in_array($devolucionCompra->estado, ['pendiente', 'enviada'])) {
-            return back()->with('error', 'Solo se pueden confirmar devoluciones pendientes o enviadas.');
+        try {
+            $this->devolucionService->confirmarDevolucion($devolucionCompra);
+
+            return back()->with('success', "Devolución {$devolucionCompra->numero_devolucion} confirmada por el proveedor.");
+        } catch (Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
+    }
 
-        $devolucionCompra->update(['estado' => 'confirmada']);
-        AuditLog::log('compras', 'devolucion_confirmada', "Devolucion confirmada: {$devolucionCompra->numero_devolucion}", [
-            'devolucion_id' => $devolucionCompra->id,
-        ]);
+    public function anular(AnularDevolucionCompraRequest $request, DevolucionCompra $devolucionCompra)
+    {
+        try {
+            $motivo = $request->validated()['motivo'];
+            $this->devolucionService->anularDevolucion($devolucionCompra, $motivo, Auth::id() ?? 1);
 
-        return back()->with('success', 'Devolucion confirmada por el proveedor.');
+            return redirect()->route('compras.devoluciones.show', $devolucionCompra)
+                ->with('success', "Devolución {$devolucionCompra->numero_devolucion} anulada. Stock y Kardex restituidos correctamente.");
+        } catch (Exception $e) {
+            Log::error("Error al anular devolución {$devolucionCompra->id}: " . $e->getMessage(), [
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', 'No se pudo anular la devolución: ' . $e->getMessage());
+        }
     }
 }

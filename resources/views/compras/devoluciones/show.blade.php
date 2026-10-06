@@ -185,30 +185,80 @@
         </div>
     </div>
 
-    {{-- Acciones de estado --}}
-    @if($devolucionCompra->estado === 'pendiente')
-    <div class="flex items-center gap-2 justify-end pt-2">
-        <form method="POST" action="{{ route('compras.devoluciones.enviar', $devolucionCompra) }}">
-            @csrf
-            <button type="submit"
-                    class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                <span>Marcar como Enviada al Proveedor</span>
+    {{-- Acciones de estado y Anulación --}}
+    <div x-data="{ modalAnular: false, motivo: '' }" class="pt-2">
+        <div class="flex items-center gap-2 justify-end flex-wrap">
+            @if($devolucionCompra->estado === 'pendiente')
+            <form method="POST" action="{{ route('compras.devoluciones.enviar', $devolucionCompra) }}">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    <span>Marcar como Enviada al Proveedor</span>
+                </button>
+            </form>
+            @elseif($devolucionCompra->estado === 'enviada')
+            <form method="POST" action="{{ route('compras.devoluciones.confirmar', $devolucionCompra) }}">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Confirmar Aceptación del Proveedor</span>
+                </button>
+            </form>
+            @endif
+
+            @can('anular compras')
+            @if($devolucionCompra->estado !== 'rechazada')
+            <button type="button" 
+                    @click="modalAnular = true"
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span>Anular Devolución (Revertir Stock)</span>
             </button>
-        </form>
+            @endif
+            @endcan
+        </div>
+
+        {{-- Modal de Anulación --}}
+        <div x-show="modalAnular" 
+             x-cloak 
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div @click.away="modalAnular = false"
+                 class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                <div class="flex items-center space-x-3 text-rose-600">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Anular Devolución</h3>
+                        <p class="text-xs text-slate-500">{{ $devolucionCompra->numero_devolucion }}</p>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Al anular esta devolución, el stock de los lotes afectados será <strong>restituido automáticamente</strong>, se registrará un contra-asiento de entrada en el Kardex y se revertirá el egreso fiscal en el Libro MINSA si aplica.
+                </p>
+
+                <form method="POST" action="{{ route('compras.devoluciones.anular', $devolucionCompra) }}" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Motivo de la anulación *</label>
+                        <textarea name="motivo" x-model="motivo" rows="3" required placeholder="Ej: Devolución rechazada por el proveedor / Error en lote seleccionado..." class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end space-x-2 pt-2">
+                        <button type="button" @click="modalAnular = false" class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="motivo.trim().length < 5" class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-xs transition">
+                            Confirmar Anulación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    @elseif($devolucionCompra->estado === 'enviada')
-    <div class="flex items-center gap-2 justify-end pt-2">
-        <form method="POST" action="{{ route('compras.devoluciones.confirmar', $devolucionCompra) }}">
-            @csrf
-            <button type="submit"
-                    class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <span>Confirmar Aceptación del Proveedor</span>
-            </button>
-        </form>
-    </div>
-    @endif
 
 </div>
 @endsection

@@ -138,10 +138,22 @@ class DevolucionController extends Controller
         try {
             $devolucion = $this->devolucionService->procesarDevolucion($validated);
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success'    => true,
+                    'devolucion' => $devolucion,
+                    'ticket_url' => route('devoluciones.ticket', $devolucion),
+                    'message'    => "Devolución {$devolucion->numero_devolucion} procesada exitosamente por " . formato_moneda($devolucion->monto_total) . "."
+                ]);
+            }
+
             return redirect()->route('devoluciones.show', $devolucion)
                 ->with('success', "Devolución {$devolucion->numero_devolucion} procesada exitosamente por " . formato_moneda($devolucion->monto_total) . ".");
         } catch (Exception $e) {
             Log::error("Error al procesar devolución: " . $e->getMessage());
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
             return back()->withInput()->with('error', $e->getMessage());
         }
     }

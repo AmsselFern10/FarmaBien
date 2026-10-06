@@ -58,8 +58,9 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Registros</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($devoluciones->total()) }}</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Total Devoluciones</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ number_format($metricas['total_devoluciones'] ?? $devoluciones->total()) }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">{{ $metricas['devoluciones_mes'] ?? 0 }} este mes</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
@@ -67,17 +68,19 @@
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">En esta Página</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ $devoluciones->count() }}</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Monto Total Devuelto</p>
+                <p class="text-xl font-bold text-rose-900 dark:text-rose-400 mt-0.5 font-mono">{{ formato_moneda($metricas['total_monto_devuelto'] ?? 0) }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Valor histórico RMA</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
-                <span class="text-xs font-bold">C$</span>
+            <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center font-bold text-xs">
+                <span>C$</span>
             </div>
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Stock Descontado</p>
-                <p class="text-sm font-bold text-emerald-950 dark:text-emerald-400 mt-0.5">Automático</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">Lotes Afectados</p>
+                <p class="text-xl font-bold text-emerald-900 dark:text-emerald-400 mt-0.5">{{ number_format($metricas['lotes_afectados'] ?? 0) }}</p>
+                <p class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5 font-medium">Stock sincronizado</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -85,10 +88,11 @@
         </div>
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">MINSA Controlados</p>
-                <p class="text-sm font-bold text-amber-950 dark:text-amber-400 mt-0.5">Libro Egreso</p>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">En esta Página</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ $devoluciones->count() }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Mostrando registros</p>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             </div>
         </div>

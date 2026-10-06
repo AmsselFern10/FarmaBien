@@ -3,39 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrdenCompra;
-use App\Models\DetalleOrdenCompra;
 use App\Models\Proveedor;
 use App\Models\Producto;
-use App\Models\Compra;
 use App\Services\CompraService;
+use App\Services\OrdenCompraService;
+use App\Http\Requests\StoreOrdenCompraRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
 class OrdenCompraController extends Controller
 {
     protected CompraService $compraService;
+    protected OrdenCompraService $ordenCompraService;
 
-    public function __construct(CompraService $compraService)
+    public function __construct(CompraService $compraService, OrdenCompraService $ordenCompraService)
     {
         $this->compraService = $compraService;
-        $this->middleware('permission:ver compras');
+        $this->ordenCompraService = $ordenCompraService;
+
+        $this->middleware('permission:ver compras')->only(['index', 'show', 'imprimir']);
+        $this->middleware('permission:registrar compras')->only(['create', 'store', 'recibirMercancia']);
+        $this->middleware('permission:anular compras')->only(['cancelar']);
     }
 
     public function index(Request $request)
     {
         $query = OrdenCompra::with([
-                'proveedor:id,nombre,ruc',
+                'proveedor:id,nombre,ruc,contacto',
                 'usuario:id,name',
+                'detalles',
                 'compra:id,numero_comprobante,estado',
             ])
             ->withCount('detalles')
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('buscar')) {
-            $buscar = $request->input('buscar');
+            $buscar = trim($request->input('buscar'));
             $query->where(function ($q) use ($buscar) {
                 $q->where('numero_orden', 'like', "%{$buscar}%")
                   ->orWhereHas('proveedor', function ($qp) use ($buscar) {
@@ -56,29 +61,51 @@ class OrdenCompraController extends Controller
         $totalMonto = (clone $query)->where('estado', '!=', 'cancelada')->sum('total');
 
         $ordenes = $query->paginate(perPage(15))->withQueryString();
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get();
+        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc']);
 
         return view('compras.ordenes.index', compact('ordenes', 'totalOrdenes', 'totalMonto', 'proveedores'));
     }
 
     public function create(Request $request)
     {
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc']);
+        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre', 'ruc', 'contacto', 'telefono', 'email']);
         $productos = Producto::activos()
-            ->select(['id', 'nombre', 'codigo_barra', 'precio_compra', 'precio_venta'])
+            ->with(['laboratorio:id,nombre'])
+            ->select(['id', 'nombre', 'principio_activo', 'laboratorio_id', 'codigo_barra', 'precio_compra', 'precio_venta'])
             ->orderBy('nombre')
             ->get();
 
-        // Si viene desde sugerencias de reorden
+        // Si viene desde sugerencias de reorden (múltiples ítems o individual)
         $preloadedItems = [];
         $proveedorId = $request->input('proveedor_id');
 
-        if ($request->filled('producto_id')) {
-            $prod = Producto::find($request->input('producto_id'));
+        if ($request->filled('items')) {
+            $rawItems = $request->input('items');
+            $decoded = is_string($rawItems) ? json_decode($rawItems, true) : $rawItems;
+            if (is_array($decoded)) {
+                foreach ($decoded as $item) {
+                    $prodId = (int) ($item['producto_id'] ?? $item['id'] ?? 0);
+                    if ($prodId > 0) {
+                        $prod = Producto::with(['laboratorio:id,nombre'])->find($prodId);
+                        if ($prod) {
+                            $preloadedItems[] = [
+                                'producto_id'     => $prod->id,
+                                'nombre'          => $prod->nombre,
+                                'laboratorio'     => $prod->laboratorio->nombre ?? 'Sin Lab',
+                                'cantidad'        => max(1, (int) ($item['cantidad'] ?? 10)),
+                                'precio_estimado' => (float) ($item['precio_unitario'] ?? ($prod->precio_compra > 0 ? $prod->precio_compra : $prod->precio_venta * 0.7)),
+                            ];
+                        }
+                    }
+                }
+            }
+        } elseif ($request->filled('producto_id')) {
+            $prod = Producto::with(['laboratorio:id,nombre'])->find($request->input('producto_id'));
             if ($prod) {
                 $preloadedItems[] = [
                     'producto_id'       => $prod->id,
                     'nombre'            => $prod->nombre,
+                    'laboratorio'       => $prod->laboratorio->nombre ?? 'Sin Lab',
                     'cantidad'          => (int) $request->input('cantidad', 10),
                     'precio_estimado'   => (float) ($prod->precio_compra > 0 ? $prod->precio_compra : $prod->precio_venta * 0.7),
                 ];
@@ -88,72 +115,20 @@ class OrdenCompraController extends Controller
         return view('compras.ordenes.create', compact('proveedores', 'productos', 'preloadedItems', 'proveedorId'));
     }
 
-    public function store(Request $request)
+    public function store(StoreOrdenCompraRequest $request)
     {
-        $validated = $request->validate([
-            'proveedor_id'            => 'required|exists:proveedores,id',
-            'fecha_emision'           => 'required|date',
-            'fecha_esperada_entrega'  => 'nullable|date|after_or_equal:fecha_emision',
-            'condicion_pago'          => 'required|in:contado,credito',
-            'dias_credito'            => 'nullable|integer|min:0',
-            'observaciones'           => 'nullable|string|max:500',
-            'items'                   => 'required|array|min:1',
-            'items.*.producto_id'     => 'required|exists:productos,id',
-            'items.*.cantidad'        => 'required|integer|min:1',
-            'items.*.precio_unitario' => 'required|numeric|min:0',
-        ]);
-
         try {
-            $orden = DB::transaction(function () use ($validated) {
-                $consecutivo = OrdenCompra::whereYear('created_at', now()->year)->count() + 1;
-                $numeroOrden = 'OC-' . now()->year . '-' . str_pad($consecutivo, 4, '0', STR_PAD_LEFT);
-
-                $total = 0;
-                $detalles = [];
-
-                foreach ($validated['items'] as $item) {
-                    $cant = (int) $item['cantidad'];
-                    $precio = (float) $item['precio_unitario'];
-                    $subtotal = round($cant * $precio, 2);
-                    $total += $subtotal;
-
-                    $detalles[] = [
-                        'producto_id'              => $item['producto_id'],
-                        'cantidad_solicitada'      => $cant,
-                        'cantidad_recibida'        => 0,
-                        'precio_unitario_estimado' => $precio,
-                        'subtotal'                 => $subtotal,
-                    ];
-                }
-
-                $orden = OrdenCompra::create([
-                    'proveedor_id'           => $validated['proveedor_id'],
-                    'user_id'                => Auth::id() ?? 1,
-                    'numero_orden'           => $numeroOrden,
-                    'fecha_emision'          => $validated['fecha_emision'],
-                    'fecha_esperada_entrega' => $validated['fecha_esperada_entrega'] ?? null,
-                    'estado'                 => 'enviada',
-                    'condicion_pago'         => $validated['condicion_pago'],
-                    'dias_credito'           => $validated['condicion_pago'] === 'credito' ? ($validated['dias_credito'] ?? 30) : 0,
-                    'subtotal'               => $total,
-                    'impuesto'               => 0,
-                    'total'                  => $total,
-                    'observaciones'          => $validated['observaciones'] ?? null,
-                ]);
-
-                foreach ($detalles as $det) {
-                    $det['orden_compra_id'] = $orden->id;
-                    DetalleOrdenCompra::create($det);
-                }
-
-                return $orden;
-            });
+            $orden = $this->ordenCompraService->crearOrden($request->validated(), Auth::id() ?? 1);
 
             return redirect()->route('ordenes-compras.show', $orden)
                 ->with('success', "Orden de compra {$orden->numero_orden} generada exitosamente.");
         } catch (Exception $e) {
-            Log::error("Error al crear Orden de Compra: " . $e->getMessage());
-            return back()->withInput()->with('error', $e->getMessage());
+            Log::error("Error al crear Orden de Compra: " . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'payload' => $request->except(['_token']),
+            ]);
+
+            return back()->withInput()->with('error', 'Error al generar la orden de compra: ' . $e->getMessage());
         }
     }
 
@@ -172,7 +147,7 @@ class OrdenCompraController extends Controller
         // Generar texto para enviar por WhatsApp
         $lineas = [];
         $lineas[] = "📦 *ORDEN DE COMPRA: {$orden->numero_orden}*";
-        $lineas[] = "🏢 *Proveedor:* {$orden->proveedor->nombre_empresa}";
+        $lineas[] = "🏢 *Proveedor:* " . ($orden->proveedor->nombre ?? $orden->proveedor->nombre_empresa ?? 'Proveedor');
         $lineas[] = "📅 *Fecha:* {$orden->fecha_emision->format('d/m/Y')}";
         $lineas[] = "💳 *Condición:* " . ucfirst($orden->condicion_pago) . ($orden->condicion_pago === 'credito' ? " ({$orden->dias_credito} días)" : "");
         $lineas[] = "";
@@ -223,13 +198,17 @@ class OrdenCompraController extends Controller
 
     public function cancelar(Request $request, OrdenCompra $ordenes_compra)
     {
-        $orden = $ordenes_compra;
-        if ($orden->estado === 'recibida_total' || $orden->estado === 'recibida_parcial' || $orden->compras()->exists()) {
-            return back()->with('error', 'No se puede cancelar una orden que ya tiene recepciones registradas.');
+        try {
+            $motivo = $request->input('motivo_cancelacion');
+            $orden = $this->ordenCompraService->cancelarOrden($ordenes_compra, $motivo);
+
+            return back()->with('success', "Orden de compra {$orden->numero_orden} cancelada correctamente.");
+        } catch (Exception $e) {
+            Log::error("Error al cancelar orden de compra {$ordenes_compra->id}: " . $e->getMessage(), [
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', $e->getMessage());
         }
-
-        $orden->update(['estado' => 'cancelada']);
-
-        return back()->with('success', "Orden de compra {$orden->numero_orden} cancelada.");
     }
 }

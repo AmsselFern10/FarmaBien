@@ -150,7 +150,7 @@
                     <option value="">Todos los Proveedores</option>
                     @foreach($proveedores as $prov)
                     <option value="{{ $prov->id }}" {{ request('proveedor_id') == $prov->id ? 'selected' : '' }}>
-                        {{ $prov->nombre_empresa ?? $prov->nombre }}
+                        {{ $prov->nombre ?? $prov->nombre_empresa }}
                     </option>
                     @endforeach
                 </select>

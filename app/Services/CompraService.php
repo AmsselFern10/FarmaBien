@@ -61,11 +61,35 @@ class CompraService
             ]);
 
             $totalAcumulado = 0;
+            $costosPorProducto = [];
 
             // 2. Procesar cada producto adquirido con bloqueo pesimista
             foreach ($data['productos'] as $item) {
                 $subtotalItem = $this->procesarDetalleCompra($compra, $item);
                 $totalAcumulado += $subtotalItem;
+
+                $pid = (int) $item['producto_id'];
+                if (!isset($costosPorProducto[$pid])) {
+                    $costosPorProducto[$pid] = ['unidades' => 0, 'subtotal' => 0];
+                }
+                $factor = 1;
+                if (!empty($item['presentacion_id'])) {
+                    $pres = PresentacionProducto::find($item['presentacion_id']);
+                    if ($pres) {
+                        $factor = max(1, (int)$pres->unidades_por_presentacion);
+                    }
+                }
+                $cantBase = (int) ($item['cantidad_presentaciones'] ?? $item['cantidad'] ?? 1) * $factor;
+                $costosPorProducto[$pid]['unidades'] += $cantBase;
+                $costosPorProducto[$pid]['subtotal'] += $subtotalItem;
+            }
+
+            // Actualizar precio_compra de referencia ponderado por producto en catálogo
+            foreach ($costosPorProducto as $pid => $datosCosto) {
+                if ($datosCosto['unidades'] > 0) {
+                    $costoBasePonderado = round($datosCosto['subtotal'] / $datosCosto['unidades'], 4);
+                    Producto::where('id', $pid)->update(['precio_compra' => $costoBasePonderado]);
+                }
             }
 
             // 3. Actualizar importes totales y saldo pendiente
@@ -242,15 +266,20 @@ class CompraService
                 'activo'            => true,
             ]);
         } else {
-            // ─── LOTE EXISTENTE: acumular stock y actualizar costo/vencimiento ──
-            // Recalcular stock_inicial acumulado y actualizar metadatos con los datos más recientes
+            // ─── LOTE EXISTENTE: Precio Promedio Ponderado (PPP) y acumulación ──
+            $costoAnterior = (float) $lote->precio_compra;
+            $stockPrevio = max(0, (int) $lote->stock_actual);
+            $costoPonderadoLote = ($stockPrevio + $cantidadUnidadesBase) > 0
+                ? round((($stockPrevio * $costoAnterior) + ($cantidadUnidadesBase * $costoUnitarioBase)) / ($stockPrevio + $cantidadUnidadesBase), 4)
+                : $costoUnitarioBase;
+
             $nuevoStockInicial = (int) $lote->stock_inicial + $cantidadUnidadesBase;
             $nuevoStockActual  = $stockAnterior + $cantidadUnidadesBase;
 
             $lote->update([
                 'stock_inicial'     => $nuevoStockInicial,
                 'stock_actual'      => $nuevoStockActual,
-                'precio_compra'     => $costoUnitarioBase,    // actualizar al costo más reciente
+                'precio_compra'     => $costoPonderadoLote,
                 'fecha_vencimiento' => $fechaVencimiento,     // actualizar al vencimiento del nuevo ingreso
                 'activo'            => true,                  // reactivar si estaba desactivado
             ]);
@@ -274,9 +303,13 @@ class CompraService
         ]);
 
         // 3. Registrar en Kardex (ENTRADA individual por compra, con balance real pre/post)
+        $presTexto = ($tipoPresentacion && $tipoPresentacion !== 'Unidad Base')
+            ? " [{$cantidadPresentaciones} {$tipoPresentacion} x {$unidadesPorPresentacion} u.]"
+            : "";
+
         $motivoKardex = $esLoteNuevo
-            ? "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) — Lote NUEVO: {$lote->numero_lote}"
-            : "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}) — Reingreso al Lote: {$lote->numero_lote} (Stock acumulado)";
+            ? "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}){$presTexto} — Lote NUEVO: {$lote->numero_lote}"
+            : "Ingreso por Compra #{$compra->id} (Doc: {$compra->numero_comprobante}){$presTexto} — Reingreso al Lote: {$lote->numero_lote} (Stock acumulado)";
 
         MovimientoInventario::create([
             'producto_id'      => $producto->id,
@@ -326,9 +359,6 @@ class CompraService
                 'user_id'             => Auth::id() ?? $compra->user_id,
             ]);
         }
-
-        // 5. Actualizar precio de compra de referencia en el producto
-        $producto->update(['precio_compra' => $costoUnitarioBase]);
 
         return $subtotal;
     }
@@ -527,4 +557,52 @@ class CompraService
             return $nuevaCompra->load(['detalles', 'proveedor', 'lotes', 'compraOriginal']);
         });
     }
+
+    /**
+     * Obtener el mapa consolidado de precios históricos recientes por producto y proveedor.
+     *
+     * @return array
+     */
+    public function getHistorialPreciosMap(): array
+    {
+        $historialRaw = HistorialPrecio::with('proveedor:id,nombre')
+            ->orderBy('fecha', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit(500)
+            ->get();
+
+        $historialMap = [];
+        foreach ($historialRaw as $h) {
+            $pId = $h->producto_id;
+            $prId = $h->proveedor_id;
+            if (!isset($historialMap[$pId])) {
+                $historialMap[$pId] = [
+                    'proveedores'      => [],
+                    'ultimo_precio'    => (float)$h->precio_unitario_base,
+                    'ultimo_proveedor' => $h->proveedor->nombre ?? 'N/A',
+                    'ultima_fecha'     => $h->fecha ? $h->fecha->format('d/m/Y') : '-',
+                    'mejor_precio'     => (float)$h->precio_unitario_base,
+                    'mejor_proveedor'  => $h->proveedor->nombre ?? 'N/A',
+                ];
+            }
+
+            if (!isset($historialMap[$pId]['proveedores'][$prId])) {
+                $historialMap[$pId]['proveedores'][$prId] = [
+                    'precio_compra'        => (float)$h->precio_compra,
+                    'precio_unitario_base' => (float)$h->precio_unitario_base,
+                    'tipo_presentacion'    => $h->tipo_presentacion,
+                    'fecha'                => $h->fecha ? $h->fecha->format('d/m/Y') : '-',
+                    'tipo'                 => $h->tipo,
+                ];
+            }
+
+            if ((float)$h->precio_unitario_base < $historialMap[$pId]['mejor_precio']) {
+                $historialMap[$pId]['mejor_precio'] = (float)$h->precio_unitario_base;
+                $historialMap[$pId]['mejor_proveedor'] = $h->proveedor->nombre ?? 'N/A';
+            }
+        }
+
+        return $historialMap;
+    }
 }
+

@@ -238,9 +238,17 @@
 
                         <!-- Ítems -->
                         <td class="px-5 py-3.5 text-center">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                {{ $compra->detalles_count }} prod.
-                            </span>
+                            @if($compra->detalles_count > 0)
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                    {{ $compra->detalles_count }} prod.
+                                </span>
+                            @else
+                                <a href="{{ route('cuentas-por-pagar.show', $compra) }}" 
+                                   class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:underline"
+                                   title="Factura de gasto o servicio registrada en Cuentas por Pagar">
+                                    Gasto Directo
+                                </a>
+                            @endif
                         </td>
 
                         <!-- Total -->

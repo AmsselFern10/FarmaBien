@@ -271,7 +271,7 @@
                     @foreach($ventas as $v)
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         <td class="px-4 py-2.5">
-                            <span class="font-bold text-slate-800 dark:text-slate-200">#{{ str_pad($v->id, 5, '0', STR_PAD_LEFT) }}</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-200">{{ $v->numero_comprobante ?: ('#' . str_pad($v->id, 5, '0', STR_PAD_LEFT)) }}</span>
                         </td>
                         <td class="px-4 py-2.5 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {{ $v->fecha ? \Carbon\Carbon::parse($v->fecha)->format('d/m/Y H:i') : $v->created_at->format('d/m/Y H:i') }}

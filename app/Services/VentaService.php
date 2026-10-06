@@ -214,18 +214,53 @@ class VentaService
                 }
             }
 
+            // Pre-validar consumo acumulado por receta_detalle_id para prevenir duplicados o sobregiro en el carrito
+            $unidadesPorRecetaDetalle = [];
+            foreach ($data['productos'] as $prodItem) {
+                if (!empty($prodItem['receta_detalle_id'])) {
+                    $rdId = (int) $prodItem['receta_detalle_id'];
+                    $cantPres = max(1, (int) ($prodItem['cantidad'] ?? 1));
+                    $fact = 1;
+                    if (!empty($prodItem['presentacion_id'])) {
+                        $pres = PresentacionProducto::find($prodItem['presentacion_id']);
+                        if ($pres) {
+                            $fact = max(1, (int) $pres->unidades_por_presentacion);
+                        }
+                    } elseif (!empty($prodItem['factor'])) {
+                        $fact = max(1, (int) $prodItem['factor']);
+                    }
+                    $unidadesPorRecetaDetalle[$rdId] = ($unidadesPorRecetaDetalle[$rdId] ?? 0) + ($cantPres * $fact);
+                }
+            }
+
+            foreach ($unidadesPorRecetaDetalle as $rdId => $totalUnidadesReq) {
+                $rd = RecetaDetalle::with('producto')->find($rdId);
+                if ($rd) {
+                    $saldoDisponible = max(0, (int) ($rd->cantidad_recetada - $rd->cantidad_dispensada));
+                    if ($totalUnidadesReq > $saldoDisponible) {
+                        $nombreProd = $rd->producto->nombre ?? "Medicamento #{$rd->producto_id}";
+                        throw new Exception("La cantidad solicitada ({$totalUnidadesReq} unidades) para '{$nombreProd}' excede el saldo disponible en la receta médica ({$saldoDisponible} unidades disponibles).");
+                    }
+                }
+            }
+
             // 3. Crear cabecera inicial de la venta
             $tipoDescuento = $data['tipo_descuento'] ?? 'monto';
             $porcentajeDescuento = max(0, (float) ($data['porcentaje_descuento'] ?? 0));
             $metodoPago = $data['metodo_pago'] ?? 'efectivo';
+            $tipoComprobante = $data['tipo_comprobante'] ?? 'ticket';
+            $serie = $data['serie'] ?? null;
+            $numeroComprobante = !empty($data['numero_comprobante'])
+                ? trim($data['numero_comprobante'])
+                : $this->generarNumeroComprobante($tipoComprobante, $serie);
 
             $venta = Venta::create([
                 'cliente_id'            => $data['cliente_id'] ?? null,
                 'user_id'               => $userId,
                 'sesion_caja_id'        => $sesionActiva?->id,
-                'tipo_comprobante'      => $data['tipo_comprobante'] ?? 'ticket',
-                'serie'                 => $data['serie'] ?? null,
-                'numero_comprobante'    => $data['numero_comprobante'] ?? null,
+                'tipo_comprobante'      => $tipoComprobante,
+                'serie'                 => $serie,
+                'numero_comprobante'    => $numeroComprobante,
                 'idempotency_key'       => $idempotencyKey,
                 'subtotal'              => 0,
                 'descuento'             => 0,
@@ -246,8 +281,11 @@ class VentaService
 
             $totalAcumulado = 0;
 
+            // Ordenar ítems por lote_id para garantizar orden de bloqueo determinista (prevención de deadlocks)
+            $productosOrdenados = collect($data['productos'])->sortBy('lote_id')->values()->all();
+
             // 4. Procesar cada producto del carrito
-            foreach ($data['productos'] as $item) {
+            foreach ($productosOrdenados as $item) {
                 $subtotalItem = $this->procesarDetalleVenta($venta, $item, $recetaModalidad);
                 $totalAcumulado += $subtotalItem;
 
@@ -447,16 +485,13 @@ class VentaService
             }
 
             $unidadesPorPresentacion = max(1, (int) $presentacion->unidades_por_presentacion);
-            $precioUnitario = isset($item['precio_unitario']) && is_numeric($item['precio_unitario'])
-                ? (float) $item['precio_unitario']
-                : (float) ($presentacion->precio_venta ?? $producto->precio_venta);
+            $precioOficial = (float) ($presentacion->precio_venta > 0 ? $presentacion->precio_venta : ($producto->precio_venta * $unidadesPorPresentacion));
         } else {
             $unidadesPorPresentacion = 1;
-            $precioUnitario = isset($item['precio_unitario']) && is_numeric($item['precio_unitario'])
-                ? (float) $item['precio_unitario']
-                : (float) $producto->precio_venta;
+            $precioOficial = (float) $producto->precio_venta;
         }
 
+        $precioUnitario = $precioOficial;
         $cantidadUnidadesBase = $cantidadPresentaciones * $unidadesPorPresentacion;
 
         // 3. Validar disponibilidad de stock en el lote
@@ -567,6 +602,15 @@ class VentaService
                 ->firstOrFail();
 
             if (!$ventaOriginal->puedeModificarse()) {
+                if ($ventaOriginal->estado === 'anulada') {
+                    throw new Exception("La venta #{$ventaId} está anulada y no puede ser modificada.");
+                }
+                if (!is_null($ventaOriginal->reemplazada_por)) {
+                    throw new Exception("La venta #{$ventaId} ya fue modificada y reemplazada previamente.");
+                }
+                if ($ventaOriginal->devoluciones()->where('estado', '!=', 'anulada')->exists()) {
+                    throw new Exception("La venta #{$ventaId} no puede ser modificada porque cuenta con devoluciones registradas.");
+                }
                 throw new Exception("La venta #{$ventaId} no puede ser modificada en su estado actual.");
             }
 
@@ -666,7 +710,16 @@ class VentaService
                 ->firstOrFail();
 
             if (!$venta->puedeAnularse()) {
-                throw new Exception("La venta #{$ventaId} no puede ser anulada porque ya está anulada o fue modificada.");
+                if ($venta->estado === 'anulada') {
+                    throw new Exception("La venta #{$ventaId} ya se encuentra anulada.");
+                }
+                if (!is_null($venta->reemplazada_por)) {
+                    throw new Exception("La venta #{$ventaId} no puede ser anulada porque ya fue modificada y reemplazada.");
+                }
+                if ($venta->devoluciones()->where('estado', '!=', 'anulada')->exists()) {
+                    throw new Exception("La venta #{$ventaId} no puede ser anulada porque cuenta con devoluciones registradas.");
+                }
+                throw new Exception("La venta #{$ventaId} no puede ser anulada en su estado actual.");
             }
 
             // Revertir cada detalle de la venta
@@ -848,6 +901,7 @@ class VentaService
             throw new Exception("El carrito de venta no contiene ningún producto.");
         }
 
+        $productoIds = [];
         foreach ($data['productos'] as $index => $item) {
             if (empty($item['producto_id'])) {
                 throw new Exception("El ítem en la posición " . ($index + 1) . " no tiene un producto válido asignado.");
@@ -859,6 +913,58 @@ class VentaService
             if ($cantidad <= 0) {
                 throw new Exception("La cantidad debe ser mayor a 0 en todos los productos del carrito.");
             }
+            $productoIds[] = (int) $item['producto_id'];
         }
+
+        // Verificación Sanitaria a nivel de servicio para medicamentos controlados / bajo receta
+        $tieneControlados = Producto::whereIn('id', array_unique($productoIds))
+            ->where(function ($q) {
+                $q->where('tipo_control', 'controlado')
+                  ->orWhere('requiere_receta', true);
+            })->exists();
+
+        if ($tieneControlados) {
+            $modalidad = $data['receta_modalidad'] ?? 'sin_receta';
+            $recetaId = $data['receta_id'] ?? null;
+            $motivoOmision = trim((string) ($data['receta_omision_motivo'] ?? $data['motivo_omision'] ?? ''));
+            $ctrlData = $data['controlados_data'] ?? [];
+            $tieneDatosMinsa = !empty($ctrlData['medico_nombre']) || !empty($data['receta_crear']['medico_nombre']);
+
+            if (!$recetaId && !$tieneDatosMinsa && empty($motivoOmision) && $modalidad !== 'omitida') {
+                throw new Exception("La venta contiene medicamentos controlados o bajo receta. Debe vincular una receta, completar los datos médicos o justificar el motivo de omisión.");
+            }
+
+            if ($modalidad === 'omitida' && empty($motivoOmision)) {
+                throw new Exception("Debe ingresar el motivo de omisión justificada para los medicamentos controlados.");
+            }
+        }
+    }
+
+    /**
+     * Generar número correlativo seguro de comprobante según el tipo y la serie.
+     */
+    public function generarNumeroComprobante(string $tipoComprobante = 'ticket', ?string $serie = null): string
+    {
+        $prefijo = match ($tipoComprobante) {
+            'boleta'  => 'BOL',
+            'factura' => 'FAC',
+            default   => 'TICK',
+        };
+
+        $serieFinal = $serie ?: '001';
+
+        $ultimaVenta = Venta::where('tipo_comprobante', $tipoComprobante)
+            ->where('numero_comprobante', 'like', "{$prefijo}-{$serieFinal}-%")
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $correlativo = 1;
+        if ($ultimaVenta && preg_match('/-(\d+)$/', $ultimaVenta->numero_comprobante, $matches)) {
+            $correlativo = ((int) $matches[1]) + 1;
+        } else {
+            $correlativo = Venta::where('tipo_comprobante', $tipoComprobante)->count() + 1;
+        }
+
+        return sprintf("%s-%s-%06d", $prefijo, $serieFinal, $correlativo);
     }
 }

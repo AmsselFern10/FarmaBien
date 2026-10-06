@@ -150,42 +150,8 @@ class CompraController extends Controller
             ];
         }
 
-        // Obtener los precios históricos más recientes agrupados por producto y proveedor
-        $historialRaw = \App\Models\HistorialPrecio::with('proveedor:id,nombre')
-            ->orderBy('fecha', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
-
-        $historialMap = [];
-        foreach ($historialRaw as $h) {
-            $pId = $h->producto_id;
-            $prId = $h->proveedor_id;
-            if (!isset($historialMap[$pId])) {
-                $historialMap[$pId] = [
-                    'proveedores'      => [],
-                    'ultimo_precio'    => (float)$h->precio_unitario_base,
-                    'ultimo_proveedor' => $h->proveedor->nombre ?? 'N/A',
-                    'ultima_fecha'     => $h->fecha->format('d/m/Y'),
-                    'mejor_precio'     => (float)$h->precio_unitario_base,
-                    'mejor_proveedor'  => $h->proveedor->nombre ?? 'N/A',
-                ];
-            }
-
-            if (!isset($historialMap[$pId]['proveedores'][$prId])) {
-                $historialMap[$pId]['proveedores'][$prId] = [
-                    'precio_compra'        => (float)$h->precio_compra,
-                    'precio_unitario_base' => (float)$h->precio_unitario_base,
-                    'tipo_presentacion'    => $h->tipo_presentacion,
-                    'fecha'                => $h->fecha->format('d/m/Y'),
-                    'tipo'                 => $h->tipo,
-                ];
-            }
-
-            if ((float)$h->precio_unitario_base < $historialMap[$pId]['mejor_precio']) {
-                $historialMap[$pId]['mejor_precio'] = (float)$h->precio_unitario_base;
-                $historialMap[$pId]['mejor_proveedor'] = $h->proveedor->nombre ?? 'N/A';
-            }
-        }
+        // Obtener los precios históricos consolidados desde el servicio
+        $historialMap = $this->compraService->getHistorialPreciosMap();
 
         return view('compras.create', compact(
             'proveedores', 

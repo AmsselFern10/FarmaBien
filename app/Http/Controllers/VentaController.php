@@ -264,13 +264,30 @@ class VentaController extends Controller
 
             $nuevaVenta = $this->ventaService->modificarVenta($venta->id, $data, $motivo);
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success'      => true,
+                    'venta'        => $nuevaVenta,
+                    'ticket_url'   => route('ventas.ticket', $nuevaVenta),
+                    'redirect_url' => route('ventas.show', $nuevaVenta),
+                    'message'      => "Venta actualizada exitosamente. Se generó la nueva venta #{$nuevaVenta->id}."
+                ]);
+            }
+
             return redirect()->route('ventas.show', $nuevaVenta)
                 ->with('success', "Venta actualizada exitosamente. Se generó la nueva venta #{$nuevaVenta->id}.");
         } catch (QueryException $e) {
             Log::error("Error de base de datos al modificar venta #{$venta->id}: " . $e->getMessage());
-            return back()->withInput()->with('error', 'Error en la base de datos al modificar la venta. Se revirtieron todos los cambios.');
+            $errMsg = 'Error en la base de datos al modificar la venta. Se revirtieron todos los cambios.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $errMsg], 500);
+            }
+            return back()->withInput()->with('error', $errMsg);
         } catch (Exception $e) {
             Log::warning("Error al modificar venta #{$venta->id}: " . $e->getMessage());
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
             return back()->withInput()->with('error', 'Error al modificar la venta: ' . $e->getMessage());
         }
     }
@@ -280,13 +297,27 @@ class VentaController extends Controller
         try {
             $this->ventaService->anularVenta($venta->id, $request->input('motivo'));
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Venta #{$venta->id} anulada exitosamente y stock reincorporado al lote."
+                ]);
+            }
+
             return redirect()->route('ventas.show', $venta)
                 ->with('success', "Venta #{$venta->id} anulada exitosamente y stock reincorporado al lote.");
         } catch (QueryException $e) {
             Log::error("Error de base de datos al anular venta #{$venta->id}: " . $e->getMessage());
-            return back()->with('error', 'Error en la base de datos al anular la venta. No se aplicaron cambios.');
+            $errMsg = 'Error en la base de datos al anular la venta. No se aplicaron cambios.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $errMsg], 500);
+            }
+            return back()->with('error', $errMsg);
         } catch (Exception $e) {
             Log::warning("Error al anular venta #{$venta->id}: " . $e->getMessage());
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
             return back()->with('error', 'No se pudo anular la venta: ' . $e->getMessage());
         }
     }

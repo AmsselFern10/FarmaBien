@@ -99,7 +99,7 @@
         <div class="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold text-slate-900 dark:text-slate-300">Recepción 1-Click</p>
-                <p class="text-sm font-bold text-slate-900 dark:text-slate-200 mt-0.5">Ingreso Automático</p>
+                <p class="text-sm font-bold text-slate-900 dark:text-slate-200 mt-0.5">Recepción Asistida</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>

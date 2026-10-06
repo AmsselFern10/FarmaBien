@@ -16,25 +16,28 @@ use Illuminate\Support\Facades\DB;
 */
 
 // Health Check API Endpoint (Para monitorización, Kubernetes, Docker, Render, Cloudflare)
+// En producción solo devuelve status y timestamp — no expone stack tecnológico
 Route::get('/health', function () {
     $dbConnected = false;
-    $dbDriver = config('database.default');
     try {
         DB::connection()->getPdo();
         $dbConnected = true;
     } catch (\Throwable $e) {}
 
     $status = $dbConnected ? 200 : 503;
-    return response()->json([
-        'status'      => $dbConnected ? 'healthy' : 'unhealthy',
-        'app'         => config('app.name', 'FarmaBien'),
-        'version'     => '2.0.0',
-        'environment' => config('app.env'),
-        'database'    => [
-            'driver'    => $dbDriver,
-            'connected' => $dbConnected,
-        ],
-        'cache'       => config('cache.default'),
-        'timestamp'   => now()->toIso8601String(),
-    ], $status);
+
+    $payload = [
+        'status'    => $dbConnected ? 'healthy' : 'unhealthy',
+        'timestamp' => now()->toIsoString(),
+    ];
+
+    if (!app()->environment('production')) {
+        $payload['app']      = config('app.name', 'FarmaBien');
+        $payload['version']  = '2.0.0';
+        $payload['env']      = config('app.env');
+        $payload['database'] = ['driver' => config('database.default'), 'connected' => $dbConnected];
+        $payload['cache']    = config('cache.default');
+    }
+
+    return response()->json($payload, $status);
 })->name('api.health');

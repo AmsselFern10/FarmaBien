@@ -77,36 +77,36 @@ class Lote extends Model
     // Scopes
     public function scopeActivos($query)
     {
-        return $query->where('activo', true);
+        return $query->where('lotes.activo', true);
     }
 
     public function scopeActivo($query)
     {
-        return $query->where('activo', true);
+        return $query->where('lotes.activo', true);
     }
 
     public function scopeDisponibles($query)
     {
-        return $query->where('activo', true)
-            ->where('fecha_vencimiento', '>', now()->toDateString())
-            ->where('stock_actual', '>', 0);
+        return $query->where('lotes.activo', true)
+            ->where('lotes.fecha_vencimiento', '>', now()->toDateString())
+            ->where('lotes.stock_actual', '>', 0);
     }
 
     public function scopeVencidos($query)
     {
-        return $query->where('fecha_vencimiento', '<=', now()->toDateString());
+        return $query->where('lotes.fecha_vencimiento', '<=', now()->toDateString());
     }
 
     public function scopeVigentes($query)
     {
-        return $query->where('fecha_vencimiento', '>', now()->toDateString());
+        return $query->where('lotes.fecha_vencimiento', '>', now()->toDateString());
     }
 
     public function scopeProximosVencer($query, int $dias = 30)
     {
-        return $query->where('fecha_vencimiento', '<=', now()->addDays($dias)->toDateString())
-            ->where('fecha_vencimiento', '>', now()->toDateString())
-            ->where('stock_actual', '>', 0);
+        return $query->where('lotes.fecha_vencimiento', '<=', now()->addDays($dias)->toDateString())
+            ->where('lotes.fecha_vencimiento', '>', now()->toDateString())
+            ->where('lotes.stock_actual', '>', 0);
     }
 
     public function scopeBuscar($query, ?string $termino)

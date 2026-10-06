@@ -91,6 +91,11 @@ class CategoriaService
         return DB::transaction(function () use ($categoria, $userId) {
             $locked = Categoria::where('id', $categoria->id)->lockForUpdate()->firstOrFail();
             $nuevoEstado = !$locked->activo;
+
+            if (!$nuevoEstado && $locked->productos()->where('activo', true)->exists()) {
+                throw new \Exception("No se puede desactivar la categoría '{$locked->nombre}' porque cuenta con medicamentos activos asociados. Reasigna los productos antes de desactivarla.");
+            }
+
             $locked->update(['activo' => $nuevoEstado]);
 
             $accion = $nuevoEstado ? 'activar' : 'desactivar';

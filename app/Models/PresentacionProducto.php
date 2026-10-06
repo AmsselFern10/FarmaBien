@@ -117,4 +117,12 @@ class PresentacionProducto extends Model
         }
         return $label;
     }
+
+    /**
+     * Calcula la cantidad equivalente en unidades base para esta presentación
+     */
+    public function calcularUnidadesBase(int $cantidad): int
+    {
+        return $cantidad * max(1, (int)$this->unidades_por_presentacion);
+    }
 }

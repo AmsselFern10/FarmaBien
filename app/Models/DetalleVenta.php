@@ -60,4 +60,13 @@ class DetalleVenta extends Model
     {
         return !empty($this->presentacion_id);
     }
+
+    /**
+     * Descuento aplicado en la línea (Bruto - Subtotal)
+     */
+    public function getDescuentoAttribute(): float
+    {
+        $bruto = round((int)$this->cantidad * (float)$this->precio_unitario, 2);
+        return max(0, round($bruto - (float)$this->subtotal, 2));
+    }
 }

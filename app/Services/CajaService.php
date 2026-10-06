@@ -101,6 +101,10 @@ class CajaService
      */
     public function recalcularTotales(SesionCaja $sesion): SesionCaja
     {
+        if (!$sesion->estaAbierta()) {
+            return $sesion;
+        }
+
         // Ventas completadas asociadas a la sesión
         $ventasEfectivo = (float) Venta::where('sesion_caja_id', $sesion->id)
             ->where('estado', 'completada')

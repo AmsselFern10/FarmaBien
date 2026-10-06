@@ -65,14 +65,27 @@
             $venc = $lote->fecha_vencimiento->toDateString();
             $dias = (int) $lote->dias_restantes;
             $stockColor = $lote->stock_actual == 0 ? 'text-red-950 dark:text-rose-400' : ($dias <= 0 ? 'text-red-950 dark:text-rose-400' : 'text-emerald-950 dark:text-emerald-400');
+            $detCompraLote = $lote->detallesCompra->sortByDesc('id')->first();
         @endphp
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs">
-            <p class="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider mb-1">Lote</p>
-            <p class="text-xs font-bold font-mono text-slate-900 dark:text-slate-200">{{ $lote->numero_lote }}</p>
-            <div class="mt-2 flex items-end justify-between">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Lote</p>
+                    @if($detCompraLote && $detCompraLote->tipo_presentacion && $detCompraLote->tipo_presentacion !== 'Unidad Base')
+                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 truncate max-w-[120px]" title="Presentación de compra: {{ $detCompraLote->tipo_presentacion }} (x{{ $detCompraLote->unidades_por_presentacion }} u.)">
+                            {{ $detCompraLote->tipo_presentacion }}
+                        </span>
+                    @endif
+                </div>
+                <p class="text-xs font-bold font-mono text-slate-900 dark:text-slate-200">{{ $lote->numero_lote }}</p>
+                @if($detCompraLote && $detCompraLote->unidades_por_presentacion > 1)
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Factor: x{{ $detCompraLote->unidades_por_presentacion }} u. / present.</p>
+                @endif
+            </div>
+            <div class="mt-2 flex items-end justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60">
                 <div>
                     <p class="text-[10px] text-slate-500 dark:text-slate-400">Stock actual</p>
-                    <p class="text-xl font-extrabold {{ $stockColor }}">{{ number_format($lote->stock_actual) }}</p>
+                    <p class="text-xl font-extrabold {{ $stockColor }}">{{ number_format($lote->stock_actual) }} <span class="text-[10px] font-normal text-slate-400">u.</span></p>
                 </div>
                 <div class="text-right">
                     <p class="text-[10px] text-slate-500 dark:text-slate-400">Vence</p>
@@ -150,7 +163,7 @@
                         <th class="text-left px-4 py-3 whitespace-nowrap">Fecha / Hora</th>
                         <th class="text-left px-4 py-3">Lote</th>
                         <th class="text-left px-4 py-3">Tipo</th>
-                        <th class="text-left px-4 py-3">Subtipo / Motivo</th>
+                        <th class="text-left px-4 py-3">Subtipo / Motivo / Presentación</th>
                         <th class="text-right px-4 py-3">Cantidad</th>
                         <th class="text-right px-4 py-3">Saldo Ant.</th>
                         <th class="text-right px-4 py-3">Saldo Post.</th>
@@ -171,17 +184,36 @@
                             default   => 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800',
                         };
                         $cantClass = $mov->cantidad > 0 ? 'text-emerald-950 dark:text-emerald-400' : 'text-red-950 dark:text-rose-400';
+                        
+                        // Buscar el detalle de compra exacto si el movimiento se originó en una compra
+                        $detCompraMov = null;
+                        if ($mov->origen === 'compra' && $mov->lote) {
+                            $detCompraMov = $mov->lote->detallesCompra->where('compra_id', $mov->origen_id)->first();
+                        }
                     @endphp
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition {{ $rowClass }}">
                         <td class="px-4 py-3 whitespace-nowrap">
                             <p class="font-semibold text-slate-800 dark:text-slate-200">{{ $mov->fecha_movimiento->format('d/m/Y') }}</p>
                             <p class="text-[10px] text-slate-400">{{ $mov->fecha_movimiento->format('H:i:s') }}</p>
                         </td>
-                        <td class="px-4 py-3 font-mono text-slate-500 dark:text-slate-400">{{ $mov->lote->numero_lote ?? '—' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">{{ $mov->lote->numero_lote ?? '—' }}</span>
+                            @if($detCompraMov && $detCompraMov->tipo_presentacion && $detCompraMov->tipo_presentacion !== 'Unidad Base')
+                                <span class="block text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate max-w-[130px]">
+                                    {{ $detCompraMov->tipo_presentacion }}
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold {{ $tipoBadge }}">{{ ucfirst($mov->tipo) }}</span></td>
                         <td class="px-4 py-3">
                             <p class="text-slate-700 dark:text-slate-300 font-medium">{{ $mov->subtipo_etiqueta }}</p>
-                            @if($mov->motivo)<p class="text-[10px] text-slate-400 italic truncate max-w-40" title="{{ $mov->motivo }}">{{ $mov->motivo }}</p>@endif
+                            @if($detCompraMov && $detCompraMov->tipo_presentacion && $detCompraMov->tipo_presentacion !== 'Unidad Base')
+                                <div class="mt-1 inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/60">
+                                    <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                    <span>Comprado: <strong>{{ $detCompraMov->cantidad_presentaciones }} {{ $detCompraMov->tipo_presentacion }}</strong> (Factor x{{ $detCompraMov->unidades_por_presentacion }}) @ {{ $moneda }} {{ number_format($detCompraMov->precio_unitario, 2) }}</span>
+                                </div>
+                            @endif
+                            @if($mov->motivo)<p class="text-[10px] text-slate-400 italic truncate max-w-xs mt-0.5" title="{{ $mov->motivo }}">{{ $mov->motivo }}</p>@endif
                         </td>
                         <td class="px-4 py-3 text-right font-mono font-bold {{ $cantClass }}">{{ $mov->cantidad > 0 ? '+' : '' }}{{ number_format($mov->cantidad) }}</td>
                         <td class="px-4 py-3 text-right font-mono text-slate-500">{{ number_format($mov->stock_anterior) }}</td>

@@ -163,7 +163,7 @@
                             x{{ $pres->unidades_por_presentacion }}
                         </td>
                         <td class="px-5 py-3.5 text-right font-mono font-bold text-slate-900 dark:text-white">
-                            {{ $pres->precio_venta ? 'S/ '.number_format($pres->precio_venta,2) : '—' }}
+                            {{ $pres->precio_venta ? 'C$ '.number_format($pres->precio_venta,2) : '—' }}
                         </td>
                         <td class="px-5 py-3.5 text-center font-mono text-slate-500 dark:text-slate-400">
                             {{ $pres->codigo_barras ?? '—' }}

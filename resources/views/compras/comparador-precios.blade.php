@@ -412,10 +412,10 @@
             <div>
                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Diferencial / Ahorro Máximo</p>
                 <p class="text-xl font-bold text-emerald-900 dark:text-emerald-400 mt-0.5 font-mono">
-                    {{ $ahorroMaximo > 0 ? 'C$ ' . number_format($ahorroMaximo, 4) : 'C$ 0.00' }}
+                    {{ $comparativa->count() > 1 && $ahorroMaximo > 0 ? 'C$ ' . number_format($ahorroMaximo, 4) : ($comparativa->count() > 1 ? 'C$ 0.00' : '—') }}
                 </p>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Por unidad respecto al más alto
+                    {{ $comparativa->count() > 1 ? 'Por unidad respecto al más alto' : 'Se requiere al menos 2 distribuidores' }}
                 </p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -456,6 +456,7 @@
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         <th class="px-4 py-3">Distribuidor</th>
+                        <th class="px-4 py-3">Origen / Fuente</th>
                         <th class="px-4 py-3">Última Presentación</th>
                         <th class="px-4 py-3 text-right">Precio Presentación</th>
                         <th class="px-4 py-3 text-right">Costo / Unidad Base</th>
@@ -484,6 +485,17 @@
                                     @endif
                                 </div>
                             </div>
+                        </td>
+                        <td class="px-4 py-3.5">
+                            @if(($comp['tipo_origen'] ?? '') === 'cotizacion')
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                Cotización
+                            </span>
+                            @else
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                Compra Real
+                            </span>
+                            @endif
                         </td>
                         <td class="px-4 py-3.5">
                             <span class="font-semibold">{{ $comp['ultima_presentacion'] ?? ($comp['ultimo_registro']->presentacion->nombre ?? 'Unidad Base') }}</span>
@@ -522,7 +534,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                        <td colspan="8" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
                             No se han registrado cotizaciones ni compras con diferentes proveedores para este medicamento.
                         </td>
                     </tr>
@@ -531,6 +543,40 @@
             </table>
         </div>
     </div>
+
+    <!-- Sección de Marcas Bioequivalentes de Otros Laboratorios -->
+    @if(isset($equivalentes) && $equivalentes->isNotEmpty())
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <div>
+                <h3 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <span>Equivalentes Farmacéuticos de Otros Laboratorios</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300">
+                        {{ $equivalentes->count() }} alternativas
+                    </span>
+                </h3>
+                <p class="text-[11px] text-slate-500">Mismo principio activo ({{ $productoSeleccionado->principio_activo }}) y concentración</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            @foreach($equivalentes as $eq)
+            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between">
+                <div>
+                    <h4 class="text-xs font-bold text-slate-900 dark:text-white">{{ $eq->nombre }}</h4>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400">
+                        Lab: {{ $eq->laboratorio->nombre ?? 'Sin Lab' }} &bull; Ref: {{ formato_moneda($eq->precio_compra) }}
+                    </p>
+                </div>
+                <a href="{{ route('compras.comparador-precios') }}?producto_id={{ $eq->id }}"
+                   class="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/80 rounded-lg transition">
+                    Comparar &rarr;
+                </a>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
     @endif
 
     <!-- Modal para Registrar Cotización Directa con Autocompletado AJAX / Predictivo -->

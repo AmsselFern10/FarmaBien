@@ -73,6 +73,19 @@ class ProductoService
 
                 $producto = Producto::create($data);
 
+                // Asentar precio inicial en el historial SCD Tipo 2
+                if (!empty($producto->precio_venta) && $producto->precio_venta > 0) {
+                    \App\Models\PrecioVenta::create([
+                        'producto_id'     => $producto->id,
+                        'presentacion_id' => null,
+                        'precio'          => $producto->precio_venta,
+                        'vigente_desde'   => now(),
+                        'vigente_hasta'   => null,
+                        'motivo'          => 'Alta inicial del medicamento en catálogo',
+                        'user_id'         => auth()->id(),
+                    ]);
+                }
+
                 // Sincronizar o crear presentaciones comerciales asociadas
                 $this->presentacionService->sincronizarPresentacionesDeProducto($producto, $presentaciones);
 
@@ -113,6 +126,8 @@ class ProductoService
         try {
             $productoActualizado = DB::transaction(function () use ($producto, $data, $nuevaImagen, $presentaciones, &$uploadedPath) {
                 $locked = Producto::where('id', $producto->id)->lockForUpdate()->firstOrFail();
+                $precioAnterior = (float)($locked->precio_venta ?? 0);
+                $precioNuevo = isset($data['precio_venta']) ? (float)$data['precio_venta'] : $precioAnterior;
 
                 if ($nuevaImagen) {
                     $uploadedPath = app(ImageOptimizerService::class)->optimizarYGuardarWebp($nuevaImagen);
@@ -120,6 +135,29 @@ class ProductoService
                 }
 
                 $locked->update($data);
+
+                // Registrar cambio de precio en SCD Tipo 2 y sincronizar unidad base
+                if (abs($precioNuevo - $precioAnterior) >= 0.01) {
+                    \App\Models\PrecioVenta::where('producto_id', $locked->id)
+                        ->whereNull('presentacion_id')
+                        ->whereNull('vigente_hasta')
+                        ->update(['vigente_hasta' => now()]);
+
+                    \App\Models\PrecioVenta::create([
+                        'producto_id'     => $locked->id,
+                        'presentacion_id' => null,
+                        'precio'          => $precioNuevo,
+                        'vigente_desde'   => now(),
+                        'vigente_hasta'   => null,
+                        'motivo'          => 'Actualización de precio desde ficha de producto',
+                        'user_id'         => auth()->id(),
+                    ]);
+
+                    // Sincronizar precio en la presentación marcada como unidad base
+                    \App\Models\PresentacionProducto::where('producto_id', $locked->id)
+                        ->where('es_unidad_base', true)
+                        ->update(['precio_venta' => $precioNuevo]);
+                }
 
                 if ($presentaciones !== null) {
                     $this->presentacionService->sincronizarPresentacionesDeProducto($locked, $presentaciones);

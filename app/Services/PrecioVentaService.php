@@ -200,6 +200,27 @@ class PrecioVentaService
                 ]);
 
                 $producto->update(['precio_venta' => $nuevoPrecioBase]);
+
+                // Sincronizar automáticamente la presentación de unidad base
+                $unidadBase = PresentacionProducto::where('producto_id', $producto->id)->where('es_unidad_base', true)->first();
+                if ($unidadBase) {
+                    $unidadBase->update(['precio_venta' => $nuevoPrecioBase]);
+
+                    PrecioVenta::where('producto_id', $producto->id)
+                        ->where('presentacion_id', $unidadBase->id)
+                        ->whereNull('vigente_hasta')
+                        ->update(['vigente_hasta' => $fechaVigencia]);
+
+                    PrecioVenta::create([
+                        'producto_id'     => $producto->id,
+                        'presentacion_id' => $unidadBase->id,
+                        'precio'          => $nuevoPrecioBase,
+                        'vigente_desde'   => $fechaVigencia,
+                        'vigente_hasta'   => null,
+                        'motivo'          => $motivo . " (Unidad Base sincronizada)",
+                        'user_id'         => $usuarioId,
+                    ]);
+                }
             }
 
             // 2. Actualizar Precios de Presentaciones
@@ -270,6 +291,27 @@ class PrecioVentaService
             ]);
 
             $producto->update(['precio_venta' => $nuevoPrecio]);
+
+            // Sincronizar automáticamente la unidad base
+            $unidadBase = PresentacionProducto::where('producto_id', $producto->id)->where('es_unidad_base', true)->first();
+            if ($unidadBase) {
+                $unidadBase->update(['precio_venta' => $nuevoPrecio]);
+
+                PrecioVenta::where('producto_id', $producto->id)
+                    ->where('presentacion_id', $unidadBase->id)
+                    ->whereNull('vigente_hasta')
+                    ->update(['vigente_hasta' => $ahora]);
+
+                PrecioVenta::create([
+                    'producto_id'     => $producto->id,
+                    'presentacion_id' => $unidadBase->id,
+                    'precio'          => $nuevoPrecio,
+                    'vigente_desde'   => $ahora,
+                    'vigente_hasta'   => null,
+                    'motivo'          => $motivo . " (Unidad Base sincronizada)",
+                    'user_id'         => $usuarioId,
+                ]);
+            }
         });
 
         $costo = (float)($producto->precio_compra ?? 0);
@@ -411,6 +453,28 @@ class PrecioVentaService
 
                 // Actualizar producto
                 Producto::where('id', $prodId)->update(['precio_venta' => $nuevoPrecio]);
+
+                // Sincronizar automáticamente unidad base
+                $unidadBase = PresentacionProducto::where('producto_id', $prodId)->where('es_unidad_base', true)->first();
+                if ($unidadBase) {
+                    $unidadBase->update(['precio_venta' => $nuevoPrecio]);
+
+                    PrecioVenta::where('producto_id', $prodId)
+                        ->where('presentacion_id', $unidadBase->id)
+                        ->whereNull('vigente_hasta')
+                        ->update(['vigente_hasta' => $ahora]);
+
+                    PrecioVenta::create([
+                        'producto_id'     => $prodId,
+                        'presentacion_id' => $unidadBase->id,
+                        'precio'          => $nuevoPrecio,
+                        'vigente_desde'   => $ahora,
+                        'vigente_hasta'   => null,
+                        'motivo'          => $motivo . " (Unidad Base sincronizada)",
+                        'user_id'         => $usuarioId,
+                    ]);
+                }
+
                 $actualizados++;
             }
 
