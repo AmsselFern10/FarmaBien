@@ -20,6 +20,8 @@ class Configuracion extends Model
         'descripcion',
     ];
 
+    protected static ?array $memoryCache = null;
+
     /**
      * Cache key para almacenar todas las configuraciones en memoria
      */
@@ -74,7 +76,7 @@ class Configuracion extends Model
             ]
         );
 
-        Cache::forget(static::CACHE_KEY);
+        static::clearCache();
 
         return $config;
     }
@@ -84,7 +86,11 @@ class Configuracion extends Model
      */
     public static function allAsAssoc(): array
     {
-        return Cache::rememberForever(static::CACHE_KEY, function () {
+        if (static::$memoryCache !== null) {
+            return static::$memoryCache;
+        }
+
+        return static::$memoryCache = Cache::rememberForever(static::CACHE_KEY, function () {
             return static::all(['clave', 'valor', 'tipo', 'grupo', 'descripcion'])
                 ->keyBy('clave')
                 ->toArray();
@@ -96,6 +102,7 @@ class Configuracion extends Model
      */
     public static function clearCache(): void
     {
+        static::$memoryCache = null;
         Cache::forget(static::CACHE_KEY);
     }
 }

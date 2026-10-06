@@ -44,10 +44,10 @@ class Promocion extends Model
     protected static function booted(): void
     {
         static::saved(function () {
-            \Illuminate\Support\Facades\Cache::forget('promociones_vigentes_pos');
+            Producto::clearPromocionesCache();
         });
         static::deleted(function () {
-            \Illuminate\Support\Facades\Cache::forget('promociones_vigentes_pos');
+            Producto::clearPromocionesCache();
         });
     }
 

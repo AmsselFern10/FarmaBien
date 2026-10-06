@@ -277,15 +277,35 @@ class Producto extends Model
         return $this->hasMany(Promocion::class);
     }
 
+    protected static ?\Illuminate\Support\Collection $cachedPromociones = null;
+
+    /**
+     * Obtiene el listado de promociones vigentes con caché en memoria estática
+     */
+    public static function getPromocionesVigentes(): \Illuminate\Support\Collection
+    {
+        if (static::$cachedPromociones !== null) {
+            return static::$cachedPromociones;
+        }
+
+        return static::$cachedPromociones = \Illuminate\Support\Facades\Cache::remember('promociones_vigentes_pos', 60, function () {
+            return Promocion::vigentes()->orderBy('id', 'desc')->get();
+        });
+    }
+
+    public static function clearPromocionesCache(): void
+    {
+        static::$cachedPromociones = null;
+        \Illuminate\Support\Facades\Cache::forget('promociones_vigentes_pos');
+    }
+
     /**
      * Obtiene la promoción activa y vigente prioritaria para el producto
      * (Prioridad: Específica por Producto > Por Categoría > Por Laboratorio > General)
      */
     public function getPromocionVigenteAttribute(): ?Promocion
     {
-        $promociones = \Illuminate\Support\Facades\Cache::remember('promociones_vigentes_pos', 60, function () {
-            return Promocion::vigentes()->orderBy('id', 'desc')->get();
-        });
+        $promociones = static::getPromocionesVigentes();
 
         return $promociones->first(function ($p) {
             return $p->alcance === 'producto' && (int)$p->producto_id === (int)$this->id;

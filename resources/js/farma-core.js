@@ -1087,20 +1087,41 @@ window.farmaCentroNotificaciones = function farmaCentroNotificaciones() {
 
         init() {
             this.cargarNotificaciones();
-            setInterval(() => this.cargarNotificaciones(true), 3_600_000); // 1 hora
+            setInterval(() => this.cargarNotificaciones(true, true), 180_000); // Refresco en segundo plano cada 3 minutos
         },
 
         toggleOpen() {
             this.abierto = !this.abierto;
-            if (this.abierto) this.cargarNotificaciones();
+            if (this.abierto) this.cargarNotificaciones(false, true);
         },
 
-        async cargarNotificaciones(silencioso = false) {
+        async cargarNotificaciones(silencioso = false, forzar = false) {
+            const cacheKey = 'farma_notifs_cache';
+            const cacheTsKey = 'farma_notifs_cache_ts';
+
+            if (!forzar) {
+                try {
+                    const cached = sessionStorage.getItem(cacheKey);
+                    const cachedTs = parseInt(sessionStorage.getItem(cacheTsKey) || '0', 10);
+                    if (cached && (Date.now() - cachedTs < 180_000)) {
+                        this.notificaciones = JSON.parse(cached);
+                        return;
+                    }
+                } catch (_) {}
+            }
+
             if (!silencioso) this.cargando = true;
             try {
                 const res = await fetch('/api/notificaciones/resumen',
                     { headers: { Accept: 'application/json' } });
-                if (res.ok) this.notificaciones = await res.json();
+                if (res.ok) {
+                    const data = await res.json();
+                    this.notificaciones = data;
+                    try {
+                        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+                        sessionStorage.setItem(cacheTsKey, Date.now().toString());
+                    } catch (_) {}
+                }
             } catch (_) {
             } finally { this.cargando = false; }
         },
