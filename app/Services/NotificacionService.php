@@ -172,6 +172,7 @@ class NotificacionService
     {
         $today = now()->toDateString();
         $sugerenciasCount = DB::table('productos as p')
+            ->select('p.id')
             ->leftJoin('lotes as l', function ($join) use ($today) {
                 $join->on('p.id', '=', 'l.producto_id')
                      ->where('l.activo', '=', 1)
@@ -182,6 +183,7 @@ class NotificacionService
             ->whereNull('p.deleted_at')
             ->groupBy('p.id', 'p.nombre', 'p.stock_minimo')
             ->havingRaw('COALESCE(SUM(l.stock_actual), 0) <= p.stock_minimo')
+            ->get()
             ->count();
 
         if ($sugerenciasCount > 0) {

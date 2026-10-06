@@ -49,9 +49,9 @@ class AuditLog extends Model
         try {
             return self::create([
                 'user_id'     => auth()->id(),
-                'modulo'      => $modulo,
-                'accion'      => $accion,
-                'descripcion' => $descripcion,
+                'modulo'      => \Illuminate\Support\Str::limit($modulo, 50, ''),
+                'accion'      => \Illuminate\Support\Str::limit($accion, 50, ''),
+                'descripcion' => \Illuminate\Support\Str::limit($descripcion, 250, '...'),
                 'detalles'    => $detalles,
                 'ip'          => request()->ip(),
                 'user_agent'  => request()->userAgent(),
