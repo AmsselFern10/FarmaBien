@@ -150,22 +150,25 @@ class PrecioVentaService
         } elseif ($tipo === 'proveedor') {
             return app(ProveedorService::class)->buscarAjax($q, $limit);
         } else {
-            return Producto::whereNull('deleted_at')
-                ->where(function ($sub) use ($q) {
-                    $sub->where('nombre', 'like', "%{$q}%")
-                        ->orWhere('codigo_barra', 'like', "%{$q}%")
-                        ->orWhere('principio_activo', 'like', "%{$q}%");
-                })
-                ->limit($limit)
-                ->get(['id', 'nombre', 'codigo_barra', 'precio_venta', 'precio_compra'])
-                ->map(fn($item) => [
-                    'id'            => $item->id,
-                    'text'          => $item->nombre . ($item->codigo_barra ? " ({$item->codigo_barra})" : ""),
-                    'nombre'        => $item->nombre,
-                    'precio_venta'  => (float)$item->precio_venta,
-                    'precio_compra' => (float)$item->precio_compra,
-                ])
-                ->toArray();
+            $cacheKey = 'precios:autocompletar:' . md5($q) . ":{$limit}";
+            return \App\Facades\RequestCache::remember($cacheKey, function () use ($q, $limit) {
+                return Producto::whereNull('deleted_at')
+                    ->where(function ($sub) use ($q) {
+                        $sub->where('nombre', 'like', "%{$q}%")
+                            ->orWhere('codigo_barra', 'like', "%{$q}%")
+                            ->orWhere('principio_activo', 'like', "%{$q}%");
+                    })
+                    ->limit($limit)
+                    ->get(['id', 'nombre', 'codigo_barra', 'precio_venta', 'precio_compra'])
+                    ->map(fn($item) => [
+                        'id'            => $item->id,
+                        'text'          => $item->nombre . ($item->codigo_barra ? " ({$item->codigo_barra})" : ""),
+                        'nombre'        => $item->nombre,
+                        'precio_venta'  => (float)$item->precio_venta,
+                        'precio_compra' => (float)$item->precio_compra,
+                    ])
+                    ->toArray();
+            });
         }
     }
 

@@ -34,7 +34,7 @@ class PrecioVentaController extends Controller
 
         $productos = $this->precioService->listarProductosConPrecios($filtros, $perPage)->withQueryString();
         $metricas = $this->precioService->obtenerMetricasPrecios();
-        $promocionesActivas = Promocion::vigentes()->get();
+        $promocionesActivas = Producto::getPromocionesVigentes();
 
         return view('precios.index', array_merge(compact('productos', 'promocionesActivas'), $metricas));
     }
@@ -128,9 +128,9 @@ class PrecioVentaController extends Controller
      */
     public function masivo()
     {
-        $categorias = Categoria::activos()->orderBy('nombre')->get(['id', 'nombre']);
-        $laboratorios = Laboratorio::activos()->orderBy('nombre')->get(['id', 'nombre']);
-        $proveedores = Proveedor::activos()->orderBy('nombre')->get(['id', 'nombre']);
+        $categorias = Categoria::getCachedActivos();
+        $laboratorios = Laboratorio::getCachedActivos();
+        $proveedores = Proveedor::getCachedActivos();
 
         return view('precios.masivo', compact('categorias', 'laboratorios', 'proveedores'));
     }

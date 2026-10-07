@@ -10,7 +10,9 @@ use App\Models\Laboratorio;
 use App\Models\PresentacionProducto;
 use App\Models\Lote;
 use App\Models\Promocion;
+use App\Models\PrecioVenta;
 use App\Models\Configuracion;
+use App\Facades\RequestCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
@@ -77,9 +79,25 @@ class DiagnosticoProductosTest extends TestCase
             }
         }
 
+        $payloadBytes = 0;
+        if (is_object($result)) {
+            if (method_exists($result, 'getContent') && !empty($result->getContent())) {
+                $payloadBytes = strlen((string)$result->getContent());
+            } elseif (method_exists($result, 'content')) {
+                $payloadBytes = strlen((string)$result->content());
+            } elseif (isset($result->baseResponse)) {
+                $payloadBytes = strlen((string)$result->baseResponse->getContent());
+            }
+        } elseif (is_string($result)) {
+            $payloadBytes = strlen($result);
+        } elseif (is_array($result)) {
+            $payloadBytes = strlen(json_encode($result));
+        }
+
         $this->perfilados[$nombre] = [
             'total' => count($queries),
             'time_ms' => round($totalTime, 2),
+            'payload_kb' => round($payloadBytes / 1024, 2),
             'duplicates' => $duplicates,
             'queries' => $queries,
         ];
@@ -134,6 +152,16 @@ class DiagnosticoProductosTest extends TestCase
                 'precio_compra'     => 10.00,
                 'activo'            => true,
             ]);
+
+            PrecioVenta::create([
+                'producto_id'     => $prod->id,
+                'presentacion_id' => null,
+                'precio'          => 15.00,
+                'vigente_desde'   => now()->subDays(30),
+                'vigente_hasta'   => null,
+                'motivo'          => 'Alta de catálogo inicial',
+                'user_id'         => $this->admin->id,
+            ]);
         }
 
         // Crear una promoción activa
@@ -148,12 +176,14 @@ class DiagnosticoProductosTest extends TestCase
             'activo'         => true,
         ]);
 
-        // 1. Listado de Productos (index con 12 medicamentos, promociones y filtros)
         $this->actingAs($this->admin);
+
+        // 1. Listado de Productos (index con 12 medicamentos, promociones y filtros)
         $this->perfilarOperacion('1_listado_productos_index', function () {
             $resp = $this->get(route('productos.index'));
             $resp->assertOk();
             $resp->assertSee('Medicamento 1');
+            return $resp;
         });
 
         // 2. Formulario Crear Producto
@@ -161,6 +191,7 @@ class DiagnosticoProductosTest extends TestCase
             $resp = $this->get(route('productos.create'));
             $resp->assertOk();
             $resp->assertSee('Analgésicos');
+            return $resp;
         });
 
         // 3. Registrar Nuevo Producto con Imagen Optimizada y Presentaciones
@@ -192,6 +223,7 @@ class DiagnosticoProductosTest extends TestCase
             ]);
 
             $resp->assertRedirect(route('productos.index'));
+            return $resp;
         });
 
         $productoNuevo = Producto::where('nombre', 'Amoxicilina 500mg')->firstOrFail();
@@ -201,6 +233,7 @@ class DiagnosticoProductosTest extends TestCase
             $resp = $this->get(route('productos.show', $productoNuevo));
             $resp->assertOk();
             $resp->assertSee('Amoxicilina 500mg');
+            return $resp;
         });
 
         // 5. Formulario Editar Producto
@@ -208,6 +241,7 @@ class DiagnosticoProductosTest extends TestCase
             $resp = $this->get(route('productos.edit', $productoNuevo));
             $resp->assertOk();
             $resp->assertSee('Amoxicilina 500mg');
+            return $resp;
         });
 
         // 6. Actualizar Producto y Precio (SCD Tipo 2)
@@ -227,6 +261,7 @@ class DiagnosticoProductosTest extends TestCase
             ]);
 
             $resp->assertRedirect(route('productos.index'));
+            return $resp;
         });
 
         // 7. Servir Imagen del Producto (Verificación ETag, Cache-Control e Inmutabilidad)
@@ -237,6 +272,7 @@ class DiagnosticoProductosTest extends TestCase
                 $this->assertStringContainsString('max-age=604800', $resp->headers->get('Cache-Control'));
                 $this->assertStringContainsString('public', $resp->headers->get('Cache-Control'));
                 $this->assertNotEmpty($resp->headers->get('ETag'));
+                return $resp;
             });
         }
 
@@ -245,14 +281,125 @@ class DiagnosticoProductosTest extends TestCase
             $productoService = app(\App\Services\ProductoService::class);
             $resultados = $productoService->buscarAjax('Amox', 10);
             $this->assertNotEmpty($resultados);
+            return $resultados;
         });
 
-        // 9. Catálogo Público de Medicamentos (sin autenticación)
+        // 9. Búsqueda AJAX Segunda Invocación (Memoizada en RequestCache - 0 consultas)
+        $this->perfilarOperacion('9_busqueda_ajax_segunda_invocacion_memoizada', function () {
+            $productoService = app(\App\Services\ProductoService::class);
+            $resultados = $productoService->buscarAjax('Amox', 10);
+            $this->assertNotEmpty($resultados);
+            return $resultados;
+        });
+
+        // 10. Listado de Precios de Venta (precios.index)
+        $this->perfilarOperacion('10_listado_precios_index', function () {
+            $resp = $this->get(route('precios.index'));
+            $resp->assertOk();
+            $resp->assertSee('Precios de Venta');
+            return $resp;
+        });
+
+        // 11. Detalle de Precios de Venta (precios.show)
+        $this->perfilarOperacion('11_detalle_precio_show', function () use ($productoNuevo) {
+            $resp = $this->get(route('precios.show', $productoNuevo));
+            $resp->assertOk();
+            $resp->assertSee('Amoxicilina 500mg Forte');
+            return $resp;
+        });
+
+        // 12. Editar Precio Formulario (precios.edit)
+        $this->perfilarOperacion('12_editar_precio_formulario', function () use ($productoNuevo) {
+            $resp = $this->get(route('precios.edit', $productoNuevo));
+            $resp->assertOk();
+            return $resp;
+        });
+
+        // 13. Actualización Rápida Inline de Precio (AJAX)
+        $this->perfilarOperacion('13_actualizar_precio_inline_ajax', function () use ($productoNuevo) {
+            $resp = $this->post(route('precios.inline-update', $productoNuevo), [
+                'precio_venta' => 22.50,
+                'motivo'       => 'Ajuste de margen comercial',
+            ]);
+            $resp->assertOk();
+            $data = $resp->json();
+            $this->assertTrue($data['success']);
+            return $resp;
+        });
+
+        // 14. Historial General de Precios (precios.historial)
+        $this->perfilarOperacion('14_historial_general_precios', function () {
+            $resp = $this->get(route('precios.historial'));
+            $resp->assertOk();
+            $resp->assertSee('Historial General');
+            return $resp;
+        });
+
+        // 15. Vista de Actualización Masiva (precios.masivo)
+        $this->perfilarOperacion('15_vista_actualizacion_masiva', function () {
+            $resp = $this->get(route('precios.masivo'));
+            $resp->assertOk();
+            $resp->assertSee('Actualización Masiva');
+            return $resp;
+        });
+
+        // 16. Vista Previa Live Masiva (precios.masivo.preview)
+        $this->perfilarOperacion('16_preview_live_masivo', function () {
+            $resp = $this->post(route('precios.masivo.preview'), [
+                'tipo_alcance' => 'todo',
+                'tipo_ajuste'  => 'porcentaje_aumento',
+                'valor_ajuste' => 5.0,
+                'redondeo'     => 'sin',
+            ]);
+            $resp->assertOk();
+            $data = $resp->json();
+            $this->assertTrue($data['success']);
+            $this->assertGreaterThan(0, $data['total_afectados']);
+            return $resp;
+        });
+
+        // 17. Aplicar Ajuste Masivo Transaccional (precios.masivo.aplicar)
+        $this->perfilarOperacion('17_aplicar_ajuste_masivo_transaccional', function () {
+            $resp = $this->post(route('precios.masivo.aplicar'), [
+                'tipo_alcance' => 'todo',
+                'tipo_ajuste'  => 'porcentaje_aumento',
+                'valor_ajuste' => 5.0,
+                'redondeo'     => 'sin',
+                'motivo'       => 'Incremento inflacionario general de prueba',
+            ]);
+            $resp->assertRedirect(route('precios.index'));
+            return $resp;
+        });
+
+        // 18. Validación de Invalización de Caché en Eventos de Modelo
+        $this->perfilarOperacion('18_invalidacion_cache_eventos_modelo', function () use ($productoNuevo) {
+            RequestCache::flush();
+            $prodService = app(\App\Services\ProductoService::class);
+
+            // 1. Lectura 1: Consulta BD y memoriza
+            $res1 = $prodService->buscarAjax('Amoxicilina', 10);
+            $this->assertNotEmpty($res1);
+
+            // 2. Lectura 2: Caché hit (0 queries)
+            $res2 = $prodService->buscarAjax('Amoxicilina', 10);
+            $this->assertEquals(count($res1), count($res2));
+
+            // 3. Mutación del modelo Producto: Dispara evento saved y limpia RequestCache
+            $productoNuevo->update(['nombre' => 'Amoxicilina Hook Test']);
+
+            // 4. Lectura 3: Consulta actualizada con valor fresco
+            $res3 = $prodService->buscarAjax('Hook Test', 10);
+            $this->assertNotEmpty($res3);
+            return $res3;
+        });
+
+        // 19. Catálogo Público de Medicamentos (sin autenticación)
         auth()->logout();
-        $this->perfilarOperacion('9_catalogo_publico_clientes', function () {
+        $this->perfilarOperacion('19_catalogo_publico_clientes', function () {
             $resp = $this->get(route('catalogo.publico'));
             $resp->assertOk();
-            $resp->assertSee('Amoxicilina');
+            $resp->assertSee('Medicamento');
+            return $resp;
         });
 
         // Guardar reporte

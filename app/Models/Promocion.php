@@ -49,6 +49,9 @@ class Promocion extends Model
         static::deleted(function () {
             Producto::clearPromocionesCache();
         });
+        static::restored(function () {
+            Producto::clearPromocionesCache();
+        });
     }
 
     // Relaciones

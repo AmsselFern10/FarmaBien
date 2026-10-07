@@ -29,6 +29,21 @@ class PrecioVenta extends Model
         'vigente_hasta' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Facades\RequestCache::forgetPrefix('precios:');
+            \App\Facades\RequestCache::forgetPrefix('productos:');
+            \Illuminate\Support\Facades\Cache::forget('precio_metricas_v1');
+        });
+
+        static::deleted(function () {
+            \App\Facades\RequestCache::forgetPrefix('precios:');
+            \App\Facades\RequestCache::forgetPrefix('productos:');
+            \Illuminate\Support\Facades\Cache::forget('precio_metricas_v1');
+        });
+    }
+
     /**
      * Relación con el producto principal
      */
