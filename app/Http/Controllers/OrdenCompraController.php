@@ -30,18 +30,11 @@ class OrdenCompraController extends Controller
 
     public function index(Request $request)
     {
-        $query = OrdenCompra::with([
-                'proveedor:id,nombre,ruc,contacto',
-                'usuario:id,name',
-                'detalles',
-                'compra:id,numero_comprobante,estado',
-            ])
-            ->withCount('detalles')
-            ->orderBy('created_at', 'desc');
+        $baseQuery = OrdenCompra::query();
 
         if ($request->filled('buscar')) {
             $buscar = trim($request->input('buscar'));
-            $query->where(function ($q) use ($buscar) {
+            $baseQuery->where(function ($q) use ($buscar) {
                 $q->where('numero_orden', 'like', "%{$buscar}%")
                   ->orWhereHas('proveedor', function ($qp) use ($buscar) {
                       $qp->where('nombre', 'like', "%{$buscar}%");
@@ -50,20 +43,31 @@ class OrdenCompraController extends Controller
         }
 
         if ($request->filled('estado')) {
-            $query->where('estado', $request->input('estado'));
+            $baseQuery->where('estado', $request->input('estado'));
         }
 
         if ($request->filled('proveedor_id')) {
-            $query->where('proveedor_id', $request->input('proveedor_id'));
+            $baseQuery->where('proveedor_id', $request->input('proveedor_id'));
         }
 
-        $totales = (clone $query)
+        $totales = (clone $baseQuery)
             ->selectRaw("COUNT(*) as total_ordenes, COALESCE(SUM(CASE WHEN estado != 'cancelada' THEN total ELSE 0 END), 0) as total_monto")
             ->first();
         $totalOrdenes = (int) ($totales->total_ordenes ?? 0);
         $totalMonto = (float) ($totales->total_monto ?? 0);
 
-        $ordenes = $query->paginate(perPage(15))->withQueryString();
+        $ordenes = (clone $baseQuery)
+            ->with([
+                'proveedor:id,nombre,ruc,contacto',
+                'usuario:id,name',
+                'detalles',
+                'compra:id,numero_comprobante,estado',
+            ])
+            ->withCount('detalles')
+            ->orderBy('created_at', 'desc')
+            ->paginate(perPage(15))
+            ->withQueryString();
+
         $proveedores = Proveedor::getCachedActivos();
 
         return view('compras.ordenes.index', compact('ordenes', 'totalOrdenes', 'totalMonto', 'proveedores'));
