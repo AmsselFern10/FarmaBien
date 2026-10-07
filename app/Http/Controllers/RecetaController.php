@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Services\RecetaService;
 use App\Http\Requests\StoreRecetaRequest;
 use App\Http\Requests\UpdateRecetaRequest;
+use App\Support\RequestCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
@@ -150,24 +151,30 @@ class RecetaController extends Controller
 
     public function create()
     {
-        $clientes = \Illuminate\Support\Facades\Cache::remember('receta_clientes_init_50', 120, function () {
-            return Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->limit(50)->get();
+        $clientes = RequestCache::rememberStatic('recetas:create:clientes', function () {
+            return Cache::remember('receta_clientes_init_50', 120, function () {
+                return Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->limit(50)->get();
+            });
         });
 
-        $medicos = Receta::select(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
-            ->whereNotNull('medico_nombre')
-            ->where('medico_nombre', '!=', '')
-            ->groupBy(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
-            ->orderBy('medico_nombre')
-            ->take(60)
-            ->get();
+        $medicos = RequestCache::rememberStatic('recetas:create:medicos', function () {
+            return Receta::select(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+                ->whereNotNull('medico_nombre')
+                ->where('medico_nombre', '!=', '')
+                ->groupBy(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+                ->orderBy('medico_nombre')
+                ->take(60)
+                ->get();
+        });
 
-        $productos = Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
-            ->with('laboratorio:id,nombre')
-            ->conReceta()
-            ->activos()
-            ->orderBy('nombre')
-            ->get();
+        $productos = RequestCache::rememberStatic('recetas:productos_con_receta', function () {
+            return Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
+                ->with('laboratorio:id,nombre')
+                ->conReceta()
+                ->activos()
+                ->orderBy('nombre')
+                ->get();
+        });
 
         $productosJson = json_encode($productos->map(fn($p) => ['id' => $p->id, 'nombre' => $p->nombre])->values());
         $clientesJson = json_encode($clientes->map(fn($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'documento' => $c->documento ?? ''])->values());
@@ -240,21 +247,30 @@ class RecetaController extends Controller
 
     public function edit(Receta $receta)
     {
-        $clientes = Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->get();
-        $medicos = Receta::select(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
-            ->whereNotNull('medico_nombre')
-            ->where('medico_nombre', '!=', '')
-            ->groupBy(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
-            ->orderBy('medico_nombre')
-            ->take(60)
-            ->get();
+        $clientes = RequestCache::rememberStatic('recetas:create:clientes', function () {
+            return Cache::remember('receta_clientes_init_50', 120, function () {
+                return Cliente::select(['id', 'nombre', 'documento', 'telefono'])->activos()->orderBy('nombre')->limit(50)->get();
+            });
+        });
 
-        $productos = Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
-            ->with('laboratorio:id,nombre')
-            ->conReceta()
-            ->activos()
-            ->orderBy('nombre')
-            ->get();
+        $medicos = RequestCache::rememberStatic('recetas:create:medicos', function () {
+            return Receta::select(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+                ->whereNotNull('medico_nombre')
+                ->where('medico_nombre', '!=', '')
+                ->groupBy(['medico_nombre', 'medico_colegiatura', 'medico_especialidad', 'institucion_salud'])
+                ->orderBy('medico_nombre')
+                ->take(60)
+                ->get();
+        });
+
+        $productos = RequestCache::rememberStatic('recetas:productos_con_receta', function () {
+            return Producto::select(['id', 'nombre', 'principio_activo', 'concentracion', 'laboratorio_id'])
+                ->with('laboratorio:id,nombre')
+                ->conReceta()
+                ->activos()
+                ->orderBy('nombre')
+                ->get();
+        });
 
         $receta->load(['detalles.producto', 'cliente']);
 

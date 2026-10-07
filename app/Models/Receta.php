@@ -35,6 +35,24 @@ class Receta extends Model
         'fecha_vencimiento' => 'date',
     ];
 
+    /**
+     * Auto-invalidación de caché ante modificaciones de recetas médicas
+     */
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('recetas:');
+            \Illuminate\Support\Facades\Cache::forget('dashboard_recetas_pendientes_count');
+            \Illuminate\Support\Facades\Cache::forget('receta_clientes_init_50');
+        });
+
+        static::deleted(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('recetas:');
+            \Illuminate\Support\Facades\Cache::forget('dashboard_recetas_pendientes_count');
+            \Illuminate\Support\Facades\Cache::forget('receta_clientes_init_50');
+        });
+    }
+
     // Relaciones
     public function cliente(): BelongsTo
     {

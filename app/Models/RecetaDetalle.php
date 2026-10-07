@@ -23,6 +23,22 @@ class RecetaDetalle extends Model
         'cantidad_dispensada' => 'integer',
     ];
 
+    /**
+     * Auto-invalidación de caché ante modificaciones de detalles de recetas
+     */
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('recetas:');
+            \Illuminate\Support\Facades\Cache::forget('dashboard_recetas_pendientes_count');
+        });
+
+        static::deleted(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('recetas:');
+            \Illuminate\Support\Facades\Cache::forget('dashboard_recetas_pendientes_count');
+        });
+    }
+
     public function receta(): BelongsTo
     {
         return $this->belongsTo(Receta::class);

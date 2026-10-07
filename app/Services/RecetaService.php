@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Receta;
 use App\Models\RecetaDetalle;
 use App\Models\Producto;
+use App\Support\RequestCache;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -167,54 +168,58 @@ class RecetaService
      */
     public function buscarRecetasDisponibles(string $termino = '', int $limit = 20)
     {
-        $query = Receta::select([
-                'id',
-                'cliente_id',
-                'paciente_nombre',
-                'paciente_documento',
-                'paciente_edad',
-                'medico_nombre',
-                'medico_colegiatura',
-                'medico_especialidad',
-                'institucion_salud',
-                'numero_receta',
-                'fecha_emision',
-                'fecha_vencimiento',
-                'tipo_receta',
-                'estado',
-                'observaciones',
-            ])
-            ->with([
-                'detalles:id,receta_id,producto_id,cantidad_recetada,cantidad_dispensada,posologia',
-                'detalles.producto:id,nombre,principio_activo,concentracion,tipo_control,precio_venta,codigo_barra',
-                'detalles.producto.lotesActivos',
-                'cliente:id,nombre,documento',
-            ])
-            ->pendientes()
-            ->vigentes()
-            ->whereHas('detalles', function ($q) {
-                $q->whereRaw('cantidad_recetada > cantidad_dispensada');
-            });
-
         $termino = trim($termino);
-        if (!empty($termino)) {
-            $query->where(function ($q) use ($termino) {
-                if (is_numeric($termino)) {
-                    $q->where('id', (int) $termino)
-                      ->orWhere('numero_receta', 'like', "%{$termino}%");
-                } else {
-                    $q->where('numero_receta', 'like', "%{$termino}%");
-                }
-                $q->orWhere('paciente_nombre', 'like', "%{$termino}%")
-                    ->orWhere('paciente_documento', 'like', "%{$termino}%")
-                    ->orWhere('medico_nombre', 'like', "%{$termino}%")
-                    ->orWhere('medico_colegiatura', 'like', "%{$termino}%");
-            });
-        }
+        $cacheKey = "recetas:buscar_disponibles:" . md5("{$termino}:{$limit}");
 
-        return $query->orderBy('id', 'desc')
-            ->orderBy('fecha_emision', 'desc')
-            ->limit($limit)
-            ->get();
+        return RequestCache::rememberStatic($cacheKey, function () use ($termino, $limit) {
+            $query = Receta::select([
+                    'id',
+                    'cliente_id',
+                    'paciente_nombre',
+                    'paciente_documento',
+                    'paciente_edad',
+                    'medico_nombre',
+                    'medico_colegiatura',
+                    'medico_especialidad',
+                    'institucion_salud',
+                    'numero_receta',
+                    'fecha_emision',
+                    'fecha_vencimiento',
+                    'tipo_receta',
+                    'estado',
+                    'observaciones',
+                ])
+                ->with([
+                    'detalles:id,receta_id,producto_id,cantidad_recetada,cantidad_dispensada,posologia',
+                    'detalles.producto:id,nombre,principio_activo,concentracion,tipo_control,precio_venta,codigo_barra',
+                    'detalles.producto.lotesActivos',
+                    'cliente:id,nombre,documento',
+                ])
+                ->pendientes()
+                ->vigentes()
+                ->whereHas('detalles', function ($q) {
+                    $q->whereRaw('cantidad_recetada > cantidad_dispensada');
+                });
+
+            if (!empty($termino)) {
+                $query->where(function ($q) use ($termino) {
+                    if (is_numeric($termino)) {
+                        $q->where('id', (int) $termino)
+                          ->orWhere('numero_receta', 'like', "%{$termino}%");
+                    } else {
+                        $q->where('numero_receta', 'like', "%{$termino}%");
+                    }
+                    $q->orWhere('paciente_nombre', 'like', "%{$termino}%")
+                        ->orWhere('paciente_documento', 'like', "%{$termino}%")
+                        ->orWhere('medico_nombre', 'like', "%{$termino}%")
+                        ->orWhere('medico_colegiatura', 'like', "%{$termino}%");
+                });
+            }
+
+            return $query->orderBy('id', 'desc')
+                ->orderBy('fecha_emision', 'desc')
+                ->limit($limit)
+                ->get();
+        });
     }
 }

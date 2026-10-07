@@ -6,6 +6,7 @@ use App\Models\RegistroVentaControlado;
 use App\Models\Producto;
 use App\Models\Venta;
 use App\Models\AuditLog;
+use App\Support\RequestCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -81,34 +82,29 @@ class ControladoController extends Controller
             $query->where('producto_id', $request->producto_id);
         }
 
-        // Métricas de resumen para KPI cards
+        // Métricas de resumen para KPI cards en una sola consulta SQL agregada
         $kpiBaseQuery = clone $query;
-        $totalMovimientos = (clone $kpiBaseQuery)->count();
-        $totalEntradas = (clone $kpiBaseQuery)->whereIn('tipo_movimiento', [
-            RegistroVentaControlado::TIPO_DEVOLUCION_STOCK,
-            RegistroVentaControlado::TIPO_AJUSTE_INGRESO,
-            RegistroVentaControlado::TIPO_ANULACION_VENTA,
-            RegistroVentaControlado::TIPO_COMPRA,
-        ])->sum('cantidad');
+        $kpiStats = $kpiBaseQuery->selectRaw("
+            COUNT(*) as total_movimientos,
+            COALESCE(SUM(CASE WHEN tipo_movimiento IN ('DEVOLUCION_STOCK', 'AJUSTE_INGRESO', 'ANULACION_VENTA', 'COMPRA') THEN cantidad ELSE 0 END), 0) as total_entradas,
+            COALESCE(SUM(CASE WHEN tipo_movimiento IN ('VENTA', 'DEVOLUCION_MERMA', 'AJUSTE_EGRESO') THEN cantidad ELSE 0 END), 0) as total_salidas,
+            COALESCE(SUM(CASE WHEN tipo_movimiento IN ('DEVOLUCION_MERMA', 'AJUSTE_EGRESO') THEN cantidad ELSE 0 END), 0) as total_mermas
+        ")->first();
 
-        $totalSalidas = (clone $kpiBaseQuery)->whereIn('tipo_movimiento', [
-            RegistroVentaControlado::TIPO_VENTA,
-            RegistroVentaControlado::TIPO_DEVOLUCION_MERMA,
-            RegistroVentaControlado::TIPO_AJUSTE_EGRESO,
-        ])->sum('cantidad');
-
-        $totalMermas = (clone $kpiBaseQuery)->whereIn('tipo_movimiento', [
-            RegistroVentaControlado::TIPO_DEVOLUCION_MERMA,
-            RegistroVentaControlado::TIPO_AJUSTE_EGRESO,
-        ])->sum('cantidad');
+        $totalMovimientos = (int) ($kpiStats->total_movimientos ?? 0);
+        $totalEntradas    = (float) ($kpiStats->total_entradas ?? 0);
+        $totalSalidas     = (float) ($kpiStats->total_salidas ?? 0);
+        $totalMermas      = (float) ($kpiStats->total_mermas ?? 0);
 
         $registros = $query->orderByDesc('created_at')->paginate(perPage(20))->withQueryString();
 
         // Para selector de productos controlados
-        $productosControlados = Producto::controlados()
-            ->select('id', 'nombre')
-            ->orderBy('nombre')
-            ->get();
+        $productosControlados = RequestCache::rememberStatic('productos:controlados:select', function () {
+            return Producto::controlados()
+                ->select('id', 'nombre')
+                ->orderBy('nombre')
+                ->get();
+        });
 
         return view('controlados.index', compact(
             'registros',

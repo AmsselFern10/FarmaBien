@@ -54,6 +54,16 @@ class RegistroVentaControlado extends Model
      */
     protected static function booted(): void
     {
+        static::created(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('controlados:');
+            \App\Support\RequestCache::forgetPrefixStatic('minsa:');
+        });
+
+        static::saved(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('controlados:');
+            \App\Support\RequestCache::forgetPrefixStatic('minsa:');
+        });
+
         static::updating(function ($registro) {
             $inmutables = [
                 'tipo_movimiento',
