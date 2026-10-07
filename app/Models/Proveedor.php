@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Facades\RequestCache;
 
 class Proveedor extends Model
 {
@@ -27,8 +28,6 @@ class Proveedor extends Model
         'activo' => 'boolean',
     ];
 
-    protected static ?\Illuminate\Database\Eloquent\Collection $cachedActivos = null;
-
     protected static function booted(): void
     {
         static::saved(function () {
@@ -41,19 +40,14 @@ class Proveedor extends Model
 
     public static function getCachedActivos(): \Illuminate\Database\Eloquent\Collection
     {
-        if (static::$cachedActivos !== null) {
-            return static::$cachedActivos;
-        }
-
-        return static::$cachedActivos = \Illuminate\Support\Facades\Cache::remember('catalog_proveedores_base', 300, function () {
+        return RequestCache::remember('proveedores:activos', function () {
             return static::select(['id', 'nombre', 'ruc', 'telefono'])->activos()->orderBy('nombre')->get();
         });
     }
 
     public static function clearCache(): void
     {
-        static::$cachedActivos = null;
-        \Illuminate\Support\Facades\Cache::forget('catalog_proveedores_base');
+        RequestCache::forgetPrefix('proveedores:');
     }
 
     // Relaciones
@@ -95,4 +89,3 @@ class Proveedor extends Model
         });
     }
 }
-

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Facades\RequestCache;
 
 class Laboratorio extends Model
 {
@@ -26,8 +27,6 @@ class Laboratorio extends Model
         'activo' => 'boolean',
     ];
 
-    protected static ?\Illuminate\Database\Eloquent\Collection $cachedActivos = null;
-
     protected static function booted(): void
     {
         static::saved(function () {
@@ -40,19 +39,14 @@ class Laboratorio extends Model
 
     public static function getCachedActivos(): \Illuminate\Database\Eloquent\Collection
     {
-        if (static::$cachedActivos !== null) {
-            return static::$cachedActivos;
-        }
-
-        return static::$cachedActivos = \Illuminate\Support\Facades\Cache::remember('catalog_laboratorios_base', 300, function () {
+        return RequestCache::remember('laboratorios:activos', function () {
             return static::select(['id', 'nombre', 'codigo'])->activos()->orderBy('nombre')->get();
         });
     }
 
     public static function clearCache(): void
     {
-        static::$cachedActivos = null;
-        \Illuminate\Support\Facades\Cache::forget('catalog_laboratorios_base');
+        RequestCache::forgetPrefix('laboratorios:');
     }
 
     public function productos(): HasMany

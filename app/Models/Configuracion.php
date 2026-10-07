@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use App\Facades\RequestCache;
 
 class Configuracion extends Model
 {
@@ -20,12 +21,20 @@ class Configuracion extends Model
         'descripcion',
     ];
 
-    protected static ?array $memoryCache = null;
-
     /**
-     * Cache key para almacenar todas las configuraciones en memoria
+     * Cache key para almacenar todas las configuraciones en memoria persistente
      */
     public const CACHE_KEY = 'app_configuraciones_assoc';
+
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            static::clearCache();
+        });
+        static::deleted(function () {
+            static::clearCache();
+        });
+    }
 
     /**
      * Obtener el valor de una configuración por su clave
@@ -82,18 +91,16 @@ class Configuracion extends Model
     }
 
     /**
-     * Obtener todas las configuraciones indexadas por clave (desde caché)
+     * Obtener todas las configuraciones indexadas por clave (desde RequestCache por ciclo de petición)
      */
     public static function allAsAssoc(): array
     {
-        if (static::$memoryCache !== null) {
-            return static::$memoryCache;
-        }
-
-        return static::$memoryCache = Cache::rememberForever(static::CACHE_KEY, function () {
-            return static::all(['clave', 'valor', 'tipo', 'grupo', 'descripcion'])
-                ->keyBy('clave')
-                ->toArray();
+        return RequestCache::remember('config:all_assoc', function () {
+            return Cache::rememberForever(static::CACHE_KEY, function () {
+                return static::all(['clave', 'valor', 'tipo', 'grupo', 'descripcion'])
+                    ->keyBy('clave')
+                    ->toArray();
+            });
         });
     }
 
@@ -102,7 +109,7 @@ class Configuracion extends Model
      */
     public static function clearCache(): void
     {
-        static::$memoryCache = null;
+        RequestCache::forgetPrefix('config:');
         Cache::forget(static::CACHE_KEY);
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Facades\RequestCache;
 
 class Categoria extends Model
 {
@@ -21,8 +22,6 @@ class Categoria extends Model
         'activo' => 'boolean',
     ];
 
-    protected static ?\Illuminate\Database\Eloquent\Collection $cachedActivos = null;
-
     protected static function booted(): void
     {
         static::saved(function () {
@@ -35,19 +34,14 @@ class Categoria extends Model
 
     public static function getCachedActivos(): \Illuminate\Database\Eloquent\Collection
     {
-        if (static::$cachedActivos !== null) {
-            return static::$cachedActivos;
-        }
-
-        return static::$cachedActivos = \Illuminate\Support\Facades\Cache::remember('catalog_categorias_base', 300, function () {
+        return RequestCache::remember('categorias:activas', function () {
             return static::select(['id', 'nombre'])->activos()->orderBy('nombre')->get();
         });
     }
 
     public static function clearCache(): void
     {
-        static::$cachedActivos = null;
-        \Illuminate\Support\Facades\Cache::forget('catalog_categorias_base');
+        RequestCache::forgetPrefix('categorias:');
     }
 
     // Relaciones

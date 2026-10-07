@@ -280,14 +280,16 @@ class VentaService
             ]);
 
             $totalAcumulado = 0;
+            $detallesCreados = [];
 
             // Ordenar ítems por lote_id para garantizar orden de bloqueo determinista (prevención de deadlocks)
             $productosOrdenados = collect($data['productos'])->sortBy('lote_id')->values()->all();
 
             // 4. Procesar cada producto del carrito
             foreach ($productosOrdenados as $item) {
-                $subtotalItem = $this->procesarDetalleVenta($venta, $item, $recetaModalidad);
-                $totalAcumulado += $subtotalItem;
+                $resultadoItem = $this->procesarDetalleVenta($venta, $item, $recetaModalidad);
+                $totalAcumulado += $resultadoItem['subtotal'];
+                $detallesCreados[] = $resultadoItem;
 
                 if (!empty($item['receta_detalle_id'])) {
                     $recetaDetalle = RecetaDetalle::find($item['receta_detalle_id']);
@@ -355,8 +357,9 @@ class VentaService
             $motivoOmisionGeneral = trim((string) ($data['receta_omision_motivo'] ?? $data['motivo_omision'] ?? ''));
             $recetaVinculada = isset($recetaModel) ? $recetaModel : (!empty($recetasAsociadas) ? Receta::find($recetasAsociadas[0]) : null);
 
-            foreach ($venta->detalles()->with('producto', 'lote')->get() as $det) {
-                $p = $det->producto;
+            foreach ($detallesCreados as $itemCreado) {
+                $det = $itemCreado['detalle'];
+                $p = $itemCreado['producto'];
                 if ($p && $p->esControlado()) {
                     $esOmision = ($recetaModalidad === 'omitida') || (!empty($motivoOmisionGeneral) && empty($ctrlData['medico_nombre']) && !$recetaVinculada);
                     
@@ -434,10 +437,11 @@ class VentaService
      * 
      * @param Venta $venta
      * @param array $item
-     * @return float Subtotal de la línea
+     * @param string $recetaModalidad
+     * @return array
      * @throws Exception
      */
-    protected function procesarDetalleVenta(Venta $venta, array $item, string $recetaModalidad = 'sin_receta'): float
+    protected function procesarDetalleVenta(Venta $venta, array $item, string $recetaModalidad = 'sin_receta'): array
     {
         $productoId = (int) $item['producto_id'];
         $loteId = (int) $item['lote_id'];
@@ -546,7 +550,7 @@ class VentaService
         $subtotal = max(0, round($subtotalBruto - $descuentoLinea, 2));
 
         // 7. Crear Detalle de Venta
-        DetalleVenta::create([
+        $detalleVenta = DetalleVenta::create([
             'venta_id'                  => $venta->id,
             'producto_id'               => $producto->id,
             'lote_id'                   => $lote->id,
@@ -580,7 +584,12 @@ class VentaService
             'fecha_movimiento' => now(),
         ]);
 
-        return $subtotal;
+        return [
+            'subtotal' => $subtotal,
+            'detalle'  => $detalleVenta,
+            'producto' => $producto,
+            'lote'     => $lote,
+        ];
     }
 
     /**
@@ -596,7 +605,7 @@ class VentaService
     public function modificarVenta(int $ventaId, array $data, string $motivo): Venta
     {
         return DB::transaction(function () use ($ventaId, $data, $motivo) {
-            $ventaOriginal = Venta::with(['detalles', 'sesionCaja'])
+            $ventaOriginal = Venta::with(['detalles.producto', 'detalles.lote', 'sesionCaja', 'cliente'])
                 ->where('id', $ventaId)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -614,8 +623,10 @@ class VentaService
                 throw new Exception("La venta #{$ventaId} no puede ser modificada en su estado actual.");
             }
 
-            // 1. Revertir cada detalle de la venta original al inventario y recetas
-            foreach ($ventaOriginal->detalles as $detalle) {
+            // 1. Revertir cada detalle de la venta original al inventario y recetas (orden determinista por lote_id)
+            $detallesOrdenados = $ventaOriginal->detalles->sortBy('lote_id');
+
+            foreach ($detallesOrdenados as $detalle) {
                 $lote = Lote::where('id', $detalle->lote_id)->lockForUpdate()->firstOrFail();
 
                 $stockAnterior = (int) $lote->stock_actual;
@@ -651,7 +662,8 @@ class VentaService
                     );
                 }
 
-                if ($detalle->producto && $detalle->producto->esControlado()) {
+                $producto = $detalle->producto;
+                if ($producto && $producto->esControlado()) {
                     \App\Models\RegistroVentaControlado::create([
                         'tipo_movimiento'     => \App\Models\RegistroVentaControlado::TIPO_ANULACION_VENTA,
                         'venta_id'            => $ventaOriginal->id,
@@ -704,7 +716,7 @@ class VentaService
     public function anularVenta(int $ventaId, string $motivo): Venta
     {
         return DB::transaction(function () use ($ventaId, $motivo) {
-            $venta = Venta::with(['detalles', 'sesionCaja'])
+            $venta = Venta::with(['detalles.producto', 'detalles.lote', 'sesionCaja', 'cliente'])
                 ->where('id', $ventaId)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -722,8 +734,10 @@ class VentaService
                 throw new Exception("La venta #{$ventaId} no puede ser anulada en su estado actual.");
             }
 
-            // Revertir cada detalle de la venta
-            foreach ($venta->detalles as $detalle) {
+            // Revertir cada detalle de la venta (orden determinista por lote_id)
+            $detallesOrdenados = $venta->detalles->sortBy('lote_id');
+
+            foreach ($detallesOrdenados as $detalle) {
                 $lote = Lote::where('id', $detalle->lote_id)->lockForUpdate()->firstOrFail();
 
                 $stockAnterior = (int) $lote->stock_actual;
@@ -761,7 +775,8 @@ class VentaService
                     );
                 }
 
-                if ($detalle->producto && $detalle->producto->esControlado()) {
+                $producto = $detalle->producto;
+                if ($producto && $producto->esControlado()) {
                     \App\Models\RegistroVentaControlado::create([
                         'tipo_movimiento'     => \App\Models\RegistroVentaControlado::TIPO_ANULACION_VENTA,
                         'venta_id'            => $venta->id,

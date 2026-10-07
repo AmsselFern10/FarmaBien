@@ -67,11 +67,13 @@ class User extends Authenticatable
     }
 
     /**
-     * Obtener la sesión de caja actualmente abierta para este usuario
+     * Obtener la sesión de caja actualmente abierta para este usuario (con caché por petición)
      */
-    public function sesionCajaActiva()
+    public function sesionCajaActiva(): ?SesionCaja
     {
-        return $this->sesionesCaja()->where('estado', 'abierta')->with('caja')->latest('fecha_apertura')->first();
+        return \App\Facades\RequestCache::remember("user:{$this->id}:sesion_caja_activa", function () {
+            return $this->sesionesCaja()->where('estado', 'abierta')->with('caja')->latest('fecha_apertura')->first();
+        });
     }
 
     /**

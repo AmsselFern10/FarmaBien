@@ -56,6 +56,16 @@ class SesionCaja extends Model
      */
     protected static function booted(): void
     {
+        static::saved(function ($sesion) {
+            \App\Facades\RequestCache::forgetPrefix('user:');
+            \App\Facades\RequestCache::forgetPrefix('sesiones_caja:');
+        });
+
+        static::deleted(function ($sesion) {
+            \App\Facades\RequestCache::forgetPrefix('user:');
+            \App\Facades\RequestCache::forgetPrefix('sesiones_caja:');
+        });
+
         static::deleting(function ($sesion) {
             if ($sesion->estado === 'cerrada') {
                 throw new \DomainException("No se puede eliminar una sesión de caja formalmente cerrada y arqueada.");

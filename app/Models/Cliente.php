@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Facades\RequestCache;
 
 class Cliente extends Model
 {
@@ -24,8 +25,6 @@ class Cliente extends Model
         'activo' => 'boolean',
     ];
 
-    protected static ?\Illuminate\Database\Eloquent\Collection $cachedPosClientes = null;
-
     protected static function booted(): void
     {
         static::saved(function () {
@@ -38,19 +37,14 @@ class Cliente extends Model
 
     public static function getCachedPosClientes(): \Illuminate\Database\Eloquent\Collection
     {
-        if (static::$cachedPosClientes !== null) {
-            return static::$cachedPosClientes;
-        }
-
-        return static::$cachedPosClientes = \Illuminate\Support\Facades\Cache::remember('pos_clientes_init_50', 60, function () {
+        return RequestCache::remember('clientes:pos_top50', function () {
             return static::activos()->orderBy('nombre')->limit(50)->get(['id', 'nombre', 'documento', 'telefono']);
         });
     }
 
     public static function clearCache(): void
     {
-        static::$cachedPosClientes = null;
-        \Illuminate\Support\Facades\Cache::forget('pos_clientes_init_50');
+        RequestCache::forgetPrefix('clientes:');
     }
 
     // Relaciones

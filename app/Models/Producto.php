@@ -277,26 +277,19 @@ class Producto extends Model
         return $this->hasMany(Promocion::class);
     }
 
-    protected static ?\Illuminate\Support\Collection $cachedPromociones = null;
-
     /**
-     * Obtiene el listado de promociones vigentes con caché en memoria estática
+     * Obtiene el listado de promociones vigentes con caché en memoria por petición (RequestCache)
      */
     public static function getPromocionesVigentes(): \Illuminate\Support\Collection
     {
-        if (static::$cachedPromociones !== null) {
-            return static::$cachedPromociones;
-        }
-
-        return static::$cachedPromociones = \Illuminate\Support\Facades\Cache::remember('promociones_vigentes_pos', 60, function () {
+        return \App\Facades\RequestCache::remember('promociones:vigentes_pos', function () {
             return Promocion::vigentes()->orderBy('id', 'desc')->get();
         });
     }
 
     public static function clearPromocionesCache(): void
     {
-        static::$cachedPromociones = null;
-        \Illuminate\Support\Facades\Cache::forget('promociones_vigentes_pos');
+        \App\Facades\RequestCache::forgetPrefix('promociones:');
     }
 
     /**

@@ -25,6 +25,18 @@ class Caja extends Model
         'activo' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Facades\RequestCache::forgetPrefix('user:');
+            \App\Facades\RequestCache::forgetPrefix('cajas:');
+        });
+        static::deleted(function () {
+            \App\Facades\RequestCache::forgetPrefix('user:');
+            \App\Facades\RequestCache::forgetPrefix('cajas:');
+        });
+    }
+
     public function sesiones(): HasMany
     {
         return $this->hasMany(SesionCaja::class, 'caja_id');

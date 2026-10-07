@@ -105,37 +105,34 @@ class CajaService
             return $sesion;
         }
 
-        // Ventas completadas asociadas a la sesión
-        $ventasEfectivo = (float) Venta::where('sesion_caja_id', $sesion->id)
+        // 1 sola consulta consolidada para todos los totales de ventas
+        $ventasTotales = Venta::where('sesion_caja_id', $sesion->id)
             ->where('estado', 'completada')
-            ->where('metodo_pago', 'efectivo')
-            ->sum('total');
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN metodo_pago = 'efectivo' THEN total ELSE 0 END), 0) as efectivo,
+                COALESCE(SUM(CASE WHEN metodo_pago = 'tarjeta' THEN total ELSE 0 END), 0) as tarjeta,
+                COALESCE(SUM(CASE WHEN metodo_pago = 'transferencia' THEN total ELSE 0 END), 0) as transferencia,
+                COALESCE(SUM(CASE WHEN metodo_pago NOT IN ('efectivo', 'tarjeta', 'transferencia') THEN total ELSE 0 END), 0) as otros,
+                COALESCE(SUM(total), 0) as total_ventas
+            ")
+            ->first();
 
-        $ventasTarjeta = (float) Venta::where('sesion_caja_id', $sesion->id)
-            ->where('estado', 'completada')
-            ->where('metodo_pago', 'tarjeta')
-            ->sum('total');
+        $ventasEfectivo = (float) ($ventasTotales->efectivo ?? 0);
+        $ventasTarjeta = (float) ($ventasTotales->tarjeta ?? 0);
+        $ventasTransferencia = (float) ($ventasTotales->transferencia ?? 0);
+        $ventasOtros = (float) ($ventasTotales->otros ?? 0);
+        $totalVentas = (float) ($ventasTotales->total_ventas ?? 0);
 
-        $ventasTransferencia = (float) Venta::where('sesion_caja_id', $sesion->id)
-            ->where('estado', 'completada')
-            ->where('metodo_pago', 'transferencia')
-            ->sum('total');
+        // 1 sola consulta consolidada para movimientos manuales de caja
+        $movimientos = MovimientoCaja::where('sesion_caja_id', $sesion->id)
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END), 0) as ingresos,
+                COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto ELSE 0 END), 0) as egresos
+            ")
+            ->first();
 
-        $ventasOtros = (float) Venta::where('sesion_caja_id', $sesion->id)
-            ->where('estado', 'completada')
-            ->whereNotIn('metodo_pago', ['efectivo', 'tarjeta', 'transferencia'])
-            ->sum('total');
-
-        $totalVentas = round($ventasEfectivo + $ventasTarjeta + $ventasTransferencia + $ventasOtros, 2);
-
-        // Movimientos manuales
-        $ingresos = (float) MovimientoCaja::where('sesion_caja_id', $sesion->id)
-            ->where('tipo', 'ingreso')
-            ->sum('monto');
-
-        $egresos = (float) MovimientoCaja::where('sesion_caja_id', $sesion->id)
-            ->where('tipo', 'egreso')
-            ->sum('monto');
+        $ingresos = (float) ($movimientos->ingresos ?? 0);
+        $egresos = (float) ($movimientos->egresos ?? 0);
 
         $esperadoEfectivo = round((float) $sesion->monto_inicial + $ventasEfectivo + $ingresos - $egresos, 2);
 
@@ -144,7 +141,7 @@ class CajaService
             'total_ventas_tarjeta'        => round($ventasTarjeta, 2),
             'total_ventas_transferencia'  => round($ventasTransferencia, 2),
             'total_ventas_otros'          => round($ventasOtros, 2),
-            'total_ventas'                => $totalVentas,
+            'total_ventas'                => round($totalVentas, 2),
             'total_ingresos_manuales'     => round($ingresos, 2),
             'total_egresos_manuales'      => round($egresos, 2),
             'monto_esperado_efectivo'     => $esperadoEfectivo,

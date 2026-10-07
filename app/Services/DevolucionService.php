@@ -154,7 +154,7 @@ class DevolucionService
 
                 $detalleVentaOriginal = $venta->detalles->firstWhere('id', $itemData['detalle_venta_id']);
 
-                $lote = Lote::find($itemData['lote_id']);
+                $lote = $detalleVentaOriginal?->lote ?? Lote::find($itemData['lote_id']);
                 if ($lote) {
                     if ($itemData['reingresa_a_stock']) {
                         // Reingresar stock al lote
@@ -201,7 +201,7 @@ class DevolucionService
                 }
 
                 // Si el producto es controlado, asentar en el Libro Oficial MINSA
-                $productoModel = \App\Models\Producto::find($itemData['producto_id']);
+                $productoModel = $detalleVentaOriginal?->producto ?? \App\Models\Producto::find($itemData['producto_id']);
                 if ($productoModel && $productoModel->esControlado()) {
                     $tipoMovCtrl = $itemData['reingresa_a_stock']
                         ? \App\Models\RegistroVentaControlado::TIPO_DEVOLUCION_STOCK
