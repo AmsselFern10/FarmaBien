@@ -35,6 +35,21 @@ class PresentacionProducto extends Model
         'orden' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (PresentacionProducto $presentacion) {
+            \App\Facades\RequestCache::forget("presentaciones:producto:{$presentacion->producto_id}");
+            \App\Facades\RequestCache::forget("presentacion:{$presentacion->id}");
+            \App\Facades\RequestCache::forgetPrefix('presentaciones:');
+        });
+
+        static::deleted(function (PresentacionProducto $presentacion) {
+            \App\Facades\RequestCache::forget("presentaciones:producto:{$presentacion->producto_id}");
+            \App\Facades\RequestCache::forget("presentacion:{$presentacion->id}");
+            \App\Facades\RequestCache::forgetPrefix('presentaciones:');
+        });
+    }
+
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);

@@ -45,6 +45,27 @@ class Producto extends Model
         'activo' => 'boolean',
     ];
 
+    protected ?Promocion $_memoPromocionVigente = null;
+    protected bool $_memoPromocionVigenteChecked = false;
+
+    protected static function booted(): void
+    {
+        static::saved(function (Producto $producto) {
+            \App\Facades\RequestCache::forget("producto:{$producto->id}");
+            \App\Facades\RequestCache::forgetPrefix('productos:');
+        });
+
+        static::deleted(function (Producto $producto) {
+            \App\Facades\RequestCache::forget("producto:{$producto->id}");
+            \App\Facades\RequestCache::forgetPrefix('productos:');
+        });
+
+        static::restored(function (Producto $producto) {
+            \App\Facades\RequestCache::forget("producto:{$producto->id}");
+            \App\Facades\RequestCache::forgetPrefix('productos:');
+        });
+    }
+
     // Relaciones
     public function categoria(): BelongsTo
     {
@@ -298,9 +319,13 @@ class Producto extends Model
      */
     public function getPromocionVigenteAttribute(): ?Promocion
     {
+        if ($this->_memoPromocionVigenteChecked) {
+            return $this->_memoPromocionVigente;
+        }
+
         $promociones = static::getPromocionesVigentes();
 
-        return $promociones->first(function ($p) {
+        $this->_memoPromocionVigente = $promociones->first(function ($p) {
             return $p->alcance === 'producto' && (int)$p->producto_id === (int)$this->id;
         }) ?? $promociones->first(function ($p) {
             return $p->alcance === 'categoria' && (int)$p->categoria_id === (int)$this->categoria_id;
@@ -309,6 +334,10 @@ class Producto extends Model
         }) ?? $promociones->first(function ($p) {
             return $p->alcance === 'general';
         });
+
+        $this->_memoPromocionVigenteChecked = true;
+
+        return $this->_memoPromocionVigente;
     }
 
     public function getTieneOfertaAttribute(): bool

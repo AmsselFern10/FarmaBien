@@ -111,8 +111,8 @@ class ProductoService
                 return $producto;
             });
         } catch (Exception $e) {
-            if ($uploadedPath && Storage::disk('public')->exists($uploadedPath)) {
-                Storage::disk('public')->delete($uploadedPath);
+            if ($uploadedPath && Storage::disk('private_images')->exists($uploadedPath)) {
+                Storage::disk('private_images')->delete($uploadedPath);
             }
             throw $e;
         }
@@ -252,35 +252,39 @@ class ProductoService
             return [];
         }
 
-        return Producto::with(['laboratorio:id,nombre', 'categoria:id,nombre'])
-            ->activos()
-            ->buscar($q)
-            ->limit($limit)
-            ->get(['id', 'nombre', 'concentracion', 'forma_farmaceutica', 'principio_activo', 'laboratorio_id', 'categoria_id', 'codigo_barra', 'tipo_control', 'requiere_receta', 'precio_venta'])
-            ->map(function ($med) {
-                $datoSecundario = $med->principio_activo
-                    ? ($med->concentracion ? "{$med->principio_activo} {$med->concentracion}" : $med->principio_activo)
-                    : ($med->categoria->nombre ?? 'Medicamento');
+        $cacheKey = 'productos:buscar_ajax:' . md5($q) . ":{$limit}";
 
-                return [
-                    'id'               => $med->id,
-                    'nombre'           => $med->nombre_completo,
-                    'nombre_simple'    => $med->nombre,
-                    'dato_secundario'  => $datoSecundario,
-                    'principio_activo' => $med->principio_activo,
-                    'concentracion'    => $med->concentracion,
-                    'laboratorio'      => $med->laboratorio->nombre ?? 'Sin laboratorio',
-                    'categoria'        => $med->categoria->nombre ?? 'General',
-                    'codigo'           => $med->codigo_barra ?? 'S/C',
-                    'codigo_barras'    => $med->codigo_barra ?? 'S/C',
-                    'tipo_control'     => $med->tipo_control,
-                    'es_controlado'    => $med->esControlado(),
-                    'requiere_receta'  => (bool)$med->requiere_receta,
-                    'precio_venta'     => (float)$med->precio_venta,
-                    'precio_formato'   => number_format((float)$med->precio_venta, 2),
-                ];
-            })
-            ->toArray();
+        return \App\Facades\RequestCache::remember($cacheKey, function () use ($q, $limit) {
+            return Producto::with(['laboratorio:id,nombre', 'categoria:id,nombre'])
+                ->activos()
+                ->buscar($q)
+                ->limit($limit)
+                ->get(['id', 'nombre', 'concentracion', 'forma_farmaceutica', 'principio_activo', 'laboratorio_id', 'categoria_id', 'codigo_barra', 'tipo_control', 'requiere_receta', 'precio_venta'])
+                ->map(function ($med) {
+                    $datoSecundario = $med->principio_activo
+                        ? ($med->concentracion ? "{$med->principio_activo} {$med->concentracion}" : $med->principio_activo)
+                        : ($med->categoria->nombre ?? 'Medicamento');
+
+                    return [
+                        'id'               => $med->id,
+                        'nombre'           => $med->nombre_completo,
+                        'nombre_simple'    => $med->nombre,
+                        'dato_secundario'  => $datoSecundario,
+                        'principio_activo' => $med->principio_activo,
+                        'concentracion'    => $med->concentracion,
+                        'laboratorio'      => $med->laboratorio->nombre ?? 'Sin laboratorio',
+                        'categoria'        => $med->categoria->nombre ?? 'General',
+                        'codigo'           => $med->codigo_barra ?? 'S/C',
+                        'codigo_barras'    => $med->codigo_barra ?? 'S/C',
+                        'tipo_control'     => $med->tipo_control,
+                        'es_controlado'    => $med->esControlado(),
+                        'requiere_receta'  => (bool)$med->requiere_receta,
+                        'precio_venta'     => (float)$med->precio_venta,
+                        'precio_formato'   => number_format((float)$med->precio_venta, 2),
+                    ];
+                })
+                ->toArray();
+        });
     }
 }
 
