@@ -245,7 +245,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
             @forelse($productos as $producto)
                 @php
-                    $stockDisponible = $producto->lotes->sum('stock_actual');
+                    $stockDisponible = (int) ($producto->stock_disponible ?? 0);
                     $tieneStock = $stockDisponible > 0;
                     
                     // Texto descriptivo para la consulta por WhatsApp

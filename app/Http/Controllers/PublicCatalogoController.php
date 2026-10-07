@@ -37,12 +37,10 @@ class PublicCatalogoController extends Controller
             ->with([
                 'categoria:id,nombre',
                 'laboratorio:id,nombre',
-                'lotes' => function ($q) {
-                    $q->select(['id', 'producto_id', 'stock_actual', 'fecha_vencimiento', 'activo'])
-                      ->activos()
-                      ->vigentes();
-                }
-            ]);
+            ])
+            ->withSum(['lotes as stock_disponible' => function ($q) {
+                $q->disponibles();
+            }], 'stock_actual');
 
         // Búsqueda simplificada para clientes por Nombre comercial o Principio activo
         if (!empty($buscar)) {
