@@ -37,13 +37,13 @@ class ReporteService
         $hoyInicio = today()->startOfDay()->toDateTimeString();
         $hoyFin = today()->endOfDay()->toDateTimeString();
 
-        $ventasMes = (float) Venta::whereBetween('fecha', [$inicioMes, $finMes])
+        $statsVentasMes = Venta::whereBetween('fecha', [$inicioMes, $finMes])
             ->completadas()
-            ->sum('total');
+            ->selectRaw('COALESCE(SUM(total), 0) as total, COUNT(*) as cantidad')
+            ->first();
 
-        $cantidadVentasMes = (int) Venta::whereBetween('fecha', [$inicioMes, $finMes])
-            ->completadas()
-            ->count();
+        $ventasMes = (float) ($statsVentasMes->total ?? 0);
+        $cantidadVentasMes = (int) ($statsVentasMes->cantidad ?? 0);
 
         $ventasHoy = (float) Venta::whereBetween('fecha', [$hoyInicio, $hoyFin])
             ->completadas()
@@ -77,8 +77,17 @@ class ReporteService
             ->get();
 
         $today = now()->toDateString();
-        $lotesVencidosCount = Lote::activos()->where('stock_actual', '>', 0)->where('fecha_vencimiento', '<=', $today)->count();
-        $lotesCriticosCount = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDay()->toDateString(), now()->addDays(30)->toDateString()])->count();
+        $d30 = now()->addDays(30)->toDateString();
+        $statsLotes = Lote::activos()
+            ->where('stock_actual', '>', 0)
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN fecha_vencimiento <= ? THEN 1 ELSE 0 END), 0) as vencidos,
+                COALESCE(SUM(CASE WHEN fecha_vencimiento > ? AND fecha_vencimiento <= ? THEN 1 ELSE 0 END), 0) as criticos
+            ", [$today, $today, $d30])
+            ->first();
+
+        $lotesVencidosCount = (int) ($statsLotes->vencidos ?? 0);
+        $lotesCriticosCount = (int) ($statsLotes->criticos ?? 0);
         $productosBajoStockCount = Producto::activos()->bajoStock()->count();
 
         return [
@@ -234,11 +243,26 @@ class ReporteService
     public function getEstadisticasInventario($queryInventario): array
     {
         $today = now()->toDateString();
-        $semVencidos = Lote::activos()->where('stock_actual', '>', 0)->where('fecha_vencimiento', '<=', $today)->count();
-        $semCritico30 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDay()->toDateString(), now()->addDays(30)->toDateString()])->count();
-        $semAlerta60 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDays(31)->toDateString(), now()->addDays(60)->toDateString()])->count();
-        $semPreventivo90 = Lote::activos()->where('stock_actual', '>', 0)->whereBetween('fecha_vencimiento', [now()->addDays(61)->toDateString(), now()->addDays(90)->toDateString()])->count();
-        $semVigentes = Lote::activos()->where('stock_actual', '>', 0)->where('fecha_vencimiento', '>', now()->addDays(90)->toDateString())->count();
+        $d30 = now()->addDays(30)->toDateString();
+        $d60 = now()->addDays(60)->toDateString();
+        $d90 = now()->addDays(90)->toDateString();
+
+        $semaforos = Lote::activos()
+            ->where('stock_actual', '>', 0)
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN fecha_vencimiento <= ? THEN 1 ELSE 0 END), 0) as vencidos,
+                COALESCE(SUM(CASE WHEN fecha_vencimiento > ? AND fecha_vencimiento <= ? THEN 1 ELSE 0 END), 0) as critico_30,
+                COALESCE(SUM(CASE WHEN fecha_vencimiento > ? AND fecha_vencimiento <= ? THEN 1 ELSE 0 END), 0) as alerta_60,
+                COALESCE(SUM(CASE WHEN fecha_vencimiento > ? AND fecha_vencimiento <= ? THEN 1 ELSE 0 END), 0) as preventivo_90,
+                COALESCE(SUM(CASE WHEN fecha_vencimiento > ? THEN 1 ELSE 0 END), 0) as vigentes
+            ", [$today, $today, $d30, $d30, $d60, $d60, $d90, $d90])
+            ->first();
+
+        $semVencidos = (int) ($semaforos->vencidos ?? 0);
+        $semCritico30 = (int) ($semaforos->critico_30 ?? 0);
+        $semAlerta60 = (int) ($semaforos->alerta_60 ?? 0);
+        $semPreventivo90 = (int) ($semaforos->preventivo_90 ?? 0);
+        $semVigentes = (int) ($semaforos->vigentes ?? 0);
 
         // Agregados calculados directamente en base de datos mediante join optimizado
         $agregados = (clone $queryInventario)
@@ -394,12 +418,21 @@ class ReporteService
             $query->where('estado', $estadoFiltro);
         }
 
-        $baseQuery = Receta::whereBetween('created_at', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"]);
-        $totalRecetas = (clone $baseQuery)->count();
-        $procesadas   = (clone $baseQuery)->whereIn('estado', ['procesada', 'dispensada_total'])->count();
-        $pendientes   = (clone $baseQuery)->whereIn('estado', ['pendiente', 'dispensada_parcial'])->count();
-        $vencidas     = (clone $baseQuery)->where('estado', 'vencida')->count();
-        $rechazadas   = (clone $baseQuery)->where('estado', 'rechazada')->count();
+        $statsRecetas = Receta::whereBetween('created_at', ["{$fechaDesde} 00:00:00", "{$fechaHasta} 23:59:59"])
+            ->selectRaw("
+                COUNT(*) as total_recetas,
+                COALESCE(SUM(CASE WHEN estado IN ('procesada', 'dispensada_total') THEN 1 ELSE 0 END), 0) as procesadas,
+                COALESCE(SUM(CASE WHEN estado IN ('pendiente', 'dispensada_parcial') THEN 1 ELSE 0 END), 0) as pendientes,
+                COALESCE(SUM(CASE WHEN estado = 'vencida' THEN 1 ELSE 0 END), 0) as vencidas,
+                COALESCE(SUM(CASE WHEN estado = 'rechazada' THEN 1 ELSE 0 END), 0) as rechazadas
+            ")
+            ->first();
+
+        $totalRecetas = (int) ($statsRecetas->total_recetas ?? 0);
+        $procesadas   = (int) ($statsRecetas->procesadas ?? 0);
+        $pendientes   = (int) ($statsRecetas->pendientes ?? 0);
+        $vencidas     = (int) ($statsRecetas->vencidas ?? 0);
+        $rechazadas   = (int) ($statsRecetas->rechazadas ?? 0);
 
         return [
             'query'        => $query,
@@ -438,18 +471,17 @@ class ReporteService
         }
 
         $baseQuery = clone $query;
-        $stats = (clone $baseQuery)->selectRaw('
+        $stats = (clone $baseQuery)->selectRaw("
             COUNT(id) as total_sesiones,
             COALESCE(SUM(total_ventas), 0) as total_ventas_cajas,
             COALESCE(SUM(total_ventas_efectivo), 0) as total_ventas_efectivo,
             COALESCE(SUM(total_ventas_tarjeta), 0) as total_ventas_tarjeta,
             COALESCE(SUM(total_ventas_transferencia), 0) as total_ventas_transferencia,
             COALESCE(SUM(total_ingresos_manuales), 0) as total_ingresos_manuales,
-            COALESCE(SUM(total_egresos_manuales), 0) as total_egresos_manuales
-        ')->first();
-
-        $diferenciaTotal = (float) (clone $baseQuery)->where('estado', 'cerrada')->sum('diferencia_efectivo');
-        $sesionesConDiferencia = (int) (clone $baseQuery)->where('estado', 'cerrada')->where('diferencia_efectivo', '!=', 0)->count();
+            COALESCE(SUM(total_egresos_manuales), 0) as total_egresos_manuales,
+            COALESCE(SUM(CASE WHEN estado = 'cerrada' THEN diferencia_efectivo ELSE 0 END), 0) as diferencia_total,
+            COALESCE(SUM(CASE WHEN estado = 'cerrada' AND diferencia_efectivo != 0 THEN 1 ELSE 0 END), 0) as sesiones_con_diferencia
+        ")->first();
 
         return [
             'query'                    => $query,
@@ -460,8 +492,8 @@ class ReporteService
             'totalVentasTransferencia' => (float) ($stats->total_ventas_transferencia ?? 0),
             'totalIngresosManuales'    => (float) ($stats->total_ingresos_manuales ?? 0),
             'totalEgresosManuales'     => (float) ($stats->total_egresos_manuales ?? 0),
-            'diferenciaTotal'          => $diferenciaTotal,
-            'sesionesConDiferencia'    => $sesionesConDiferencia,
+            'diferenciaTotal'          => (float) ($stats->diferencia_total ?? 0),
+            'sesionesConDiferencia'    => (int) ($stats->sesiones_con_diferencia ?? 0),
         ];
     }
 
@@ -504,19 +536,19 @@ class ReporteService
         }
 
         $baseQuery = clone $query;
-        $totalLogs = (clone $baseQuery)->count();
-        $usuariosActivos = (clone $baseQuery)->distinct('user_id')->count('user_id');
-        $modulosAuditados = (clone $baseQuery)->distinct('modulo')->count('modulo');
-        $accionesCriticas = (clone $baseQuery)->whereIn(DB::raw('UPPER(accion)'), [
-            'ELIMINAR', 'DELETE', 'ANULAR', 'AJUSTE', 'DESACTIVAR', 'UPDATE', 'EDITAR'
-        ])->count();
+        $statsAudit = (clone $baseQuery)->selectRaw("
+            COUNT(*) as total_logs,
+            COUNT(DISTINCT user_id) as usuarios_activos,
+            COUNT(DISTINCT modulo) as modulos_auditados,
+            COALESCE(SUM(CASE WHEN UPPER(accion) IN ('ELIMINAR', 'DELETE', 'ANULAR', 'AJUSTE', 'DESACTIVAR', 'UPDATE', 'EDITAR') THEN 1 ELSE 0 END), 0) as acciones_criticas
+        ")->first();
 
         return [
             'query'            => $query,
-            'totalLogs'        => $totalLogs,
-            'usuariosActivos'  => $usuariosActivos,
-            'modulosAuditados' => $modulosAuditados,
-            'accionesCriticas' => $accionesCriticas,
+            'totalLogs'        => (int) ($statsAudit->total_logs ?? 0),
+            'usuariosActivos'  => (int) ($statsAudit->usuarios_activos ?? 0),
+            'modulosAuditados' => (int) ($statsAudit->modulos_auditados ?? 0),
+            'accionesCriticas' => (int) ($statsAudit->acciones_criticas ?? 0),
         ];
     }
 }
