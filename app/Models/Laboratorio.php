@@ -35,6 +35,9 @@ class Laboratorio extends Model
         static::deleted(function () {
             static::clearCache();
         });
+        static::restored(function () {
+            static::clearCache();
+        });
     }
 
     public static function getCachedActivos(): \Illuminate\Database\Eloquent\Collection

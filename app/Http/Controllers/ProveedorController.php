@@ -81,7 +81,7 @@ class ProveedorController extends Controller
     public function buscarAjax(Request $request): JsonResponse
     {
         $q = trim((string)$request->input('q', ''));
-        $proveedores = $this->proveedorService->buscarAjax($q, 15);
+        $proveedores = $this->proveedorService->buscarAjax($q, 10);
 
         return response()->json($proveedores);
     }

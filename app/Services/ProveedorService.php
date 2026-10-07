@@ -106,25 +106,30 @@ class ProveedorService
     /**
      * Búsqueda AJAX para selectores dinámicos (Componente C / Compras).
      */
-    public function buscarAjax(string $termino, int $limite = 15): Collection
+    public function buscarAjax(string $termino, int $limite = 10): Collection
     {
-        $query = Proveedor::activos();
+        $limite = min(max($limite, 1), 10);
+        $cacheKey = 'proveedores:buscar_ajax:' . md5(trim($termino)) . ':' . $limite;
 
-        if (strlen(trim($termino)) > 0) {
-            $query->buscar($termino);
-        }
+        return \App\Facades\RequestCache::remember($cacheKey, function () use ($termino, $limite) {
+            $query = Proveedor::activos();
 
-        return $query->orderBy('nombre', 'asc')
-            ->limit($limite)
-            ->get(['id', 'nombre', 'contacto', 'ciudad', 'ruc', 'telefono'])
-            ->map(function ($prov) {
-                return [
-                    'id'       => $prov->id,
-                    'nombre'   => $prov->nombre,
-                    'contacto' => $prov->contacto ?: ($prov->ciudad ?: 'Proveedor Nacional'),
-                    'ruc'      => $prov->ruc ? "RUC: {$prov->ruc}" : ($prov->telefono ? "Tel: {$prov->telefono}" : 'S/RUC'),
-                ];
-            });
+            if (strlen(trim($termino)) > 0) {
+                $query->buscar($termino);
+            }
+
+            return $query->orderBy('nombre', 'asc')
+                ->limit($limite)
+                ->get(['id', 'nombre', 'contacto', 'ciudad', 'ruc', 'telefono'])
+                ->map(function ($prov) {
+                    return [
+                        'id'       => $prov->id,
+                        'nombre'   => $prov->nombre,
+                        'contacto' => $prov->contacto ?: ($prov->ciudad ?: 'Proveedor Nacional'),
+                        'ruc'      => $prov->ruc ? "RUC: {$prov->ruc}" : ($prov->telefono ? "Tel: {$prov->telefono}" : 'S/RUC'),
+                    ];
+                });
+        });
     }
 
     /**

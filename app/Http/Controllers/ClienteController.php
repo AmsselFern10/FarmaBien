@@ -94,7 +94,7 @@ class ClienteController extends Controller
     public function buscarAjax(Request $request): JsonResponse
     {
         $q = trim((string)$request->input('q', ''));
-        $clientes = $this->clienteService->buscarAjax($q, 15);
+        $clientes = $this->clienteService->buscarAjax($q, 10);
 
         return response()->json($clientes);
     }

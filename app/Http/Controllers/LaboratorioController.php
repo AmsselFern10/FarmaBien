@@ -126,7 +126,7 @@ class LaboratorioController extends Controller
     public function buscarAjax(Request $request): JsonResponse
     {
         $q = trim((string)$request->input('q', ''));
-        $laboratorios = $this->laboratorioService->buscarAjax($q, 15);
+        $laboratorios = $this->laboratorioService->buscarAjax($q, 10);
 
         return response()->json($laboratorios);
     }

@@ -127,7 +127,7 @@ class CategoriaController extends Controller
     public function buscarAjax(Request $request): JsonResponse
     {
         $q = trim((string)$request->input('q', ''));
-        $categorias = $this->categoriaService->buscarAjax($q, 15);
+        $categorias = $this->categoriaService->buscarAjax($q, 10);
 
         return response()->json($categorias);
     }

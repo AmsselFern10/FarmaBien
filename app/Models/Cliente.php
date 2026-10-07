@@ -33,6 +33,9 @@ class Cliente extends Model
         static::deleted(function () {
             static::clearCache();
         });
+        static::restored(function () {
+            static::clearCache();
+        });
     }
 
     public static function getCachedPosClientes(): \Illuminate\Database\Eloquent\Collection
