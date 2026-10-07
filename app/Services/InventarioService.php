@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Lote;
 use App\Models\Producto;
 use App\Models\MovimientoInventario;
+use App\Support\RequestCache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -422,18 +423,24 @@ class InventarioService
     }
 
     /**
-     * Obtener productos con stock bajo (optimizado con consulta directa)
+     * Obtener productos con stock bajo (optimizado con consulta directa y memoizado por ciclo de petición)
      * 
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function productosConStockBajo()
     {
-        return Producto::with(['categoria', 'laboratorio', 'lotes' => function ($query) {
-                $query->disponibles()->orderBy('fecha_vencimiento', 'asc');
-            }])
-            ->activos()
-            ->bajoStock()
-            ->get();
+        return RequestCache::rememberStatic('alertas:productos_bajo_stock', function () {
+            return Producto::with([
+                'categoria:id,nombre',
+                'laboratorio:id,nombre',
+                'lotes' => function ($query) {
+                    $query->disponibles()->orderBy('fecha_vencimiento', 'asc');
+                }
+            ])
+                ->activos()
+                ->bajoStock()
+                ->get();
+        });
     }
 
     /**
@@ -444,14 +451,21 @@ class InventarioService
      */
     public function lotesProximosVencer(int $dias = 60)
     {
-        return Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
-            ->proximosVencer($dias)
-            ->orderBy('fecha_vencimiento', 'asc')
-            ->get()
-            ->map(function ($lote) {
-                $lote->dias_para_vencer = (int) $lote->dias_restantes;
-                return $lote;
-            });
+        return RequestCache::rememberStatic("alertas:lotes_proximos_vencer:{$dias}", function () use ($dias) {
+            return Lote::with([
+                'producto:id,nombre,principio_activo,categoria_id,laboratorio_id',
+                'producto.categoria:id,nombre',
+                'producto.laboratorio:id,nombre',
+                'proveedor:id,nombre',
+            ])
+                ->proximosVencer($dias)
+                ->orderBy('fecha_vencimiento', 'asc')
+                ->get()
+                ->map(function ($lote) {
+                    $lote->dias_para_vencer = (int) $lote->dias_restantes;
+                    return $lote;
+                });
+        });
     }
 
     /**
@@ -461,12 +475,19 @@ class InventarioService
      */
     public function lotesVencidos()
     {
-        return Lote::with(['producto.categoria', 'producto.laboratorio', 'proveedor'])
-            ->activos()
-            ->vencidos()
-            ->where('stock_actual', '>', 0)
-            ->orderBy('fecha_vencimiento', 'asc')
-            ->get();
+        return RequestCache::rememberStatic('alertas:lotes_vencidos', function () {
+            return Lote::with([
+                'producto:id,nombre,principio_activo,categoria_id,laboratorio_id',
+                'producto.categoria:id,nombre',
+                'producto.laboratorio:id,nombre',
+                'proveedor:id,nombre',
+            ])
+                ->activos()
+                ->vencidos()
+                ->where('stock_actual', '>', 0)
+                ->orderBy('fecha_vencimiento', 'asc')
+                ->get();
+        });
     }
 
     /**
@@ -479,7 +500,11 @@ class InventarioService
      */
     public function kardexProducto(int $productoId, ?string $fechaInicio = null, ?string $fechaFin = null)
     {
-        $query = MovimientoInventario::with(['lote.detallesCompra', 'usuario'])
+        $query = MovimientoInventario::with([
+            'lote:id,numero_lote,fecha_vencimiento,precio_compra',
+            'lote.detallesCompra:id,lote_id,compra_id,tipo_presentacion,cantidad_presentaciones,unidades_por_presentacion',
+            'usuario:id,name',
+        ])
             ->where('producto_id', $productoId);
 
         if ($fechaInicio) {
@@ -503,7 +528,7 @@ class InventarioService
      */
     public function kardexLote(int $loteId)
     {
-        return MovimientoInventario::with(['usuario', 'producto'])
+        return MovimientoInventario::with(['usuario:id,name', 'producto:id,nombre'])
             ->where('lote_id', $loteId)
             ->orderBy('fecha_movimiento', 'desc')
             ->orderBy('id', 'desc')

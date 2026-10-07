@@ -33,6 +33,30 @@ class Lote extends Model
         'activo' => 'boolean',
     ];
 
+    /**
+     * Auto-invalidación reactiva de cachés al mutar lotes de inventario
+     */
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('lotes:');
+            \App\Support\RequestCache::forgetPrefixStatic('inventario:');
+            \App\Support\RequestCache::forgetPrefixStatic('alertas:');
+            \App\Support\RequestCache::forgetPrefixStatic('productos:');
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
+        });
+
+        static::deleted(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('lotes:');
+            \App\Support\RequestCache::forgetPrefixStatic('inventario:');
+            \App\Support\RequestCache::forgetPrefixStatic('alertas:');
+            \App\Support\RequestCache::forgetPrefixStatic('productos:');
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
+        });
+    }
+
     // Relaciones
     public function producto(): BelongsTo
     {

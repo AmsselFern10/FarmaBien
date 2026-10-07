@@ -19,6 +19,14 @@ class MovimientoInventario extends Model
      */
     protected static function booted(): void
     {
+        static::created(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('inventario:');
+            \App\Support\RequestCache::forgetPrefixStatic('alertas:');
+            \App\Support\RequestCache::forgetPrefixStatic('kardex:');
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
+        });
+
         static::updating(function () {
             throw new DomainException('Los registros de Kardex son inmutables y no pueden ser modificados.');
         });

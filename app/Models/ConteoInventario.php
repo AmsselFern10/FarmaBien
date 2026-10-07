@@ -29,6 +29,20 @@ class ConteoInventario extends Model
     ];
 
     /**
+     * Auto-invalidación de cachés al guardar o modificar tomas de inventario
+     */
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Support\RequestCache::forgetPrefixStatic('inventario:');
+            \App\Support\RequestCache::forgetPrefixStatic('conteos:');
+            \App\Support\RequestCache::forgetPrefixStatic('alertas:');
+            \Illuminate\Support\Facades\Cache::forget('inventario_valorizacion');
+            \App\Services\NotificacionService::clearCache();
+        });
+    }
+
+    /**
      * Devuelve los chips legibles del alcance para la vista
      */
     public function getAlcanceChipsAttribute(): array

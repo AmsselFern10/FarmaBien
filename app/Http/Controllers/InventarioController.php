@@ -13,6 +13,7 @@ use App\Services\InventarioService;
 use App\Http\Requests\AjusteInventarioRequest;
 use App\Http\Requests\StoreLoteManualRequest;
 use App\Http\Requests\UpdateLoteRequest;
+use App\Support\RequestCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -82,7 +83,7 @@ class InventarioController extends Controller
             ->paginate(perPage(20))
             ->withQueryString();
 
-        $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre']);
+        $productos = RequestCache::rememberStatic('productos:activos:select', fn () => Producto::activos()->orderBy('nombre')->get(['id', 'nombre']));
 
         return view('inventario.movimientos', compact('movimientos', 'productos'));
     }
@@ -115,7 +116,7 @@ class InventarioController extends Controller
         $query->ordenarPor($orden);
 
         $lotes = $query->paginate(perPage(15))->withQueryString();
-        $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $proveedores = Proveedor::getCachedActivos();
 
         return view('inventario.lotes', compact('lotes', 'proveedores'));
     }
@@ -147,7 +148,14 @@ class InventarioController extends Controller
         $fechaHasta = $request->input('fecha_hasta');
 
         $movimientos = $this->inventarioService->kardexProducto($producto->id, $fechaDesde, $fechaHasta);
-        $producto->load(['categoria', 'laboratorio', 'presentacionesActivas', 'lotes.detallesCompra', 'lotes.compra']);
+        $producto->load([
+            'categoria:id,nombre',
+            'laboratorio:id,nombre',
+            'presentacionesActivas',
+            'lotes' => fn ($q) => $q->orderBy('fecha_vencimiento', 'asc'),
+            'lotes.detallesCompra',
+            'lotes.compra:id,codigo_compra',
+        ]);
 
         return view('inventario.kardex-producto', compact('producto', 'movimientos'));
     }
@@ -235,8 +243,8 @@ class InventarioController extends Controller
      */
     public function createLote(Request $request)
     {
-        $productos = Producto::activos()->orderBy('nombre')->get(['id', 'nombre', 'principio_activo']);
-        $proveedores = Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $productos = RequestCache::rememberStatic('productos:activos:select_detallado', fn () => Producto::activos()->orderBy('nombre')->get(['id', 'nombre', 'principio_activo']));
+        $proveedores = Proveedor::getCachedActivos();
         $productoPreseleccionado = $request->filled('producto_id')
             ? Producto::find($request->input('producto_id'))
             : null;

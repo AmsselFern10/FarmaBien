@@ -6,6 +6,7 @@ use App\Models\Producto;
 use App\Models\Lote;
 use App\Models\Compra;
 use App\Models\HistorialPrecio;
+use App\Support\RequestCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -18,29 +19,31 @@ class NotificacionService
      */
     public function getResumenNotificaciones(): array
     {
-        // Cachear por 30 segundos para evitar saturación de BD en polling de topbar
-        return Cache::remember('farma_notificaciones_resumen', 30, function () {
-            $stockAlertas = $this->getStockAlerts();
-            $vencimientosAlertas = $this->getVencimientosAlerts();
-            $cuentasPorPagarAlertas = $this->getCuentasPorPagarAlerts();
-            $reordenAlertas = $this->getReordenAlerts();
+        return RequestCache::rememberStatic('notificaciones:resumen_campana', function () {
+            // Cachear por 30 segundos entre peticiones para evitar saturación de BD en polling de topbar
+            return Cache::remember('farma_notificaciones_resumen', 30, function () {
+                $stockAlertas = $this->getStockAlerts();
+                $vencimientosAlertas = $this->getVencimientosAlerts();
+                $cuentasPorPagarAlertas = $this->getCuentasPorPagarAlerts();
+                $reordenAlertas = $this->getReordenAlerts();
 
-            $totalNotificaciones = count($stockAlertas) 
-                + count($vencimientosAlertas) 
-                + count($cuentasPorPagarAlertas) 
-                + count($reordenAlertas);
+                $totalNotificaciones = count($stockAlertas) 
+                    + count($vencimientosAlertas) 
+                    + count($cuentasPorPagarAlertas) 
+                    + count($reordenAlertas);
 
-            return [
-                'total_count'          => $totalNotificaciones,
-                'stock'                => $stockAlertas,
-                'stock_count'          => count($stockAlertas),
-                'vencimientos'         => $vencimientosAlertas,
-                'vencimientos_count'   => count($vencimientosAlertas),
-                'cuentas_pagar'        => $cuentasPorPagarAlertas,
-                'cuentas_pagar_count'  => count($cuentasPorPagarAlertas),
-                'reorden'              => $reordenAlertas,
-                'reorden_count'        => count($reordenAlertas),
-            ];
+                return [
+                    'total_count'          => $totalNotificaciones,
+                    'stock'                => $stockAlertas,
+                    'stock_count'          => count($stockAlertas),
+                    'vencimientos'         => $vencimientosAlertas,
+                    'vencimientos_count'   => count($vencimientosAlertas),
+                    'cuentas_pagar'        => $cuentasPorPagarAlertas,
+                    'cuentas_pagar_count'  => count($cuentasPorPagarAlertas),
+                    'reorden'              => $reordenAlertas,
+                    'reorden_count'        => count($reordenAlertas),
+                ];
+            });
         });
     }
 
@@ -50,6 +53,8 @@ class NotificacionService
     public static function clearCache(): void
     {
         Cache::forget('farma_notificaciones_resumen');
+        RequestCache::forgetStatic('notificaciones:resumen_campana');
+        RequestCache::forgetPrefixStatic('alertas:');
     }
 
     /**

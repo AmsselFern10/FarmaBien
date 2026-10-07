@@ -18,11 +18,25 @@ class NotificacionController extends Controller
     /**
      * Endpoint JSON para alimentar el Centro de Notificaciones en el Topbar (Campana 🔔)
      *
+     * @param Request $request
      * @return JsonResponse
      */
-    public function resumen(): JsonResponse
+    public function resumen(Request $request): JsonResponse
     {
         $resumen = $this->notificacionService->getResumenNotificaciones();
-        return response()->json($resumen);
+        $etag = md5(json_encode($resumen));
+
+        $noneMatch = $request->header('If-None-Match');
+        if ($noneMatch && (trim($noneMatch, '"') === $etag)) {
+            return response()->json(null, 304, [
+                'ETag'          => '"' . $etag . '"',
+                'Cache-Control' => 'no-cache, private',
+            ]);
+        }
+
+        return response()->json($resumen, 200, [
+            'ETag'          => '"' . $etag . '"',
+            'Cache-Control' => 'no-cache, private',
+        ]);
     }
 }

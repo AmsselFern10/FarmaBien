@@ -324,10 +324,19 @@ class ConteoInventarioController extends Controller
         $detalle->diferencia   = $stockFisico !== null ? ($stockFisico - $detalle->stock_sistema) : 0;
         $detalle->save();
 
-        // Recalcular métricas generales del conteo
-        $contados = DetalleConteo::where('conteo_id', $conteo->id)->whereNotNull('stock_fisico')->count();
-        $difNeta  = DetalleConteo::where('conteo_id', $conteo->id)->whereNotNull('stock_fisico')->sum('diferencia');
-        $conDif   = DetalleConteo::where('conteo_id', $conteo->id)->whereNotNull('stock_fisico')->where('diferencia', '!=', 0)->count();
+        // Recalcular métricas generales del conteo en una sola consulta agregada
+        $stats = DetalleConteo::where('conteo_id', $conteo->id)
+            ->whereNotNull('stock_fisico')
+            ->selectRaw('
+                COUNT(*) as contados,
+                COALESCE(SUM(diferencia), 0) as dif_neta,
+                COUNT(CASE WHEN diferencia != 0 THEN 1 END) as con_dif
+            ')
+            ->first();
+
+        $contados = (int) ($stats->contados ?? 0);
+        $difNeta  = (int) ($stats->dif_neta ?? 0);
+        $conDif   = (int) ($stats->con_dif ?? 0);
 
         $conteo->update([
             'lotes_contados'            => $contados,
@@ -391,17 +400,17 @@ class ConteoInventarioController extends Controller
                     $detalle->save();
                 }
 
-                $contados = DetalleConteo::where('conteo_id', $conteo->id)
+                $stats = DetalleConteo::where('conteo_id', $conteo->id)
                     ->whereNotNull('stock_fisico')
-                    ->count();
-
-                $difTotal = DetalleConteo::where('conteo_id', $conteo->id)
-                    ->whereNotNull('stock_fisico')
-                    ->sum('diferencia');
+                    ->selectRaw('
+                        COUNT(*) as contados,
+                        COALESCE(SUM(diferencia), 0) as dif_total
+                    ')
+                    ->first();
 
                 $conteo->update([
-                    'lotes_contados'            => $contados,
-                    'diferencia_total_unidades' => $difTotal,
+                    'lotes_contados'            => (int) ($stats->contados ?? 0),
+                    'diferencia_total_unidades' => (int) ($stats->dif_total ?? 0),
                 ]);
             });
 
@@ -441,6 +450,7 @@ class ConteoInventarioController extends Controller
                     ->where('conteo_id', $conteo->id)
                     ->where('diferencia', '!=', 0)
                     ->where('ajustado', false)
+                    ->orderBy('lote_id', 'asc')
                     ->lockForUpdate()
                     ->get();
 
