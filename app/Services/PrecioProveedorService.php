@@ -23,81 +23,83 @@ class PrecioProveedorService
      */
     public function getComparativaProducto(int $productoId): array
     {
-        $producto = Producto::with(['categoria', 'laboratorio', 'presentacionesActivas'])->find($productoId);
-        if (!$producto) {
-            return [
-                'producto'             => null,
-                'comparativa'          => collect(),
-                'mejor_precio'         => null,
-                'mayor_precio'         => null,
-                'ahorro_maximo'        => 0.00,
-                'precio_promedio'      => null,
-                'proveedor_recomendado'=> null,
-                'total_distribuidores' => 0,
-            ];
-        }
-
-        $historiales = HistorialPrecio::with(['proveedor', 'presentacion', 'compra.usuario'])
-            ->where('producto_id', $productoId)
-            ->whereHas('proveedor', fn($q) => $q->where('activo', true))
-            ->orderBy('fecha', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
-
-        $porProveedor = [];
-
-        foreach ($historiales as $h) {
-            $provId = $h->proveedor_id;
-            if (!isset($porProveedor[$provId])) {
-                $porProveedor[$provId] = [
-                    'proveedor'                 => $h->proveedor,
-                    'ultimo_registro'           => $h,
-                    'ultimo_precio_base'        => (float) $h->precio_unitario_base,
-                    'ultimo_precio_compra'      => (float) $h->precio_compra,
-                    'ultima_presentacion'       => $h->presentacion->nombre ?? ($h->tipo_presentacion ?: 'Unidad Base'),
-                    'unidades_por_presentacion' => $h->presentacion->unidades_por_presentacion ?? $h->unidades_por_presentacion ?? 1,
-                    'ultima_fecha'              => $h->fecha,
-                    'mejor_precio_base'         => (float) $h->precio_unitario_base,
-                    'mejor_registro'            => $h,
-                    'total_operaciones'         => 0,
-                    'tipo_origen'               => $h->tipo,
+        return \App\Facades\RequestCache::remember("precio_proveedor:comparativa:{$productoId}", function () use ($productoId) {
+            $producto = Producto::with(['categoria', 'laboratorio', 'presentacionesActivas'])->find($productoId);
+            if (!$producto) {
+                return [
+                    'producto'             => null,
+                    'comparativa'          => collect(),
+                    'mejor_precio'         => null,
+                    'mayor_precio'         => null,
+                    'ahorro_maximo'        => 0.00,
+                    'precio_promedio'      => null,
+                    'proveedor_recomendado'=> null,
+                    'total_distribuidores' => 0,
                 ];
             }
 
-            $porProveedor[$provId]['total_operaciones']++;
+            $historiales = HistorialPrecio::with(['proveedor', 'presentacion', 'compra.usuario'])
+                ->where('producto_id', $productoId)
+                ->whereHas('proveedor', fn($q) => $q->where('activo', true))
+                ->orderBy('fecha', 'desc')
+                ->orderBy('id', 'desc')
+                ->get();
 
-            if ((float) $h->precio_unitario_base < $porProveedor[$provId]['mejor_precio_base']) {
-                $porProveedor[$provId]['mejor_precio_base'] = (float) $h->precio_unitario_base;
-                $porProveedor[$provId]['mejor_registro'] = $h;
+            $porProveedor = [];
+
+            foreach ($historiales as $h) {
+                $provId = $h->proveedor_id;
+                if (!isset($porProveedor[$provId])) {
+                    $porProveedor[$provId] = [
+                        'proveedor'                 => $h->proveedor,
+                        'ultimo_registro'           => $h,
+                        'ultimo_precio_base'        => (float) $h->precio_unitario_base,
+                        'ultimo_precio_compra'      => (float) $h->precio_compra,
+                        'ultima_presentacion'       => $h->presentacion->nombre ?? ($h->tipo_presentacion ?: 'Unidad Base'),
+                        'unidades_por_presentacion' => $h->presentacion->unidades_por_presentacion ?? $h->unidades_por_presentacion ?? 1,
+                        'ultima_fecha'              => $h->fecha,
+                        'mejor_precio_base'         => (float) $h->precio_unitario_base,
+                        'mejor_registro'            => $h,
+                        'total_operaciones'         => 0,
+                        'tipo_origen'               => $h->tipo,
+                    ];
+                }
+
+                $porProveedor[$provId]['total_operaciones']++;
+
+                if ((float) $h->precio_unitario_base < $porProveedor[$provId]['mejor_precio_base']) {
+                    $porProveedor[$provId]['mejor_precio_base'] = (float) $h->precio_unitario_base;
+                    $porProveedor[$provId]['mejor_registro'] = $h;
+                }
             }
-        }
 
-        $comparativa = collect($porProveedor)->sortBy('ultimo_precio_base')->values();
+            $comparativa = collect($porProveedor)->sortBy('ultimo_precio_base')->values();
 
-        $mejorPrecio = null;
-        $mayorPrecio = null;
-        $ahorroMaximo = 0.00;
-        $precioPromedio = null;
-        $proveedorRecomendado = null;
+            $mejorPrecio = null;
+            $mayorPrecio = null;
+            $ahorroMaximo = 0.00;
+            $precioPromedio = null;
+            $proveedorRecomendado = null;
 
-        if ($comparativa->isNotEmpty()) {
-            $mejorPrecio = (float) $comparativa->min('mejor_precio_base');
-            $mayorPrecio = (float) $comparativa->max('ultimo_precio_base');
-            $proveedorRecomendado = $comparativa->sortBy('ultimo_precio_base')->first()['proveedor'] ?? null;
-            $precioPromedio = round((float) $comparativa->avg('ultimo_precio_base'), 4);
-            $ahorroMaximo = max(0, round($mayorPrecio - $mejorPrecio, 4));
-        }
+            if ($comparativa->isNotEmpty()) {
+                $mejorPrecio = (float) $comparativa->min('mejor_precio_base');
+                $mayorPrecio = (float) $comparativa->max('ultimo_precio_base');
+                $proveedorRecomendado = $comparativa->sortBy('ultimo_precio_base')->first()['proveedor'] ?? null;
+                $precioPromedio = round((float) $comparativa->avg('ultimo_precio_base'), 4);
+                $ahorroMaximo = max(0, round($mayorPrecio - $mejorPrecio, 4));
+            }
 
-        return [
-            'producto'              => $producto,
-            'comparativa'           => $comparativa,
-            'mejor_precio'          => $mejorPrecio,
-            'mayor_precio'          => $mayorPrecio,
-            'ahorro_maximo'         => $ahorroMaximo,
-            'precio_promedio'       => $precioPromedio,
-            'proveedor_recomendado' => $proveedorRecomendado,
-            'total_distribuidores'  => $comparativa->count(),
-        ];
+            return [
+                'producto'              => $producto,
+                'comparativa'           => $comparativa,
+                'mejor_precio'          => $mejorPrecio,
+                'mayor_precio'          => $mayorPrecio,
+                'ahorro_maximo'         => $ahorroMaximo,
+                'precio_promedio'       => $precioPromedio,
+                'proveedor_recomendado' => $proveedorRecomendado,
+                'total_distribuidores'  => $comparativa->count(),
+            ];
+        });
     }
 
     /**
@@ -206,21 +208,23 @@ class PrecioProveedorService
      */
     public function getCostoReferencia(Producto $producto): float
     {
-        $ultimoRegistro = HistorialPrecio::where('producto_id', $producto->id)
-            ->whereHas('proveedor', fn($q) => $q->where('activo', true))
-            ->orderBy('fecha', 'desc')
-            ->orderBy('id', 'desc')
-            ->first();
+        return \App\Facades\RequestCache::remember("precio_proveedor:costo_referencia:{$producto->id}", function () use ($producto) {
+            $ultimoRegistro = HistorialPrecio::where('producto_id', $producto->id)
+                ->whereHas('proveedor', fn($q) => $q->where('activo', true))
+                ->orderBy('fecha', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
 
-        if ($ultimoRegistro && (float) $ultimoRegistro->precio_unitario_base > 0) {
-            return (float) $ultimoRegistro->precio_unitario_base;
-        }
+            if ($ultimoRegistro && (float) $ultimoRegistro->precio_unitario_base > 0) {
+                return (float) $ultimoRegistro->precio_unitario_base;
+            }
 
-        if ((float) $producto->precio_compra > 0) {
-            return (float) $producto->precio_compra;
-        }
+            if ((float) $producto->precio_compra > 0) {
+                return (float) $producto->precio_compra;
+            }
 
-        return round((float) $producto->precio_venta * 0.70, 4);
+            return round((float) $producto->precio_venta * 0.70, 4);
+        });
     }
 
     /**
@@ -231,24 +235,26 @@ class PrecioProveedorService
      */
     public function getMejorProveedor(Producto $producto): ?array
     {
-        $mejorRegistro = HistorialPrecio::with('proveedor')
-            ->where('producto_id', $producto->id)
-            ->whereHas('proveedor', fn($q) => $q->where('activo', true))
-            ->orderBy('precio_unitario_base', 'asc')
-            ->orderBy('fecha', 'desc')
-            ->first();
+        return \App\Facades\RequestCache::remember("precio_proveedor:mejor:{$producto->id}", function () use ($producto) {
+            $mejorRegistro = HistorialPrecio::with('proveedor')
+                ->where('producto_id', $producto->id)
+                ->whereHas('proveedor', fn($q) => $q->where('activo', true))
+                ->orderBy('precio_unitario_base', 'asc')
+                ->orderBy('fecha', 'desc')
+                ->first();
 
-        if ($mejorRegistro && $mejorRegistro->proveedor) {
-            return [
-                'proveedor'            => $mejorRegistro->proveedor,
-                'precio_unitario_base' => (float) $mejorRegistro->precio_unitario_base,
-                'precio_compra'        => (float) $mejorRegistro->precio_compra,
-                'tipo_presentacion'    => $mejorRegistro->tipo_presentacion,
-                'tipo'                 => $mejorRegistro->tipo,
-                'fecha'                => $mejorRegistro->fecha,
-            ];
-        }
+            if ($mejorRegistro && $mejorRegistro->proveedor) {
+                return [
+                    'proveedor'            => $mejorRegistro->proveedor,
+                    'precio_unitario_base' => (float) $mejorRegistro->precio_unitario_base,
+                    'precio_compra'        => (float) $mejorRegistro->precio_compra,
+                    'tipo_presentacion'    => $mejorRegistro->tipo_presentacion,
+                    'tipo'                 => $mejorRegistro->tipo,
+                    'fecha'                => $mejorRegistro->fecha,
+                ];
+            }
 
-        return null;
+            return null;
+        });
     }
 }

@@ -57,8 +57,11 @@ class OrdenCompraController extends Controller
             $query->where('proveedor_id', $request->input('proveedor_id'));
         }
 
-        $totalOrdenes = (clone $query)->count();
-        $totalMonto = (clone $query)->where('estado', '!=', 'cancelada')->sum('total');
+        $totales = (clone $query)
+            ->selectRaw("COUNT(*) as total_ordenes, COALESCE(SUM(CASE WHEN estado != 'cancelada' THEN total ELSE 0 END), 0) as total_monto")
+            ->first();
+        $totalOrdenes = (int) ($totales->total_ordenes ?? 0);
+        $totalMonto = (float) ($totales->total_monto ?? 0);
 
         $ordenes = $query->paginate(perPage(15))->withQueryString();
         $proveedores = Proveedor::getCachedActivos();

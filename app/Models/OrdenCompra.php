@@ -42,6 +42,17 @@ class OrdenCompra extends Model
         'total' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Facades\RequestCache::forgetPrefix('ordenes_compras:');
+        });
+
+        static::deleted(function () {
+            \App\Facades\RequestCache::forgetPrefix('ordenes_compras:');
+        });
+    }
+
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class, 'proveedor_id');

@@ -34,6 +34,19 @@ class HistorialPrecio extends Model
         'fecha'                     => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Facades\RequestCache::forgetPrefix('historial_precios:');
+            \App\Facades\RequestCache::forgetPrefix('precio_proveedor:');
+        });
+
+        static::deleted(function () {
+            \App\Facades\RequestCache::forgetPrefix('historial_precios:');
+            \App\Facades\RequestCache::forgetPrefix('precio_proveedor:');
+        });
+    }
+
     // Relaciones
     public function producto(): BelongsTo
     {

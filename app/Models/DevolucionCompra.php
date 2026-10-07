@@ -20,6 +20,19 @@ class DevolucionCompra extends Model
         'fecha_envio'      => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Facades\RequestCache::forgetPrefix('devoluciones_compra:');
+            \App\Facades\RequestCache::forgetPrefix('cuentas_por_pagar:');
+        });
+
+        static::deleted(function () {
+            \App\Facades\RequestCache::forgetPrefix('devoluciones_compra:');
+            \App\Facades\RequestCache::forgetPrefix('cuentas_por_pagar:');
+        });
+    }
+
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class);

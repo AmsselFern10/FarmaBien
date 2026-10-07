@@ -87,6 +87,15 @@ class ReordenService
             ->groupBy('producto_id')
             ->map(fn($historiales) => $historiales->first());
 
+        // 4. Cargar masivamente el último registro para costo de referencia en 1 sola consulta
+        $ultimosHistoriales = HistorialPrecio::whereIn('producto_id', $productoIds)
+            ->whereHas('proveedor', fn($q) => $q->where('activo', true))
+            ->orderBy('fecha', 'desc')
+            ->orderBy('id', 'desc')
+            ->get()
+            ->groupBy('producto_id')
+            ->map(fn($historiales) => $historiales->first());
+
         $sugerencias = collect();
         $totalInversionEstimada = 0.00;
         $totalAhorroEstimado = 0.00;
@@ -130,7 +139,18 @@ class ReordenService
                 }
 
                 $costoEstimado = round($cantidadSugerida * $mejorPrecioBase, 2);
-                $costoReferencia = $this->precioService->getCostoReferencia($p);
+
+                // Obtener costo de referencia sin consultar en ciclo
+                $ultimoHist = $ultimosHistoriales[$p->id] ?? null;
+                if ($ultimoHist && (float) $ultimoHist->precio_unitario_base > 0) {
+                    $costoReferencia = (float) $ultimoHist->precio_unitario_base;
+                } elseif ((float) $p->precio_compra > 0) {
+                    $costoReferencia = (float) $p->precio_compra;
+                } else {
+                    $costoReferencia = round((float) $p->precio_venta * 0.70, 4);
+                }
+                \App\Facades\RequestCache::put("precio_proveedor:costo_referencia:{$p->id}", $costoReferencia);
+
                 $ahorroPorUnidad = max(0, round($costoReferencia - $mejorPrecioBase, 4));
                 $ahorroTotal = round($cantidadSugerida * $ahorroPorUnidad, 2);
 

@@ -42,6 +42,21 @@ class Compra extends Model
         'fecha_anulacion' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (Compra $compra) {
+            \App\Facades\RequestCache::forgetPrefix('compras:');
+            \App\Facades\RequestCache::forgetPrefix('cuentas_por_pagar:');
+            \App\Facades\RequestCache::forgetPrefix('historial_precios:');
+        });
+
+        static::deleted(function (Compra $compra) {
+            \App\Facades\RequestCache::forgetPrefix('compras:');
+            \App\Facades\RequestCache::forgetPrefix('cuentas_por_pagar:');
+            \App\Facades\RequestCache::forgetPrefix('historial_precios:');
+        });
+    }
+
     // Relaciones
     public function proveedor(): BelongsTo
     {

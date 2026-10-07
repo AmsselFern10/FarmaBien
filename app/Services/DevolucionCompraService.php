@@ -370,26 +370,28 @@ class DevolucionCompraService
      */
     public function getMetricas(): array
     {
-        $inicioMes = now()->startOfMonth()->toDateTimeString();
-        $finMes = now()->endOfMonth()->toDateTimeString();
+        return \App\Facades\RequestCache::remember('devoluciones_compra:metricas', function () {
+            $inicioMes = now()->startOfMonth()->toDateTimeString();
+            $finMes = now()->endOfMonth()->toDateTimeString();
 
-        $stats = DevolucionCompra::where('estado', '!=', 'rechazada')
-            ->selectRaw("
-                COUNT(*) as total_devoluciones,
-                COALESCE(SUM(total_devolucion), 0) as total_monto_devuelto,
-                COALESCE(SUM(CASE WHEN created_at >= ? AND created_at <= ? THEN 1 ELSE 0 END), 0) as devoluciones_mes
-            ", [$inicioMes, $finMes])
-            ->first();
+            $stats = DevolucionCompra::where('estado', '!=', 'rechazada')
+                ->selectRaw("
+                    COUNT(*) as total_devoluciones,
+                    COALESCE(SUM(total_devolucion), 0) as total_monto_devuelto,
+                    COALESCE(SUM(CASE WHEN created_at >= ? AND created_at <= ? THEN 1 ELSE 0 END), 0) as devoluciones_mes
+                ", [$inicioMes, $finMes])
+                ->first();
 
-        $lotesAfectadosCount = DetalleDevolucionCompra::whereHas('devolucionCompra', function ($q) {
-            $q->where('estado', '!=', 'rechazada');
-        })->count();
+            $lotesAfectadosCount = DetalleDevolucionCompra::whereHas('devolucionCompra', function ($q) {
+                $q->where('estado', '!=', 'rechazada');
+            })->count();
 
-        return [
-            'total_devoluciones'   => (int) ($stats->total_devoluciones ?? 0),
-            'total_monto_devuelto' => (float) ($stats->total_monto_devuelto ?? 0),
-            'lotes_afectados'      => $lotesAfectadosCount,
-            'devoluciones_mes'     => (int) ($stats->devoluciones_mes ?? 0),
-        ];
+            return [
+                'total_devoluciones'   => (int) ($stats->total_devoluciones ?? 0),
+                'total_monto_devuelto' => (float) ($stats->total_monto_devuelto ?? 0),
+                'lotes_afectados'      => $lotesAfectadosCount,
+                'devoluciones_mes'     => (int) ($stats->devoluciones_mes ?? 0),
+            ];
+        });
     }
 }

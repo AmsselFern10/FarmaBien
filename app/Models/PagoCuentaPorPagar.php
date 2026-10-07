@@ -27,6 +27,17 @@ class PagoCuentaPorPagar extends Model
         'fecha_pago' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \App\Facades\RequestCache::forgetPrefix('cuentas_por_pagar:');
+        });
+
+        static::deleted(function () {
+            \App\Facades\RequestCache::forgetPrefix('cuentas_por_pagar:');
+        });
+    }
+
     public function compra(): BelongsTo
     {
         return $this->belongsTo(Compra::class, 'compra_id');

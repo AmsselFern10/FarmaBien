@@ -200,26 +200,28 @@ class CuentaPorPagarService
      */
     public function getMetricas(): array
     {
-        $hoy = now()->toDateString();
-        $enSieteDias = now()->addDays(7)->toDateString();
+        return \App\Facades\RequestCache::remember('cuentas_por_pagar:metricas', function () {
+            $hoy = now()->toDateString();
+            $enSieteDias = now()->addDays(7)->toDateString();
 
-        $stats = Compra::where('condicion_pago', 'credito')
-            ->where('estado', 'recibida')
-            ->where('saldo_pendiente', '>', 0)
-            ->selectRaw("
-                COALESCE(SUM(saldo_pendiente), 0) as total_deuda,
-                COUNT(*) as total_facturas_pendientes,
-                COALESCE(SUM(CASE WHEN fecha_vencimiento_pago < ? THEN saldo_pendiente ELSE 0 END), 0) as deuda_vencida,
-                COALESCE(SUM(CASE WHEN fecha_vencimiento_pago >= ? AND fecha_vencimiento_pago <= ? THEN saldo_pendiente ELSE 0 END), 0) as deuda_por_vencer_7_dias
-            ", [$hoy, $hoy, $enSieteDias])
-            ->first();
+            $stats = Compra::where('condicion_pago', 'credito')
+                ->where('estado', 'recibida')
+                ->where('saldo_pendiente', '>', 0)
+                ->selectRaw("
+                    COALESCE(SUM(saldo_pendiente), 0) as total_deuda,
+                    COUNT(*) as total_facturas_pendientes,
+                    COALESCE(SUM(CASE WHEN fecha_vencimiento_pago < ? THEN saldo_pendiente ELSE 0 END), 0) as deuda_vencida,
+                    COALESCE(SUM(CASE WHEN fecha_vencimiento_pago >= ? AND fecha_vencimiento_pago <= ? THEN saldo_pendiente ELSE 0 END), 0) as deuda_por_vencer_7_dias
+                ", [$hoy, $hoy, $enSieteDias])
+                ->first();
 
-        return [
-            'total_deuda'               => (float) ($stats->total_deuda ?? 0),
-            'deuda_vencida'             => (float) ($stats->deuda_vencida ?? 0),
-            'deuda_por_vencer_7_dias'   => (float) ($stats->deuda_por_vencer_7_dias ?? 0),
-            'total_facturas_pendientes' => (int) ($stats->total_facturas_pendientes ?? 0),
-        ];
+            return [
+                'total_deuda'               => (float) ($stats->total_deuda ?? 0),
+                'deuda_vencida'             => (float) ($stats->deuda_vencida ?? 0),
+                'deuda_por_vencer_7_dias'   => (float) ($stats->deuda_por_vencer_7_dias ?? 0),
+                'total_facturas_pendientes' => (int) ($stats->total_facturas_pendientes ?? 0),
+            ];
+        });
     }
 
     /**

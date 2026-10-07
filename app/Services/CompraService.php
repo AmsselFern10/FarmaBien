@@ -63,9 +63,34 @@ class CompraService
             $totalAcumulado = 0;
             $costosPorProducto = [];
 
-            // 2. Procesar cada producto adquirido con bloqueo pesimista
+            // Pre-cargar productos, presentaciones y lotes por lote (batch) determinísticamente
+            $productoIds = array_values(array_unique(array_filter(array_column($data['productos'], 'producto_id'))));
+            $presentacionIds = array_values(array_unique(array_filter(array_column($data['productos'], 'presentacion_id'))));
+            $numerosLote = array_values(array_unique(array_map('trim', array_column($data['productos'], 'numero_lote'))));
+
+            // Bloqueo pesimista ordenado por ID ascendente para prevenir deadlocks
+            $productosMap = Producto::whereIn('id', $productoIds)
+                ->orderBy('id', 'asc')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            $presentacionesMap = !empty($presentacionIds)
+                ? PresentacionProducto::whereIn('id', $presentacionIds)->get()->keyBy('id')
+                : collect();
+
+            $lotesExistentesMap = Lote::whereIn('producto_id', $productoIds)
+                ->whereIn('numero_lote', $numerosLote)
+                ->orderBy('id', 'asc')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy(function ($lote) {
+                    return $lote->producto_id . '_' . trim($lote->numero_lote);
+                });
+
+            // 2. Procesar cada producto adquirido
             foreach ($data['productos'] as $item) {
-                $subtotalItem = $this->procesarDetalleCompra($compra, $item);
+                $subtotalItem = $this->procesarDetalleCompraOptimizado($compra, $item, $productosMap, $presentacionesMap, $lotesExistentesMap);
                 $totalAcumulado += $subtotalItem;
 
                 $pid = (int) $item['producto_id'];
@@ -73,11 +98,9 @@ class CompraService
                     $costosPorProducto[$pid] = ['unidades' => 0, 'subtotal' => 0];
                 }
                 $factor = 1;
-                if (!empty($item['presentacion_id'])) {
-                    $pres = PresentacionProducto::find($item['presentacion_id']);
-                    if ($pres) {
-                        $factor = max(1, (int)$pres->unidades_por_presentacion);
-                    }
+                if (!empty($item['presentacion_id']) && isset($presentacionesMap[$item['presentacion_id']])) {
+                    $pres = $presentacionesMap[$item['presentacion_id']];
+                    $factor = max(1, (int)$pres->unidades_por_presentacion);
                 }
                 $cantBase = (int) ($item['cantidad_presentaciones'] ?? $item['cantidad'] ?? 1) * $factor;
                 $costosPorProducto[$pid]['unidades'] += $cantBase;
@@ -86,9 +109,9 @@ class CompraService
 
             // Actualizar precio_compra de referencia ponderado por producto en catálogo
             foreach ($costosPorProducto as $pid => $datosCosto) {
-                if ($datosCosto['unidades'] > 0) {
+                if ($datosCosto['unidades'] > 0 && isset($productosMap[$pid])) {
                     $costoBasePonderado = round($datosCosto['subtotal'] / $datosCosto['unidades'], 4);
-                    Producto::where('id', $pid)->update(['precio_compra' => $costoBasePonderado]);
+                    $productosMap[$pid]->update(['precio_compra' => $costoBasePonderado]);
                 }
             }
 
@@ -111,11 +134,9 @@ class CompraService
                         $pid = (int) $item['producto_id'];
                         $cantidadPresentaciones = (int) ($item['cantidad_presentaciones'] ?? $item['cantidad'] ?? 0);
                         $factor = 1;
-                        if (!empty($item['presentacion_id'])) {
-                            $pres = PresentacionProducto::find($item['presentacion_id']);
-                            if ($pres) {
-                                $factor = max(1, (int)$pres->unidades_por_presentacion);
-                            }
+                        if (!empty($item['presentacion_id']) && isset($presentacionesMap[$item['presentacion_id']])) {
+                            $pres = $presentacionesMap[$item['presentacion_id']];
+                            $factor = max(1, (int)$pres->unidades_por_presentacion);
                         }
                         $cantidadBase = $cantidadPresentaciones * $factor;
 
@@ -188,21 +209,16 @@ class CompraService
     }
 
     /**
-     * Procesar un ítem de detalle de compra creando el Lote y registrando el Kardex.
-     * 
-     * @param Compra $compra
-     * @param array $item
-     * @return float Subtotal del item
-     * @throws Exception
+     * Procesar un ítem de detalle de compra utilizando modelos pre-cargados.
      */
-    protected function procesarDetalleCompra(Compra $compra, array $item): float
+    protected function procesarDetalleCompraOptimizado(Compra $compra, array $item, $productosMap, $presentacionesMap, &$lotesExistentesMap): float
     {
         $productoId = (int) $item['producto_id'];
+        $producto = $productosMap[$productoId] ?? null;
 
-        // Bloquear el producto para prevenir condiciones de carrera en costos
-        $producto = Producto::where('id', $productoId)
-            ->lockForUpdate()
-            ->firstOrFail();
+        if (!$producto) {
+            $producto = Producto::where('id', $productoId)->lockForUpdate()->firstOrFail();
+        }
 
         if (!$producto->activo) {
             throw new Exception("El producto '{$producto->nombre}' se encuentra inactivo.");
@@ -223,10 +239,7 @@ class CompraService
         // Determinar factor de conversión y presentación
         $presentacion = null;
         if ($presentacionId) {
-            $presentacion = PresentacionProducto::where('producto_id', $producto->id)
-                ->where('id', $presentacionId)
-                ->firstOrFail();
-
+            $presentacion = $presentacionesMap[$presentacionId] ?? PresentacionProducto::where('producto_id', $producto->id)->where('id', $presentacionId)->firstOrFail();
             $unidadesPorPresentacion = max(1, (int) $presentacion->unidades_por_presentacion);
             $tipoPresentacion = $presentacion->nombre;
         } else {
@@ -241,19 +254,13 @@ class CompraService
 
         $numeroLote = trim($item['numero_lote']);
         $fechaVencimiento = $item['fecha_vencimiento'];
+        $loteKey = $producto->id . '_' . $numeroLote;
 
-        // 1. Buscar lote existente (mismo producto + mismo número de lote) o preparar uno nuevo
-        //    Esto evita duplicados cuando el mismo lote llega en múltiples compras o líneas.
-        $lote = Lote::where('producto_id', $producto->id)
-            ->where('numero_lote', $numeroLote)
-            ->lockForUpdate()
-            ->first();
-
+        $lote = $lotesExistentesMap[$loteKey] ?? null;
         $esLoteNuevo = is_null($lote);
         $stockAnterior = $esLoteNuevo ? 0 : (int) $lote->stock_actual;
 
         if ($esLoteNuevo) {
-            // ─── LOTE NUEVO ─────────────────────────────────────────────────
             $lote = Lote::create([
                 'producto_id'       => $producto->id,
                 'compra_id'         => $compra->id,
@@ -265,8 +272,9 @@ class CompraService
                 'precio_compra'     => $costoUnitarioBase,
                 'activo'            => true,
             ]);
+            $lotesExistentesMap[$loteKey] = $lote;
+            $stockPosterior = $cantidadUnidadesBase;
         } else {
-            // ─── LOTE EXISTENTE: Precio Promedio Ponderado (PPP) y acumulación ──
             $costoAnterior = (float) $lote->precio_compra;
             $stockPrevio = max(0, (int) $lote->stock_actual);
             $costoPonderadoLote = ($stockPrevio + $cantidadUnidadesBase) > 0
@@ -280,14 +288,13 @@ class CompraService
                 'stock_inicial'     => $nuevoStockInicial,
                 'stock_actual'      => $nuevoStockActual,
                 'precio_compra'     => $costoPonderadoLote,
-                'fecha_vencimiento' => $fechaVencimiento,     // actualizar al vencimiento del nuevo ingreso
-                'activo'            => true,                  // reactivar si estaba desactivado
+                'fecha_vencimiento' => $fechaVencimiento,
+                'activo'            => true,
             ]);
+            $stockPosterior = $nuevoStockActual;
         }
 
-        $stockPosterior = (int) $lote->fresh()->stock_actual;
-
-        // 2. Crear Detalle de Compra (siempre uno por línea de compra, aunque el lote sea existente)
+        // 2. Crear Detalle de Compra
         DetalleCompra::create([
             'compra_id'                 => $compra->id,
             'producto_id'               => $producto->id,
@@ -565,44 +572,46 @@ class CompraService
      */
     public function getHistorialPreciosMap(): array
     {
-        $historialRaw = HistorialPrecio::with('proveedor:id,nombre')
-            ->orderBy('fecha', 'desc')
-            ->orderBy('id', 'desc')
-            ->limit(500)
-            ->get();
+        return \App\Facades\RequestCache::remember('historial_precios:map', function () {
+            $historialRaw = HistorialPrecio::with('proveedor:id,nombre')
+                ->orderBy('fecha', 'desc')
+                ->orderBy('id', 'desc')
+                ->limit(500)
+                ->get();
 
-        $historialMap = [];
-        foreach ($historialRaw as $h) {
-            $pId = $h->producto_id;
-            $prId = $h->proveedor_id;
-            if (!isset($historialMap[$pId])) {
-                $historialMap[$pId] = [
-                    'proveedores'      => [],
-                    'ultimo_precio'    => (float)$h->precio_unitario_base,
-                    'ultimo_proveedor' => $h->proveedor->nombre ?? 'N/A',
-                    'ultima_fecha'     => $h->fecha ? $h->fecha->format('d/m/Y') : '-',
-                    'mejor_precio'     => (float)$h->precio_unitario_base,
-                    'mejor_proveedor'  => $h->proveedor->nombre ?? 'N/A',
-                ];
+            $historialMap = [];
+            foreach ($historialRaw as $h) {
+                $pId = $h->producto_id;
+                $prId = $h->proveedor_id;
+                if (!isset($historialMap[$pId])) {
+                    $historialMap[$pId] = [
+                        'proveedores'      => [],
+                        'ultimo_precio'    => (float)$h->precio_unitario_base,
+                        'ultimo_proveedor' => $h->proveedor->nombre ?? 'N/A',
+                        'ultima_fecha'     => $h->fecha ? $h->fecha->format('d/m/Y') : '-',
+                        'mejor_precio'     => (float)$h->precio_unitario_base,
+                        'mejor_proveedor'  => $h->proveedor->nombre ?? 'N/A',
+                    ];
+                }
+
+                if (!isset($historialMap[$pId]['proveedores'][$prId])) {
+                    $historialMap[$pId]['proveedores'][$prId] = [
+                        'precio_compra'        => (float)$h->precio_compra,
+                        'precio_unitario_base' => (float)$h->precio_unitario_base,
+                        'tipo_presentacion'    => $h->tipo_presentacion,
+                        'fecha'                => $h->fecha ? $h->fecha->format('d/m/Y') : '-',
+                        'tipo'                 => $h->tipo,
+                    ];
+                }
+
+                if ((float)$h->precio_unitario_base < $historialMap[$pId]['mejor_precio']) {
+                    $historialMap[$pId]['mejor_precio'] = (float)$h->precio_unitario_base;
+                    $historialMap[$pId]['mejor_proveedor'] = $h->proveedor->nombre ?? 'N/A';
+                }
             }
 
-            if (!isset($historialMap[$pId]['proveedores'][$prId])) {
-                $historialMap[$pId]['proveedores'][$prId] = [
-                    'precio_compra'        => (float)$h->precio_compra,
-                    'precio_unitario_base' => (float)$h->precio_unitario_base,
-                    'tipo_presentacion'    => $h->tipo_presentacion,
-                    'fecha'                => $h->fecha ? $h->fecha->format('d/m/Y') : '-',
-                    'tipo'                 => $h->tipo,
-                ];
-            }
-
-            if ((float)$h->precio_unitario_base < $historialMap[$pId]['mejor_precio']) {
-                $historialMap[$pId]['mejor_precio'] = (float)$h->precio_unitario_base;
-                $historialMap[$pId]['mejor_proveedor'] = $h->proveedor->nombre ?? 'N/A';
-            }
-        }
-
-        return $historialMap;
+            return $historialMap;
+        });
     }
 }
 
